@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import D2Map from '@dhis2/maps-gl';
 
 class MapWrapper extends Component {
-  propTypes = {};
+  static propTypes = {};
   container = null;
   map = null;
 
