@@ -6,13 +6,28 @@ class MapWrapper extends Component {
   container = null;
   map = null;
 
+  // Map created in constructor to be accessible in child components
+  constructor(props, context) {
+    super(props, context);
+
+    const mapDiv = document.createElement('div');
+    mapDiv.style.width = '100%';
+    mapDiv.style.height = '100%';
+
+    this.map = new D2Map(mapDiv);  
+  }
+
   componentDidMount() {
-    this.map = new D2Map(this.container);
+    this.container.appendChild(this.map.getContainer());
+    this.map.resize();
   }
 
   render() {
     return (
-      <div ref={ref => this.container = ref} {...this.props} />
+      <div 
+        ref={ref => this.container = ref} 
+        {...this.props} 
+      />
     )
   }
 }

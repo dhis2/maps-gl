@@ -1,4 +1,5 @@
 import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 export class Map {
     constructor(el) {
@@ -8,9 +9,9 @@ export class Map {
             version: 8,
             sources: {
               osmLight: {
-                type: "raster",
+                type: 'raster',
                 tiles: [
-                  "///cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png"
+                  '///cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png'
                 ],
                 tileSize: 256,
                 attribution:
@@ -19,17 +20,24 @@ export class Map {
             },
             layers: [
               {
-                id: "osmLight",
-                type: "raster",
-                source: "osmLight",
-                minzoom: 0,
-                maxzoom: 22
+                id: 'osmLight',
+                type: 'raster',
+                source: 'osmLight',
               }
             ]
           },
           center: [-74.5, 40],
-          zoom: 2
+          zoom: 2,
+          maxZoom: 17,
         });
+    }
+
+    getContainer() {
+        return this.map.getContainer();
+    }
+
+    resize() {
+        return this.map.resize();
     }
 
     addLayer() {
@@ -41,4 +49,4 @@ export class Map {
     }
 };
 
-export default mapboxgl;
+export default Map;
