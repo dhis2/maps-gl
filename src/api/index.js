@@ -5,4 +5,5 @@
 import { version } from '../../package.json';
 import { Map } from './Map';
 
-export default { version };
+// export default { version };
+export default Map;
