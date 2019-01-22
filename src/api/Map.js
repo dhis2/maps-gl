@@ -26,10 +26,13 @@ export class Map {
               }
             ]
           },
-          center: [-74.5, 40],
-          zoom: 2,
+          bounds: [[-18.7, -34.9], [50.2, 35.9]],
           maxZoom: 17,
         });
+    }
+
+    fitBounds(bounds) {
+        this.map.fitBounds(bounds);
     }
 
     getContainer() {
@@ -38,6 +41,37 @@ export class Map {
 
     resize() {
         return this.map.resize();
+    }
+
+    createLayer(config) {
+        console.log('create layer', config);
+
+        this.addLayerWhenMapIsReady({
+            'id': config.pane, // TODO
+            'type': 'fill',
+            'source': {
+                'type': 'geojson',
+                'data': {
+                    "type": "FeatureCollection",
+                    "features": config.data,
+                },
+            },
+            'layout': {},
+            'paint': {
+                'fill-color': ['get', 'color'],
+                'fill-opacity': 0.8,
+                'fill-outline-color': '#333',
+            }
+        });
+
+    }
+
+    addLayerWhenMapIsReady(layer) {
+        if (this.map.isStyleLoaded()) {
+            this.map.addLayer(layer)
+        } else {
+            this.map.once('styledata', () => this.map.addLayer(layer)); 
+        }
     }
 
     addLayer() {
