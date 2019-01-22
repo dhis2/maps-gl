@@ -1,5 +1,4 @@
 .App {
-  text-align: center;
 }
 
 .App-logo {
@@ -19,7 +18,6 @@
 }
 
 .map {
-  background-color: #eee;
   width: 800px;
   height: 600px;
 }

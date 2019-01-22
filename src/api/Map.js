@@ -1,4 +1,5 @@
 import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
 
 export class Map {
     constructor(el) {
@@ -32,6 +33,14 @@ export class Map {
         });
     }
 
+    getContainer() {
+        return this.map.getContainer();
+    }
+
+    resize() {
+        return this.map.resize();
+    }
+
     addLayer() {
 
     }
@@ -41,4 +50,4 @@ export class Map {
     }
 };
 
-export default mapboxgl;
+export default Map;
