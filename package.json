@@ -2,7 +2,7 @@
   "name": "@dhis2/maps-gl",
   "version": "1.0.0",
   "description": "A rendering engine for DHIS2 maps which supports Vector Tiles",
-  "main": "src/index.js",
+  "main": "src/api/index.js",
   "repository": "https://github.com/dhis2/maps-gl",
   "author": "Bjorn Sandvik <bjorn@dhis2.org>",
   "maintainers": ["Bjorn Sandvik <bjorn@dhis2.org>", "Austin McGee <austin@dhis2.org>"],
