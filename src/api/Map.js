@@ -1,6 +1,6 @@
 import mapboxgl from 'mapbox-gl';
 
-const Map = class {
+export class Map {
     constructor(el) {
         this.map = new mapboxgl.Map({
             container: el,
@@ -36,6 +36,6 @@ const Map = class {
     removeLayer() {
 
     }
-}
+};
 
 export default mapboxgl;
