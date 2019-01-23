@@ -26,7 +26,7 @@ export class Map {
     // TODO: Avoid timeout
     setTimeout(() => {
       this.map.fitBounds([[a[1], a[0]], [b[1], b[0]]]);
-    }, 100);
+    }, 200);
   }
 
   getContainer() {
@@ -64,7 +64,6 @@ export class Map {
       this.map.addLayer(layer);
     }
 
-    console.log("addLayer", config);
     return config;
   }
 
@@ -80,8 +79,16 @@ export class Map {
     }
   }
 
-  removeLayer() {
-    console.log("removeLayer", layer);
+  removeLayer(layer) {
+    if (layer.map) {
+      this.map.removeLayer(layer.id);
+      this.map.removeSource(layer.id);
+      layer.map = null;
+    }
+  }
+
+  hasLayer(layer = {}) {
+    return layer.map ? true : false;
   }
 
   on(a, b, c) {
@@ -97,10 +104,6 @@ export class Map {
     // console.log("create layer", layer);
 
     return createLayer(config);
-  }
-
-  hasLayer() {
-    return false;
   }
 
   createPane() {}
