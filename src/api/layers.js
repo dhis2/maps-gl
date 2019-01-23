@@ -94,7 +94,9 @@ export const createDotsLayer = config => {
       source: id,
       paint: {
         "circle-color": ["get", "color"],
-        "circle-radius": radius
+        "circle-radius": radius,
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#fff"
       }
     },
     setOpacity(opacity) {
