@@ -141,11 +141,13 @@ export const createClientClusterLayer = config => {
           "circle-radius": [
             "step",
             ["get", "point_count"],
+            15,
+            10,
             20,
-            100,
-            30,
-            750,
-            40
+            1000,
+            25,
+            10000,
+            30
           ],
           "circle-stroke-width": 1,
           "circle-stroke-color": "#fff"

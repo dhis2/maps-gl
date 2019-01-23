@@ -21,6 +21,8 @@ export class Map {
     // console.log("fitBounds", bounds);
     const [a, b] = bounds;
 
+    console.log("fitBounds", bounds);
+
     // TODO: Avoid timeout
     setTimeout(() => {
       this.map.fitBounds([[a[1], a[0]], [b[1], b[0]]]);
