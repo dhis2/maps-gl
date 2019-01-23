@@ -113,6 +113,87 @@ export const createDotsLayer = config => {
   };
 };
 
+export const createClientClusterLayer = config => {
+  const { color, radius, data } = config;
+  const id = uuid();
+  const features = {
+    type: "FeatureCollection",
+    features: data
+  };
+
+  console.log("clientCluster", config);
+
+  return {
+    id,
+    source: {
+      type: "geojson",
+      data: features,
+      cluster: true,
+      clusterMaxZoom: 14,
+      clusterRadius: 50
+    },
+    layers: [
+      {
+        id: `${id}-clusters`,
+        type: "circle",
+        source: id,
+        filter: ["has", "point_count"],
+        paint: {
+          "circle-color": color,
+          "circle-radius": [
+            "step",
+            ["get", "point_count"],
+            20,
+            100,
+            30,
+            750,
+            40
+          ],
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#fff"
+        }
+      },
+      {
+        id: `${id}-count`,
+        type: "symbol",
+        source: id,
+        filter: ["has", "point_count"],
+        layout: {
+          "text-field": "{point_count_abbreviated}",
+          "text-font": ["Open Sans Bold"],
+          "text-size": 16
+        },
+        paint: {
+          "text-color": "#fff"
+        }
+      },
+      {
+        id: id,
+        type: "circle",
+        source: id,
+        filter: ["!", ["has", "point_count"]],
+        paint: {
+          "circle-color": ["get", "color"],
+          "circle-radius": radius,
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#fff"
+        }
+      }
+    ],
+    setOpacity(opacity) {
+      if (this.map) {
+        this.map.setPaintProperty(this.id, "circle-opacity", opacity);
+      }
+    },
+    getBounds() {
+      const b = bbox(features);
+      const bounds = [[b[1], b[0]], [b[3], b[2]]];
+      bounds.isValid = () => true;
+      return bounds;
+    }
+  };
+};
+
 export const createLayer = config => {
   switch (config.type) {
     case "tileLayer":
@@ -121,6 +202,8 @@ export const createLayer = config => {
       return createChoroplethLayer(config);
     case "dots":
       return createDotsLayer(config);
+    case "clientCluster":
+      return createClientClusterLayer(config);
     default:
       console.log("Unknown layer type", config.type);
       return {

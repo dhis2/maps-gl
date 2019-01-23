@@ -10,7 +10,8 @@ export class Map {
       style: {
         version: 8,
         sources: {},
-        layers: []
+        layers: [],
+        glyphs: "http://fonts.openmaptiles.org/{fontstack}/{range}.pbf" // TODO: Host ourseleves
       },
       maxZoom: 18
     });
@@ -31,12 +32,16 @@ export class Map {
   }
 
   addLayerWhenReady(config) {
-    const { id, source, layer, map } = config;
+    const { id, source, layer, layers, map } = config;
 
-    if (!map && id && source && layer) {
+    if (!map && id && source && (layer || layers)) {
       config.map = this.map;
       this.map.addSource(id, source);
-      this.map.addLayer(layer);
+      if (layer) {
+        this.map.addLayer(layer);
+      } else {
+        layers.forEach(layer => this.map.addLayer(layer));
+      }
     }
 
     return config;
@@ -52,9 +57,16 @@ export class Map {
     }
   }
 
-  removeLayer(layer) {
+  removeLayer(layerConfig) {
+    const { id, layers, map } = layerConfig;
+
     if (layer.map) {
-      this.map.removeLayer(layer.id);
+      if (layers) {
+        layers.forEach(layer => this.map.removeLayer(layer.id));
+      } else {
+        this.map.removeLayer(layer.id);
+      }
+
       this.map.removeSource(layer.id);
       layer.map = null;
     }
