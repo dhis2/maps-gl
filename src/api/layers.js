@@ -74,6 +74,52 @@ export const createChoroplethLayer = config => {
   };
 };
 
+export const createBoundaryLayer = config => {
+  const { hoverLabel, data } = config;
+  const id = uuid();
+
+  // TODO: Find better way keep style
+  const features = {
+    type: "FeatureCollection",
+    features: data.map(f => {
+      f.properties.color = f.properties.style.color;
+      f.properties.weight = f.properties.style.weight;
+      return f;
+    })
+  };
+
+  return {
+    id,
+    hoverLabel,
+    source: {
+      type: "geojson",
+      data: features
+    },
+    layer: {
+      id: id,
+      type: "line",
+      source: id,
+      paint: {
+        "line-color": ["get", "color"],
+        "line-width": ["get", "weight"]
+      }
+    },
+    setOpacity(opacity) {
+      if (this.map) {
+        this.map.setPaintProperty(this.id, "line-opacity", opacity);
+      }
+    },
+    on() {},
+    off() {},
+    getBounds() {
+      const b = bbox(features);
+      const bounds = [[b[1], b[0]], [b[3], b[2]]];
+      bounds.isValid = () => true;
+      return bounds;
+    }
+  };
+};
+
 export const createDotsLayer = config => {
   const { radius, data } = config;
   const id = uuid();
@@ -204,6 +250,8 @@ export const createLayer = config => {
       return createDotsLayer(config);
     case "clientCluster":
       return createClientClusterLayer(config);
+    case "boundary":
+      return createBoundaryLayer(config);
     default:
       console.log("Unknown layer type", config.type);
       return {
