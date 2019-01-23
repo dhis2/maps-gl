@@ -1,10 +1,7 @@
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import createLayer from "./layers";
-
-const layerDummy = {
-  setOpacity() {}
-};
+import getControl from "./controls";
 
 export class Map {
   constructor(el) {
@@ -15,12 +12,12 @@ export class Map {
         sources: {},
         layers: []
       },
-      // bounds: [[-18.7, -34.9], [50.2, 35.9]],
       maxZoom: 18
     });
   }
 
   fitBounds(bounds) {
+    // console.log("fitBounds", bounds);
     const [a, b] = bounds;
 
     // TODO: Avoid timeout
@@ -33,32 +30,10 @@ export class Map {
     return this.map.getContainer();
   }
 
-  createLayer_test(config) {
-    /*
-    this.addLayerWhenMapIsReady({
-      id: config.pane, // TODO
-      type: "fill",
-      source: {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: config.data
-        }
-      },
-      layout: {},
-      paint: {
-        "fill-color": ["get", "color"],
-        "fill-opacity": 0.8,
-        "fill-outline-color": "#333"
-      }
-    });
-    */
-  }
-
   addLayerWhenReady(config) {
     const { id, source, layer, map } = config;
 
-    if (!map) {
+    if (!map && id && source && layer) {
       config.map = this.map;
       this.map.addSource(id, source);
       this.map.addLayer(layer);
@@ -67,15 +42,13 @@ export class Map {
     return config;
   }
 
-  addLayer(config) {
+  addLayer(config = {}) {
     if (!config.map) {
       if (this.map.isStyleLoaded()) {
         this.addLayerWhenReady(config);
       } else {
         this.map.once("styledata", () => this.addLayerWhenReady(config));
       }
-    } else {
-      console.log("Layer already added");
     }
   }
 
@@ -91,22 +64,42 @@ export class Map {
     return layer.map ? true : false;
   }
 
-  on(a, b, c) {
-    // console.log("on", a, b, c);
+  on(type, listener, scope) {
+    if (type === "contextmenu") {
+      this.map.on(type, evt => {
+        evt.latlng = evt.lngLat;
+        listener.call(scope, evt);
+      });
+    } else {
+      console.log("on", type, listener, scope);
+    }
   }
 
-  addControl() {}
+  off(type, listener, scope) {
+    console.log("off", type, listener, scope);
+  }
 
-  removeControl() {}
+  addControl(control) {
+    const mapboxControl = getControl(control);
+
+    if (mapboxControl) {
+      this.map.addControl(mapboxControl);
+    }
+  }
+
+  removeControl(control) {
+    console.log("removeControl", control);
+  }
 
   createLayer(config) {
-    // const layer = createLayer(config);
-    // console.log("create layer", layer);
-
     return createLayer(config);
   }
 
   createPane() {}
+
+  openPopup(popup) {
+    console.log("openPopup", popup);
+  }
 
   invalidateSize() {
     this.map.resize();
