@@ -1,86 +1,117 @@
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+import createLayer from "./layers";
+
+const layerDummy = {
+  setOpacity() {}
+};
 
 export class Map {
-    constructor(el) {
-        this.map = new mapboxgl.Map({
-          container: el,
-          style: {
-            version: 8,
-            sources: {
-              osmLight: {
-                type: 'raster',
-                tiles: [
-                  '///cartodb-basemaps-a.global.ssl.fastly.net/light_all/{z}/{x}/{y}.png'
-                ],
-                tileSize: 256,
-                attribution:
-                  '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>, &copy; <a href="http://cartodb.com/attributions">CartoDB</a>'
-              }
-            },
-            layers: [
-              {
-                id: 'osmLight',
-                type: 'raster',
-                source: 'osmLight',
-              }
-            ]
-          },
-          bounds: [[-18.7, -34.9], [50.2, 35.9]],
-          maxZoom: 17,
-        });
-    }
+  constructor(el) {
+    this.map = new mapboxgl.Map({
+      container: el,
+      style: {
+        version: 8,
+        sources: {},
+        layers: []
+      },
+      // bounds: [[-18.7, -34.9], [50.2, 35.9]],
+      maxZoom: 18
+    });
+  }
 
-    fitBounds(bounds) {
-        this.map.fitBounds(bounds);
-    }
+  fitBounds(bounds) {
+    const [a, b] = bounds;
 
-    getContainer() {
-        return this.map.getContainer();
-    }
+    // TODO: Avoid timeout
+    setTimeout(() => {
+      this.map.fitBounds([[a[1], a[0]], [b[1], b[0]]]);
+    }, 100);
+  }
 
-    resize() {
-        return this.map.resize();
-    }
+  getContainer() {
+    return this.map.getContainer();
+  }
 
-    createLayer(config) {
-        console.log('create layer', config);
-
-        this.addLayerWhenMapIsReady({
-            'id': config.pane, // TODO
-            'type': 'fill',
-            'source': {
-                'type': 'geojson',
-                'data': {
-                    "type": "FeatureCollection",
-                    "features": config.data,
-                },
-            },
-            'layout': {},
-            'paint': {
-                'fill-color': ['get', 'color'],
-                'fill-opacity': 0.8,
-                'fill-outline-color': '#333',
-            }
-        });
-
-    }
-
-    addLayerWhenMapIsReady(layer) {
-        if (this.map.isStyleLoaded()) {
-            this.map.addLayer(layer)
-        } else {
-            this.map.once('styledata', () => this.map.addLayer(layer)); 
+  createLayer_test(config) {
+    /*
+    this.addLayerWhenMapIsReady({
+      id: config.pane, // TODO
+      type: "fill",
+      source: {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: config.data
         }
+      },
+      layout: {},
+      paint: {
+        "fill-color": ["get", "color"],
+        "fill-opacity": 0.8,
+        "fill-outline-color": "#333"
+      }
+    });
+    */
+  }
+
+  addLayerWhenReady(config) {
+    const { id, source, layer, map } = config;
+
+    if (!map) {
+      config.map = this.map;
+      this.map.addSource(id, source);
+      this.map.addLayer(layer);
     }
 
-    addLayer() {
+    console.log("addLayer", config);
+    return config;
+  }
 
+  addLayer(config) {
+    if (!config.map) {
+      if (this.map.isStyleLoaded()) {
+        this.addLayerWhenReady(config);
+      } else {
+        this.map.once("styledata", () => this.addLayerWhenReady(config));
+      }
+    } else {
+      console.log("Layer already added");
     }
+  }
 
-    removeLayer() {
+  removeLayer() {
+    console.log("removeLayer", layer);
+  }
 
-    }
-};
+  on(a, b, c) {
+    // console.log("on", a, b, c);
+  }
+
+  addControl() {}
+
+  removeControl() {}
+
+  createLayer(config) {
+    // const layer = createLayer(config);
+    // console.log("create layer", layer);
+
+    return createLayer(config);
+  }
+
+  hasLayer() {
+    return false;
+  }
+
+  createPane() {}
+
+  invalidateSize() {
+    this.map.resize();
+  }
+
+  resize() {
+    this.map.resize();
+  }
+}
 
 export default Map;
