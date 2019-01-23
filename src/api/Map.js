@@ -60,15 +60,15 @@ export class Map {
   removeLayer(layerConfig) {
     const { id, layers, map } = layerConfig;
 
-    if (layer.map) {
+    if (map) {
       if (layers) {
         layers.forEach(layer => this.map.removeLayer(layer.id));
       } else {
-        this.map.removeLayer(layer.id);
+        this.map.removeLayer(id);
       }
 
-      this.map.removeSource(layer.id);
-      layer.map = null;
+      this.map.removeSource(id);
+      layerConfig.map = null;
     }
   }
 

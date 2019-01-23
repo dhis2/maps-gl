@@ -121,8 +121,6 @@ export const createClientClusterLayer = config => {
     features: data
   };
 
-  console.log("clientCluster", config);
-
   return {
     id,
     source: {
