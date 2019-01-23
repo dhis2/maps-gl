@@ -32,7 +32,7 @@ export class Map {
   }
 
   addLayerWhenReady(config) {
-    const { id, source, layer, layers, images, map } = config;
+    const { id, sources, layers, images, map } = config;
 
     if (images) {
       images.forEach(image => {
@@ -44,14 +44,10 @@ export class Map {
       });
     }
 
-    if (!map && id && source && (layer || layers)) {
+    if (!map && id && sources && layers) {
       config.map = this.map;
-      this.map.addSource(id, source);
-      if (layer) {
-        this.map.addLayer(layer);
-      } else {
-        layers.forEach(layer => this.map.addLayer(layer));
-      }
+      Object.keys(sources).forEach(id => this.map.addSource(id, sources[id]));
+      layers.forEach(layer => this.map.addLayer(layer));
     }
 
     return config;
@@ -68,16 +64,11 @@ export class Map {
   }
 
   removeLayer(layerConfig) {
-    const { id, layers, map } = layerConfig;
+    const { id, layers, sources, map } = layerConfig;
 
     if (map) {
-      if (layers) {
-        layers.forEach(layer => this.map.removeLayer(layer.id));
-      } else {
-        this.map.removeLayer(id);
-      }
-
-      this.map.removeSource(id);
+      layers.forEach(layer => this.map.removeLayer(layer.id));
+      Object.keys(sources).forEach(id => this.map.removeSource(id));
       layerConfig.map = null;
     }
   }

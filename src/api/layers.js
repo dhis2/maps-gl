@@ -1,5 +1,7 @@
 import uuid from "uuid/v4";
 import bbox from "@turf/bbox";
+import area from "@turf/area";
+import polylabel from "polylabel";
 
 export const createTileLayer = config => {
   const { url, attribution } = config;
@@ -12,17 +14,21 @@ export const createTileLayer = config => {
 
   return {
     id,
-    source: {
-      type: "raster",
-      tiles,
-      tileSize: 256,
-      attribution
+    sources: {
+      [id]: {
+        type: "raster",
+        tiles,
+        tileSize: 256,
+        attribution
+      }
     },
-    layer: {
-      id: id,
-      type: "raster",
-      source: id
-    },
+    layers: [
+      {
+        id: id,
+        type: "raster",
+        source: id
+      }
+    ],
     setOpacity(opacity) {
       if (this.map) {
         this.map.setPaintProperty(this.id, "raster-opacity", opacity);
@@ -42,22 +48,63 @@ export const createChoroplethLayer = config => {
     features: data
   };
 
+  const labelStyle = {
+    color: "#333333",
+    fontSize: "11px",
+    fontStyle: "normal",
+    fontWeight: "normal",
+    lineHeight: "13.2px"
+  };
+
+  const labels = getPolygonLabels(data);
+
   return {
     id,
     hoverLabel,
-    source: {
-      type: "geojson",
-      data: features
-    },
-    layer: {
-      id: id,
-      type: "fill",
-      source: id,
-      paint: {
-        "fill-color": ["get", "color"],
-        "fill-outline-color": "#333"
+    sources: {
+      [id]: {
+        type: "geojson",
+        data: features
+      },
+      [`${id}-labels`]: {
+        type: "geojson",
+        data: labels
       }
     },
+    layers: [
+      {
+        id,
+        type: "fill",
+        source: id,
+        paint: {
+          "fill-color": ["get", "color"],
+          "fill-outline-color": "#333"
+        }
+      },
+      {
+        id: `${id}-labels`,
+        type: "symbol",
+        source: `${id}-labels`,
+        layout: {
+          "text-field": "{name}",
+          "text-font": ["Open Sans Regular"],
+          "text-size": 14
+        },
+        paint: {
+          "text-color": "#333"
+        }
+      }
+      /*,
+      {
+        id: `${id}-circle`,
+        type: "circle",
+        source: `${id}-labels`,
+        paint: {
+          "circle-color": "black",
+          "circle-radius": 3
+        }
+      }*/
+    ],
     setOpacity(opacity) {
       if (this.map) {
         this.map.setPaintProperty(this.id, "fill-opacity", opacity);
@@ -89,21 +136,25 @@ export const createMarkersLayer = config => {
 
   return {
     id,
-    source: {
-      type: "geojson",
-      data: features
-    },
-    layer: {
-      id: id,
-      type: "circle",
-      source: id,
-      paint: {
-        "circle-color": "black",
-        "circle-radius": 10,
-        "circle-stroke-width": 1,
-        "circle-stroke-color": "#fff"
+    sources: {
+      [id]: {
+        type: "geojson",
+        data: features
       }
     },
+    layers: [
+      {
+        id: id,
+        type: "circle",
+        source: id,
+        paint: {
+          "circle-color": "black",
+          "circle-radius": 10,
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#fff"
+        }
+      }
+    ],
     images: Object.keys(images).map(image => ({
       url: image,
       size: images[image]
@@ -141,19 +192,23 @@ export const createBoundaryLayer = config => {
   return {
     id,
     hoverLabel,
-    source: {
-      type: "geojson",
-      data: features
-    },
-    layer: {
-      id: id,
-      type: "line",
-      source: id,
-      paint: {
-        "line-color": ["get", "color"],
-        "line-width": ["get", "weight"]
+    sources: {
+      [id]: {
+        type: "geojson",
+        data: features
       }
     },
+    layers: [
+      {
+        id: id,
+        type: "line",
+        source: id,
+        paint: {
+          "line-color": ["get", "color"],
+          "line-width": ["get", "weight"]
+        }
+      }
+    ],
     setOpacity(opacity) {
       if (this.map) {
         this.map.setPaintProperty(this.id, "line-opacity", opacity);
@@ -180,21 +235,25 @@ export const createDotsLayer = config => {
 
   return {
     id,
-    source: {
-      type: "geojson",
-      data: features
-    },
-    layer: {
-      id: id,
-      type: "circle",
-      source: id,
-      paint: {
-        "circle-color": ["get", "color"],
-        "circle-radius": radius,
-        "circle-stroke-width": 1,
-        "circle-stroke-color": "#fff"
+    sources: {
+      [id]: {
+        type: "geojson",
+        data: features
       }
     },
+    layers: [
+      {
+        id: id,
+        type: "circle",
+        source: id,
+        paint: {
+          "circle-color": ["get", "color"],
+          "circle-radius": radius,
+          "circle-stroke-width": 1,
+          "circle-stroke-color": "#fff"
+        }
+      }
+    ],
     setOpacity(opacity) {
       if (this.map) {
         this.map.setPaintProperty(this.id, "circle-opacity", opacity);
@@ -219,12 +278,14 @@ export const createClientClusterLayer = config => {
 
   return {
     id,
-    source: {
-      type: "geojson",
-      data: features,
-      cluster: true,
-      clusterMaxZoom: 14,
-      clusterRadius: 50
+    sources: {
+      [id]: {
+        type: "geojson",
+        data: features,
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 50
+      }
     },
     layers: [
       {
@@ -288,6 +349,38 @@ export const createClientClusterLayer = config => {
       return bounds;
     }
   };
+};
+
+// TODO: Don't assume MultiPolygon
+export const getPolygonLabels = features => ({
+  type: "FeatureCollection",
+  features: features.map(({ geometry, properties }) => ({
+    type: "Feature",
+    geometry: {
+      type: "Point",
+      coordinates: getLabelPosition(geometry)
+    },
+    properties: {
+      name: properties.name
+    }
+  }))
+});
+
+export const getLabelPosition = ({ type, coordinates }) => {
+  let polygon = coordinates;
+
+  if (type === "MultiPolygon") {
+    const areas = coordinates.map(coords =>
+      area({
+        type: "Polygon",
+        coordinates: coords
+      })
+    );
+    const maxIndex = areas.indexOf(Math.max.apply(null, areas));
+    polygon = coordinates[maxIndex];
+  }
+
+  return polylabel(polygon, 0.1);
 };
 
 export const createLayer = config => {
