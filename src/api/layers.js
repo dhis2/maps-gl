@@ -74,6 +74,56 @@ export const createChoroplethLayer = config => {
   };
 };
 
+export const createMarkersLayer = config => {
+  const { data, hoverLabel } = config;
+  const id = uuid();
+  const images = {};
+  const features = {
+    type: "FeatureCollection",
+    features: data
+  };
+
+  data.forEach(
+    f => (images[f.properties.icon.iconUrl] = f.properties.icon.iconSize)
+  );
+
+  return {
+    id,
+    source: {
+      type: "geojson",
+      data: features
+    },
+    layer: {
+      id: id,
+      type: "circle",
+      source: id,
+      paint: {
+        "circle-color": "black",
+        "circle-radius": 10,
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#fff"
+      }
+    },
+    images: Object.keys(images).map(image => ({
+      url: image,
+      size: images[image]
+    })),
+    setOpacity(opacity) {
+      if (this.map) {
+        this.map.setPaintProperty(this.id, "circle-opacity", opacity);
+      }
+    },
+    getBounds() {
+      const b = bbox(features);
+      const bounds = [[b[1], b[0]], [b[3], b[2]]];
+      bounds.isValid = () => true;
+      return bounds;
+    },
+    on() {},
+    off() {}
+  };
+};
+
 export const createBoundaryLayer = config => {
   const { hoverLabel, data } = config;
   const id = uuid();
@@ -252,6 +302,8 @@ export const createLayer = config => {
       return createClientClusterLayer(config);
     case "boundary":
       return createBoundaryLayer(config);
+    case "markers":
+      return createMarkersLayer(config);
     default:
       console.log("Unknown layer type", config.type);
       return {

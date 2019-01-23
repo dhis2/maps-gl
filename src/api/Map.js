@@ -32,7 +32,17 @@ export class Map {
   }
 
   addLayerWhenReady(config) {
-    const { id, source, layer, layers, map } = config;
+    const { id, source, layer, layers, images, map } = config;
+
+    if (images) {
+      images.forEach(image => {
+        this.map.loadImage(image.url, (error, img) => {
+          if (error) throw error;
+          console.log("#", image, img);
+          // map.addImage("cat", image);
+        });
+      });
+    }
 
     if (!map && id && source && (layer || layers)) {
       config.map = this.map;
