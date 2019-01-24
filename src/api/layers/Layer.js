@@ -76,6 +76,10 @@ class Layer extends EventEmitter {
     return this._layers;
   }
 
+  hasLayerId(id) {
+    return this.getLayers().find(layer => layer.id === id);
+  }
+
   getFeatures() {
     return this._features;
   }

@@ -27,6 +27,7 @@ export class Map extends EventEmitter {
     this.map.on("click", evt => this.onClick(evt));
     this.map.on("contextmenu", evt => this.onContextMenu(evt));
 
+    this._layers = [];
     this._isReady = false;
   }
 
@@ -48,6 +49,7 @@ export class Map extends EventEmitter {
     if (!layer.isOnMap()) {
       layer.addTo(this.map);
     }
+    this._layers.push(layer);
     this._isReady = true;
   }
 
@@ -63,6 +65,7 @@ export class Map extends EventEmitter {
 
   removeLayer(layer) {
     layer.removeFrom(this.map);
+    this._layers = this._layers.filter(l => l !== layer);
   }
 
   isMapReady() {
@@ -70,7 +73,7 @@ export class Map extends EventEmitter {
   }
 
   hasLayer(layer) {
-    return layer.isOnMap();
+    return layer && layer.isOnMap();
   }
 
   addControl(control) {
@@ -122,7 +125,11 @@ export class Map extends EventEmitter {
   onClick(evt) {
     const feature = this.getEventFeature(evt);
     if (feature) {
-      console.log("feature", feature.layer.id, this.layerConfigs);
+      const layer = this.getLayerFromId(feature.layer.id);
+      layer.emit("click", {
+        layer: { feature },
+        lngLat: evt.lngLat
+      });
     } else {
       console.log("no feature", evt);
     }
@@ -137,6 +144,17 @@ export class Map extends EventEmitter {
     return this.map.queryRenderedFeatures(evt.point, {
       // layers: this.props.layers // Contains visible layers
     })[0]; // [0] returns topmost
+  }
+
+  getLayerFromId(id) {
+    return this._layers.find(layer => layer.hasLayerId(id));
+  }
+
+  setPopup(lngLat, content) {
+    new mapboxgl.Popup()
+      .setLngLat(lngLat)
+      .setHTML(content)
+      .addTo(this.map);
   }
 }
 
