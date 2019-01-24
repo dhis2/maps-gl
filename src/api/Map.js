@@ -26,6 +26,8 @@ export class Map extends EventEmitter {
 
     this.map.on("click", evt => this.onClick(evt));
     this.map.on("contextmenu", evt => this.onContextMenu(evt));
+
+    this._isReady = false;
   }
 
   fitBounds(bounds) {
@@ -46,14 +48,21 @@ export class Map extends EventEmitter {
     if (!layer.isOnMap()) {
       layer.addTo(this.map);
     }
+    this._isReady = true;
   }
 
   addLayer(layer) {
-    if (this.map.isStyleLoaded()) {
-      this.addLayerWhenReady(layer);
-    } else {
-      this.map.once("styledata", () => this.addLayerWhenReady(layer));
+    if (!layer.isOnMap()) {
+      if (this.isMapReady()) {
+        this.addLayerWhenReady(layer);
+      } else {
+        this.map.once("styledata", () => this.addLayerWhenReady(layer));
+      }
     }
+  }
+
+  isMapReady() {
+    return this._isReady || this.map.isStyleLoaded();
   }
 
   removeLayer(layerConfig) {

@@ -50,6 +50,10 @@ class Markers extends Layer {
 
   setOpacity(opacity) {
     if (this.isOnMap()) {
+      const map = this.getMap();
+      const id = this.getId();
+
+      map.setPaintProperty(id, "icon-opacity", opacity);
     }
   }
 }

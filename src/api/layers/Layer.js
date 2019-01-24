@@ -12,19 +12,18 @@ class Layer extends EventEmitter {
   }
 
   async addTo(map) {
+    this._map = map;
+
     const images = this.getImages();
     const source = this.getSource();
     const layers = this.getLayers();
 
     if (images) {
-      console.log(images);
       await addImages(map, images);
     }
 
     Object.keys(source).forEach(id => map.addSource(id, source[id]));
     layers.forEach(layer => map.addLayer(layer));
-
-    this._map = map;
   }
 
   getId() {
