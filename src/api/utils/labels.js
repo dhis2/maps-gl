@@ -1,9 +1,9 @@
 import area from "@turf/area";
 import polylabel from "polylabel";
 
-export const getPolygonLabels = features => ({
+export const getPolygonLabels = data => ({
   type: "FeatureCollection",
-  features: features.map(({ geometry, properties }) => ({
+  features: data.features.map(({ geometry, properties }) => ({
     type: "Feature",
     geometry: {
       type: "Point",

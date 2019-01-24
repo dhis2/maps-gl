@@ -39,18 +39,23 @@ class Layer extends EventEmitter {
     return this._source;
   }
 
-  /*
-  hasSource() {
-    return !!this._source;
-  }
-  */
-
   setLayer(layer) {
     this._layers.push(layer);
   }
 
   getLayers() {
     return this._layers;
+  }
+
+  getFeatures() {
+    return this._features;
+  }
+
+  setFeatures(data) {
+    this._features = {
+      type: "FeatureCollection",
+      features: data
+    };
   }
 
   setOpacity() {}

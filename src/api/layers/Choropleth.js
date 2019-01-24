@@ -1,24 +1,22 @@
 import Layer from "./Layer";
 import { getPolygonLabels } from "../utils/labels";
+import bbox from "@turf/bbox";
 
 class Choropleth extends Layer {
   constructor(config) {
     super();
 
     const { data } = config;
-    this.createSource(data);
+    this.setFeatures(data);
+    this.createSource();
     this.createLayers();
   }
 
   createSource(data) {
     const id = this.getId();
+    const features = this.getFeatures();
 
-    const features = {
-      type: "FeatureCollection",
-      features: data
-    };
-
-    const labels = getPolygonLabels(data);
+    const labels = getPolygonLabels(features);
 
     this.setSource(id, {
       type: "geojson",
@@ -67,6 +65,19 @@ class Choropleth extends Layer {
       map.setPaintProperty(id, "fill-opacity", opacity);
       map.setPaintProperty(`${id}-labels`, "text-opacity", opacity);
     }
+  }
+
+  getBounds() {
+    const data = this.getFeatures();
+
+    if (data && data.features.length) {
+      const b = bbox(data);
+      const bounds = [[b[1], b[0]], [b[3], b[2]]];
+      bounds.isValid = () => true;
+      return bounds;
+    }
+
+    return { isValid: () => false };
   }
 }
 

@@ -1,11 +1,14 @@
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import EventEmitter from "events";
-// import createLayer from "./layers";
 import getControl from "./controls";
 import Layer from "./layers/Layer";
 import TileLayer from "./layers/TileLayer";
 import Choropleth from "./layers/Choropleth";
+import Boundary from "./layers/Boundary";
+import Markers from "./layers/Markers";
+import Dots from "./layers/Dots";
+import ClientCluster from "./layers/ClientCluster";
 
 export class Map extends EventEmitter {
   constructor(el) {
@@ -149,6 +152,14 @@ export class Map extends EventEmitter {
         return new TileLayer(config);
       case "choropleth":
         return new Choropleth(config);
+      case "boundary":
+        return new Boundary(config);
+      case "markers":
+        return new Markers(config);
+      case "dots":
+        return new Dots(config);
+      case "clientCluster":
+        return new ClientCluster(config);
       default:
         console.log("Unknown layer type", config.type);
         return new Layer();
