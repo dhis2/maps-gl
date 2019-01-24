@@ -24,12 +24,8 @@ export class Map extends EventEmitter {
       maxZoom: 18
     });
 
-    this.layerConfigs = [];
-
     this.map.on("click", evt => this.onClick(evt));
     this.map.on("contextmenu", evt => this.onContextMenu(evt));
-
-    // const tileLayer = new TileLayer();
   }
 
   fitBounds(bounds) {
@@ -46,49 +42,10 @@ export class Map extends EventEmitter {
     return this.map.getContainer();
   }
 
-  // TODO: Move to separate file
-  async loadImages(images = []) {
-    const map = this.map;
-    Promise.all(
-      images.map(
-        image =>
-          new Promise((resolve, reject) => {
-            map.loadImage(
-              "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Cat_silhouette.svg/400px-Cat_silhouette.svg.png",
-              (error, img) => {
-                if (error) reject(error);
-                map.addImage(image.url, img);
-                resolve(img);
-              }
-            );
-          })
-      )
-    );
-  }
-
   async addLayerWhenReady(layer) {
     if (!layer.isOnMap()) {
       layer.addTo(this.map);
     }
-
-    //const { id, sources, layers, images, map } = layerConfig;
-    //if (!map) {
-    /*
-      layerConfig.map = this.map;
-
-      if (images) {
-        await this.loadImages(images);
-      }
-
-      if (id && sources && layers) {
-        Object.keys(sources).forEach(id => this.map.addSource(id, sources[id]));
-        layers.forEach(layer => this.map.addLayer(layer));
-      }
-
-      this.layerConfigs.push(layerConfig);
-      */
-    // }
-    // return layerConfig; // TODO: This is async
   }
 
   addLayer(layer) {
@@ -107,32 +64,11 @@ export class Map extends EventEmitter {
       Object.keys(sources).forEach(id => this.map.removeSource(id));
       layerConfig.map = null;
     }
-
-    // TODO: Remove layerConfigs
   }
 
   hasLayer(layer = {}) {
     return layer.map ? true : false;
   }
-
-  /*
-  on(type, listener, scope) {
-    if (type === "contextmenu") {
-      this.map.on(type, evt => {
-        evt.latlng = evt.lngLat;
-        listener.call(scope, evt);
-      });
-    } else {
-      console.log("on", type, listener, scope);
-    }
-  }
-  */
-
-  /*
-  off(type, listener, scope) {
-    console.log("off", type, listener, scope);
-  }
-  */
 
   addControl(control) {
     const mapboxControl = getControl(control);
