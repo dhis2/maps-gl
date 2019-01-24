@@ -31,26 +31,46 @@ export class Map {
     return this.map.getContainer();
   }
 
-  addLayerWhenReady(config) {
+  // TODO: Move to separate file
+  async loadImages(images = []) {
+    const map = this.map;
+    Promise.all(
+      images.map(
+        image =>
+          new Promise((resolve, reject) => {
+            console.log("promise", image.url);
+            map.loadImage(
+              "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Cat_silhouette.svg/400px-Cat_silhouette.svg.png",
+              (error, img) => {
+                if (error) reject(error);
+                map.addImage(image.url, img);
+                console.log("resolved", image.url);
+                resolve(img);
+              }
+            );
+          })
+      )
+    );
+  }
+
+  async addLayerWhenReady(config) {
     const { id, sources, layers, images, map } = config;
 
-    if (images) {
-      images.forEach(image => {
-        this.map.loadImage(image.url, (error, img) => {
-          if (error) throw error;
-          console.log("#", image, img);
-          // map.addImage("cat", image);
-        });
-      });
-    }
-
-    if (!map && id && sources && layers) {
+    if (!map) {
       config.map = this.map;
-      Object.keys(sources).forEach(id => this.map.addSource(id, sources[id]));
-      layers.forEach(layer => this.map.addLayer(layer));
+
+      if (images) {
+        const test = await this.loadImages(images);
+        console.log("promise", test);
+      }
+
+      if (id && sources && layers) {
+        Object.keys(sources).forEach(id => this.map.addSource(id, sources[id]));
+        layers.forEach(layer => this.map.addLayer(layer));
+      }
     }
 
-    return config;
+    return config; // TODO: This is async
   }
 
   addLayer(config = {}) {

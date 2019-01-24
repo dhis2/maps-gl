@@ -130,9 +130,10 @@ export const createMarkersLayer = config => {
     features: data
   };
 
-  data.forEach(
-    f => (images[f.properties.icon.iconUrl] = f.properties.icon.iconSize)
-  );
+  data.forEach(f => {
+    images[f.properties.icon.iconUrl] = f.properties.icon.iconSize;
+    f.properties.iconUrl = f.properties.icon.iconUrl;
+  });
 
   return {
     id,
@@ -145,13 +146,12 @@ export const createMarkersLayer = config => {
     layers: [
       {
         id: id,
-        type: "circle",
+        type: "symbol",
         source: id,
-        paint: {
-          "circle-color": "black",
-          "circle-radius": 10,
-          "circle-stroke-width": 1,
-          "circle-stroke-color": "#fff"
+        layout: {
+          "icon-image": "http://localhost:8080/images/orgunitgroup/05.png",
+          "icon-size": 0.05,
+          "icon-allow-overlap": true
         }
       }
     ],
@@ -161,7 +161,7 @@ export const createMarkersLayer = config => {
     })),
     setOpacity(opacity) {
       if (this.map) {
-        this.map.setPaintProperty(this.id, "circle-opacity", opacity);
+        // this.map.setPaintProperty(this.id, "circle-opacity", opacity);
       }
     },
     getBounds() {
