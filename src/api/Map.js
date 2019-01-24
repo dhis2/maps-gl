@@ -1,10 +1,15 @@
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import createLayer from "./layers";
+import EventEmitter from "events";
+// import createLayer from "./layers";
 import getControl from "./controls";
+import Layer from "./layers/Layer";
+import TileLayer from "./layers/TileLayer";
+import Choropleth from "./layers/Choropleth";
 
-export class Map {
+export class Map extends EventEmitter {
   constructor(el) {
+    super();
     this.map = new mapboxgl.Map({
       container: el,
       style: {
@@ -15,6 +20,13 @@ export class Map {
       },
       maxZoom: 18
     });
+
+    this.layerConfigs = [];
+
+    this.map.on("click", evt => this.onClick(evt));
+    this.map.on("contextmenu", evt => this.onContextMenu(evt));
+
+    // const tileLayer = new TileLayer();
   }
 
   fitBounds(bounds) {
@@ -38,13 +50,11 @@ export class Map {
       images.map(
         image =>
           new Promise((resolve, reject) => {
-            console.log("promise", image.url);
             map.loadImage(
               "https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Cat_silhouette.svg/400px-Cat_silhouette.svg.png",
               (error, img) => {
                 if (error) reject(error);
                 map.addImage(image.url, img);
-                console.log("resolved", image.url);
                 resolve(img);
               }
             );
@@ -53,33 +63,36 @@ export class Map {
     );
   }
 
-  async addLayerWhenReady(config) {
-    const { id, sources, layers, images, map } = config;
+  async addLayerWhenReady(layer) {
+    if (!layer.isOnMap()) {
+      layer.addTo(this.map);
+    }
 
-    if (!map) {
-      config.map = this.map;
+    //const { id, sources, layers, images, map } = layerConfig;
+    //if (!map) {
+    /*
+      layerConfig.map = this.map;
 
       if (images) {
-        const test = await this.loadImages(images);
-        console.log("promise", test);
+        await this.loadImages(images);
       }
 
       if (id && sources && layers) {
         Object.keys(sources).forEach(id => this.map.addSource(id, sources[id]));
         layers.forEach(layer => this.map.addLayer(layer));
       }
-    }
 
-    return config; // TODO: This is async
+      this.layerConfigs.push(layerConfig);
+      */
+    // }
+    // return layerConfig; // TODO: This is async
   }
 
-  addLayer(config = {}) {
-    if (!config.map) {
-      if (this.map.isStyleLoaded()) {
-        this.addLayerWhenReady(config);
-      } else {
-        this.map.once("styledata", () => this.addLayerWhenReady(config));
-      }
+  addLayer(layer) {
+    if (this.map.isStyleLoaded()) {
+      this.addLayerWhenReady(layer);
+    } else {
+      this.map.once("styledata", () => this.addLayerWhenReady(layer));
     }
   }
 
@@ -91,12 +104,15 @@ export class Map {
       Object.keys(sources).forEach(id => this.map.removeSource(id));
       layerConfig.map = null;
     }
+
+    // TODO: Remove layerConfigs
   }
 
   hasLayer(layer = {}) {
     return layer.map ? true : false;
   }
 
+  /*
   on(type, listener, scope) {
     if (type === "contextmenu") {
       this.map.on(type, evt => {
@@ -107,10 +123,13 @@ export class Map {
       console.log("on", type, listener, scope);
     }
   }
+  */
 
+  /*
   off(type, listener, scope) {
     console.log("off", type, listener, scope);
   }
+  */
 
   addControl(control) {
     const mapboxControl = getControl(control);
@@ -125,7 +144,15 @@ export class Map {
   }
 
   createLayer(config) {
-    return createLayer(config);
+    switch (config.type) {
+      case "tileLayer":
+        return new TileLayer(config);
+      case "choropleth":
+        return new Choropleth(config);
+      default:
+        console.log("Unknown layer type", config.type);
+        return new Layer();
+    }
   }
 
   createPane() {}
@@ -140,6 +167,26 @@ export class Map {
 
   resize() {
     this.map.resize();
+  }
+
+  onClick(evt) {
+    const feature = this.getEventFeature(evt);
+    if (feature) {
+      console.log("feature", feature.layer.id, this.layerConfigs);
+    } else {
+      console.log("no feature", evt);
+    }
+  }
+
+  onContextMenu(evt) {
+    const feature = this.getEventFeature(evt);
+    console.log("onContextMenu", evt.point, feature);
+  }
+
+  getEventFeature(evt) {
+    return this.map.queryRenderedFeatures(evt.point, {
+      // layers: this.props.layers // Contains visible layers
+    })[0]; // [0] returns topmost
   }
 }
 

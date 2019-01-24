@@ -351,7 +351,6 @@ export const createClientClusterLayer = config => {
   };
 };
 
-// TODO: Don't assume MultiPolygon
 export const getPolygonLabels = features => ({
   type: "FeatureCollection",
   features: features.map(({ geometry, properties }) => ({
