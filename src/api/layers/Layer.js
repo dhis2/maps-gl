@@ -26,6 +26,28 @@ class Layer extends EventEmitter {
     layers.forEach(layer => map.addLayer(layer));
   }
 
+  removeFrom(map) {
+    const source = this.getSource();
+    const layers = this.getLayers();
+
+    layers.forEach(layer => map.removeLayer(layer.id));
+    Object.keys(source).forEach(id => map.removeSource(id));
+
+    this._map = null;
+  }
+
+  setVisibility(isVisible) {
+    const map = this.getMap();
+    const value = isVisible ? "visible" : "none";
+    const layers = this.getLayers();
+
+    if (map && layers) {
+      layers.forEach(layer =>
+        this.getMap().setLayoutProperty(layer.id, "visibility", value)
+      );
+    }
+  }
+
   getId() {
     return this._id;
   }

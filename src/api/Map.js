@@ -61,22 +61,16 @@ export class Map extends EventEmitter {
     }
   }
 
+  removeLayer(layer) {
+    layer.removeFrom(this.map);
+  }
+
   isMapReady() {
     return this._isReady || this.map.isStyleLoaded();
   }
 
-  removeLayer(layerConfig) {
-    const { id, layers, sources, map } = layerConfig;
-
-    if (map) {
-      layers.forEach(layer => this.map.removeLayer(layer.id));
-      Object.keys(sources).forEach(id => this.map.removeSource(id));
-      layerConfig.map = null;
-    }
-  }
-
-  hasLayer(layer = {}) {
-    return layer.map ? true : false;
+  hasLayer(layer) {
+    return layer.isOnMap();
   }
 
   addControl(control) {
