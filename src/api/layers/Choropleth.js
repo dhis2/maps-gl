@@ -58,11 +58,11 @@ class Choropleth extends Layer {
 
   setOpacity(opacity) {
     if (this.isOnMap()) {
-      const map = this.getMap();
+      const mapgl = this.getMapGL();
       const id = this.getId();
 
-      map.setPaintProperty(id, "fill-opacity", opacity);
-      map.setPaintProperty(`${id}-labels`, "text-opacity", opacity);
+      mapgl.setPaintProperty(id, "fill-opacity", opacity);
+      mapgl.setPaintProperty(`${id}-labels`, "text-opacity", opacity);
     }
   }
 }

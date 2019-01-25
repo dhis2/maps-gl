@@ -13,7 +13,7 @@ import ClientCluster from "./layers/ClientCluster";
 export class Map extends EventEmitter {
   constructor(el) {
     super();
-    this.map = new mapboxgl.Map({
+    this._mapgl = new mapboxgl.Map({
       container: el,
       style: {
         version: 8,
@@ -24,8 +24,8 @@ export class Map extends EventEmitter {
       maxZoom: 18
     });
 
-    this.map.on("click", evt => this.onClick(evt));
-    this.map.on("contextmenu", evt => this.onContextMenu(evt));
+    this._mapgl.on("click", evt => this.onClick(evt));
+    this._mapgl.on("contextmenu", evt => this.onContextMenu(evt));
 
     this._layers = [];
     this._isReady = false;
@@ -37,18 +37,23 @@ export class Map extends EventEmitter {
 
     // TODO: Avoid timeout
     setTimeout(() => {
-      this.map.fitBounds([[a[1], a[0]], [b[1], b[0]]]);
+      this._mapgl.fitBounds([[a[1], a[0]], [b[1], b[0]]]);
     }, 200);
   }
 
   getContainer() {
-    return this.map.getContainer();
+    return this._mapgl.getContainer();
+  }
+
+  getMapGL() {
+    return this._mapgl;
   }
 
   async addLayerWhenReady(layer) {
     if (!layer.isOnMap()) {
-      layer.addTo(this.map);
+      layer.addTo(this);
     }
+    layer.setIndex(this._layers.length);
     this._layers.push(layer);
     this._isReady = true;
   }
@@ -58,18 +63,22 @@ export class Map extends EventEmitter {
       if (this.isMapReady()) {
         this.addLayerWhenReady(layer);
       } else {
-        this.map.once("styledata", () => this.addLayerWhenReady(layer));
+        this._mapgl.once("styledata", () => this.addLayerWhenReady(layer));
       }
     }
   }
 
   removeLayer(layer) {
-    layer.removeFrom(this.map);
+    layer.removeFrom(this);
     this._layers = this._layers.filter(l => l !== layer);
   }
 
+  remove() {
+    console.log("remove map");
+  }
+
   isMapReady() {
-    return this._isReady || this.map.isStyleLoaded();
+    return this._isReady || this._mapgl.isStyleLoaded();
   }
 
   hasLayer(layer) {
@@ -80,7 +89,7 @@ export class Map extends EventEmitter {
     const mapboxControl = getControl(control);
 
     if (mapboxControl) {
-      this.map.addControl(mapboxControl);
+      this._mapgl.addControl(mapboxControl);
     }
   }
 
@@ -115,11 +124,11 @@ export class Map extends EventEmitter {
   }
 
   invalidateSize() {
-    this.map.resize();
+    this._mapgl.resize();
   }
 
   resize() {
-    this.map.resize();
+    this._mapgl.resize();
   }
 
   onClick(evt) {
@@ -137,11 +146,20 @@ export class Map extends EventEmitter {
 
   onContextMenu(evt) {
     const feature = this.getEventFeature(evt);
-    console.log("onContextMenu", evt.point, feature);
+    if (feature) {
+      const layer = this.getLayerFromId(feature.layer.id);
+      layer.emit("contextmenu", {
+        layer: { feature },
+        latlng: evt.lngLat,
+        originalEvent: evt.originalEvent
+      });
+    } else {
+      console.log("no feature", evt);
+    }
   }
 
   getEventFeature(evt) {
-    return this.map.queryRenderedFeatures(evt.point, {
+    return this._mapgl.queryRenderedFeatures(evt.point, {
       // layers: this.props.layers // Contains visible layers
     })[0]; // [0] returns topmost
   }
@@ -150,11 +168,34 @@ export class Map extends EventEmitter {
     return this._layers.find(layer => layer.hasLayerId(id));
   }
 
+  getLayerAtIndex(index) {
+    return this._layers[index];
+  }
+
+  getLayers() {
+    return this._layers;
+  }
+
+  orderLayers() {
+    const outOfOrder = this._layers.some(
+      (layer, index) => layer.getIndex() !== index
+    );
+
+    if (outOfOrder) {
+      const layers = this._layers;
+      layers.sort((a, b) => a.getIndex() - b.getIndex());
+
+      for (let i = 1; i < layers.length; i++) {
+        layers[i].moveToTop();
+      }
+    }
+  }
+
   setPopup(lngLat, content) {
     new mapboxgl.Popup()
       .setLngLat(lngLat)
       .setHTML(content)
-      .addTo(this.map);
+      .addTo(this._mapgl);
   }
 }
 

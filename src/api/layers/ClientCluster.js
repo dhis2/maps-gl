@@ -80,14 +80,18 @@ class ClientCluster extends Layer {
 
   setOpacity(opacity) {
     if (this.isOnMap()) {
-      const map = this.getMap();
+      const mapgl = this.getMapGL();
       const id = this.getId();
 
-      map.setPaintProperty(id, "circle-opacity", opacity);
-      map.setPaintProperty(id, "circle-stroke-opacity", opacity);
-      map.setPaintProperty(`${id}-clusters`, "circle-opacity", opacity);
-      map.setPaintProperty(`${id}-clusters`, "circle-stroke-opacity", opacity);
-      map.setPaintProperty(`${id}-count`, "text-opacity", opacity);
+      mapgl.setPaintProperty(id, "circle-opacity", opacity);
+      mapgl.setPaintProperty(id, "circle-stroke-opacity", opacity);
+      mapgl.setPaintProperty(`${id}-clusters`, "circle-opacity", opacity);
+      mapgl.setPaintProperty(
+        `${id}-clusters`,
+        "circle-stroke-opacity",
+        opacity
+      );
+      mapgl.setPaintProperty(`${id}-count`, "text-opacity", opacity);
     }
   }
 }

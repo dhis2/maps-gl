@@ -35,7 +35,8 @@ class TileLayer extends Layer {
 
   setOpacity(opacity) {
     if (this.isOnMap()) {
-      this.getMap().setPaintProperty(this.getId(), "raster-opacity", opacity);
+      const mapgl = this.getMapGL();
+      mapgl.setPaintProperty(this.getId(), "raster-opacity", opacity);
     }
   }
 }

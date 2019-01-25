@@ -48,10 +48,10 @@ class Boundary extends Layer {
 
   setOpacity(opacity) {
     if (this.isOnMap()) {
-      const map = this.getMap();
+      const mapgl = this.getMapGL();
       const id = this.getId();
 
-      map.setPaintProperty(id, "line-opacity", opacity);
+      mapgl.setPaintProperty(id, "line-opacity", opacity);
     }
   }
 }
