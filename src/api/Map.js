@@ -123,10 +123,6 @@ export class Map extends EventEmitter {
     console.log("openPopup", popup);
   }
 
-  invalidateSize() {
-    this._mapgl.resize();
-  }
-
   resize() {
     this._mapgl.resize();
   }
