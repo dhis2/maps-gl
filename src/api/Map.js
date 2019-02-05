@@ -187,7 +187,7 @@ export class Map extends EventEmitter {
     }
   }
 
-  setPopup(lngLat, content) {
+  openPopup(lngLat, content) {
     new mapboxgl.Popup()
       .setLngLat(lngLat)
       .setHTML(content)
