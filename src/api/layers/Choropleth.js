@@ -2,10 +2,10 @@ import Layer from "./Layer";
 import { getPolygonLabels } from "../utils/labels";
 
 class Choropleth extends Layer {
-  constructor(config) {
-    super();
+  constructor(options) {
+    super(options);
 
-    const { data } = config;
+    const { data } = options;
     this.setFeatures(data);
     this.createSource();
     this.createLayers();

@@ -130,10 +130,19 @@ export class Map extends EventEmitter {
   onClick(evt) {
     const feature = this.getEventFeature(evt);
     if (feature) {
+      const { type, lngLat } = evt;
       const layer = this.getLayerFromId(feature.layer.id);
+      const coordinates = [lngLat.lng, lngLat.lat];
+
+      // "Normalise" event
       layer.emit("click", {
-        layer: { feature },
-        lngLat: evt.lngLat
+        type, 
+        coordinates,
+        feature: {
+          type: "Feature",
+          properties: feature.properties,
+          geometry: feature.geometry,
+        }
       });
     } else {
       console.log("no feature", evt);
@@ -187,9 +196,9 @@ export class Map extends EventEmitter {
     }
   }
 
-  openPopup(lngLat, content) {
+  openPopup(content, coordinates) {
     new mapboxgl.Popup()
-      .setLngLat(lngLat)
+      .setLngLat(coordinates)
       .setHTML(content)
       .addTo(this._mapgl);
   }

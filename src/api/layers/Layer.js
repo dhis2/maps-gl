@@ -4,16 +4,19 @@ import bbox from "@turf/bbox";
 import { addImages } from "../utils/images";
 
 class Layer extends EventEmitter {
-  constructor() {
+  constructor(options = {}) {
     super();
     this._id = uuid();
     this._source = {};
     this._layers = [];
     this._index = null;
+    this.options = options;
     this.off = this.removeListener; // TODO: Why needed?
   }
 
   async addTo(map) {
+    const { onClick, onRightClick } = this.options;
+
     this._map = map;
 
     const mapgl = map.getMapGL();
@@ -27,15 +30,32 @@ class Layer extends EventEmitter {
 
     Object.keys(source).forEach(id => mapgl.addSource(id, source[id]));
     layers.forEach(layer => mapgl.addLayer(layer));
+
+    if (onClick) {
+      this.on('click', onClick);
+    }
+
+    if (onRightClick) {
+      this.on('contextmenu', onRightClick);
+    }
   }
 
   removeFrom(map) {
     const mapgl = map.getMapGL();
     const source = this.getSource();
     const layers = this.getLayers();
+    const { onClick, onRightClick } = this.options;
 
     layers.forEach(layer => mapgl.removeLayer(layer.id));
     Object.keys(source).forEach(id => mapgl.removeSource(id));
+
+    if (onClick) {
+      this.off('click', onClick);
+    }
+
+    if (onRightClick) {
+      this.off('contextmenu', onRightClick);
+    }
 
     this._map = null;
   }
@@ -135,6 +155,17 @@ class Layer extends EventEmitter {
 
     return { isValid: () => false };
   }
+
+  // "Normalise" event before passing back to app
+  onClick(evt) {
+    console.log('onClick', evt);
+  }
+
+  // "Normalise" event before passing back to app
+  onRightClick(evt) {
+    console.log('onRightClick', evt);
+  }
+
 }
 
 export default Layer;
