@@ -10,6 +10,15 @@ import Markers from "./layers/Markers";
 import Dots from "./layers/Dots";
 import ClientCluster from "./layers/ClientCluster";
 
+const layers = {
+  "tileLayer": TileLayer,
+  "choropleth": Choropleth,
+  "boundary": Boundary,
+  "markers": Markers,
+  "dots": Dots,
+  "clientCluster": ClientCluster  
+}
+
 export class Map extends EventEmitter {
   constructor(el) {
     super();
@@ -85,6 +94,11 @@ export class Map extends EventEmitter {
     return layer && layer.isOnMap();
   }
 
+  // Returns true if the layer type is supported
+  hasLayerSupport(type) {
+    return !!layers[type];
+  }
+
   addControl(control) {
     const mapboxControl = getControl(control);
 
@@ -98,22 +112,11 @@ export class Map extends EventEmitter {
   }
 
   createLayer(config) {
-    switch (config.type) {
-      case "tileLayer":
-        return new TileLayer(config);
-      case "choropleth":
-        return new Choropleth(config);
-      case "boundary":
-        return new Boundary(config);
-      case "markers":
-        return new Markers(config);
-      case "dots":
-        return new Dots(config);
-      case "clientCluster":
-        return new ClientCluster(config);
-      default:
-        console.log("Unknown layer type", config.type);
-        return new Layer();
+    if (layers[config.type]) {
+      return new layers[config.type](config);
+    } else {
+      console.log("Unknown layer type", config.type);
+      return new Layer();
     }
   }
 
