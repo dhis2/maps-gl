@@ -41,13 +41,17 @@ export class Map extends EventEmitter {
   }
 
   fitBounds(bounds) {
-    // console.log("fitBounds", bounds);
-    const [a, b] = bounds;
-
     // TODO: Avoid timeout
     setTimeout(() => {
-      this._mapgl.fitBounds([[a[1], a[0]], [b[1], b[0]]]);
+      this._mapgl.fitBounds(bounds, {
+        padding: 20,
+      });
     }, 200);
+  }
+
+  setView(lnglat, zoom) {
+    this._mapgl.setCenter(lnglat);
+    this._mapgl.setZoom(zoom);
   }
 
   getContainer() {
@@ -83,7 +87,7 @@ export class Map extends EventEmitter {
   }
 
   remove() {
-    console.log("remove map");
+    // console.log("remove map");
   }
 
   isMapReady() {

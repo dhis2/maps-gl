@@ -147,13 +147,8 @@ class Layer extends EventEmitter {
     const data = this.getFeatures();
 
     if (data && data.features.length) {
-      const b = bbox(data);
-      const bounds = [[b[1], b[0]], [b[3], b[2]]];
-      bounds.isValid = () => true;
-      return bounds;
+      return bbox(data);
     }
-
-    return { isValid: () => false };
   }
 
   // "Normalise" event before passing back to app

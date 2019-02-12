@@ -30,6 +30,7 @@ class Choropleth extends Layer {
 
   createLayers() {
     const id = this.getId();
+    const { label } = this.options;
 
     this.setLayer({
       id,
@@ -41,28 +42,36 @@ class Choropleth extends Layer {
       }
     });
 
-    this.setLayer({
-      id: `${id}-labels`,
-      type: "symbol",
-      source: `${id}-labels`,
-      layout: {
-        "text-field": "{name}",
-        "text-font": ["Open Sans Regular"],
-        "text-size": 14
-      },
-      paint: {
-        "text-color": "#333"
-      }
-    });
+    console.log('##', this.options);
+
+    if (label) {
+      this.setLayer({
+        id: `${id}-labels`,
+        type: "symbol",
+        source: `${id}-labels`,
+        layout: {
+          "text-field": "{name}",
+          "text-font": ["Open Sans Regular"],
+          "text-size": 14
+        },
+        paint: {
+          "text-color": "#333"
+        }
+      });
+    }
   }
 
   setOpacity(opacity) {
     if (this.isOnMap()) {
       const mapgl = this.getMapGL();
       const id = this.getId();
+      const { label } = this.options;
 
       mapgl.setPaintProperty(id, "fill-opacity", opacity);
-      mapgl.setPaintProperty(`${id}-labels`, "text-opacity", opacity);
+
+      if (label) {
+        mapgl.setPaintProperty(`${id}-labels`, "text-opacity", opacity);
+      }
     }
   }
 }
