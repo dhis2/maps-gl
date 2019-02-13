@@ -66,9 +66,10 @@ export class Map extends EventEmitter {
     if (!layer.isOnMap()) {
       layer.addTo(this);
     }
-    layer.setIndex(this._layers.length);
     this._layers.push(layer);
     this._isReady = true;
+
+    this.orderLayers();
   }
 
   addLayer(layer) {
@@ -195,12 +196,13 @@ export class Map extends EventEmitter {
 
     if (outOfOrder) {
       const layers = this._layers;
+
       layers.sort((a, b) => a.getIndex() - b.getIndex());
 
       for (let i = 1; i < layers.length; i++) {
         layers[i].moveToTop();
       }
-    }
+    } 
   }
 
   openPopup(content, coordinates) {

@@ -1,5 +1,5 @@
 import Layer from "./Layer";
-import { getPolygonLabels } from "../utils/labels";
+import { getPolygonLabels, getLabelsLayer } from "../utils/labels";
 
 class Choropleth extends Layer {
   constructor(options) {
@@ -30,7 +30,7 @@ class Choropleth extends Layer {
 
   createLayers() {
     const id = this.getId();
-    const { label } = this.options;
+    const { label, labelStyle } = this.options;
 
     this.setLayer({
       id,
@@ -42,22 +42,8 @@ class Choropleth extends Layer {
       }
     });
 
-    console.log('##', this.options);
-
     if (label) {
-      this.setLayer({
-        id: `${id}-labels`,
-        type: "symbol",
-        source: `${id}-labels`,
-        layout: {
-          "text-field": "{name}",
-          "text-font": ["Open Sans Regular"],
-          "text-size": 14
-        },
-        paint: {
-          "text-color": "#333"
-        }
-      });
+      this.setLayer(getLabelsLayer(id, labelStyle));
     }
   }
 

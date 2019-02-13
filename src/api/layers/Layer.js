@@ -9,7 +9,7 @@ class Layer extends EventEmitter {
     this._id = uuid();
     this._source = {};
     this._layers = [];
-    this._index = null;
+
     this.options = options;
     this.off = this.removeListener; // TODO: Why needed?
   }
@@ -133,12 +133,14 @@ class Layer extends EventEmitter {
   }
 
   setIndex(index) {
-    this._index = index;
-    // this.getMap().orderLayers();
+    this.options.index = index;
+    console.log('index', index, this.options);
+
+    this.getMap().orderLayers();
   }
 
   getIndex() {
-    return this._index;
+    return this.options.index || 0;
   }
 
   setOpacity() {}

@@ -1,9 +1,10 @@
 import Layer from "./Layer";
 
 class TileLayer extends Layer {
-  constructor(config) {
-    super();
-    const { url, attribution } = config;
+  constructor(options) {
+    super(options);
+
+    const { url, attribution } = options;
     this.createSource(url, attribution);
     this.createLayer();
   }

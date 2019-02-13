@@ -1,6 +1,36 @@
 import area from "@turf/area";
 import polylabel from "polylabel";
 
+// TODO: Sould we host the fonts ourselves?
+// https://github.com/openmaptiles/fonts
+// https://github.com/openmaptiles/fonts/blob/gh-pages/fontstacks.json
+const fonts = {
+  'normal-normal': 'Open Sans Regular',
+  'normal-bold': 'Open Sans Bold',
+  'italic-normal': 'Open Sans Italic',  
+  'italic-bold': 'Open Sans Bold Italic',
+};
+
+export const getLabelsLayer = (id, style) => {
+  const { fontSize, fontStyle, fontWeight, color } = style;
+  const font = `${fontStyle || 'normal'}-${fontWeight || 'normal'}`;
+  const size = fontSize ? parseInt(fontSize, 10) : 12;
+
+  return {
+    id: `${id}-labels`,
+    type: "symbol",
+    source: `${id}-labels`,
+    layout: {
+      "text-field": "{name}",
+      "text-font": [fonts[font]],
+      "text-size": size
+    },
+    paint: {
+      "text-color": color || "#333"
+    }
+  };
+};
+
 export const getPolygonLabels = data => ({
   type: "FeatureCollection",
   features: data.features.map(({ geometry, properties }) => ({
