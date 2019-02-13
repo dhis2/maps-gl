@@ -1,9 +1,9 @@
 import Layer from "./Layer";
 
 class Markers extends Layer {
-  constructor(config) {
-    super();
-    const { data } = config;
+  constructor(options) {
+    super(options);
+    const { data } = options;
 
     this.setFeatures(data);
     this.setImages();

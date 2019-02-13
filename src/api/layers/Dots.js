@@ -1,10 +1,10 @@
 import Layer from "./Layer";
 
 class Dots extends Layer {
-  constructor(config) {
-    super();
+  constructor(options) {
+    super(options);
 
-    const { data, radius } = config;
+    const { data, radius } = options;
     this.setFeatures(data);
     this.createSource();
     this.createLayers(radius);

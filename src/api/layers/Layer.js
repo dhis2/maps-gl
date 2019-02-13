@@ -134,7 +134,6 @@ class Layer extends EventEmitter {
 
   setIndex(index) {
     this.options.index = index;
-    console.log('index', index, this.options);
 
     this.getMap().orderLayers();
   }

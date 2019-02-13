@@ -1,10 +1,10 @@
 import Layer from "./Layer";
 
 class ClientCluster extends Layer {
-  constructor(config) {
-    super();
+  constructor(options) {
+    super(options);
 
-    const { data, color, radius } = config;
+    const { data, color, radius } = options;
     this.setFeatures(data);
     this.createSource();
     this.createLayers(color, radius);

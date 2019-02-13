@@ -1,10 +1,10 @@
 import Layer from "./Layer";
 
 class Boundary extends Layer {
-  constructor(config) {
-    super();
+  constructor(options) {
+    super(options);
 
-    const { data } = config;
+    const { data } = options;
     this.setFeatures(data);
     this.createSource();
     this.createLayers();
