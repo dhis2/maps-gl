@@ -11,39 +11,59 @@ const fonts = {
   'italic-bold': 'Open Sans Bold Italic',
 };
 
-export const getLabelsLayer = (id, style) => {
+export const getLablesSource = data => ({
+  type: "geojson",
+  data: {
+    type: "FeatureCollection",
+    features: data.features.map(({ geometry, properties }) => ({
+      type: "Feature",
+      geometry: {
+        type: "Point",
+        coordinates: getLabelPosition(geometry)
+      },
+      properties: {
+        name: properties.name
+      }
+    }))
+  }   
+});
+
+// Add label properties to layer config - TODO: Make immutable?
+export const addTextProperties = (config, label, style) => {
   const { fontSize, fontStyle, fontWeight, color } = style;
   const font = `${fontStyle || 'normal'}-${fontWeight || 'normal'}`;
   const size = fontSize ? parseInt(fontSize, 10) : 12;
 
+  config.layout['text-field'] = label || "{name}";
+  config.layout['text-font'] = [fonts[font]];
+  config.layout['text-size'] = size;
+  config.layout['text-optional'] = true;
+
+  config.paint = {
+    "text-color": "#333",
+    "text-translate": [0, 20],
+  };
+};
+
+export const getLabelsLayer = (id, label, style) => {
+  const { fontSize, fontStyle, fontWeight, color } = style;
+  const font = `${fontStyle || 'normal'}-${fontWeight || 'normal'}`;
+  const size = fontSize ? parseInt(fontSize, 10) : 12;
+  
   return {
-    id: `${id}-labels`,
     type: "symbol",
+    id: `${id}-labels`,
     source: `${id}-labels`,
     layout: {
-      "text-field": "{name}",
+      "text-field": label || "{name}",
       "text-font": [fonts[font]],
       "text-size": size
     },
     paint: {
-      "text-color": color || "#333"
+      "text-color": color || "#333",
     }
   };
 };
-
-export const getPolygonLabels = data => ({
-  type: "FeatureCollection",
-  features: data.features.map(({ geometry, properties }) => ({
-    type: "Feature",
-    geometry: {
-      type: "Point",
-      coordinates: getLabelPosition(geometry)
-    },
-    properties: {
-      name: properties.name
-    }
-  }))
-});
 
 export const getLabelPosition = ({ type, coordinates }) => {
   let polygon = coordinates;

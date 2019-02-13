@@ -1,4 +1,6 @@
 import Layer from "./Layer";
+import { getCirclesSource, getCirclesLayer } from "../utils/circles";
+import { addTextProperties } from "../utils/labels";
 
 class Markers extends Layer {
   constructor(options) {
@@ -25,27 +27,43 @@ class Markers extends Layer {
 
   createSource() {
     const id = this.getId();
-    const features = this.getFeatures();
+    const data = this.getFeatures();
+    const { buffer } = this.options;
 
     this.setSource(id, {
       type: "geojson",
-      data: features
+      data,
     });
+
+    if (buffer) {
+      this.setSource(`${id}-buffers`, getCirclesSource(data.features, buffer));
+    }
   }
 
   createLayer() {
     const id = this.getId();
+    const { buffer, bufferStyle, label, labelStyle } = this.options;
 
-    this.setLayer({
+    if (buffer) {
+      this.setLayer(getCirclesLayer(id, bufferStyle));
+    }
+
+    const config = {
       id,
       type: "symbol",
       source: id,
       layout: {
         "icon-image": "http://localhost:8080/images/orgunitgroup/05.png",
         "icon-size": 0.05,
-        "icon-allow-overlap": true
+        "icon-allow-overlap": true,
       }
-    });
+    };
+
+    if (label) {
+      addTextProperties(config, label, labelStyle);
+    }
+
+    this.setLayer(config);
   }
 
   setOpacity(opacity) {

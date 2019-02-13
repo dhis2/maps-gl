@@ -1,5 +1,5 @@
 import Layer from "./Layer";
-import { getPolygonLabels, getLabelsLayer } from "../utils/labels";
+import { getLablesSource, getLabelsLayer } from "../utils/labels";
 
 class Choropleth extends Layer {
   constructor(options) {
@@ -14,18 +14,16 @@ class Choropleth extends Layer {
   createSource() {
     const id = this.getId();
     const features = this.getFeatures();
-
-    const labels = getPolygonLabels(features);
+    const { label } = this.options;
 
     this.setSource(id, {
       type: "geojson",
       data: features
     });
 
-    this.setSource(`${id}-labels`, {
-      type: "geojson",
-      data: labels
-    });
+    if (label) {
+      this.setSource(`${id}-labels`, getLablesSource(features));
+    }
   }
 
   createLayers() {
@@ -38,12 +36,12 @@ class Choropleth extends Layer {
       source: id,
       paint: {
         "fill-color": ["get", "color"],
-        "fill-outline-color": "#333"
+        "fill-outline-color": "#333",
       }
     });
 
     if (label) {
-      this.setLayer(getLabelsLayer(id, labelStyle));
+      this.setLayer(getLabelsLayer(id, label, labelStyle));
     }
   }
 

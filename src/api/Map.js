@@ -197,12 +197,10 @@ export class Map extends EventEmitter {
     if (outOfOrder) {
       const layers = this._layers;
 
-      layers.sort((a, b) => a.getIndex() - b.getIndex());
-
       for (let i = 1; i < layers.length; i++) {
         layers[i].moveToTop();
       }
-    } 
+    }
   }
 
   openPopup(content, coordinates) {

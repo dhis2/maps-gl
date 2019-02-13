@@ -7,6 +7,7 @@ class Layer extends EventEmitter {
   constructor(options = {}) {
     super();
     this._id = uuid();
+
     this._source = {};
     this._layers = [];
 
@@ -61,14 +62,16 @@ class Layer extends EventEmitter {
   }
 
   setVisibility(isVisible) {
-    const mapgl = this.getMapGL();
-    const value = isVisible ? "visible" : "none";
-    const layers = this.getLayers();
+    if (this.isOnMap()) {
+      const mapgl = this.getMapGL();
+      const value = isVisible ? "visible" : "none";
+      const layers = this.getLayers();
 
-    if (mapgl && layers) {
-      layers.forEach(layer =>
-        mapgl.setLayoutProperty(layer.id, "visibility", value)
-      );
+      if (mapgl && layers) {
+        layers.forEach(layer =>
+          mapgl.setLayoutProperty(layer.id, "visibility", value)
+        );
+      }
     }
   }
 
@@ -85,7 +88,8 @@ class Layer extends EventEmitter {
   }
 
   isOnMap() {
-    return !!this._map;
+    const mapgl = this.getMapGL();
+    return Boolean(mapgl && mapgl.getLayer(this._id));
   }
 
   setSource(id, source) {
