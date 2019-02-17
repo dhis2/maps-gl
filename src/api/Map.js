@@ -9,15 +9,17 @@ import Boundary from "./layers/Boundary";
 import Markers from "./layers/Markers";
 import Dots from "./layers/Dots";
 import ClientCluster from "./layers/ClientCluster";
+import EarthEngine from "./layers/EarthEngine";
 
 const layers = {
-  "tileLayer": TileLayer,
-  "choropleth": Choropleth,
-  "boundary": Boundary,
-  "markers": Markers,
-  "dots": Dots,
-  "clientCluster": ClientCluster  
-}
+  tileLayer: TileLayer,
+  choropleth: Choropleth,
+  boundary: Boundary,
+  markers: Markers,
+  dots: Dots,
+  clientCluster: ClientCluster,
+  earthEngine: EarthEngine
+};
 
 export class Map extends EventEmitter {
   constructor(el) {
@@ -44,7 +46,7 @@ export class Map extends EventEmitter {
     // TODO: Avoid timeout
     setTimeout(() => {
       this._mapgl.fitBounds(bounds, {
-        padding: 20,
+        padding: 20
       });
     }, 200);
   }
@@ -144,12 +146,12 @@ export class Map extends EventEmitter {
 
       // "Normalise" event
       layer.emit("click", {
-        type, 
+        type,
         coordinates,
         feature: {
           type: "Feature",
           properties: feature.properties,
-          geometry: feature.geometry,
+          geometry: feature.geometry
         }
       });
     } else {
