@@ -51,6 +51,9 @@ export class Map extends EventEmitter {
     }, 200);
   }
 
+  // TODO
+  fitWorld() {}
+
   setView(lnglat, zoom) {
     this._mapgl.setCenter(lnglat);
     this._mapgl.setZoom(zoom);
