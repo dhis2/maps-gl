@@ -16,7 +16,7 @@
     "@turf/bbox": "^6.0.1",
     "@turf/circle": "^6.0.1",
     "events": "^3.0.0",
-    "mapbox-gl": "^0.52.0",
+    "mapbox-gl": "^0.53.1",
     "polylabel": "^1.0.2",
     "uuid": "^3.3.2"
   }
