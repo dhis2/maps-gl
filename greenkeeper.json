@@ -1,0 +1,12 @@
+{
+  "groups": {
+    "default": {
+      "packages": [
+        "examples/maps-gl-react/package.json",
+        "examples/vector-tiles-example/package.json",
+        "examples/vector-tiles-example/server/package.json",
+        "package.json"
+      ]
+    }
+  }
+}
