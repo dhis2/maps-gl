@@ -2,6 +2,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import EventEmitter from "events";
 import getControl from "./controls";
+import Interaction from "./layers/Interaction";
 import Layer from "./layers/Layer";
 import TileLayer from "./layers/TileLayer";
 import Choropleth from "./layers/Choropleth";
@@ -34,6 +35,9 @@ export class Map extends EventEmitter {
       },
       maxZoom: 18
     });
+
+    this._interaction = new Interaction();
+    this._interaction.addTo(this);
 
     this._mapgl.on("click", evt => this.onClick(evt));
     this._mapgl.on("contextmenu", evt => this.onContextMenu(evt));

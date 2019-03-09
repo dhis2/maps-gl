@@ -10,6 +10,7 @@ class Layer extends EventEmitter {
 
     this._source = {};
     this._layers = [];
+    this._isVisible = true;
 
     this.options = options;
     this.off = this.removeListener; // TODO: Why needed?
@@ -73,6 +74,8 @@ class Layer extends EventEmitter {
         );
       }
     }
+
+    this._isVisible = isVisible;
   }
 
   getId() {
@@ -90,6 +93,10 @@ class Layer extends EventEmitter {
   isOnMap() {
     const mapgl = this.getMapGL();
     return Boolean(mapgl && mapgl.getLayer(this._id));
+  }
+
+  isVisible() {
+    return this._isVisible;
   }
 
   setSource(id, source) {
@@ -130,6 +137,10 @@ class Layer extends EventEmitter {
 
   getImages() {
     return this._images;
+  }
+
+  getType() {
+    return this.options.type;
   }
 
   setImages(images) {
