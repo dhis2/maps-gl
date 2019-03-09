@@ -14,7 +14,8 @@ class Boundary extends Layer {
   setFeatures(data) {
     this._features = {
       type: "FeatureCollection",
-      features: data.map(f => {
+      features: data.map((f, i) => {
+        f.id = i;
         f.properties.color = f.properties.style.color;
         f.properties.weight = f.properties.style.weight;
         return f;
@@ -41,9 +42,15 @@ class Boundary extends Layer {
       source: id,
       paint: {
         "line-color": ["get", "color"],
-        "line-width": ["get", "weight"]
+        "line-width": ["case", 
+          ["boolean", ["feature-state", "hover"], false], 
+          ["+", ["get", "weight"], 2], 
+          ["get", "weight"]
+        ],
       }
     });
+
+    this.setIteractiveLayerId(id);
   }
 
   setOpacity(opacity) {

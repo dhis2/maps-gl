@@ -183,12 +183,16 @@ export class Map extends EventEmitter {
   onMouseMove(evt) {
     const feature = this.getEventFeature(evt);
     let featureId;
+    let layerId;
+    let featureLayerId;
 
     if (feature) {
       featureId = feature.id;
+      layerId = feature.layer.id;
+      featureLayerId = `${featureId}-${layerId}`;
     }
 
-    if (featureId !== this._hoverFeatureId) {
+    if (featureLayerId !== this._hoverId) {
       const mapgl = this.getMapGL();
 
       mapgl.getCanvas().style.cursor = feature ? 'pointer' : '';
@@ -200,13 +204,15 @@ export class Map extends EventEmitter {
 
       if (feature) {
         this._hoverState = {
-          source: feature.layer.id,
-          id: feature.id
+          source: layerId,
+          id: featureId
         };
 
         mapgl.setFeatureState(this._hoverState, { hover: true });
-      }
+      } 
     }
+
+    this._hoverId = featureLayerId;
   }
 
   // TODO: throttle? 
