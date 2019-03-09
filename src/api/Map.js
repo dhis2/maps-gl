@@ -2,7 +2,6 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import EventEmitter from "events";
 import getControl from "./controls";
-import Interaction from "./layers/Interaction";
 import Layer from "./layers/Layer";
 import TileLayer from "./layers/TileLayer";
 import Choropleth from "./layers/Choropleth";
@@ -25,6 +24,7 @@ const layers = {
 export class Map extends EventEmitter {
   constructor(el) {
     super();
+
     this._mapgl = new mapboxgl.Map({
       container: el,
       style: {
@@ -36,11 +36,11 @@ export class Map extends EventEmitter {
       maxZoom: 18
     });
 
-    this._interaction = new Interaction();
-    this._interaction.addTo(this);
-
     this._mapgl.on("click", evt => this.onClick(evt));
     this._mapgl.on("contextmenu", evt => this.onContextMenu(evt));
+
+    // TODO: Don't add before we have any vector layers
+    this._mapgl.on("mousemove", evt => this.onMouseMove(evt));
 
     this._layers = [];
     this._isReady = false;
@@ -180,10 +180,47 @@ export class Map extends EventEmitter {
     }
   }
 
+  onMouseMove(evt) {
+    const feature = this.getEventFeature(evt);
+    let featureId;
+
+    if (feature) {
+      featureId = feature.id;
+    }
+
+    if (featureId !== this._hoverFeatureId) {
+      const mapgl = this.getMapGL();
+
+      mapgl.getCanvas().style.cursor = feature ? 'pointer' : '';
+
+      if (this._hoverState) {
+        mapgl.setFeatureState(this._hoverState, { hover: false });
+        this._hoverState = null;
+      }
+
+      if (feature) {
+        this._hoverState = {
+          source: feature.layer.id,
+          id: feature.id
+        };
+
+        mapgl.setFeatureState(this._hoverState, { hover: true });
+      }
+    }
+  }
+
+  // TODO: throttle? 
   getEventFeature(evt) {
-    return this._mapgl.queryRenderedFeatures(evt.point, {
-      // layers: this.props.layers // Contains visible layers
-    })[0]; // [0] returns topmost
+    const layers = this.getLayers().filter(l => l.isInteractive()).map(l => l.getInteractiveId());
+    let feature;
+
+    if (layers.length) {
+      feature = this._mapgl.queryRenderedFeatures(evt.point, {
+        layers: layers
+      })[0]; // [0] returns topmost
+    }
+
+    return feature;
   }
 
   getLayerFromId(id) {

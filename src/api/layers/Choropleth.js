@@ -40,9 +40,21 @@ class Choropleth extends Layer {
       }
     });
 
+    this.setLayer({
+      id: `${id}-hover`,
+      type: "line",
+      source: id,
+      paint: {
+        "line-color": "#333",
+        "line-width": ["case", ["boolean", ["feature-state", "hover"], false], 3, 1],
+      }
+    });
+
     if (label) {
       this.setLayer(getLabelsLayer(id, label, labelStyle));
     }
+
+    this.setIteractiveLayerId(id);
   }
 
   setOpacity(opacity) {

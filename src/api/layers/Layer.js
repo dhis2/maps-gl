@@ -99,12 +99,24 @@ class Layer extends EventEmitter {
     return this._isVisible;
   }
 
+  isInteractive() {
+    return this._interactiveId && this.isOnMap() && this.isVisible();
+  }
+
   setSource(id, source) {
     this._source[id] = source;
   }
 
   getSource() {
     return this._source;
+  }
+
+  setIteractiveLayerId(id) {
+    this._interactiveId = id;
+  }
+
+  getInteractiveId() {
+    return this.isInteractive() ? this._interactiveId : null;
   }
 
   setLayer(layer) {
@@ -128,10 +140,11 @@ class Layer extends EventEmitter {
     return this._features;
   }
 
+  // Adds integer id for each feature (required by Feature State)
   setFeatures(data) {
     this._features = {
       type: "FeatureCollection",
-      features: data
+      features: data.map((f, i) => Object.assign(f, { id: i })), // Use spread
     };
   }
 

@@ -13,7 +13,7 @@ const defaults = {
 
 class EarthEngine extends Layer {
   constructor(options) {
-    super(Object.assign(defaults, options)); // TODO: Use spreads
+    super(Object.assign(defaults, options)); // TODO: Use spread
 
     this._legend = options.legend || this.createLegend();
   }
