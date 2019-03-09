@@ -78,7 +78,8 @@ export class Map extends EventEmitter {
     this._layers.push(layer);
     this._isReady = true;
 
-    this.orderLayers();
+    // TODO: Small delay added as TileLayer is not added immediately
+    setTimeout(() =>  this.orderLayers(), 50);
   }
 
   addLayer(layer) {
@@ -247,10 +248,10 @@ export class Map extends EventEmitter {
     );
 
     if (outOfOrder) {
-      const layers = this._layers;
+      this._layers.sort((a, b) => a.getIndex() - b.getIndex());
 
-      for (let i = 1; i < layers.length; i++) {
-        layers[i].moveToTop();
+      for (let i = 1; i < this._layers.length; i++) {
+        this._layers[i].moveToTop();
       }
     }
   }
