@@ -24,6 +24,6 @@
     "@dhis2/cli-style": "^2.2.2"
   },
   "scripts": {
-    "format": "d2-style js apply --all --no-stage",
+    "format": "d2-style js apply --all --no-stage"
   }
 }

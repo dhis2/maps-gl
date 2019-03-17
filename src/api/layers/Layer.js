@@ -1,194 +1,194 @@
-import uuid from "uuid/v4";
-import EventEmitter from "events";
-import bbox from "@turf/bbox";
-import { addImages } from "../utils/images";
+import uuid from 'uuid/v4'
+import EventEmitter from 'events'
+import bbox from '@turf/bbox'
+import { addImages } from '../utils/images'
 
 class Layer extends EventEmitter {
-  constructor(options = {}) {
-    super();
-    this._id = uuid();
+    constructor(options = {}) {
+        super()
+        this._id = uuid()
 
-    this._source = {};
-    this._layers = [];
-    this._isVisible = true;
+        this._source = {}
+        this._layers = []
+        this._isVisible = true
 
-    this.options = options;
-    this.off = this.removeListener; // TODO: Why needed?
-  }
-
-  async addTo(map) {
-    const { onClick, onRightClick } = this.options;
-
-    this._map = map;
-
-    const mapgl = map.getMapGL();
-    const images = this.getImages();
-    const source = await this.getSource();
-    const layers = this.getLayers();
-
-    if (images) {
-      await addImages(mapgl, images);
+        this.options = options
+        this.off = this.removeListener // TODO: Why needed?
     }
 
-    Object.keys(source).forEach(id => mapgl.addSource(id, source[id]));
-    layers.forEach(layer => mapgl.addLayer(layer));
+    async addTo(map) {
+        const { onClick, onRightClick } = this.options
 
-    if (onClick) {
-      this.on("click", onClick);
+        this._map = map
+
+        const mapgl = map.getMapGL()
+        const images = this.getImages()
+        const source = await this.getSource()
+        const layers = this.getLayers()
+
+        if (images) {
+            await addImages(mapgl, images)
+        }
+
+        Object.keys(source).forEach(id => mapgl.addSource(id, source[id]))
+        layers.forEach(layer => mapgl.addLayer(layer))
+
+        if (onClick) {
+            this.on('click', onClick)
+        }
+
+        if (onRightClick) {
+            this.on('contextmenu', onRightClick)
+        }
     }
 
-    if (onRightClick) {
-      this.on("contextmenu", onRightClick);
-    }
-  }
+    removeFrom(map) {
+        const mapgl = map.getMapGL()
+        const source = this.getSource()
+        const layers = this.getLayers()
+        const { onClick, onRightClick } = this.options
 
-  removeFrom(map) {
-    const mapgl = map.getMapGL();
-    const source = this.getSource();
-    const layers = this.getLayers();
-    const { onClick, onRightClick } = this.options;
+        layers.forEach(layer => mapgl.removeLayer(layer.id))
+        Object.keys(source).forEach(id => mapgl.removeSource(id))
 
-    layers.forEach(layer => mapgl.removeLayer(layer.id));
-    Object.keys(source).forEach(id => mapgl.removeSource(id));
+        if (onClick) {
+            this.off('click', onClick)
+        }
 
-    if (onClick) {
-      this.off("click", onClick);
-    }
+        if (onRightClick) {
+            this.off('contextmenu', onRightClick)
+        }
 
-    if (onRightClick) {
-      this.off("contextmenu", onRightClick);
+        this._map = null
     }
 
-    this._map = null;
-  }
+    setVisibility(isVisible) {
+        if (this.isOnMap()) {
+            const mapgl = this.getMapGL()
+            const value = isVisible ? 'visible' : 'none'
+            const layers = this.getLayers()
 
-  setVisibility(isVisible) {
-    if (this.isOnMap()) {
-      const mapgl = this.getMapGL();
-      const value = isVisible ? "visible" : "none";
-      const layers = this.getLayers();
+            if (mapgl && layers) {
+                layers.forEach(layer =>
+                    mapgl.setLayoutProperty(layer.id, 'visibility', value)
+                )
+            }
+        }
 
-      if (mapgl && layers) {
-        layers.forEach(layer =>
-          mapgl.setLayoutProperty(layer.id, "visibility", value)
-        );
-      }
+        this._isVisible = isVisible
     }
 
-    this._isVisible = isVisible;
-  }
-
-  getId() {
-    return this._id;
-  }
-
-  getMap() {
-    return this._map;
-  }
-
-  getMapGL() {
-    return this._map && this._map.getMapGL();
-  }
-
-  isOnMap() {
-    const mapgl = this.getMapGL();
-    return Boolean(mapgl && mapgl.getLayer(this._id));
-  }
-
-  isVisible() {
-    return this._isVisible;
-  }
-
-  isInteractive() {
-    return this._interactiveId && this.isOnMap() && this.isVisible();
-  }
-
-  setSource(id, source) {
-    this._source[id] = source;
-  }
-
-  getSource() {
-    return this._source;
-  }
-
-  setIteractiveLayerId(id) {
-    this._interactiveId = id;
-  }
-
-  getInteractiveId() {
-    return this.isInteractive() ? this._interactiveId : null;
-  }
-
-  setLayer(layer) {
-    this._layers.push(layer);
-  }
-
-  getLayers() {
-    return this._layers;
-  }
-
-  hasLayerId(id) {
-    return this.getLayers().find(layer => layer.id === id);
-  }
-
-  moveToTop() {
-    const mapgl = this.getMapGL();
-    this.getLayers().forEach(layer => mapgl.moveLayer(layer.id));
-  }
-
-  getFeatures() {
-    return this._features;
-  }
-
-  // Adds integer id for each feature (required by Feature State)
-  setFeatures(data) {
-    this._features = {
-      type: "FeatureCollection",
-      features: data.map((f, i) => Object.assign(f, { id: i })), // Use spread
-    };
-  }
-
-  getImages() {
-    return this._images;
-  }
-
-  getType() {
-    return this.options.type;
-  }
-
-  setImages(images) {
-    this._images = images;
-  }
-
-  setIndex(index) {
-    this.options.index = index;
-
-    this.getMap().orderLayers();
-  }
-
-  getIndex() {
-    return this.options.index || 0;
-  }
-
-  setOpacity() {}
-
-  getBounds() {
-    const data = this.getFeatures();
-
-    if (data && data.features.length) {
-      return bbox(data);
+    getId() {
+        return this._id
     }
-  }
 
-  // "Normalise" event before passing back to app
-  onClick(evt) {
-    console.log("onClick", evt);
-  }
+    getMap() {
+        return this._map
+    }
 
-  // "Normalise" event before passing back to app
-  onRightClick(evt) {
-    console.log("onRightClick", evt);
-  }
+    getMapGL() {
+        return this._map && this._map.getMapGL()
+    }
+
+    isOnMap() {
+        const mapgl = this.getMapGL()
+        return Boolean(mapgl && mapgl.getLayer(this._id))
+    }
+
+    isVisible() {
+        return this._isVisible
+    }
+
+    isInteractive() {
+        return this._interactiveId && this.isOnMap() && this.isVisible()
+    }
+
+    setSource(id, source) {
+        this._source[id] = source
+    }
+
+    getSource() {
+        return this._source
+    }
+
+    setIteractiveLayerId(id) {
+        this._interactiveId = id
+    }
+
+    getInteractiveId() {
+        return this.isInteractive() ? this._interactiveId : null
+    }
+
+    setLayer(layer) {
+        this._layers.push(layer)
+    }
+
+    getLayers() {
+        return this._layers
+    }
+
+    hasLayerId(id) {
+        return this.getLayers().find(layer => layer.id === id)
+    }
+
+    moveToTop() {
+        const mapgl = this.getMapGL()
+        this.getLayers().forEach(layer => mapgl.moveLayer(layer.id))
+    }
+
+    getFeatures() {
+        return this._features
+    }
+
+    // Adds integer id for each feature (required by Feature State)
+    setFeatures(data) {
+        this._features = {
+            type: 'FeatureCollection',
+            features: data.map((f, i) => Object.assign(f, { id: i })), // Use spread
+        }
+    }
+
+    getImages() {
+        return this._images
+    }
+
+    getType() {
+        return this.options.type
+    }
+
+    setImages(images) {
+        this._images = images
+    }
+
+    setIndex(index) {
+        this.options.index = index
+
+        this.getMap().orderLayers()
+    }
+
+    getIndex() {
+        return this.options.index || 0
+    }
+
+    setOpacity() {}
+
+    getBounds() {
+        const data = this.getFeatures()
+
+        if (data && data.features.length) {
+            return bbox(data)
+        }
+    }
+
+    // "Normalise" event before passing back to app
+    onClick(evt) {
+        console.log('onClick', evt)
+    }
+
+    // "Normalise" event before passing back to app
+    onRightClick(evt) {
+        console.log('onRightClick', evt)
+    }
 }
 
-export default Layer;
+export default Layer
