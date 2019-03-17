@@ -22,6 +22,12 @@ const layers = {
 }
 
 export class Map extends EventEmitter {
+    /*
+  static boundsOptions = {
+    padding: 20,
+  };
+  */
+
     constructor(el) {
         super()
 
@@ -47,16 +53,19 @@ export class Map extends EventEmitter {
     }
 
     fitBounds(bounds) {
-        // TODO: Avoid timeout
-        setTimeout(() => {
-            this._mapgl.fitBounds(bounds, {
-                padding: 20,
-            })
-        }, 200)
+        if (bounds) {
+            // TODO: Avoid timeout
+            setTimeout(() => {
+                this._mapgl.fitBounds(bounds, {
+                    padding: 20,
+                })
+            }, 200)
+        }
     }
 
-    // TODO
-    fitWorld() {}
+    fitWorld() {
+        this.fitBounds([[-180, -90], [180, 90]])
+    }
 
     setView(lnglat, zoom) {
         this._mapgl.setCenter(lnglat)
@@ -137,8 +146,6 @@ export class Map extends EventEmitter {
         }
     }
 
-    createPane() {}
-
     openPopup(popup) {
         console.log('openPopup', popup)
     }
@@ -164,8 +171,6 @@ export class Map extends EventEmitter {
                     geometry: feature.geometry,
                 },
             })
-        } else {
-            console.log('no feature', evt)
         }
     }
 
@@ -179,7 +184,10 @@ export class Map extends EventEmitter {
                 originalEvent: evt.originalEvent,
             })
         } else {
-            console.log('no feature', evt)
+            this.emit('contextmenu', {
+                latlng: evt.lngLat,
+                originalEvent: evt.originalEvent,
+            })
         }
     }
 
