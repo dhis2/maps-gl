@@ -22,12 +22,6 @@ const layers = {
 }
 
 export class Map extends EventEmitter {
-    /*
-  static boundsOptions = {
-    padding: 20,
-  };
-  */
-
     constructor(el) {
         super()
 
@@ -155,39 +149,22 @@ export class Map extends EventEmitter {
     }
 
     onClick(evt) {
-        const feature = this.getEventFeature(evt)
-        if (feature) {
-            const { type, lngLat } = evt
-            const layer = this.getLayerFromId(feature.layer.id)
-            const coordinates = [lngLat.lng, lngLat.lat]
+        const eventObj = this._createClickEvent(evt)
 
-            // "Normalise" event
-            layer.emit('click', {
-                type,
-                coordinates,
-                feature: {
-                    type: 'Feature',
-                    properties: feature.properties,
-                    geometry: feature.geometry,
-                },
-            })
+        if (eventObj.feature) {
+            const layer = this.getLayerFromId(eventObj.feature.layer.id)
+            layer.emit('click', eventObj)
         }
     }
 
     onContextMenu(evt) {
-        const feature = this.getEventFeature(evt)
-        if (feature) {
-            const layer = this.getLayerFromId(feature.layer.id)
-            layer.emit('contextmenu', {
-                layer: { feature },
-                latlng: evt.lngLat,
-                originalEvent: evt.originalEvent,
-            })
+        const eventObj = this._createClickEvent(evt)
+
+        if (eventObj.feature) {
+            const layer = this.getLayerFromId(eventObj.feature.layer.id)
+            layer.emit('contextmenu', eventObj)
         } else {
-            this.emit('contextmenu', {
-                latlng: evt.lngLat,
-                originalEvent: evt.originalEvent,
-            })
+            this.emit('contextmenu', eventObj)
         }
     }
 
@@ -273,6 +250,29 @@ export class Map extends EventEmitter {
             .setLngLat(coordinates)
             .setHTML(content)
             .addTo(this._mapgl)
+    }
+
+    _createClickEvent(evt) {
+        const { lngLat, originalEvent } = evt
+        const coordinates = [lngLat.lng, lngLat.lat]
+        const position = [
+            originalEvent.x,
+            originalEvent.pageY || originalEvent.y,
+        ]
+        const eventObj = { coordinates, position }
+
+        const feature = this.getEventFeature(evt)
+
+        if (feature) {
+            eventObj.feature = {
+                type: 'Feature',
+                properties: feature.properties,
+                geometry: feature.geometry,
+                layer: feature.layer,
+            }
+        }
+
+        return eventObj
     }
 }
 
