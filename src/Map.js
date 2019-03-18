@@ -171,16 +171,16 @@ export class Map extends EventEmitter {
     onMouseMove(evt) {
         const feature = this.getEventFeature(evt)
         let featureId
-        let layerId
-        let featureLayerId
+        let sourceId
+        let featureSourceId
 
         if (feature) {
             featureId = feature.id
-            layerId = feature.layer.id
-            featureLayerId = `${featureId}-${layerId}`
+            sourceId = feature.source
+            featureSourceId = `${featureId}-${sourceId}`
         }
 
-        if (featureLayerId !== this._hoverId) {
+        if (featureSourceId !== this._hoverId) {
             const mapgl = this.getMapGL()
 
             mapgl.getCanvas().style.cursor = feature ? 'pointer' : ''
@@ -194,7 +194,7 @@ export class Map extends EventEmitter {
 
             if (feature) {
                 this._hoverState = {
-                    source: layerId,
+                    source: sourceId,
                     id: featureId,
                 }
 
@@ -202,14 +202,15 @@ export class Map extends EventEmitter {
             }
         }
 
-        this._hoverId = featureLayerId
+        this._hoverId = featureSourceId
     }
 
     // TODO: throttle?
     getEventFeature(evt) {
         const layers = this.getLayers()
             .filter(l => l.isInteractive())
-            .map(l => l.getInteractiveId())
+            .map(l => l.getInteractiveIds())
+            .reduce((out, ids) => [...out, ...ids], [])
         let feature
 
         if (layers.length) {

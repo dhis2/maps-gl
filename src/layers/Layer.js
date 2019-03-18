@@ -3,6 +3,8 @@ import EventEmitter from 'events'
 import bbox from '@turf/bbox'
 import { addImages } from '../utils/images'
 
+const polygonTypes = ['Polygon', 'MultiPolygon']
+
 class Layer extends EventEmitter {
     constructor(options = {}) {
         super()
@@ -10,7 +12,9 @@ class Layer extends EventEmitter {
 
         this._source = {}
         this._layers = []
+        this._features = []
         this._isVisible = true
+        this._interactiveIds = []
 
         this.options = options
         this.off = this.removeListener // TODO: Why needed?
@@ -100,7 +104,7 @@ class Layer extends EventEmitter {
     }
 
     isInteractive() {
-        return this._interactiveId && this.isOnMap() && this.isVisible()
+        return this._interactiveIds.length && this.isOnMap() && this.isVisible()
     }
 
     setSource(id, source) {
@@ -112,15 +116,19 @@ class Layer extends EventEmitter {
     }
 
     setIteractiveLayerId(id) {
-        this._interactiveId = id
+        this._interactiveIds.push(id)
     }
 
-    getInteractiveId() {
-        return this.isInteractive() ? this._interactiveId : null
+    getInteractiveIds() {
+        return this.isInteractive() ? this._interactiveIds : null
     }
 
-    setLayer(layer) {
+    setLayer(layer, isInteractive) {
         this._layers.push(layer)
+
+        if (isInteractive) {
+            this._interactiveIds.push(layer.id)
+        }
     }
 
     getLayers() {
@@ -137,15 +145,28 @@ class Layer extends EventEmitter {
     }
 
     getFeatures() {
+        return {
+            type: 'FeatureCollection',
+            features: this._features,
+        }
+    }
+
+    getPolygonFeatures() {
+        return {
+            type: 'FeatureCollection',
+            features: this._features.filter(f =>
+                polygonTypes.includes(f.geometry.type)
+            ),
+        }
+    }
+
+    getPointFeatures() {
         return this._features
     }
 
     // Adds integer id for each feature (required by Feature State)
-    setFeatures(data) {
-        this._features = {
-            type: 'FeatureCollection',
-            features: data.map((f, i) => Object.assign(f, { id: i })), // Use spread
-        }
+    setFeatures(data = []) {
+        this._features = data.map((f, i) => ({ ...f, id: i }))
     }
 
     getImages() {
