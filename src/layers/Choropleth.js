@@ -36,7 +36,7 @@ class Choropleth extends Layer {
         const { label, labelStyle } = this.options
 
         // Polygon layer
-        this.setLayer(
+        this.addLayer(
             {
                 id: `${id}`,
                 type: 'fill',
@@ -51,7 +51,7 @@ class Choropleth extends Layer {
         )
 
         // Point layer
-        this.setLayer(
+        this.addLayer(
             {
                 id: `${id}-point`,
                 type: 'circle',
@@ -68,7 +68,7 @@ class Choropleth extends Layer {
         )
 
         // Polygon hover state
-        this.setLayer({
+        this.addLayer({
             id: `${id}-hover`,
             type: 'line',
             source: id,
@@ -85,7 +85,7 @@ class Choropleth extends Layer {
         })
 
         // Point hover state
-        this.setLayer({
+        this.addLayer({
             id: `${id}-point-hover`,
             type: 'circle',
             source: id,
@@ -104,7 +104,7 @@ class Choropleth extends Layer {
         })
 
         if (label) {
-            this.setLayer(getLabelsLayer(id, label, labelStyle))
+            this.addLayer(getLabelsLayer(id, label, labelStyle))
         }
     }
 

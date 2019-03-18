@@ -48,7 +48,7 @@ class Markers extends Layer {
         const { buffer, bufferStyle, label, labelStyle } = this.options
 
         if (buffer) {
-            this.setLayer(getCirclesLayer(id, bufferStyle))
+            this.addLayer(getCirclesLayer(id, bufferStyle))
         }
 
         const config = {
@@ -67,7 +67,7 @@ class Markers extends Layer {
             addTextProperties(config, label, labelStyle)
         }
 
-        this.setLayer(config)
+        this.addLayer(config)
     }
 
     setOpacity(opacity) {

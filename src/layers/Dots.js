@@ -23,7 +23,7 @@ class Dots extends Layer {
     createLayers(radius) {
         const id = this.getId()
 
-        this.setLayer({
+        this.addLayer({
             id,
             type: 'circle',
             source: id,

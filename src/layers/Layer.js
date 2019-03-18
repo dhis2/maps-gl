@@ -102,7 +102,9 @@ class Layer extends EventEmitter {
     }
 
     isInteractive() {
-        return this._interactiveIds.length && this.isOnMap() && this.isVisible()
+        return (
+            !!this._interactiveIds.length && this.isOnMap() && this.isVisible()
+        )
     }
 
     setSource(id, source) {
@@ -113,15 +115,11 @@ class Layer extends EventEmitter {
         return this._source
     }
 
-    setIteractiveLayerId(id) {
-        this._interactiveIds.push(id)
-    }
-
     getInteractiveIds() {
-        return this.isInteractive() ? this._interactiveIds : null
+        return this.isInteractive() ? this._interactiveIds : []
     }
 
-    setLayer(layer, isInteractive) {
+    addLayer(layer, isInteractive) {
         this._layers.push(layer)
 
         if (isInteractive) {
@@ -134,7 +132,7 @@ class Layer extends EventEmitter {
     }
 
     hasLayerId(id) {
-        return this.getLayers().find(layer => layer.id === id)
+        return this.getLayers().some(layer => layer.id === id)
     }
 
     moveToTop() {

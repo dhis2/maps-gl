@@ -36,22 +36,23 @@ class Boundary extends Layer {
     createLayers() {
         const id = this.getId()
 
-        this.setLayer({
-            id,
-            type: 'line',
-            source: id,
-            paint: {
-                'line-color': ['get', 'color'],
-                'line-width': [
-                    'case',
-                    ['boolean', ['feature-state', 'hover'], false],
-                    ['+', ['get', 'weight'], 2],
-                    ['get', 'weight'],
-                ],
+        this.addLayer(
+            {
+                id,
+                type: 'line',
+                source: id,
+                paint: {
+                    'line-color': ['get', 'color'],
+                    'line-width': [
+                        'case',
+                        ['boolean', ['feature-state', 'hover'], false],
+                        ['+', ['get', 'weight'], 2],
+                        ['get', 'weight'],
+                    ],
+                },
             },
-        })
-
-        this.setIteractiveLayerId(id)
+            true
+        )
     }
 
     setOpacity(opacity) {

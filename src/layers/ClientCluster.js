@@ -26,7 +26,7 @@ class ClientCluster extends Layer {
     createLayers(color, radius) {
         const id = this.getId()
 
-        this.setLayer({
+        this.addLayer({
             id: `${id}-clusters`,
             type: 'circle',
             source: id,
@@ -49,7 +49,7 @@ class ClientCluster extends Layer {
             },
         })
 
-        this.setLayer({
+        this.addLayer({
             id: `${id}-count`,
             type: 'symbol',
             source: id,
@@ -64,7 +64,7 @@ class ClientCluster extends Layer {
             },
         })
 
-        this.setLayer({
+        this.addLayer({
             id,
             type: 'circle',
             source: id,
