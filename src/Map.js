@@ -186,7 +186,9 @@ export class Map extends EventEmitter {
             mapgl.getCanvas().style.cursor = feature ? 'pointer' : ''
 
             if (this._hoverState) {
-                mapgl.setFeatureState(this._hoverState, { hover: false })
+                if (mapgl.getSource(this._hoverState.source)) {
+                    mapgl.setFeatureState(this._hoverState, { hover: false })
+                }
                 this._hoverState = null
             }
 
