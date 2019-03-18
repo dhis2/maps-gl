@@ -1,11 +1,16 @@
 import Layer from './Layer'
 import { getLablesSource, getLabelsLayer } from '../utils/labels'
 
+const borderColor = '#333'
+const borderWeight = 1
+const hoverBorderWeight = 3
+
 class Choropleth extends Layer {
     constructor(options) {
         super(options)
 
         const { data } = options
+
         this.setFeatures(data)
         this.createSource()
         this.createLayers()
@@ -30,36 +35,77 @@ class Choropleth extends Layer {
         const id = this.getId()
         const { label, labelStyle } = this.options
 
-        this.setLayer({
-            id,
-            type: 'fill',
-            source: id,
-            paint: {
-                'fill-color': ['get', 'color'],
-                'fill-outline-color': '#333',
+        // Polygon layer
+        this.addLayer(
+            {
+                id: `${id}`,
+                type: 'fill',
+                source: id,
+                paint: {
+                    'fill-color': ['get', 'color'],
+                    'fill-outline-color': borderColor,
+                },
+                filter: ['==', '$type', 'Polygon'],
             },
-        })
+            true
+        )
 
-        this.setLayer({
+        // Point layer
+        this.addLayer(
+            {
+                id: `${id}-point`,
+                type: 'circle',
+                source: id,
+                paint: {
+                    'circle-color': ['get', 'color'],
+                    'circle-radius': ['get', 'radius'],
+                    'circle-stroke-width': borderWeight,
+                    'circle-stroke-color': borderColor,
+                },
+                filter: ['==', '$type', 'Point'],
+            },
+            true
+        )
+
+        // Polygon hover state
+        this.addLayer({
             id: `${id}-hover`,
             type: 'line',
             source: id,
             paint: {
-                'line-color': '#333',
+                'line-color': borderColor,
                 'line-width': [
                     'case',
                     ['boolean', ['feature-state', 'hover'], false],
-                    3,
-                    1,
+                    hoverBorderWeight,
+                    borderWeight,
                 ],
             },
+            filter: ['==', '$type', 'Polygon'],
+        })
+
+        // Point hover state
+        this.addLayer({
+            id: `${id}-point-hover`,
+            type: 'circle',
+            source: id,
+            paint: {
+                'circle-opacity': 0,
+                'circle-radius': ['get', 'radius'],
+                'circle-stroke-width': [
+                    'case',
+                    ['boolean', ['feature-state', 'hover'], false],
+                    hoverBorderWeight,
+                    borderWeight,
+                ],
+                'circle-stroke-color': borderColor,
+            },
+            filter: ['==', '$type', 'Point'],
         })
 
         if (label) {
-            this.setLayer(getLabelsLayer(id, label, labelStyle))
+            this.addLayer(getLabelsLayer(id, label, labelStyle))
         }
-
-        this.setIteractiveLayerId(id)
     }
 
     setOpacity(opacity) {

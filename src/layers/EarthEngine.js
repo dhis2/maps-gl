@@ -35,7 +35,7 @@ class EarthEngine extends Layer {
             tileSize: 256,
         })
 
-        this.setLayer({
+        this.addLayer({
             id: this.getId(),
             type: 'raster',
             source: this.getId(),
@@ -159,7 +159,7 @@ class EarthEngine extends Layer {
     createLayer() {
         console.log('create layer')
 
-        this.setLayer({
+        this.addLayer({
             id: this.getId(),
             type: 'raster',
             source: this.getId(),

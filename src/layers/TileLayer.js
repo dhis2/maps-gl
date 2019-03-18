@@ -27,7 +27,7 @@ class TileLayer extends Layer {
     }
 
     createLayer() {
-        this.setLayer({
+        this.addLayer({
             id: this.getId(),
             type: 'raster',
             source: this.getId(),
