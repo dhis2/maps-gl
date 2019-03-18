@@ -3,8 +3,6 @@ import EventEmitter from 'events'
 import bbox from '@turf/bbox'
 import { addImages } from '../utils/images'
 
-const polygonTypes = ['Polygon', 'MultiPolygon']
-
 class Layer extends EventEmitter {
     constructor(options = {}) {
         super()
@@ -149,19 +147,6 @@ class Layer extends EventEmitter {
             type: 'FeatureCollection',
             features: this._features,
         }
-    }
-
-    getPolygonFeatures() {
-        return {
-            type: 'FeatureCollection',
-            features: this._features.filter(f =>
-                polygonTypes.includes(f.geometry.type)
-            ),
-        }
-    }
-
-    getPointFeatures() {
-        return this._features
     }
 
     // Adds integer id for each feature (required by Feature State)
