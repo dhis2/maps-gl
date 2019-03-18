@@ -22,5 +22,10 @@ module.exports = function(api) {
             '@babel/plugin-proposal-object-rest-spread',
             '@babel/plugin-proposal-class-properties',
         ],
+        env: {
+            test: {
+                plugins: ['@babel/plugin-transform-runtime'],
+            },
+        },
     }
 }
