@@ -1,5 +1,7 @@
 import Layer from './Layer'
 
+const pointRadius = 5
+
 class Boundary extends Layer {
     constructor(options) {
         super(options)
@@ -10,17 +12,16 @@ class Boundary extends Layer {
         this.createLayers()
     }
 
-    // TODO: Find better way keep style
+    // Flatten properties to access style options
     setFeatures(data) {
-        this._features = {
-            type: 'FeatureCollection',
-            features: data.map((f, i) => {
-                f.id = i
-                f.properties.color = f.properties.style.color
-                f.properties.weight = f.properties.style.weight
-                return f
-            }),
-        }
+        this._features = data.map((f, i) => ({
+            ...f,
+            id: i,
+            properties: {
+                ...f.properties,
+                ...f.properties.style,
+            },
+        }))
     }
 
     createSource() {
@@ -35,7 +36,9 @@ class Boundary extends Layer {
 
     createLayers() {
         const id = this.getId()
+        const { style = {} } = this.options
 
+        // Polygon layer
         this.addLayer(
             {
                 id,
@@ -50,6 +53,29 @@ class Boundary extends Layer {
                         ['get', 'weight'],
                     ],
                 },
+                filter: ['==', '$type', 'Polygon'],
+            },
+            true
+        )
+
+        // Point layer
+        this.addLayer(
+            {
+                id: `${id}-point`,
+                type: 'circle',
+                source: id,
+                paint: {
+                    'circle-opacity': 0,
+                    'circle-radius': style.radius || pointRadius,
+                    'circle-stroke-width': [
+                        'case',
+                        ['boolean', ['feature-state', 'hover'], false],
+                        ['+', ['get', 'weight'], 2],
+                        ['get', 'weight'],
+                    ],
+                    'circle-stroke-color': ['get', 'color'],
+                },
+                filter: ['==', '$type', 'Point'],
             },
             true
         )
