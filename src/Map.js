@@ -10,6 +10,7 @@ import Markers from './layers/Markers'
 import Dots from './layers/Dots'
 import ClientCluster from './layers/ClientCluster'
 import EarthEngine from './layers/EarthEngine'
+import VectorTileLayer from './layers/VectorTileLayer'
 
 const layers = {
     tileLayer: TileLayer,
@@ -19,6 +20,7 @@ const layers = {
     dots: Dots,
     clientCluster: ClientCluster,
     earthEngine: EarthEngine,
+    vectorTile: VectorTileLayer,
 }
 
 export class Map extends EventEmitter {
