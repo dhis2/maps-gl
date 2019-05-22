@@ -1,10 +1,11 @@
 import Layer from './Layer'
 
-class Dots extends Layer {
+class Events extends Layer {
     constructor(options) {
         super(options)
 
         const { data, radius } = options
+
         this.setFeatures(data)
         this.createSource()
         this.createLayers(radius)
@@ -21,6 +22,7 @@ class Dots extends Layer {
     }
 
     createLayers(radius) {
+        const { fillColor } = this.options
         const id = this.getId()
 
         this.addLayer({
@@ -28,7 +30,12 @@ class Dots extends Layer {
             type: 'circle',
             source: id,
             paint: {
-                'circle-color': ['get', 'color'],
+                'circle-color': [
+                    'case',
+                    ['has', 'color'],
+                    ['get', 'color'],
+                    fillColor,
+                ],
                 'circle-radius': radius,
                 'circle-stroke-width': 1,
                 'circle-stroke-color': '#fff',
@@ -47,4 +54,4 @@ class Dots extends Layer {
     }
 }
 
-export default Dots
+export default Events

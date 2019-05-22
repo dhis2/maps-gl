@@ -2,6 +2,7 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import EventEmitter from 'events'
 import getControl from './controls'
+import Layer from './layers/Layer'
 import layerTypes from './layers/layerTypes'
 
 export class Map extends EventEmitter {
