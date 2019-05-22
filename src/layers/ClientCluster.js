@@ -4,10 +4,10 @@ class ClientCluster extends Layer {
     constructor(options) {
         super(options)
 
-        const { data, color, radius } = options
+        const { data, fillColor, radius } = options
         this.setFeatures(data)
         this.createSource()
-        this.createLayers(color, radius)
+        this.createLayers(fillColor, radius)
     }
 
     createSource() {
@@ -70,7 +70,12 @@ class ClientCluster extends Layer {
             source: id,
             filter: ['!', ['has', 'point_count']],
             paint: {
-                'circle-color': ['get', 'color'],
+                'circle-color': [
+                    'case',
+                    ['has', 'color'],
+                    ['get', 'color'],
+                    color,
+                ],
                 'circle-radius': radius,
                 'circle-stroke-width': 1,
                 'circle-stroke-color': '#fff',
