@@ -42,6 +42,8 @@ class Layer extends EventEmitter {
         if (onRightClick) {
             this.on('contextmenu', onRightClick)
         }
+
+        this.onAdd()
     }
 
     removeFrom(map) {
@@ -193,6 +195,9 @@ class Layer extends EventEmitter {
     onRightClick(evt) {
         console.log('onRightClick', evt)
     }
+
+    // Override if needed in subclass
+    onAdd() {}
 }
 
 export default Layer
