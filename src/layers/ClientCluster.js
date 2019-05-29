@@ -1,6 +1,14 @@
 import mapboxgl from 'mapbox-gl'
 import Layer from './Layer'
+import donutChart from '../utils/donut'
 
+// Based on: https://docs.mapbox.com/mapbox-gl-js/example/cluster-html/
+
+// Get contents of clusters:
+// https://docs.mapbox.com/mapbox-gl-js/api/#geojsonsource#getclusterexpansionzoom
+// https://github.com/mapbox/mapbox-gl-js/issues/3318
+// https://github.com/mapbox/mapbox-gl-js/pull/6829
+// https://github.com/bewithjonam/mapboxgl-spiderifier
 class ClientCluster extends Layer {
     constructor(options) {
         super(options)
@@ -19,13 +27,17 @@ class ClientCluster extends Layer {
     createSource() {
         const id = this.getId()
         const data = this.getFeatures()
-        const colors = [...new Set(data.features.map(f => f.properties.color))] // Unique colors
-        const clusterProperties = colors.reduce((obj, color) => {
-            obj[color] = ['+', ['case', ['==', ['get', 'color'], color], 1, 0]]
-            return obj
-        }, {})
+        let clusterProperties
 
-        console.log('unique colors', colors, clusterProperties)
+        if (this.isDonutClusters()) {
+            clusterProperties = this.options.groups.reduce((obj, { color }) => {
+                obj[color] = [
+                    '+',
+                    ['case', ['==', ['get', 'color'], color], 1, 0],
+                ]
+                return obj
+            }, {})
+        }
 
         this.setSource(id, {
             type: 'geojson',
@@ -40,46 +52,7 @@ class ClientCluster extends Layer {
     createLayers(color, radius) {
         const id = this.getId()
 
-        /*
-        this.addLayer({
-            id: `${id}-clusters`,
-            type: 'circle',
-            source: id,
-            filter: ["==", "cluster", true],
-            paint: {
-                'circle-color': color,
-                'circle-radius': [
-                    'step',
-                    ['get', 'point_count'],
-                    15,
-                    10,
-                    20,
-                    1000,
-                    25,
-                    10000,
-                    30,
-                ],
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#fff',
-            },
-        })
-
-        this.addLayer({
-            id: `${id}-count`,
-            type: 'symbol',
-            source: id,
-            filter: ["==", "cluster", true],
-            layout: {
-                'text-field': '{point_count_abbreviated}',
-                'text-font': ['Open Sans Bold'],
-                'text-size': 16,
-            },
-            paint: {
-                'text-color': '#fff',
-            },
-        })
-        */
-
+        // Non-clustered points
         this.addLayer({
             id,
             type: 'circle',
@@ -97,17 +70,55 @@ class ClientCluster extends Layer {
                 'circle-stroke-color': '#fff',
             },
         })
+
+        if (!this.isDonutClusters()) {
+            this.addLayer({
+                id: `${id}-clusters`,
+                type: 'circle',
+                source: id,
+                filter: ['==', 'cluster', true],
+                paint: {
+                    'circle-color': color,
+                    'circle-radius': [
+                        'step',
+                        ['get', 'point_count'],
+                        15,
+                        10,
+                        20,
+                        1000,
+                        25,
+                        10000,
+                        30,
+                    ],
+                    'circle-stroke-width': 1,
+                    'circle-stroke-color': '#fff',
+                },
+            })
+
+            this.addLayer({
+                id: `${id}-count`,
+                type: 'symbol',
+                source: id,
+                filter: ['==', 'cluster', true],
+                layout: {
+                    'text-field': '{point_count_abbreviated}',
+                    'text-font': ['Open Sans Bold'],
+                    'text-size': 16,
+                },
+                paint: {
+                    'text-color': '#fff',
+                },
+            })
+        }
     }
 
-    updateClusters() {
+    updateClusters = () => {
+        const { groups } = this.options
         const mapgl = this.getMapGL()
         const newClusters = {}
         const features = mapgl.querySourceFeatures(this.getId())
 
-        console.log('updateClusters', features)
-
-        // For every cluster on the screen, create an HTML marker for it (if we didn't yet),
-        // and add it to the map if it's not there already
+        // For every cluster on the screen, create an HTML marker for it
         for (let i = 0; i < features.length; i++) {
             const { geometry, properties } = features[i]
             const { coordinates } = geometry
@@ -120,15 +131,24 @@ class ClientCluster extends Layer {
             let cluster = this.clusters[cluster_id]
 
             if (!cluster) {
-                const el = this.createDonutChart(properties)
+                const segments = groups.map(group => ({
+                    ...group,
+                    count: properties[group.color],
+                }))
+
+                const el = donutChart(segments)
                 cluster = new mapboxgl.Marker({ element: el }).setLngLat(
                     coordinates
                 )
                 this.clusters[cluster_id] = cluster
+
+                // TODO: Should the event listener be removed when cluster element is removed?
+                // el.addEventListener('click', () => this.zoomToCluster(cluster_id, coordinates));
             }
 
             newClusters[cluster_id] = cluster
 
+            // Add it to the map if it's not there already
             if (!this.clustersOnScreen[cluster_id]) {
                 cluster.addTo(this.getMapGL())
             }
@@ -143,95 +163,33 @@ class ClientCluster extends Layer {
         this.clustersOnScreen = newClusters
     }
 
-    createDonutChart(props) {
-        const colors = Object.keys(props).filter(p => p.startsWith('#'))
-        const counts = colors.map(color => props[color])
-        const offsets = []
-        let total = 0
-
-        for (var i = 0; i < counts.length; i++) {
-            offsets.push(total)
-            total += counts[i]
-        }
-
-        console.log('createDonutChart', total, offsets, counts, colors, props)
-
-        var fontSize =
-            total >= 1000 ? 22 : total >= 100 ? 20 : total >= 10 ? 18 : 16
-        var r = total >= 1000 ? 50 : total >= 100 ? 32 : total >= 10 ? 24 : 18
-        var r0 = Math.round(r * 0.6)
-        var w = r * 2
-
-        let html = `<svg width="${w}" height="${w}" viewbox="0 0 ${w} ${w}" text-anchor="middle" style="font: ${fontSize}px sans-serif">`
-
-        for (i = 0; i < counts.length; i++) {
-            html += this.donutSegment(
-                offsets[i] / total,
-                (offsets[i] + counts[i]) / total,
-                r,
-                r0,
-                colors[i]
-            )
-        }
-
-        html += `<circle cx="${r}" cy="${r}" r="${r0}" fill="white" />`
-        html += `<text dominant-baseline="central" transform="translate(${r}, ${r})">${
-            props.point_count
-        }</text></svg>`
-
-        const el = document.createElement('div')
-        el.innerHTML = html
-
-        return el.firstChild
-    }
-
-    donutSegment(start, end, r, r0, color) {
-        if (end - start === 1) end -= 0.00001
-        const a0 = 2 * Math.PI * (start - 0.25)
-        const a1 = 2 * Math.PI * (end - 0.25)
-        const x0 = Math.cos(a0),
-            y0 = Math.sin(a0)
-        const x1 = Math.cos(a1),
-            y1 = Math.sin(a1)
-        const largeArc = end - start > 0.5 ? 1 : 0
-
-        return [
-            '<path d="M',
-            r + r0 * x0,
-            r + r0 * y0,
-            'L',
-            r + r * x0,
-            r + r * y0,
-            'A',
-            r,
-            r,
-            0,
-            largeArc,
-            1,
-            r + r * x1,
-            r + r * y1,
-            'L',
-            r + r0 * x1,
-            r + r0 * y1,
-            'A',
-            r0,
-            r0,
-            0,
-            largeArc,
-            0,
-            r + r0 * x0,
-            r + r0 * y0,
-            '" fill="' + color + '" />',
-        ].join(' ')
+    isDonutClusters() {
+        return Array.isArray(this.options.groups)
     }
 
     onAdd() {
-        this.getMapGL().on('data', this.onData)
+        if (this.isDonutClusters()) {
+            this.getMapGL().on('data', this.onData)
+            this.updateClusters()
+        }
     }
 
-    // TODO: call from parent
     onRemove() {
-        this.getMapGL().off('data', this.onData)
+        if (this.isDonutClusters()) {
+            const mapgl = this.getMapGL()
+            mapgl.off('move', this.updateClusters)
+            mapgl.off('moveend', this.updateClusters)
+
+            for (const id in this.clustersOnScreen) {
+                const cluster = this.clustersOnScreen[id]
+                // cluster.getElement().
+                // console.log('#', cluster);
+                cluster.remove()
+            }
+
+            this.clustersOnScreen = {}
+            this.clusters = {}
+        }
     }
 
     onData = evt => {
@@ -239,8 +197,13 @@ class ClientCluster extends Layer {
             return
         }
 
+        const mapgl = this.getMapGL()
+
+        mapgl.on('move', this.updateClusters)
+        mapgl.on('moveend', this.updateClusters)
+        mapgl.off('data', this.onData)
+
         this.updateClusters()
-        // console.log('onData', evt.sourceId, this.getId());
     }
 
     setOpacity(opacity) {
@@ -250,14 +213,39 @@ class ClientCluster extends Layer {
 
             mapgl.setPaintProperty(id, 'circle-opacity', opacity)
             mapgl.setPaintProperty(id, 'circle-stroke-opacity', opacity)
-            mapgl.setPaintProperty(`${id}-clusters`, 'circle-opacity', opacity)
-            mapgl.setPaintProperty(
-                `${id}-clusters`,
-                'circle-stroke-opacity',
-                opacity
-            )
-            mapgl.setPaintProperty(`${id}-count`, 'text-opacity', opacity)
+
+            if (this.isDonutClusters()) {
+                for (const id in this.clusters) {
+                    this.clusters[id].getElement().style.opacity = opacity
+                }
+            } else {
+                mapgl.setPaintProperty(
+                    `${id}-clusters`,
+                    'circle-opacity',
+                    opacity
+                )
+                mapgl.setPaintProperty(
+                    `${id}-clusters`,
+                    'circle-stroke-opacity',
+                    opacity
+                )
+                mapgl.setPaintProperty(`${id}-count`, 'text-opacity', opacity)
+            }
         }
+
+        this.options.opacity = opacity
+    }
+
+    zoomToCluster = (clusterId, center) => {
+        const mapgl = this.getMapGL()
+        const source = mapgl.getSource(this.getId())
+
+        source.getClusterExpansionZoom(clusterId, (error, zoom) => {
+            if (error) return
+            mapgl.easeTo({ center, zoom: zoom + 1 })
+            // this.updateClusters()
+            // setTimeout(this.updateClusters, 500);
+        })
     }
 }
 

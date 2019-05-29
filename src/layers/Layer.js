@@ -52,6 +52,8 @@ class Layer extends EventEmitter {
         const layers = this.getLayers()
         const { onClick, onRightClick } = this.options
 
+        this.onRemove()
+
         layers.forEach(layer => mapgl.removeLayer(layer.id))
         Object.keys(source).forEach(id => mapgl.removeSource(id))
 
@@ -198,6 +200,9 @@ class Layer extends EventEmitter {
 
     // Override if needed in subclass
     onAdd() {}
+
+    // Override if needed in subclass
+    onRemove() {}
 }
 
 export default Layer
