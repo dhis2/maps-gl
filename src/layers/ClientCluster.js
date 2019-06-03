@@ -173,7 +173,12 @@ class ClientCluster extends Layer {
 
     onAdd() {
         if (this.isDonutClusters()) {
-            this.getMapGL().on('data', this.onData)
+            const mapgl = this.getMapGL()
+
+            mapgl.on('data', this.onData)
+            mapgl.on('move', this.updateClustersThrottled)
+            mapgl.on('moveend', this.updateClustersThrottled)
+
             this.updateClustersThrottled()
         }
     }
@@ -181,6 +186,7 @@ class ClientCluster extends Layer {
     onRemove() {
         if (this.isDonutClusters()) {
             const mapgl = this.getMapGL()
+            mapgl.off('data', this.onData)
             mapgl.off('move', this.updateClustersThrottled)
             mapgl.off('moveend', this.updateClustersThrottled)
 
@@ -194,18 +200,9 @@ class ClientCluster extends Layer {
     }
 
     onData = evt => {
-        if (evt.sourceId !== this.getId() || !evt.isSourceLoaded) {
-            return
+        if (evt.sourceId === this.getId() && evt.isSourceLoaded) {
+            this.updateClustersThrottled()
         }
-
-        const mapgl = this.getMapGL()
-
-        mapgl.on('move', this.updateClustersThrottled)
-        mapgl.on('moveend', this.updateClustersThrottled)
-
-        mapgl.off('data', this.onData)
-
-        this.updateClustersThrottled()
     }
 
     setOpacity(opacity) {
