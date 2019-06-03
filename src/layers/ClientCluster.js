@@ -1,6 +1,6 @@
-import mapboxgl from 'mapbox-gl'
+import throttle from 'lodash.throttle'
 import Layer from './Layer'
-import donutChart from '../utils/donut'
+import DonutMarker from './DonutMarker'
 
 // Based on: https://docs.mapbox.com/mapbox-gl-js/example/cluster-html/
 
@@ -22,6 +22,8 @@ class ClientCluster extends Layer {
         this.setFeatures(data)
         this.createSource()
         this.createLayers(fillColor, radius)
+
+        this.updateClustersThrottled = throttle(this.updateClusters, 100)
     }
 
     createSource() {
@@ -118,6 +120,8 @@ class ClientCluster extends Layer {
         const newClusters = {}
         const features = mapgl.querySourceFeatures(this.getId())
 
+        // console.log('updateClusters');
+
         // For every cluster on the screen, create an HTML marker for it
         for (let i = 0; i < features.length; i++) {
             const { geometry, properties } = features[i]
@@ -136,14 +140,14 @@ class ClientCluster extends Layer {
                     count: properties[group.color],
                 }))
 
-                const el = donutChart(segments)
-                cluster = new mapboxgl.Marker({ element: el }).setLngLat(
-                    coordinates
-                )
-                this.clusters[cluster_id] = cluster
+                cluster = new DonutMarker(segments)
 
-                // TODO: Should the event listener be removed when cluster element is removed?
-                // el.addEventListener('click', () => this.zoomToCluster(cluster_id, coordinates));
+                cluster.setLngLat(coordinates)
+                cluster.on('click', () =>
+                    this.zoomToCluster(cluster_id, coordinates)
+                )
+
+                this.clusters[cluster_id] = cluster
             }
 
             newClusters[cluster_id] = cluster
@@ -170,21 +174,18 @@ class ClientCluster extends Layer {
     onAdd() {
         if (this.isDonutClusters()) {
             this.getMapGL().on('data', this.onData)
-            this.updateClusters()
+            this.updateClustersThrottled()
         }
     }
 
     onRemove() {
         if (this.isDonutClusters()) {
             const mapgl = this.getMapGL()
-            mapgl.off('move', this.updateClusters)
-            mapgl.off('moveend', this.updateClusters)
+            mapgl.off('move', this.updateClustersThrottled)
+            mapgl.off('moveend', this.updateClustersThrottled)
 
             for (const id in this.clustersOnScreen) {
-                const cluster = this.clustersOnScreen[id]
-                // cluster.getElement().
-                // console.log('#', cluster);
-                cluster.remove()
+                this.clustersOnScreen[id].remove()
             }
 
             this.clustersOnScreen = {}
@@ -199,11 +200,12 @@ class ClientCluster extends Layer {
 
         const mapgl = this.getMapGL()
 
-        mapgl.on('move', this.updateClusters)
-        mapgl.on('moveend', this.updateClusters)
+        mapgl.on('move', this.updateClustersThrottled)
+        mapgl.on('moveend', this.updateClustersThrottled)
+
         mapgl.off('data', this.onData)
 
-        this.updateClusters()
+        this.updateClustersThrottled()
     }
 
     setOpacity(opacity) {
@@ -243,8 +245,6 @@ class ClientCluster extends Layer {
         source.getClusterExpansionZoom(clusterId, (error, zoom) => {
             if (error) return
             mapgl.easeTo({ center, zoom: zoom + 1 })
-            // this.updateClusters()
-            // setTimeout(this.updateClusters, 500);
         })
     }
 }

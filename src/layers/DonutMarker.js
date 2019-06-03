@@ -1,4 +1,19 @@
-const donutChart = segments => {
+import mapboxgl from 'mapbox-gl'
+
+// Creates a donut marker component
+class DonutMarker extends mapboxgl.Marker {
+    constructor(segments) {
+        const element = donutChart(segments)
+        super({ element })
+
+        element.addEventListener('click', this.onClick)
+    }
+
+    onClick = () => this.fire('click')
+}
+
+// Returns a SVG donut chart
+export const donutChart = segments => {
     const total = segments.reduce((total, s) => total + s.count, 0)
     const fontSize =
         total >= 1000 ? 22 : total >= 100 ? 20 : total >= 10 ? 18 : 16
@@ -7,9 +22,7 @@ const donutChart = segments => {
     const w = r * 2
     let offset = 0
 
-    // Drop-shadow shows a box aroud the cluser while zooming, could try SVG filter instead: https://stackoverflow.com/a/6094674
-    // style="opacity: 1; font: ${fontSize}px sans-serif; filter: drop-shadow(1px 1px 1px rgba(0, 0, 0, 0.4));
-    let html = `<svg width="${w}" height="${w}" viewbox="0 0 ${w} ${w}" text-anchor="middle" style="font: ${fontSize}px sans-serif;">`
+    let html = `<svg width="${w}" height="${w}" viewbox="0 0 ${w} ${w}" text-anchor="middle" style="font:${fontSize}px sans-serif;cursor:pointer;">`
 
     segments.forEach(segment => {
         html += donutSegment(
@@ -31,7 +44,8 @@ const donutChart = segments => {
     return el.firstChild
 }
 
-const donutSegment = (start, end, r, r0, color) => {
+// Returns a SVG donut chart segment
+export const donutSegment = (start, end, r, r0, color) => {
     if (end - start === 1) end -= 0.00001
     const a0 = 2 * Math.PI * (start - 0.25)
     const a1 = 2 * Math.PI * (end - 0.25)
@@ -71,4 +85,4 @@ const donutSegment = (start, end, r, r0, color) => {
     ].join(' ')
 }
 
-export default donutChart
+export default DonutMarker
