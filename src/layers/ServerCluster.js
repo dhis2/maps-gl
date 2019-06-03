@@ -14,6 +14,7 @@ class ServerCluster extends Layer {
     constructor(options) {
         super(options)
         this.createSource()
+        this.createLayers()
     }
 
     createSource() {
@@ -30,6 +31,24 @@ class ServerCluster extends Layer {
         })
     }
 
+    createLayers() {
+        const id = this.getId()
+
+        // Non-clustered points
+        this.addLayer(
+            {
+                id,
+                type: 'circle',
+                source: id,
+                paint: {
+                    'circle-stroke-width': 1,
+                    'circle-stroke-color': '#fff',
+                },
+            },
+            true
+        )
+    }
+
     onAdd() {
         const mapgl = this.getMapGL()
         // const source = mapgl.getSource(this.getId())
@@ -41,8 +60,15 @@ class ServerCluster extends Layer {
 
         mapgl.on('moveend', () => {
             const sourceCache = mapgl.painter.style.sourceCaches[this.getId()]
+            const tiles = sourceCache._tiles
 
-            console.log('sourceCache', sourceCache._tiles)
+            for (const id in tiles) {
+                const tile = tiles[id]
+
+                console.log('tile', tile)
+            }
+
+            // console.log('sourceCache', tiles, sourceCache.getRenderableIds())
         })
 
         // https://docs.mapbox.com/mapbox-gl-js/example/add-3d-model/
