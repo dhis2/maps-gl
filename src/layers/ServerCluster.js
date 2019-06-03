@@ -42,7 +42,7 @@ class ServerCluster extends Layer {
         mapgl.on('moveend', () => {
             const sourceCache = mapgl.painter.style.sourceCaches[this.getId()]
 
-            console.log('sourceCache', sourceCache.transform)
+            console.log('sourceCache', sourceCache._tiles)
         })
 
         // https://docs.mapbox.com/mapbox-gl-js/example/add-3d-model/
