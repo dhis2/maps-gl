@@ -1,9 +1,9 @@
 import uuid from 'uuid/v4'
-import EventEmitter from 'events'
+import { Evented } from 'mapbox-gl'
 import bbox from '@turf/bbox'
 import { addImages } from '../utils/images'
 
-class Layer extends EventEmitter {
+class Layer extends Evented {
     constructor(options = {}) {
         super()
         this._id = uuid()
@@ -188,7 +188,7 @@ class Layer extends EventEmitter {
         }
     }
 
-    onClick = evt => this.emit('click', evt)
+    onClick = evt => this.fire('click', evt)
 
     // "Normalise" event before passing back to app
     onRightClick(evt) {

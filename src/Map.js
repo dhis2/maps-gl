@@ -1,11 +1,11 @@
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import EventEmitter from 'events'
+import { Evented } from 'mapbox-gl'
 import getControl from './controls'
 import Layer from './layers/Layer'
 import layerTypes from './layers/layerTypes'
 
-export class Map extends EventEmitter {
+export class Map extends Evented {
     constructor(el) {
         super()
 
@@ -150,9 +150,9 @@ export class Map extends EventEmitter {
 
         if (eventObj.feature) {
             const layer = this.getLayerFromId(eventObj.feature.layer.id)
-            layer.emit('contextmenu', eventObj)
+            layer.fire('contextmenu', eventObj)
         } else {
-            this.emit('contextmenu', eventObj)
+            this.fire('contextmenu', eventObj)
         }
     }
 

@@ -226,7 +226,7 @@ class ClientCluster extends Layer {
                 evt.feature = { type, id, properties, geometry }
             }
 
-            this.emit('click', evt)
+            this.fire('click', evt)
         } else {
             this.zoomToCluster(
                 feature.properties.cluster_id,
