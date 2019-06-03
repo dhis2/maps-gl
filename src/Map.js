@@ -134,10 +134,14 @@ export class Map extends EventEmitter {
 
     onClick(evt) {
         const eventObj = this._createClickEvent(evt)
+        const { feature } = eventObj
 
-        if (eventObj.feature) {
-            const layer = this.getLayerFromId(eventObj.feature.layer.id)
-            layer.emit('click', eventObj)
+        if (feature) {
+            const layer = this.getLayerFromId(feature.layer.id)
+
+            if (layer) {
+                layer.onClick(eventObj)
+            }
         }
     }
 
@@ -246,20 +250,9 @@ export class Map extends EventEmitter {
             originalEvent.x,
             originalEvent.pageY || originalEvent.y,
         ]
-        const eventObj = { coordinates, position }
+        let feature = this.getEventFeature(evt)
 
-        const feature = this.getEventFeature(evt)
-
-        if (feature) {
-            eventObj.feature = {
-                type: 'Feature',
-                properties: feature.properties,
-                geometry: feature.geometry,
-                layer: feature.layer,
-            }
-        }
-
-        return eventObj
+        return { coordinates, position, feature }
     }
 }
 

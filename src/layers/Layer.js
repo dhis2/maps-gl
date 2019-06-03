@@ -188,10 +188,7 @@ class Layer extends EventEmitter {
         }
     }
 
-    // "Normalise" event before passing back to app
-    onClick(evt) {
-        console.log('onClick', evt)
-    }
+    onClick = evt => this.emit('click', evt)
 
     // "Normalise" event before passing back to app
     onRightClick(evt) {

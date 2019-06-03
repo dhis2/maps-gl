@@ -55,47 +55,53 @@ class ClientCluster extends Layer {
         const id = this.getId()
 
         // Non-clustered points
-        this.addLayer({
-            id,
-            type: 'circle',
-            source: id,
-            filter: ['!=', 'cluster', true],
-            paint: {
-                'circle-color': [
-                    'case',
-                    ['has', 'color'],
-                    ['get', 'color'],
-                    color,
-                ],
-                'circle-radius': radius,
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#fff',
-            },
-        })
-
-        if (!this.isDonutClusters()) {
-            this.addLayer({
-                id: `${id}-clusters`,
+        this.addLayer(
+            {
+                id,
                 type: 'circle',
                 source: id,
-                filter: ['==', 'cluster', true],
+                filter: ['!=', 'cluster', true],
                 paint: {
-                    'circle-color': color,
-                    'circle-radius': [
-                        'step',
-                        ['get', 'point_count'],
-                        15,
-                        10,
-                        20,
-                        1000,
-                        25,
-                        10000,
-                        30,
+                    'circle-color': [
+                        'case',
+                        ['has', 'color'],
+                        ['get', 'color'],
+                        color,
                     ],
+                    'circle-radius': radius,
                     'circle-stroke-width': 1,
                     'circle-stroke-color': '#fff',
                 },
-            })
+            },
+            true
+        )
+
+        if (!this.isDonutClusters()) {
+            this.addLayer(
+                {
+                    id: `${id}-clusters`,
+                    type: 'circle',
+                    source: id,
+                    filter: ['==', 'cluster', true],
+                    paint: {
+                        'circle-color': color,
+                        'circle-radius': [
+                            'step',
+                            ['get', 'point_count'],
+                            15,
+                            10,
+                            20,
+                            1000,
+                            25,
+                            10000,
+                            30,
+                        ],
+                        'circle-stroke-width': 1,
+                        'circle-stroke-color': '#fff',
+                    },
+                },
+                true
+            )
 
             this.addLayer({
                 id: `${id}-count`,
@@ -202,6 +208,30 @@ class ClientCluster extends Layer {
     onData = evt => {
         if (evt.sourceId === this.getId() && evt.isSourceLoaded) {
             this.updateClustersThrottled()
+        }
+    }
+
+    onClick = evt => {
+        const { feature } = evt
+
+        if (!feature.properties.cluster) {
+            // Hack until Mapbox GL JS support string ids
+            // https://github.com/mapbox/mapbox-gl-js/issues/2716
+            if (
+                typeof feature.id === 'number' &&
+                typeof feature.properties.id === 'string'
+            ) {
+                const { type, properties, geometry } = feature
+                const { id } = properties
+                evt.feature = { type, id, properties, geometry }
+            }
+
+            this.emit('click', evt)
+        } else {
+            this.zoomToCluster(
+                feature.properties.cluster_id,
+                feature.geometry.coordinates
+            )
         }
     }
 
