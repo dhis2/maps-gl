@@ -1,4 +1,6 @@
+import throttle from 'lodash.throttle'
 import { getZoomResolution, getTileBBox } from '../utils/geo'
+import { formatCount } from '../utils/numbers'
 import Layer from './Layer'
 
 // https://github.com/mapbox/mapbox-gl-js/projects/2
@@ -12,14 +14,19 @@ import Layer from './Layer'
 
 const earthRadius = 6378137
 
+// TODO: Support event polygons
+// TODO: Spiderify
 class ServerCluster extends Layer {
     constructor(options) {
         super(options)
 
+        this._clusters = [] // Clusters shown on map
         this._tileClusters = {} // Cluster cache
 
         this.createSource()
         this.createLayers()
+
+        this.updateClustersThrottled = throttle(this.updateClusters, 100)
     }
 
     createSource() {
@@ -38,6 +45,7 @@ class ServerCluster extends Layer {
 
     createLayers() {
         const id = this.getId()
+        const { fillColor: color, radius } = this.options
 
         // Non-clustered points
         this.addLayer(
@@ -45,24 +53,74 @@ class ServerCluster extends Layer {
                 id,
                 type: 'circle',
                 source: id,
+                filter: ['==', 'count', 1],
                 paint: {
+                    'circle-color': color,
+                    'circle-radius': radius,
                     'circle-stroke-width': 1,
                     'circle-stroke-color': '#fff',
                 },
             },
             true
         )
+
+        this.addLayer(
+            {
+                id: `${id}-clusters`,
+                type: 'circle',
+                source: id,
+                filter: ['!=', 'count', 1],
+                paint: {
+                    'circle-color': color,
+                    'circle-radius': [
+                        'step',
+                        ['get', 'count'],
+                        15,
+                        10,
+                        20,
+                        1000,
+                        25,
+                        10000,
+                        30,
+                    ],
+                    'circle-stroke-width': 1,
+                    'circle-stroke-color': '#fff',
+                },
+            },
+            true
+        )
+
+        this.addLayer({
+            id: `${id}-count`,
+            type: 'symbol',
+            source: id,
+            filter: ['!=', 'count', 1],
+            layout: {
+                'text-field': '{count_formatted}',
+                'text-font': ['Open Sans Bold'],
+                'text-size': 16,
+            },
+            paint: {
+                'text-color': '#fff',
+            },
+        })
     }
 
     onAdd() {
         const mapgl = this.getMapGL()
-        const source = mapgl.getSource(this.getId())
+        this._source = mapgl.getSource(this.getId())
         this._tiles = mapgl.painter.style.sourceCaches[this.getId()]._tiles // TODO: Better way to access?
-        this._tileSize = source.tileSize
+        this._tileSize = this._source.tileSize
 
-        mapgl.showTileBoundaries = true // TODO: Remove
+        // mapgl.showTileBoundaries = true // TODO: Remove
 
+        mapgl.on('zoomstart', this.onMoveStart)
+        mapgl.on('dragstart', this.onMoveStart)
         mapgl.on('moveend', this.onMoveEnd)
+    }
+
+    onMoveStart = () => {
+        this._clusters = []
     }
 
     onMoveEnd = () => {
@@ -89,17 +147,27 @@ class ServerCluster extends Layer {
             includeClusterPoints: this.isMaxZoom(),
         }
 
-        // console.log(params)
-
         load(params, this.addTileClusters)
     }
 
     addTileClusters = (tileId, clusters) => {
         this._tileClusters[tileId] = clusters
 
-        if (clusters.length) {
-            console.log('addTileClusters', tileId, clusters.length, clusters)
+        if (clusters.length && this._tiles[tileId]) {
+            clusters.forEach(this.addClusterMarker)
         }
+    }
+
+    addClusterMarker = cluster => {
+        const { properties } = cluster
+        properties.count_formatted = formatCount(properties.count)
+        this._clusters.push(cluster)
+        this.updateClustersThrottled()
+    }
+
+    updateClusters() {
+        this.setFeatures(this._clusters)
+        this._source.setData(this.getFeatures())
     }
 
     isMaxZoom() {
