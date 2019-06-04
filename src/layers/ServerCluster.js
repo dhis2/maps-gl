@@ -117,6 +117,8 @@ class ServerCluster extends Layer {
         mapgl.on('zoomstart', this.onMoveStart)
         mapgl.on('dragstart', this.onMoveStart)
         mapgl.on('moveend', this.onMoveEnd)
+
+        this.onMoveEnd()
     }
 
     onMoveStart = () => {
