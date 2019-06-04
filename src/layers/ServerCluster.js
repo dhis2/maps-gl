@@ -1,4 +1,4 @@
-import mapboxgl from 'mapbox-gl'
+import { getZoomResolution, getTileBBox } from '../utils/geo'
 import Layer from './Layer'
 
 // https://github.com/mapbox/mapbox-gl-js/projects/2
@@ -10,9 +10,14 @@ import Layer from './Layer'
 // https://github.com/mapbox/mapbox-gl-js/issues/3051
 // https://github.com/mapbox/mapbox-gl-js/issues/3326
 
+const earthRadius = 6378137
+
 class ServerCluster extends Layer {
     constructor(options) {
         super(options)
+
+        this._tileClusters = {} // Cluster cache
+
         this.createSource()
         this.createLayers()
     }
@@ -20,7 +25,7 @@ class ServerCluster extends Layer {
     createSource() {
         const id = this.getId()
 
-        console.log('Server cluster', id)
+        // console.log('Server cluster', id)
 
         this.setSource(id, {
             type: 'geojson',
@@ -51,41 +56,55 @@ class ServerCluster extends Layer {
 
     onAdd() {
         const mapgl = this.getMapGL()
-        // const source = mapgl.getSource(this.getId())
-        // const style = mapgl.getStyle()
+        const source = mapgl.getSource(this.getId())
+        this._tiles = mapgl.painter.style.sourceCaches[this.getId()]._tiles // TODO: Better way to access?
+        this._tileSize = source.tileSize
 
-        mapgl.showTileBoundaries = true
+        mapgl.showTileBoundaries = true // TODO: Remove
 
-        console.log('sourceCaches', mapgl.painter.style.sourceCaches)
+        mapgl.on('moveend', this.onMoveEnd)
+    }
 
-        mapgl.on('moveend', () => {
-            const sourceCache = mapgl.painter.style.sourceCaches[this.getId()]
-            const tiles = sourceCache._tiles
+    onMoveEnd = () => {
+        for (const id in this._tiles) {
+            this.loadTileClusters(this._tiles[id].tileID.canonical)
+        }
+    }
 
-            for (const id in tiles) {
-                const tile = tiles[id]
+    loadTileClusters(tile) {
+        const { z, x, y, key } = tile
+        const clusters = this._tileClusters[key]
 
-                console.log('tile', tile)
-            }
-
-            // console.log('sourceCache', tiles, sourceCache.getRenderableIds())
-        })
-
-        // https://docs.mapbox.com/mapbox-gl-js/example/add-3d-model/
-        /*
-        const customLayer = {
-            id: 'test',
-            type: 'custom',
-            render: (gl, matrix) => console.log('render', gl, matrix),
-            onAdd: (map, gl) => console.log('onAdd', map, gl),
+        if (clusters) {
+            this.addTileClusters(key, clusters)
+            return
         }
 
-        mapgl.addLayer(customLayer);
+        const { load, clusterSize = 110 } = this.options
 
-        const layer = mapgl.getLayer('test');
+        const params = {
+            tileId: key,
+            bbox: getTileBBox(x, y, z),
+            clusterSize: Math.round(getZoomResolution(z) * clusterSize),
+            includeClusterPoints: this.isMaxZoom(),
+        }
 
-        console.log('Custom layer', layer); // .getVisibleCoordinates
-        */
+        // console.log(params)
+
+        load(params, this.addTileClusters)
+    }
+
+    addTileClusters = (tileId, clusters) => {
+        this._tileClusters[tileId] = clusters
+
+        if (clusters.length) {
+            console.log('addTileClusters', tileId, clusters.length, clusters)
+        }
+    }
+
+    isMaxZoom() {
+        const mapgl = this.getMapGL()
+        return mapgl.getZoom() === mapgl.getMaxZoom()
     }
 }
 
