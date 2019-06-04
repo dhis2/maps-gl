@@ -3,17 +3,6 @@ import { getZoomResolution, getTileBBox } from '../utils/geo'
 import { formatCount } from '../utils/numbers'
 import Layer from './Layer'
 
-// https://github.com/mapbox/mapbox-gl-js/projects/2
-// https://github.com/mapbox/mapbox-gl-js/blob/master/src/source/source_cache.js
-// https://github.com/mapbox/mapbox-gl-js/blob/master/src/render/draw_raster.js
-// https://github.com/mapbox/mapbox-gl-js/blob/master/src/source/tile.js
-// https://github.com/mapbox/mapbox-gl-js/pull/2667
-// https://github.com/mapbox/mapbox-gl-js/issues/2120
-// https://github.com/mapbox/mapbox-gl-js/issues/3051
-// https://github.com/mapbox/mapbox-gl-js/issues/3326
-
-const earthRadius = 6378137
-
 // TODO: Support event polygons
 // TODO: Spiderify
 class ServerCluster extends Layer {
@@ -112,13 +101,14 @@ class ServerCluster extends Layer {
         this._tiles = mapgl.painter.style.sourceCaches[this.getId()]._tiles // TODO: Better way to access?
         this._tileSize = this._source.tileSize
 
-        // mapgl.showTileBoundaries = true // TODO: Remove
+        // mapgl.showTileBoundaries = true
 
         mapgl.on('zoomstart', this.onMoveStart)
         mapgl.on('dragstart', this.onMoveStart)
         mapgl.on('moveend', this.onMoveEnd)
 
-        this.onMoveEnd()
+        // Make sure tiles are available
+        setTimeout(this.onMoveEnd, 1000)
     }
 
     onMoveStart = () => {
@@ -126,8 +116,31 @@ class ServerCluster extends Layer {
     }
 
     onMoveEnd = () => {
+        // console.log('onMoveEnd', this._tiles)
         for (const id in this._tiles) {
             this.loadTileClusters(this._tiles[id].tileID.canonical)
+        }
+    }
+
+    onClick = evt => {
+        const { type, feature, coordinates } = evt
+        const { properties, geometry } = feature
+        const { id, count, bounds } = properties
+
+        if (count !== 1) {
+            this.getMapGL().fitBounds(
+                JSON.parse(bounds).map(latLng => latLng.reverse())
+            )
+        } else {
+            this.options.onClick({
+                type,
+                coordinates,
+                feature: {
+                    id,
+                    properties,
+                    geometry,
+                },
+            })
         }
     }
 

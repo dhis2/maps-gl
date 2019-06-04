@@ -245,14 +245,15 @@ export class Map extends Evented {
 
     _createClickEvent(evt) {
         const { lngLat, originalEvent } = evt
+        const type = 'click'
         const coordinates = [lngLat.lng, lngLat.lat]
         const position = [
             originalEvent.x,
             originalEvent.pageY || originalEvent.y,
         ]
-        let feature = this.getEventFeature(evt)
+        const feature = this.getEventFeature(evt)
 
-        return { coordinates, position, feature }
+        return { type, coordinates, position, feature }
     }
 }
 

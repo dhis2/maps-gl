@@ -126,8 +126,6 @@ class ClientCluster extends Layer {
         const newClusters = {}
         const features = mapgl.querySourceFeatures(this.getId())
 
-        // console.log('updateClusters');
-
         // For every cluster on the screen, create an HTML marker for it
         for (let i = 0; i < features.length; i++) {
             const { geometry, properties } = features[i]

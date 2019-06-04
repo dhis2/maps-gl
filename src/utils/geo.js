@@ -1,6 +1,8 @@
+const earthRadius = 6378137
+
 //  Returns resolution in meters at zoom
 export const getZoomResolution = zoom =>
-    (2 * Math.PI * 6378137) / 256 / Math.pow(2, zoom)
+    (2 * Math.PI * earthRadius) / 256 / Math.pow(2, zoom)
 
 // Returns lng/lat bounds for a tile
 export const getTileBBox = (x, y, z) => {
