@@ -1,6 +1,14 @@
 import throttle from 'lodash.throttle'
 import Layer from './Layer'
 import DonutMarker from './DonutMarker'
+import { isPoint, isPolygon, isCluster, noCluster } from '../utils/filters'
+import {
+    outlineColor,
+    outlineWidth,
+    clusterRadius,
+    textFont,
+    textSize,
+} from '../utils/style'
 
 // Based on: https://docs.mapbox.com/mapbox-gl-js/example/cluster-html/
 
@@ -53,6 +61,7 @@ class ClientCluster extends Layer {
 
     createLayers(color, radius) {
         const id = this.getId()
+        const colorExpr = ['case', ['has', 'color'], ['get', 'color'], color]
 
         // Non-clustered points
         this.addLayer(
@@ -60,17 +69,27 @@ class ClientCluster extends Layer {
                 id,
                 type: 'circle',
                 source: id,
-                filter: ['!=', 'cluster', true],
+                filter: ['all', noCluster, isPoint],
                 paint: {
-                    'circle-color': [
-                        'case',
-                        ['has', 'color'],
-                        ['get', 'color'],
-                        color,
-                    ],
+                    'circle-color': colorExpr,
                     'circle-radius': radius,
-                    'circle-stroke-width': 1,
-                    'circle-stroke-color': '#fff',
+                    'circle-stroke-width': outlineWidth,
+                    'circle-stroke-color': outlineColor,
+                },
+            },
+            true
+        )
+
+        // Non-clustered polygons
+        this.addLayer(
+            {
+                id,
+                type: 'fill',
+                source: id,
+                filter: ['all', noCluster, isPolygon],
+                paint: {
+                    'circle-color': colorExpr,
+                    'fill-outline-color': outlineColor,
                 },
             },
             true
@@ -82,22 +101,12 @@ class ClientCluster extends Layer {
                     id: `${id}-clusters`,
                     type: 'circle',
                     source: id,
-                    filter: ['==', 'cluster', true],
+                    filter: isCluster,
                     paint: {
                         'circle-color': color,
-                        'circle-radius': [
-                            'step',
-                            ['get', 'point_count'],
-                            15,
-                            10,
-                            20,
-                            1000,
-                            25,
-                            10000,
-                            30,
-                        ],
-                        'circle-stroke-width': 1,
-                        'circle-stroke-color': '#fff',
+                        'circle-radius': clusterRadius,
+                        'circle-stroke-width': outlineWidth,
+                        'circle-stroke-color': outlineColor,
                     },
                 },
                 true
@@ -107,14 +116,14 @@ class ClientCluster extends Layer {
                 id: `${id}-count`,
                 type: 'symbol',
                 source: id,
-                filter: ['==', 'cluster', true],
+                filter: isCluster,
                 layout: {
                     'text-field': '{point_count_abbreviated}',
-                    'text-font': ['Open Sans Bold'],
-                    'text-size': 16,
+                    'text-font': textFont,
+                    'text-size': textSize,
                 },
                 paint: {
-                    'text-color': '#fff',
+                    'text-color': outlineColor,
                 },
             })
         }

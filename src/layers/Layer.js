@@ -15,7 +15,6 @@ class Layer extends Evented {
         this._interactiveIds = []
 
         this.options = options
-        this.off = this.removeListener // TODO: Why needed?
     }
 
     async addTo(map) {

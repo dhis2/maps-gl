@@ -21,8 +21,6 @@ class ServerCluster extends Layer {
     createSource() {
         const id = this.getId()
 
-        // console.log('Server cluster', id)
-
         this.setSource(id, {
             type: 'geojson',
             data: {
