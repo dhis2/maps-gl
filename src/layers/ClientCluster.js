@@ -66,7 +66,7 @@ class ClientCluster extends Layer {
         // Non-clustered points
         this.addLayer(
             {
-                id,
+                id: `${id}-points`,
                 type: 'circle',
                 source: id,
                 filter: ['all', noCluster, isPoint],
@@ -83,12 +83,12 @@ class ClientCluster extends Layer {
         // Non-clustered polygons
         this.addLayer(
             {
-                id,
+                id: `${id}-polygons`,
                 type: 'fill',
                 source: id,
                 filter: ['all', noCluster, isPolygon],
                 paint: {
-                    'circle-color': colorExpr,
+                    'fill-color': colorExpr,
                     'fill-outline-color': outlineColor,
                 },
             },
@@ -123,7 +123,7 @@ class ClientCluster extends Layer {
                     'text-size': textSize,
                 },
                 paint: {
-                    'text-color': outlineColor,
+                    'text-color': textColor,
                 },
             })
         }

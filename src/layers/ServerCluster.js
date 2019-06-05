@@ -2,6 +2,14 @@ import throttle from 'lodash.throttle'
 import { getZoomResolution, getTileBBox } from '../utils/geo'
 import { formatCount } from '../utils/numbers'
 import Layer from './Layer'
+import { isPoint, isPolygon, isCluster, noCluster } from '../utils/filters'
+import {
+    outlineColor,
+    outlineWidth,
+    clusterRadius,
+    textFont,
+    textSize,
+} from '../utils/style'
 
 // TODO: Support event polygons
 // TODO: Spiderify
@@ -40,55 +48,62 @@ class ServerCluster extends Layer {
                 id,
                 type: 'circle',
                 source: id,
-                filter: ['==', 'count', 1],
+                filter: ['all', noCluster, isPoint],
                 paint: {
                     'circle-color': color,
                     'circle-radius': radius,
-                    'circle-stroke-width': 1,
-                    'circle-stroke-color': '#fff',
+                    'circle-stroke-width': outlineWidth,
+                    'circle-stroke-color': outlineColor,
                 },
             },
             true
         )
 
+        // Non-clustered polygons
+        this.addLayer(
+            {
+                id,
+                type: 'fill',
+                source: id,
+                filter: ['all', noCluster, isPolygon],
+                paint: {
+                    'circle-color': colorExpr,
+                    'fill-outline-color': outlineColor,
+                },
+            },
+            true
+        )
+
+        // Clusters
         this.addLayer(
             {
                 id: `${id}-clusters`,
                 type: 'circle',
                 source: id,
-                filter: ['!=', 'count', 1],
+                filter: isCluster,
                 paint: {
                     'circle-color': color,
-                    'circle-radius': [
-                        'step',
-                        ['get', 'count'],
-                        15,
-                        10,
-                        20,
-                        1000,
-                        25,
-                        10000,
-                        30,
-                    ],
-                    'circle-stroke-width': 1,
-                    'circle-stroke-color': '#fff',
+                    'circle-radius': clusterRadius,
+                    'circle-stroke-width': outlineWidth,
+                    'circle-stroke-color': outlineColor,
                 },
             },
             true
         )
 
+        //
         this.addLayer({
             id: `${id}-count`,
             type: 'symbol',
             source: id,
-            filter: ['!=', 'count', 1],
+            filter: isCluster,
             layout: {
                 'text-field': '{count_formatted}',
-                'text-font': ['Open Sans Bold'],
-                'text-size': 16,
+                'text-font': textFont,
+                'text-size': textSize,
             },
             paint: {
-                'text-color': '#fff',
+                'text-color': textColor,
             },
         })
     }
