@@ -4,6 +4,7 @@ import { Evented } from 'mapbox-gl'
 import getControl from './controls'
 import Layer from './layers/Layer'
 import layerTypes from './layers/layerTypes'
+import { sync, unsync } from './utils/sync'
 
 export class Map extends Evented {
     constructor(el) {
@@ -241,6 +242,16 @@ export class Map extends Evented {
             .setLngLat(coordinates)
             .setHTML(content)
             .addTo(this._mapgl)
+    }
+
+    // Synchronize the view of two maps
+    sync(map) {
+        sync(this.getMapGL(), map.getMapGL())
+    }
+
+    // Remove synchronize between two maps
+    unsync(map) {
+        unsync(this.getMapGL(), map.getMapGL())
     }
 
     _createClickEvent(evt) {
