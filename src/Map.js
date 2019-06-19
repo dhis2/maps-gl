@@ -1,5 +1,6 @@
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
+import { Evented } from 'mapbox-gl'
 import getControl from './controls'
 import Layer from './layers/Layer'
 import TileLayer from './layers/TileLayer'
@@ -20,7 +21,7 @@ const layers = {
     earthEngine: EarthEngine,
 }
 
-export class Map extends EventEmitter {
+export class Map extends Evented {
     constructor(el) {
         super()
 
@@ -149,10 +150,14 @@ export class Map extends EventEmitter {
 
     onClick(evt) {
         const eventObj = this._createClickEvent(evt)
+        const { feature } = eventObj
 
-        if (eventObj.feature) {
-            const layer = this.getLayerFromId(eventObj.feature.layer.id)
-            layer.emit('click', eventObj)
+        if (feature) {
+            const layer = this.getLayerFromId(feature.layer.id)
+
+            if (layer) {
+                layer.onClick(eventObj)
+            }
         }
     }
 
@@ -161,9 +166,9 @@ export class Map extends EventEmitter {
 
         if (eventObj.feature) {
             const layer = this.getLayerFromId(eventObj.feature.layer.id)
-            layer.emit('contextmenu', eventObj)
+            layer.fire('contextmenu', eventObj)
         } else {
-            this.emit('contextmenu', eventObj)
+            this.fire('contextmenu', eventObj)
         }
     }
 
@@ -256,25 +261,15 @@ export class Map extends EventEmitter {
 
     _createClickEvent(evt) {
         const { lngLat, originalEvent } = evt
+        const type = 'click'
         const coordinates = [lngLat.lng, lngLat.lat]
         const position = [
             originalEvent.x,
             originalEvent.pageY || originalEvent.y,
         ]
-        const eventObj = { coordinates, position }
-
         const feature = this.getEventFeature(evt)
 
-        if (feature) {
-            eventObj.feature = {
-                type: 'Feature',
-                properties: feature.properties,
-                geometry: feature.geometry,
-                layer: feature.layer,
-            }
-        }
-
-        return eventObj
+        return { type, coordinates, position, feature }
     }
 }
 
