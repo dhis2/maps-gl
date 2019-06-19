@@ -1,5 +1,4 @@
 import uuid from 'uuid/v4'
-import EventEmitter from 'events'
 import bbox from '@turf/bbox'
 import { addImages } from '../utils/images'
 
