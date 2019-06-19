@@ -3,23 +3,7 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import EventEmitter from 'events'
 import getControl from './controls'
 import Layer from './layers/Layer'
-import TileLayer from './layers/TileLayer'
-import Choropleth from './layers/Choropleth'
-import Boundary from './layers/Boundary'
-import Markers from './layers/Markers'
-import Dots from './layers/Dots'
-import ClientCluster from './layers/ClientCluster'
-import EarthEngine from './layers/EarthEngine'
-
-const layers = {
-    tileLayer: TileLayer,
-    choropleth: Choropleth,
-    boundary: Boundary,
-    markers: Markers,
-    dots: Dots,
-    clientCluster: ClientCluster,
-    earthEngine: EarthEngine,
-}
+import layerTypes from './layers/layerTypes'
 
 export class Map extends EventEmitter {
     constructor(el) {
@@ -116,7 +100,7 @@ export class Map extends EventEmitter {
 
     // Returns true if the layer type is supported
     hasLayerSupport(type) {
-        return !!layers[type]
+        return !!layerTypes[type]
     }
 
     addControl(control) {
@@ -132,8 +116,8 @@ export class Map extends EventEmitter {
     }
 
     createLayer(config) {
-        if (layers[config.type]) {
-            return new layers[config.type](config)
+        if (layerTypes[config.type]) {
+            return new layerTypes[config.type](config)
         } else {
             console.log('Unknown layer type', config.type)
             return new Layer()
