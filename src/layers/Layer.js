@@ -1,9 +1,9 @@
 import uuid from 'uuid/v4'
-import EventEmitter from 'events'
 import bbox from '@turf/bbox'
+import { Evented } from 'mapbox-gl'
 import { addImages } from '../utils/images'
 
-class Layer extends EventEmitter {
+class Layer extends Evented {
     constructor(options = {}) {
         super()
         this._id = uuid()
@@ -15,7 +15,6 @@ class Layer extends EventEmitter {
         this._interactiveIds = []
 
         this.options = options
-        this.off = this.removeListener // TODO: Why needed?
     }
 
     async addTo(map) {
@@ -185,9 +184,7 @@ class Layer extends EventEmitter {
     }
 
     // "Normalise" event before passing back to app
-    onClick(evt) {
-        console.log('onClick', evt)
-    }
+    onClick = evt => this.fire('click', evt)
 
     // "Normalise" event before passing back to app
     onRightClick(evt) {
