@@ -10,6 +10,7 @@ import Markers from './layers/Markers'
 import Dots from './layers/Dots'
 import ClientCluster from './layers/ClientCluster'
 import EarthEngine from './layers/EarthEngine'
+import { sync, unsync } from './utils/sync'
 
 const layers = {
     tileLayer: TileLayer,
@@ -253,6 +254,16 @@ export class Map extends EventEmitter {
             .setLngLat(coordinates)
             .setHTML(content)
             .addTo(this._mapgl)
+    }
+
+    // Synchronize the view of two maps
+    sync(map) {
+        sync(this.getMapGL(), map.getMapGL())
+    }
+
+    // Remove synchronize between two maps
+    unsync(map) {
+        unsync(this.getMapGL(), map.getMapGL())
     }
 
     _createClickEvent(evt) {
