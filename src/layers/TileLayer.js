@@ -32,6 +32,8 @@ class TileLayer extends Layer {
             type: 'raster',
             source: this.getId(),
         })
+
+        // console.log('TileLayer add', this.getMapGL().getLayer(this.getId()));
     }
 
     setOpacity(opacity) {

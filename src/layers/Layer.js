@@ -138,7 +138,6 @@ class Layer extends Evented {
         const mapgl = this.getMapGL()
 
         this.getLayers().forEach(layer => {
-            console.log('moveToTop', layer.id)
             mapgl.moveLayer(layer.id)
         })
     }

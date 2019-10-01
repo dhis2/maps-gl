@@ -43,33 +43,16 @@ class Choropleth extends Layer {
                 source: id,
                 paint: {
                     'fill-color': ['get', 'color'],
-                    'fill-outline-color': borderColor,
                 },
                 filter: ['==', '$type', 'Polygon'],
             },
             true
         )
 
-        // Point layer
-        this.addLayer(
-            {
-                id: `${id}-point`,
-                type: 'circle',
-                source: id,
-                paint: {
-                    'circle-color': ['get', 'color'],
-                    'circle-radius': ['get', 'radius'],
-                    'circle-stroke-width': borderWeight,
-                    'circle-stroke-color': borderColor,
-                },
-                filter: ['==', '$type', 'Point'],
-            },
-            true
-        )
-
-        // Polygon hover state
+        // Polygon outline and hover state
+        // https://github.com/mapbox/mapbox-gl-js/issues/3018
         this.addLayer({
-            id: `${id}-hover`,
+            id: `${id}-outline`,
             type: 'line',
             source: id,
             paint: {
@@ -84,24 +67,28 @@ class Choropleth extends Layer {
             filter: ['==', '$type', 'Polygon'],
         })
 
-        // Point hover state
-        this.addLayer({
-            id: `${id}-point-hover`,
-            type: 'circle',
-            source: id,
-            paint: {
-                'circle-opacity': 0,
-                'circle-radius': ['get', 'radius'],
-                'circle-stroke-width': [
-                    'case',
-                    ['boolean', ['feature-state', 'hover'], false],
-                    hoverBorderWeight,
-                    borderWeight,
-                ],
-                'circle-stroke-color': borderColor,
+        // Point layer
+        this.addLayer(
+            {
+                id: `${id}-point`,
+                type: 'circle',
+                source: id,
+                paint: {
+                    'circle-color': ['get', 'color'],
+                    'circle-radius': ['get', 'radius'],
+                    // 'circle-stroke-width': borderWeight,
+                    'circle-stroke-width': [
+                        'case',
+                        ['boolean', ['feature-state', 'hover'], false],
+                        hoverBorderWeight,
+                        borderWeight,
+                    ],
+                    'circle-stroke-color': borderColor,
+                },
+                filter: ['==', '$type', 'Point'],
             },
-            filter: ['==', '$type', 'Point'],
-        })
+            true
+        )
 
         if (label) {
             this.addLayer(getLabelsLayer(id, label, labelStyle))
@@ -115,6 +102,13 @@ class Choropleth extends Layer {
             const { label } = this.options
 
             mapgl.setPaintProperty(id, 'fill-opacity', opacity)
+            mapgl.setPaintProperty(`${id}-outline`, 'line-opacity', opacity)
+            mapgl.setPaintProperty(`${id}-point`, 'circle-opacity', opacity)
+            mapgl.setPaintProperty(
+                `${id}-point`,
+                'circle-stroke-opacity',
+                opacity
+            )
 
             if (label) {
                 mapgl.setPaintProperty(`${id}-labels`, 'text-opacity', opacity)
