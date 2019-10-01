@@ -76,7 +76,6 @@ class Choropleth extends Layer {
                 paint: {
                     'circle-color': ['get', 'color'],
                     'circle-radius': ['get', 'radius'],
-                    // 'circle-stroke-width': borderWeight,
                     'circle-stroke-width': [
                         'case',
                         ['boolean', ['feature-state', 'hover'], false],
