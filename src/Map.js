@@ -10,6 +10,7 @@ import Markers from './layers/Markers'
 import Dots from './layers/Dots'
 import ClientCluster from './layers/ClientCluster'
 import EarthEngine from './layers/EarthEngine'
+import { getBoundsFromLayers } from './utils/geometry'
 
 const layers = {
     tileLayer: TileLayer,
@@ -80,6 +81,8 @@ export class Map extends Evented {
         }
         this._layers.push(layer)
         this._isReady = true
+
+        console.log('Add layer', layer, this._layers)
 
         // TODO: Small delay added as TileLayer is not added immediately
         setTimeout(() => this.orderLayers(), 50)
@@ -238,6 +241,11 @@ export class Map extends Evented {
         return this._layers
     }
 
+    // Returns combined bounds for all vector layers
+    getLayersBounds() {
+        return getBoundsFromLayers(this.getLayers())
+    }
+
     orderLayers() {
         const outOfOrder = this._layers.some(
             (layer, index) => layer.getIndex() !== index
@@ -247,6 +255,7 @@ export class Map extends Evented {
             this._layers.sort((a, b) => a.getIndex() - b.getIndex())
 
             for (let i = 1; i < this._layers.length; i++) {
+                console.log('moveToTop', this._layers[i])
                 this._layers[i].moveToTop()
             }
         }
