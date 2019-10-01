@@ -14,6 +14,7 @@ import { getBoundsFromLayers } from './utils/geometry'
 
 const layers = {
     tileLayer: TileLayer,
+    wmsLayer: TileLayer,
     choropleth: Choropleth,
     boundary: Boundary,
     markers: Markers,
