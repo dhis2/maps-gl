@@ -116,7 +116,7 @@ export class Map extends Evented {
     }
 
     // Returns true if the layer type is supported
-    hasLayerSupport(type) {
+    static hasLayerSupport(type) {
         return !!layers[type]
     }
 
