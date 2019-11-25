@@ -10,9 +10,11 @@ import Markers from './layers/Markers'
 import Dots from './layers/Dots'
 import ClientCluster from './layers/ClientCluster'
 import EarthEngine from './layers/EarthEngine'
+import { getBoundsFromLayers } from './utils/geometry'
 
 const layers = {
     tileLayer: TileLayer,
+    wmsLayer: TileLayer,
     choropleth: Choropleth,
     boundary: Boundary,
     markers: Markers,
@@ -76,13 +78,12 @@ export class Map extends Evented {
 
     async addLayerWhenReady(layer) {
         if (!layer.isOnMap()) {
-            layer.addTo(this)
+            await layer.addTo(this)
         }
         this._layers.push(layer)
         this._isReady = true
 
-        // TODO: Small delay added as TileLayer is not added immediately
-        setTimeout(() => this.orderLayers(), 50)
+        this.orderLayers()
     }
 
     addLayer(layer) {
@@ -115,7 +116,7 @@ export class Map extends Evented {
     }
 
     // Returns true if the layer type is supported
-    hasLayerSupport(type) {
+    static hasLayerSupport(type) {
         return !!layers[type]
     }
 
@@ -209,6 +210,11 @@ export class Map extends Evented {
         this._hoverId = featureSourceId
     }
 
+    // Returns the map zoom level
+    getZoom() {
+        return this.getMapGL().getZoom()
+    }
+
     // TODO: throttle?
     getEventFeature(evt) {
         const layers = this.getLayers()
@@ -238,6 +244,11 @@ export class Map extends Evented {
         return this._layers
     }
 
+    // Returns combined bounds for all vector layers
+    getLayersBounds() {
+        return getBoundsFromLayers(this.getLayers())
+    }
+
     orderLayers() {
         const outOfOrder = this._layers.some(
             (layer, index) => layer.getIndex() !== index
@@ -247,8 +258,17 @@ export class Map extends Evented {
             this._layers.sort((a, b) => a.getIndex() - b.getIndex())
 
             for (let i = 1; i < this._layers.length; i++) {
+                // console.log('moveToTop', this._layers[i])
                 this._layers[i].moveToTop()
             }
+
+            // console.log('style', this._mapgl.getStyle().layers);
+
+            /*
+            setTimeout(() => {
+                console.log('style II', this._mapgl.getStyle().layers);
+            }, 500)
+            */
         }
     }
 

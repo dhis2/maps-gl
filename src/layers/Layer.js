@@ -136,7 +136,10 @@ class Layer extends Evented {
 
     moveToTop() {
         const mapgl = this.getMapGL()
-        this.getLayers().forEach(layer => mapgl.moveLayer(layer.id))
+
+        this.getLayers().forEach(layer => {
+            mapgl.moveLayer(layer.id)
+        })
     }
 
     getFeatures() {
@@ -163,9 +166,8 @@ class Layer extends Evented {
         this._images = images
     }
 
-    setIndex(index) {
+    setIndex(index = 0) {
         this.options.index = index
-
         this.getMap().orderLayers()
     }
 

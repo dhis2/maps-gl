@@ -4,15 +4,20 @@ class TileLayer extends Layer {
     constructor(options) {
         super(options)
 
-        const { url, attribution } = options
-        this.createSource(url, attribution)
+        const { url, layers, format, attribution } = options
+        this.createSource(url, layers, format, attribution)
         this.createLayer()
     }
 
-    createSource(url, attribution) {
+    createSource(url, layers, format = 'image/png', attribution = '') {
         let tiles
 
-        if (url.includes('{s}')) {
+        if (layers) {
+            // WMS
+            tiles = [
+                `${url}?bbox={bbox-epsg-3857}&format=${format}&service=WMS&version=1.1.1&request=GetMap&srs=EPSG:3857&transparent=true&width=256&height=256&layers=${layers}`,
+            ]
+        } else if (url.includes('{s}')) {
             tiles = ['a', 'b', 'c'].map(letter => url.replace('{s}', letter))
         } else {
             tiles = [url]
