@@ -258,25 +258,27 @@ export class Map extends Evented {
             this._layers.sort((a, b) => a.getIndex() - b.getIndex())
 
             for (let i = 1; i < this._layers.length; i++) {
-                // console.log('moveToTop', this._layers[i])
                 this._layers[i].moveToTop()
             }
-
-            // console.log('style', this._mapgl.getStyle().layers);
-
-            /*
-            setTimeout(() => {
-                console.log('style II', this._mapgl.getStyle().layers);
-            }, 500)
-            */
         }
     }
 
-    openPopup(content, coordinates) {
-        new mapboxgl.Popup()
-            .setLngLat(coordinates)
-            .setHTML(content)
+    openPopup(content, lnglat, onClose) {
+        this._popup = new mapboxgl.Popup()
+            .setLngLat(lnglat)
+            .setDOMContent(content)
             .addTo(this._mapgl)
+
+        if (typeof onClose === 'function') {
+            this._popup.once('close', onClose)
+        }
+    }
+
+    closePopup() {
+        if (this._popup) {
+            this._popup.remove()
+            this._popup = null
+        }
     }
 
     _createClickEvent(evt) {
