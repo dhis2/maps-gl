@@ -24,6 +24,11 @@ const layers = {
 }
 
 export class Map extends Evented {
+    // Returns true if the layer type is supported
+    static hasLayerSupport(type) {
+        return !!layers[type]
+    }
+
     constructor(el) {
         super()
 
@@ -45,6 +50,7 @@ export class Map extends Evented {
         this._mapgl.on('mousemove', evt => this.onMouseMove(evt))
 
         this._layers = []
+        this._controls = {}
         this._isReady = false
     }
 
@@ -115,21 +121,18 @@ export class Map extends Evented {
         return layer && layer.isOnMap()
     }
 
-    // Returns true if the layer type is supported
-    static hasLayerSupport(type) {
-        return !!layers[type]
-    }
-
     addControl(control) {
+        const { type } = control
         const mapboxControl = getControl(control)
 
         if (mapboxControl) {
             this._mapgl.addControl(mapboxControl)
+            this._controls[type] = mapboxControl
         }
     }
 
     removeControl(control) {
-        console.log('removeControl', control)
+        // console.log('removeControl', control)
     }
 
     createLayer(config) {
@@ -141,13 +144,15 @@ export class Map extends Evented {
         }
     }
 
-    openPopup(popup) {
-        console.log('openPopup', popup)
-    }
-
     resize() {
         this._mapgl.resize()
     }
+
+    // Synchronize this map with other maps with the same id
+    sync(id) {}
+
+    // Remove synchronize of this map
+    unsync(id) {}
 
     onClick(evt) {
         const eventObj = this._createClickEvent(evt)
@@ -247,6 +252,15 @@ export class Map extends Evented {
     // Returns combined bounds for all vector layers
     getLayersBounds() {
         return getBoundsFromLayers(this.getLayers())
+    }
+
+    // Returns the dom element of the control
+    getControlContainer(type) {
+        if (this._controls[type]) {
+            return this._controls[type]._container
+        }
+
+        return document.createElement('div') // TODO
     }
 
     orderLayers() {
