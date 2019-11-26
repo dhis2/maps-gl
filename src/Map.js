@@ -11,6 +11,8 @@ import Dots from './layers/Dots'
 import ClientCluster from './layers/ClientCluster'
 import EarthEngine from './layers/EarthEngine'
 import { getBoundsFromLayers } from './utils/geometry'
+import syncMaps from './utils/sync'
+import './Map.css'
 
 const layers = {
     tileLayer: TileLayer,
@@ -149,10 +151,14 @@ export class Map extends Evented {
     }
 
     // Synchronize this map with other maps with the same id
-    sync(id) {}
+    sync(id) {
+        syncMaps.add(id, this._mapgl)
+    }
 
     // Remove synchronize of this map
-    unsync(id) {}
+    unsync(id) {
+        syncMaps.remove(id, this._mapgl)
+    }
 
     onClick(evt) {
         const eventObj = this._createClickEvent(evt)

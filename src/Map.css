@@ -1,0 +1,5 @@
+.dhis2-map-split-view .mapboxgl-ctrl-group {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
