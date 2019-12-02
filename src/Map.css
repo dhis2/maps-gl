@@ -1,3 +1,8 @@
+#dhis2-map-container .mapboxgl-popup em {
+    font-style: normal;
+    font-weight: bold;
+}
+
 .dhis2-map-split-view .mapboxgl-ctrl-group {
     position: absolute;
     top: 10px;
