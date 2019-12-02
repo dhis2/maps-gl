@@ -45,6 +45,7 @@ export class Map extends Evented {
             maxZoom: 18,
         })
 
+        this._mapgl.on('load', evt => this.fire('ready', this))
         this._mapgl.on('click', evt => this.onClick(evt))
         this._mapgl.on('contextmenu', evt => this.onContextMenu(evt))
 
@@ -53,17 +54,13 @@ export class Map extends Evented {
 
         this._layers = []
         this._controls = {}
-        this._isReady = false
     }
 
     fitBounds(bounds) {
         if (bounds) {
-            // TODO: Avoid timeout
-            setTimeout(() => {
-                this._mapgl.fitBounds(bounds, {
-                    padding: 20,
-                })
-            }, 200)
+            this._mapgl.fitBounds(bounds, {
+                padding: 20,
+            })
         }
     }
 
@@ -89,25 +86,30 @@ export class Map extends Evented {
             await layer.addTo(this)
         }
         this._layers.push(layer)
-        this._isReady = true
 
         this.orderLayers()
     }
 
-    addLayer(layer) {
+    async addLayer(layer) {
+        this._layers.push(layer)
+
         if (!layer.isOnMap()) {
-            if (this.isMapReady()) {
-                this.addLayerWhenReady(layer)
-            } else {
-                this._mapgl.once('styledata', () =>
-                    this.addLayerWhenReady(layer)
-                )
+            await layer.addTo(this)
+
+            // Layer is removed while being created
+            if (!this.hasLayer(layer)) {
+                this.removeLayer(layer)
             }
         }
+
+        this.orderLayers()
     }
 
     removeLayer(layer) {
-        layer.removeFrom(this)
+        if (layer.isOnMap()) {
+            layer.removeFrom(this)
+        }
+
         this._layers = this._layers.filter(l => l !== layer)
     }
 
@@ -115,12 +117,8 @@ export class Map extends Evented {
         // console.log("remove map");
     }
 
-    isMapReady() {
-        return this._isReady || this._mapgl.isStyleLoaded()
-    }
-
     hasLayer(layer) {
-        return layer && layer.isOnMap()
+        return !!this._layers.find(l => l === layer)
     }
 
     addControl(control) {
@@ -278,7 +276,11 @@ export class Map extends Evented {
             this._layers.sort((a, b) => a.getIndex() - b.getIndex())
 
             for (let i = 1; i < this._layers.length; i++) {
-                this._layers[i].moveToTop()
+                const layer = this._layers[i]
+
+                if (layer.isOnMap()) {
+                    layer.moveToTop()
+                }
             }
         }
     }
