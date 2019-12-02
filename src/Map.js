@@ -60,6 +60,7 @@ export class Map extends Evented {
         if (bounds) {
             this._mapgl.fitBounds(bounds, {
                 padding: 20,
+                duration: 0,
             })
         }
     }

@@ -1,3 +1,8 @@
+#dhis2-map-container .mapboxgl-popup-content {
+    box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+}
+
+
 #dhis2-map-container .mapboxgl-popup em {
     font-style: normal;
     font-weight: bold;
@@ -8,3 +13,4 @@
     top: 10px;
     right: 10px;
 }
+
