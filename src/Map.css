@@ -14,3 +14,15 @@
     right: 10px;
 }
 
+.dhis2-map-popup-event {
+    width: 300px;
+    max-height: 300px;
+    overflow: auto;
+}
+
+.dhis2-map-popup-event th {
+    white-space: nowrap;
+    vertical-align: top;
+    font-weight: bold;
+    padding-right: 5px;
+}

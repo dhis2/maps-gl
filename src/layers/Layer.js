@@ -18,7 +18,7 @@ class Layer extends Evented {
     }
 
     async addTo(map) {
-        const { onClick, onRightClick } = this.options
+        const { opacity, onClick, onRightClick } = this.options
 
         this._map = map
 
@@ -33,6 +33,10 @@ class Layer extends Evented {
 
         Object.keys(source).forEach(id => mapgl.addSource(id, source[id]))
         layers.forEach(layer => mapgl.addLayer(layer))
+
+        if (opacity) {
+            this.setOpacity(opacity)
+        }
 
         if (onClick) {
             this.on('click', onClick)
@@ -93,6 +97,7 @@ class Layer extends Evented {
 
     isOnMap() {
         const mapgl = this.getMapGL()
+
         return Boolean(mapgl && mapgl.getLayer(this._id))
     }
 

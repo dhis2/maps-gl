@@ -7,7 +7,7 @@ import TileLayer from './layers/TileLayer'
 import Choropleth from './layers/Choropleth'
 import Boundary from './layers/Boundary'
 import Markers from './layers/Markers'
-import Dots from './layers/Dots'
+import Events from './layers/Events'
 import ClientCluster from './layers/ClientCluster'
 import EarthEngine from './layers/EarthEngine'
 import { getBoundsFromLayers } from './utils/geometry'
@@ -20,7 +20,7 @@ const layers = {
     choropleth: Choropleth,
     boundary: Boundary,
     markers: Markers,
-    dots: Dots,
+    events: Events,
     clientCluster: ClientCluster,
     earthEngine: EarthEngine,
 }
@@ -278,7 +278,9 @@ export class Map extends Evented {
     }
 
     openPopup(content, lnglat, onClose) {
-        this._popup = new mapboxgl.Popup()
+        this._popup = new mapboxgl.Popup({
+            maxWidth: 'auto',
+        })
             .setLngLat(lnglat)
             .setDOMContent(content)
             .addTo(this._mapgl)
