@@ -82,15 +82,6 @@ export class Map extends Evented {
         return this._mapgl
     }
 
-    async addLayerWhenReady(layer) {
-        if (!layer.isOnMap()) {
-            await layer.addTo(this)
-        }
-        this._layers.push(layer)
-
-        this.orderLayers()
-    }
-
     async addLayer(layer) {
         this._layers.push(layer)
 
