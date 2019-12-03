@@ -1,5 +1,9 @@
 import Layer from './Layer'
 
+const strokeColor = '#fff'
+const strokeWeight = 1
+const hoverStrokeWeight = 3
+
 class Events extends Layer {
     constructor(options) {
         super(options)
@@ -31,8 +35,13 @@ class Events extends Layer {
                 paint: {
                     'circle-color': ['get', 'color'],
                     'circle-radius': radius,
-                    'circle-stroke-width': 1,
-                    'circle-stroke-color': '#fff',
+                    'circle-stroke-width': [
+                        'case',
+                        ['boolean', ['feature-state', 'hover'], false],
+                        hoverStrokeWeight,
+                        strokeWeight,
+                    ],
+                    'circle-stroke-color': strokeColor,
                 },
             },
             true
