@@ -9,6 +9,10 @@ import Boundary from './layers/Boundary'
 import Markers from './layers/Markers'
 import Events from './layers/Events'
 import ClientCluster from './layers/ClientCluster'
+import ServerCluster, {
+    ServerClusterSource,
+    SERVER_CLUSTER_TYPE,
+} from './layers/ServerCluster'
 import EarthEngine from './layers/EarthEngine'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
@@ -22,6 +26,7 @@ const layers = {
     markers: Markers,
     events: Events,
     clientCluster: ClientCluster,
+    serverCluster: ServerCluster,
     earthEngine: EarthEngine,
 }
 
@@ -44,6 +49,17 @@ export class Map extends Evented {
             },
             maxZoom: 18,
         })
+
+        this._mapgl.addSourceType(
+            SERVER_CLUSTER_TYPE,
+            ServerClusterSource,
+            err => {
+                console.log('addSourceType servercluster', err)
+                if (err) {
+                    // TODO
+                }
+            }
+        )
 
         this._mapgl.on('load', evt => this.fire('ready', this))
         this._mapgl.on('click', evt => this.onClick(evt))
