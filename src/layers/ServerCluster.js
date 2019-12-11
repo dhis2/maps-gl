@@ -54,6 +54,7 @@ export class ServerClusterSource extends Evented {
     onAdd(map) {
         console.log('#onAdd', map)
         this.map = map
+        this.tileUrl = 'abc'
         this.load()
     }
 

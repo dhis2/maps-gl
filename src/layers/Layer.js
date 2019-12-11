@@ -24,7 +24,8 @@ class Layer extends Evented {
 
         const mapgl = map.getMapGL()
         const images = this.getImages()
-        const source = await this.getSource()
+        // const source = await this.getSource()
+        const source = this.getSource()
         const layers = this.getLayers()
 
         if (images) {
