@@ -46,6 +46,8 @@ class Layer extends Evented {
         if (onRightClick) {
             this.on('contextmenu', onRightClick)
         }
+
+        this.onAdd()
     }
 
     removeFrom(map) {
@@ -190,6 +192,8 @@ class Layer extends Evented {
             return bbox(data)
         }
     }
+
+    onAdd() {}
 
     // "Normalise" event before passing back to app
     onClick = evt => this.fire('click', evt)
