@@ -56,6 +56,8 @@ class Layer extends Evented {
         const layers = this.getLayers()
         const { onClick, onRightClick } = this.options
 
+        this.onRemove()
+
         layers.forEach(layer => mapgl.removeLayer(layer.id))
         Object.keys(source).forEach(id => mapgl.removeSource(id))
 
@@ -193,7 +195,11 @@ class Layer extends Evented {
         }
     }
 
+    // Override if needed in subclass
     onAdd() {}
+
+    // Override if needed in subclass
+    onRemove() {}
 
     // "Normalise" event before passing back to app
     onClick = evt => this.fire('click', evt)
