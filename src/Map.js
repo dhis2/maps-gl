@@ -3,34 +3,15 @@ import 'mapbox-gl/dist/mapbox-gl.css'
 import { Evented } from 'mapbox-gl'
 import getControl from './controls'
 import Layer from './layers/Layer'
-import TileLayer from './layers/TileLayer'
-import Choropleth from './layers/Choropleth'
-import Boundary from './layers/Boundary'
-import Markers from './layers/Markers'
-import Events from './layers/Events'
-import ClientCluster from './layers/ClientCluster'
-import ServerCluster from './layers/ServerCluster'
-import EarthEngine from './layers/EarthEngine'
+import layerTypes from './layers/layerTypes'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
 import './Map.css'
 
-const layers = {
-    tileLayer: TileLayer,
-    wmsLayer: TileLayer,
-    choropleth: Choropleth,
-    boundary: Boundary,
-    markers: Markers,
-    events: Events,
-    clientCluster: ClientCluster,
-    serverCluster: ServerCluster,
-    earthEngine: EarthEngine,
-}
-
 export class Map extends Evented {
     // Returns true if the layer type is supported
     static hasLayerSupport(type) {
-        return !!layers[type]
+        return !!layerTypes[type]
     }
 
     constructor(el) {
@@ -130,8 +111,8 @@ export class Map extends Evented {
     }
 
     createLayer(config) {
-        if (layers[config.type]) {
-            return new layers[config.type](config)
+        if (layerTypes[config.type]) {
+            return new layerTypes[config.type](config)
         } else {
             console.log('Unknown layer type', config.type)
             return new Layer()
