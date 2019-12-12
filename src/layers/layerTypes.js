@@ -4,7 +4,7 @@ import Boundary from './Boundary'
 import Markers from './Markers'
 import Events from './Events'
 import ClientCluster from './ClientCluster'
-import ServerCluster from './ClientCluster'
+import ServerCluster from './ServerCluster'
 import EarthEngine from './EarthEngine'
 
 export default {
