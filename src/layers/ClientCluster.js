@@ -1,5 +1,6 @@
 import Layer from './Layer'
 
+// TODO: https://github.com/dhis2/maps-gl/blob/layer-handling/src/layers/ClientCluster.js
 class ClientCluster extends Layer {
     constructor(options) {
         super(options)

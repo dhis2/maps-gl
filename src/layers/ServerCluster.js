@@ -7,6 +7,7 @@ const merc = new SphericalMercator({
     size: 512,
 })
 
+// TODO: https://github.com/dhis2/maps-gl/blob/layer-handling/src/layers/ServerCluster.js
 class ServerCluster extends Layer {
     constructor(options) {
         super({
