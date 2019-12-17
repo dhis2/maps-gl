@@ -9,7 +9,10 @@ class DonutMarker extends Marker {
         element.addEventListener('click', this.onClick)
     }
 
-    onClick = () => this.fire('click')
+    onClick = evt => {
+        evt.stopPropagation()
+        this.fire('click')
+    }
 }
 
 // Returns a SVG donut chart

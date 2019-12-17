@@ -100,10 +100,11 @@ class Layer extends Evented {
         return this._map && this._map.getMapGL()
     }
 
+    // Returns true if one of the layers are added to the map
     isOnMap() {
         const mapgl = this.getMapGL()
 
-        return Boolean(mapgl && mapgl.getLayer(this._id))
+        return Boolean(mapgl && this._layers.find(l => mapgl.getLayer(l.id)))
     }
 
     isVisible() {
@@ -111,8 +112,8 @@ class Layer extends Evented {
     }
 
     isInteractive() {
-        return (
-            !!this._interactiveIds.length && this.isOnMap() && this.isVisible()
+        return Boolean(
+            this._interactiveIds.length && this.isOnMap() && this.isVisible()
         )
     }
 
@@ -193,6 +194,11 @@ class Layer extends Evented {
         if (data && data.features.length) {
             return bbox(data)
         }
+    }
+
+    isMaxZoom() {
+        const mapgl = this.getMapGL()
+        return mapgl.getZoom() === mapgl.getMaxZoom()
     }
 
     // Override if needed in subclass

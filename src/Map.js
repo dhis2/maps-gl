@@ -25,7 +25,8 @@ export class Map extends Evented {
                 layers: [],
                 glyphs: 'http://fonts.openmaptiles.org/{fontstack}/{range}.pbf', // TODO: Host ourseleves
             },
-            maxZoom: 18,
+            // maxZoom: 18,
+            maxZoom: 12,
         })
 
         this._mapgl.on('load', evt => this.fire('ready', this))
@@ -260,8 +261,9 @@ export class Map extends Evented {
         }
     }
 
-    openPopup(content, lnglat, onClose) {
+    openPopup(content, lnglat, onClose, offset) {
         this._popup = new mapboxgl.Popup({
+            offset: offset,
             maxWidth: 'auto',
         })
             .setLngLat(lnglat)

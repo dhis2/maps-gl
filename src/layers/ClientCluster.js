@@ -1,4 +1,6 @@
 import throttle from 'lodash.throttle'
+import MapboxglSpiderifier from 'mapboxgl-spiderifier'
+import 'mapboxgl-spiderifier/index.css'
 import Layer from './Layer'
 import DonutMarker from './DonutMarker'
 import { isPoint, isPolygon, isCluster, noCluster } from '../utils/filters'
@@ -54,7 +56,8 @@ class ClientCluster extends Layer {
             type: 'geojson',
             data,
             cluster: true,
-            clusterMaxZoom: 14,
+            // clusterMaxZoom: 14,
+            clusterMaxZoom: 12,
             clusterRadius: 50,
             clusterProperties,
         })
@@ -157,9 +160,9 @@ class ClientCluster extends Layer {
                 cluster = new DonutMarker(segments)
 
                 cluster.setLngLat(coordinates)
-                cluster.on('click', () =>
+                cluster.on('click', () => {
                     this.zoomToCluster(cluster_id, coordinates)
-                )
+                })
 
                 this.clusters[cluster_id] = cluster
             }
@@ -186,9 +189,19 @@ class ClientCluster extends Layer {
     }
 
     onAdd() {
-        if (this.isDonutClusters()) {
-            const mapgl = this.getMapGL()
+        const mapgl = this.getMapGL()
 
+        this._spiderifier = new MapboxglSpiderifier(mapgl, {
+            animate: true,
+            animationSpeed: 200,
+            customPin: true,
+            onClick: this.onSpiderClick,
+            initializeLeg: this.initializeSpiderLeg,
+        })
+
+        mapgl.on('click', this.onMapClick)
+
+        if (this.isDonutClusters()) {
             mapgl.on('data', this.onData)
             mapgl.on('move', this.updateClustersThrottled)
             mapgl.on('moveend', this.updateClustersThrottled)
@@ -198,8 +211,13 @@ class ClientCluster extends Layer {
     }
 
     onRemove() {
+        const mapgl = this.getMapGL()
+
+        mapgl.off('click', this.onMapClick)
+
+        this._spiderifier = null
+
         if (this.isDonutClusters()) {
-            const mapgl = this.getMapGL()
             mapgl.off('data', this.onData)
             mapgl.off('move', this.updateClustersThrottled)
             mapgl.off('moveend', this.updateClustersThrottled)
@@ -243,13 +261,34 @@ class ClientCluster extends Layer {
         }
     }
 
+    onSpiderClick = (evt, spiderLeg) => {
+        evt.stopPropagation()
+
+        const { feature, mapboxMarker } = spiderLeg
+        const { lng, lat } = mapboxMarker.getLngLat()
+
+        this.onClick({
+            type: 'click',
+            coordinates: [lng, lat],
+            position: [evt.x, evt.pageY || evt.y],
+            offset: MapboxglSpiderifier.popupOffsetForSpiderLeg(spiderLeg),
+            feature: feature,
+        })
+    }
+
+    onMapClick = () => {
+        if (this.isDonutClusters()) {
+            this.unspiderify()
+        }
+    }
+
     setOpacity(opacity) {
         if (this.isOnMap()) {
             const mapgl = this.getMapGL()
             const id = this.getId()
 
-            mapgl.setPaintProperty(id, 'circle-opacity', opacity)
-            mapgl.setPaintProperty(id, 'circle-stroke-opacity', opacity)
+            // mapgl.setPaintProperty(id, 'circle-opacity', opacity)
+            // mapgl.setPaintProperty(id, 'circle-stroke-opacity', opacity)
 
             if (this.isDonutClusters()) {
                 for (const id in this.clusters) {
@@ -274,13 +313,88 @@ class ClientCluster extends Layer {
     }
 
     zoomToCluster = (clusterId, center) => {
-        const mapgl = this.getMapGL()
-        const source = mapgl.getSource(this.getId())
+        if (this.isMaxZoom()) {
+            this.spiderify(clusterId, center)
+        } else {
+            const mapgl = this.getMapGL()
+            const source = mapgl.getSource(this.getId())
 
-        source.getClusterExpansionZoom(clusterId, (error, zoom) => {
-            if (error) return
-            mapgl.easeTo({ center, zoom: zoom + 1 })
+            source.getClusterExpansionZoom(clusterId, (error, zoom) => {
+                if (error) return
+                mapgl.easeTo({ center, zoom: zoom + 1 })
+            })
+        }
+    }
+
+    // Returns all features in a cluster
+    getClusterFeatures = clusterId =>
+        new Promise((resolve, reject) => {
+            const mapgl = this.getMapGL()
+            const source = mapgl.getSource(this.getId())
+
+            source.getClusterLeaves(clusterId, null, null, (error, features) =>
+                error ? reject(error) : resolve(features)
+            )
         })
+
+    spiderify = async (clusterId, lnglat) => {
+        if (clusterId !== this._spider) {
+            this.unspiderify()
+
+            const features = await this.getClusterFeatures(clusterId)
+
+            this._spiderifier.spiderfy(lnglat, features)
+
+            this._spider = clusterId
+
+            if (this.isDonutClusters()) {
+                this.setDonutOpacity(clusterId, 0.1)
+            }
+        }
+    }
+
+    unspiderify = () => {
+        const clusterId = this._spider
+
+        if (clusterId) {
+            if (this.isDonutClusters()) {
+                this.setDonutOpacity(clusterId)
+            }
+        }
+
+        this._spiderifier.unspiderfy()
+
+        this._spider = null
+    }
+
+    initializeSpiderLeg = spiderLeg => {
+        const { feature, elements } = spiderLeg
+        const { radius, fillColor, opacity } = this.options
+        const color = feature.properties.color || fillColor
+        const marker = document.createElement('div')
+
+        marker.setAttribute(
+            'style',
+            `
+            width: ${radius * 2}px;
+            height: ${radius * 2}px;
+            margin-left: -${radius}px;
+            margin-top: -${radius}px;
+            background-color: ${color};
+            opacity: ${opacity};
+            border-radius: 50%;`
+        )
+
+        elements.pin.appendChild(marker)
+    }
+
+    setDonutOpacity(clusterId, opacity) {
+        const donut = this.clusters[clusterId]
+
+        if (donut) {
+            donut.getElement().style.opacity =
+                opacity !== undefined ? opacity : this.options.opacity
+        }
     }
 }
 
