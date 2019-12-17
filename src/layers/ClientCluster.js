@@ -287,8 +287,8 @@ class ClientCluster extends Layer {
             const mapgl = this.getMapGL()
             const id = this.getId()
 
-            // mapgl.setPaintProperty(id, 'circle-opacity', opacity)
-            // mapgl.setPaintProperty(id, 'circle-stroke-opacity', opacity)
+            mapgl.setPaintProperty(`${id}-points`, 'circle-opacity', opacity)
+            mapgl.setPaintProperty(`${id}-polygons`, 'fill-opacity', opacity)
 
             if (this.isDonutClusters()) {
                 for (const id in this.clusters) {
