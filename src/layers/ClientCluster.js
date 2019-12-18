@@ -1,9 +1,7 @@
-import throttle from 'lodash.throttle'
 import MapboxglSpiderifier from 'mapboxgl-spiderifier'
 import 'mapboxgl-spiderifier/index.css'
-import Layer from './Layer'
-import DonutMarker from './DonutMarker'
-import { isPoint, isPolygon, isCluster, noCluster } from '../utils/filters'
+import Cluster from './Cluster'
+import { isCluster } from '../utils/filters'
 import {
     outlineColor,
     outlineWidth,
@@ -13,70 +11,28 @@ import {
     textColor,
 } from '../utils/style'
 
-// Based on: https://docs.mapbox.com/mapbox-gl-js/example/cluster-html/
-
-// Get contents of clusters:
-// https://docs.mapbox.com/mapbox-gl-js/api/#geojsonsource#getclusterexpansionzoom
-// https://github.com/mapbox/mapbox-gl-js/issues/3318
-// https://github.com/mapbox/mapbox-gl-js/pull/6829
-// https://github.com/bewithjonam/mapboxgl-spiderifier
-class ClientCluster extends Layer {
-    constructor(options) {
-        super(options)
-
-        const { data, fillColor, radius } = options
-
-        // Caching clusters for performance
-        this.clusters = {}
-        this.clustersOnScreen = {}
-
-        this.setFeatures(data)
-        this.createSource()
-        this.createLayers(fillColor, radius)
-
-        this.updateClustersThrottled = throttle(this.updateClusters, 100)
-    }
-
+class ClientCluster extends Cluster {
     createSource() {
-        const id = this.getId()
-        const data = this.getFeatures()
-        let clusterProperties
-
-        if (this.isDonutClusters()) {
-            clusterProperties = this.options.groups.reduce((obj, { color }) => {
-                obj[color] = [
-                    '+',
-                    ['case', ['==', ['get', 'color'], color], 1, 0],
-                ]
-                return obj
-            }, {})
-        }
-
-        this.setSource(id, {
-            type: 'geojson',
-            data,
+        super.createSource({
             cluster: true,
-            // clusterMaxZoom: 14,
-            clusterMaxZoom: 12,
-            clusterRadius: 50,
-            clusterProperties,
+            data: this.getFeatures(),
         })
     }
 
     createLayers(color, radius) {
-        const id = this.getId()
-        const colorExpr = ['case', ['has', 'color'], ['get', 'color'], color]
+        super.createLayers(color, radius)
 
-        // Non-clustered points
+        const id = this.getId()
+
         this.addLayer(
             {
-                id: `${id}-points`,
+                id: `${id}-clusters`,
                 type: 'circle',
                 source: id,
-                filter: ['all', noCluster, isPoint],
+                filter: isCluster,
                 paint: {
-                    'circle-color': colorExpr,
-                    'circle-radius': radius,
+                    'circle-color': color,
+                    'circle-radius': clusterRadius,
                     'circle-stroke-width': outlineWidth,
                     'circle-stroke-color': outlineColor,
                 },
@@ -84,104 +40,20 @@ class ClientCluster extends Layer {
             true
         )
 
-        // Non-clustered polygons
-        this.addLayer(
-            {
-                id: `${id}-polygons`,
-                type: 'fill',
-                source: id,
-                filter: ['all', noCluster, isPolygon],
-                paint: {
-                    'fill-color': colorExpr,
-                    'fill-outline-color': outlineColor,
-                },
+        this.addLayer({
+            id: `${id}-count`,
+            type: 'symbol',
+            source: id,
+            filter: isCluster,
+            layout: {
+                'text-field': '{point_count_abbreviated}',
+                'text-font': textFont,
+                'text-size': textSize,
             },
-            true
-        )
-
-        if (!this.isDonutClusters()) {
-            this.addLayer(
-                {
-                    id: `${id}-clusters`,
-                    type: 'circle',
-                    source: id,
-                    filter: isCluster,
-                    paint: {
-                        'circle-color': color,
-                        'circle-radius': clusterRadius,
-                        'circle-stroke-width': outlineWidth,
-                        'circle-stroke-color': outlineColor,
-                    },
-                },
-                true
-            )
-
-            this.addLayer({
-                id: `${id}-count`,
-                type: 'symbol',
-                source: id,
-                filter: isCluster,
-                layout: {
-                    'text-field': '{point_count_abbreviated}',
-                    'text-font': textFont,
-                    'text-size': textSize,
-                },
-                paint: {
-                    'text-color': textColor,
-                },
-            })
-        }
-    }
-
-    updateClusters = () => {
-        const { groups } = this.options
-        const mapgl = this.getMapGL()
-        const newClusters = {}
-        const features = mapgl.querySourceFeatures(this.getId())
-
-        // For every cluster on the screen, create an HTML marker for it
-        for (let i = 0; i < features.length; i++) {
-            const { geometry, properties } = features[i]
-            const { coordinates } = geometry
-            const { cluster: isCluster, cluster_id } = properties
-
-            if (!isCluster) {
-                continue
-            }
-
-            let cluster = this.clusters[cluster_id]
-
-            if (!cluster) {
-                const segments = groups.map(group => ({
-                    ...group,
-                    count: properties[group.color],
-                }))
-
-                cluster = new DonutMarker(segments)
-
-                cluster.setLngLat(coordinates)
-                cluster.on('click', () => {
-                    this.zoomToCluster(cluster_id, coordinates)
-                })
-
-                this.clusters[cluster_id] = cluster
-            }
-
-            newClusters[cluster_id] = cluster
-
-            // Add it to the map if it's not there already
-            if (!this.clustersOnScreen[cluster_id]) {
-                cluster.addTo(this.getMapGL())
-            }
-        }
-
-        // For every cluster we've added previously, remove those that are no longer visible
-        for (const id in this.clustersOnScreen) {
-            if (!newClusters[id]) {
-                this.clustersOnScreen[id].remove()
-            }
-        }
-        this.clustersOnScreen = newClusters
+            paint: {
+                'text-color': textColor,
+            },
+        })
     }
 
     isDonutClusters() {
@@ -200,14 +72,6 @@ class ClientCluster extends Layer {
         })
 
         mapgl.on('click', this.onMapClick)
-
-        if (this.isDonutClusters()) {
-            mapgl.on('data', this.onData)
-            mapgl.on('move', this.updateClustersThrottled)
-            mapgl.on('moveend', this.updateClustersThrottled)
-
-            this.updateClustersThrottled()
-        }
     }
 
     onRemove() {
@@ -216,25 +80,6 @@ class ClientCluster extends Layer {
         mapgl.off('click', this.onMapClick)
 
         this._spiderifier = null
-
-        if (this.isDonutClusters()) {
-            mapgl.off('data', this.onData)
-            mapgl.off('move', this.updateClustersThrottled)
-            mapgl.off('moveend', this.updateClustersThrottled)
-
-            for (const id in this.clustersOnScreen) {
-                this.clustersOnScreen[id].remove()
-            }
-
-            this.clustersOnScreen = {}
-            this.clusters = {}
-        }
-    }
-
-    onData = evt => {
-        if (evt.sourceId === this.getId() && evt.isSourceLoaded) {
-            this.updateClustersThrottled()
-        }
     }
 
     onClick = evt => {
@@ -289,23 +134,19 @@ class ClientCluster extends Layer {
 
             mapgl.setPaintProperty(`${id}-points`, 'circle-opacity', opacity)
             mapgl.setPaintProperty(`${id}-polygons`, 'fill-opacity', opacity)
+            mapgl.setPaintProperty(`${id}-clusters`, 'circle-opacity', opacity)
+            mapgl.setPaintProperty(
+                `${id}-clusters`,
+                'circle-stroke-opacity',
+                opacity
+            )
+            mapgl.setPaintProperty(`${id}-count`, 'text-opacity', opacity)
 
-            if (this.isDonutClusters()) {
-                for (const id in this.clusters) {
-                    this.clusters[id].getElement().style.opacity = opacity
-                }
-            } else {
-                mapgl.setPaintProperty(
-                    `${id}-clusters`,
-                    'circle-opacity',
-                    opacity
+            if (this._spider) {
+                this._spiderifier.each(
+                    spiderLeg =>
+                        (spiderLeg.elements.container.style.opacity = opacity)
                 )
-                mapgl.setPaintProperty(
-                    `${id}-clusters`,
-                    'circle-stroke-opacity',
-                    opacity
-                )
-                mapgl.setPaintProperty(`${id}-count`, 'text-opacity', opacity)
             }
         }
 
@@ -356,12 +197,6 @@ class ClientCluster extends Layer {
     unspiderify = () => {
         const clusterId = this._spider
 
-        if (clusterId) {
-            if (this.isDonutClusters()) {
-                this.setDonutOpacity(clusterId)
-            }
-        }
-
         this._spiderifier.unspiderfy()
 
         this._spider = null
@@ -386,15 +221,6 @@ class ClientCluster extends Layer {
         )
 
         elements.pin.appendChild(marker)
-    }
-
-    setDonutOpacity(clusterId, opacity) {
-        const donut = this.clusters[clusterId]
-
-        if (donut) {
-            donut.getElement().style.opacity =
-                opacity !== undefined ? opacity : this.options.opacity
-        }
     }
 }
 

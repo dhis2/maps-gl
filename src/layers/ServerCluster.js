@@ -1,5 +1,5 @@
-import Layer from './Layer'
 import SphericalMercator from '@mapbox/sphericalmercator'
+import Cluster from './Cluster'
 
 const earthRadius = 6378137
 
@@ -7,21 +7,12 @@ const merc = new SphericalMercator({
     size: 512,
 })
 
+const clusterSize = 110 // TODO
+
 // TODO: https://github.com/dhis2/maps-gl/blob/layer-handling/src/layers/ServerCluster.js
-class ServerCluster extends Layer {
-    constructor(options) {
-        super({
-            clusterSize: 110,
-            ...options,
-        })
-
-        this._currentTiles = []
-        this._tileClusters = {} // Cluster cache
-
-        const { fillColor, radius } = options
-        this.createSource()
-        this.createLayers(fillColor, radius)
-    }
+class ServerCluster extends Cluster {
+    currentTiles = []
+    tileClusters = {}
 
     createSource() {
         const id = this.getId()
@@ -92,7 +83,7 @@ class ServerCluster extends Layer {
 
     // Add clusters for one tile
     addClusters(tileId, clusters) {
-        this._tileClusters[tileId] = clusters
+        this.tileClusters[tileId] = clusters
         this._tiles[tileId] = 'loaded'
 
         console.log('addClusters', tileId, clusters, this.clusterSource)
@@ -100,7 +91,7 @@ class ServerCluster extends Layer {
 
     loadTiles(tiles) {
         const nonPendingTiles = tiles.filter(
-            id => this._tileClusters[id] !== 'pending'
+            id => this.tileClusters[id] !== 'pending'
         )
         Promise.all(nonPendingTiles.map(this.loadTile)).then(
             this.updateClusters
@@ -110,7 +101,7 @@ class ServerCluster extends Layer {
     // TODO: Error handling
     loadTile = tileId =>
         new Promise((resolve, reject) => {
-            const cache = this._tileClusters
+            const cache = this.tileClusters
             const tileCache = cache[tileId]
 
             if (Array.isArray(tileCache)) {
@@ -140,7 +131,7 @@ class ServerCluster extends Layer {
 
     getTileParams(tileId) {
         const [z, x, y] = tileId.split('/')
-        const { clusterSize } = this.options
+        // const { clusterSize } = this.options
         const mapgl = this._map.getMapGL()
 
         return {
@@ -173,8 +164,8 @@ class ServerCluster extends Layer {
     onMoveEnd = () => {
         const tiles = this.getVisibleTiles()
 
-        if (tiles.join('-') !== this._currentTiles.join('-')) {
-            this._currentTiles = tiles
+        if (tiles.join('-') !== this.currentTiles.join('-')) {
+            this.currentTiles = tiles
             this.loadTiles(tiles)
         } else {
             console.log('No change')
@@ -198,7 +189,7 @@ class ServerCluster extends Layer {
         [].concat(...this.getVisibleTiles().map(this.getTileClusters))
 
     getTileClusters = tileId => {
-        const clusters = this._tileClusters[tileId]
+        const clusters = this.tileClusters[tileId]
         return Array.isArray(clusters) ? clusters : []
     }
 }
