@@ -26,7 +26,7 @@ class DonutCluster extends Cluster {
         const newClusters = {}
         const features = mapgl.querySourceFeatures(this.getId())
 
-        // For every cluster on the screen, create an HTML marker for it
+        // For every cluster on the screen, create an donut marker
         for (let i = 0; i < features.length; i++) {
             const { geometry, properties } = features[i]
             const { coordinates } = geometry

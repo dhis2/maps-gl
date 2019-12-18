@@ -60,28 +60,6 @@ class ClientCluster extends Cluster {
         return Array.isArray(this.options.groups)
     }
 
-    onAdd() {
-        const mapgl = this.getMapGL()
-
-        this._spiderifier = new MapboxglSpiderifier(mapgl, {
-            animate: true,
-            animationSpeed: 200,
-            customPin: true,
-            onClick: this.onSpiderClick,
-            initializeLeg: this.initializeSpiderLeg,
-        })
-
-        mapgl.on('click', this.onMapClick)
-    }
-
-    onRemove() {
-        const mapgl = this.getMapGL()
-
-        mapgl.off('click', this.onMapClick)
-
-        this._spiderifier = null
-    }
-
     onClick = evt => {
         const { feature } = evt
 
@@ -195,10 +173,7 @@ class ClientCluster extends Cluster {
     }
 
     unspiderify = () => {
-        const clusterId = this._spider
-
         this._spiderifier.unspiderfy()
-
         this._spider = null
     }
 

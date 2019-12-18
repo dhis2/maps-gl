@@ -79,10 +79,13 @@ class Cluster extends Layer {
     }
 
     initializeSpiderLeg = spiderLeg => {
-        const { feature, elements } = spiderLeg
+        const { feature, elements, param } = spiderLeg
         const { radius, fillColor, opacity } = this.options
         const color = feature.properties.color || fillColor
         const marker = document.createElement('div')
+        const { angle } = param
+        const deltaX = Math.cos(angle) * radius
+        const deltaY = Math.sin(angle) * radius
 
         marker.setAttribute(
             'style',
@@ -93,7 +96,9 @@ class Cluster extends Layer {
             margin-top: -${radius}px;
             background-color: ${color};
             opacity: ${opacity};
-            border-radius: 50%;`
+            border: ${outlineWidth}px solid ${outlineColor};
+            border-radius: 50%;
+            transform: translate(${deltaX}px, ${deltaY}px);`
         )
 
         elements.pin.appendChild(marker)
@@ -136,8 +141,8 @@ class Cluster extends Layer {
             animate: true,
             animationSpeed: 200,
             customPin: true,
-            onClick: this.onSpiderClick,
             initializeLeg: this.initializeSpiderLeg,
+            onClick: this.onSpiderClick,
         })
     }
 
@@ -156,14 +161,18 @@ class Cluster extends Layer {
     onSpiderClick = (evt, spiderLeg) => {
         evt.stopPropagation()
 
-        const { feature, mapboxMarker } = spiderLeg
+        const { feature, mapboxMarker, param } = spiderLeg
+        const { angle, legLength } = param
+        const length = legLength + this.options.radius
+        const deltaX = length * Math.cos(angle)
+        const deltaY = length * Math.sin(angle)
         const { lng, lat } = mapboxMarker.getLngLat()
 
         this.onClick({
             type: 'click',
             coordinates: [lng, lat],
             position: [evt.x, evt.pageY || evt.y],
-            offset: MapboxglSpiderifier.popupOffsetForSpiderLeg(spiderLeg),
+            offset: [deltaX, deltaY],
             feature: feature,
         })
     }
