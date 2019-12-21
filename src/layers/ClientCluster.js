@@ -56,10 +56,6 @@ class ClientCluster extends Cluster {
         })
     }
 
-    isDonutClusters() {
-        return Array.isArray(this.options.groups)
-    }
-
     onClick = evt => {
         const { feature } = evt
 
@@ -84,34 +80,13 @@ class ClientCluster extends Cluster {
         }
     }
 
-    onSpiderClick = (evt, spiderLeg) => {
-        evt.stopPropagation()
-
-        const { feature, mapboxMarker } = spiderLeg
-        const { lng, lat } = mapboxMarker.getLngLat()
-
-        this.onClick({
-            type: 'click',
-            coordinates: [lng, lat],
-            position: [evt.x, evt.pageY || evt.y],
-            offset: MapboxglSpiderifier.popupOffsetForSpiderLeg(spiderLeg),
-            feature: feature,
-        })
-    }
-
-    onMapClick = () => {
-        if (this.isDonutClusters()) {
-            this.unspiderify()
-        }
-    }
-
     setOpacity(opacity) {
+        super.setOpacity(opacity)
+
         if (this.isOnMap()) {
             const mapgl = this.getMapGL()
             const id = this.getId()
 
-            mapgl.setPaintProperty(`${id}-points`, 'circle-opacity', opacity)
-            mapgl.setPaintProperty(`${id}-polygons`, 'fill-opacity', opacity)
             mapgl.setPaintProperty(`${id}-clusters`, 'circle-opacity', opacity)
             mapgl.setPaintProperty(
                 `${id}-clusters`,
@@ -119,13 +94,6 @@ class ClientCluster extends Cluster {
                 opacity
             )
             mapgl.setPaintProperty(`${id}-count`, 'text-opacity', opacity)
-
-            if (this._spider) {
-                this._spiderifier.each(
-                    spiderLeg =>
-                        (spiderLeg.elements.container.style.opacity = opacity)
-                )
-            }
         }
 
         this.options.opacity = opacity
@@ -133,7 +101,7 @@ class ClientCluster extends Cluster {
 
     zoomToCluster = (clusterId, center) => {
         if (this.isMaxZoom()) {
-            this.spiderify(clusterId, center)
+            this.spiderfy(clusterId, center)
         } else {
             const mapgl = this.getMapGL()
             const source = mapgl.getSource(this.getId())
@@ -156,46 +124,23 @@ class ClientCluster extends Cluster {
             )
         })
 
-    spiderify = async (clusterId, lnglat) => {
-        if (clusterId !== this._spider) {
-            this.unspiderify()
+    setClusterOpacity(clusterId, clusterOpacity) {
+        console.log('setClusterOpacity', clusterId, clusterOpacity)
 
-            const features = await this.getClusterFeatures(clusterId)
+        const { opacity } = this.options
 
-            this._spiderifier.spiderfy(lnglat, features)
-
-            this._spider = clusterId
-
-            if (this.isDonutClusters()) {
-                this.setDonutOpacity(clusterId, 0.1)
-            }
-        }
-    }
-
-    unspiderify = () => {
-        this._spiderifier.unspiderfy()
-        this._spider = null
-    }
-
-    initializeSpiderLeg = spiderLeg => {
-        const { feature, elements } = spiderLeg
-        const { radius, fillColor, opacity } = this.options
-        const color = feature.properties.color || fillColor
-        const marker = document.createElement('div')
-
-        marker.setAttribute(
-            'style',
-            `
-            width: ${radius * 2}px;
-            height: ${radius * 2}px;
-            margin-left: -${radius}px;
-            margin-top: -${radius}px;
-            background-color: ${color};
-            opacity: ${opacity};
-            border-radius: 50%;`
+        this.getMapGL().setPaintProperty(
+            `${this.getId()}-clusters`,
+            'circle-opacity',
+            clusterOpacity === undefined
+                ? opacity
+                : [
+                      'case',
+                      ['==', ['get', 'cluster_id'], clusterId],
+                      clusterOpacity,
+                      opacity,
+                  ]
         )
-
-        elements.pin.appendChild(marker)
     }
 }
 

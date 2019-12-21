@@ -138,7 +138,7 @@ class DonutCluster extends Cluster {
                 this.clusters[id].getElement().style.opacity = opacity
             }
             if (this.spiderId) {
-                this.setDonutOpacity(this.spiderId, 0.1)
+                this.setClusterOpacity(this.spiderId, 0.1)
 
                 const cluster = this.clusters[this.spiderId]
 
@@ -148,8 +148,6 @@ class DonutCluster extends Cluster {
                 }
             }
         }
-
-        this.options.opacity = opacity
     }
 
     zoomToCluster = (clusterId, center) => {
@@ -166,26 +164,13 @@ class DonutCluster extends Cluster {
         }
     }
 
-    setDonutOpacity(clusterId, opacity) {
-        const donut = this.clusters[clusterId]
+    setClusterOpacity(clusterId, opacity) {
+        const cluster = this.clusters[clusterId]
 
-        if (donut) {
-            donut.getElement().style.opacity =
+        if (cluster) {
+            cluster.getElement().style.opacity =
                 opacity !== undefined ? opacity : this.options.opacity
         }
-    }
-
-    spiderfy(clusterId, lnglat) {
-        super.spiderfy(clusterId, lnglat)
-        this.setDonutOpacity(clusterId, 0.1)
-    }
-
-    unspiderfy() {
-        if (this.spiderId) {
-            this.setDonutOpacity(this.spiderId)
-        }
-
-        super.unspiderfy()
     }
 }
 

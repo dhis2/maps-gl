@@ -76,6 +76,8 @@ class Cluster extends Layer {
                 )
             }
         }
+
+        this.options.opacity = opacity
     }
 
     initializeSpiderLeg = spiderLeg => {
@@ -113,13 +115,18 @@ class Cluster extends Layer {
             this.spiderifier.spiderfy(lnglat, features)
 
             this.spiderId = clusterId
+
+            this.setClusterOpacity(clusterId, 0.1)
         }
     }
 
     unspiderfy() {
+        this.setClusterOpacity(this.spiderId)
         this.spiderifier.unspiderfy()
         this.spiderId = null
     }
+
+    setClusterOpacity() {}
 
     // Returns all features in a cluster
     getClusterFeatures = clusterId =>
