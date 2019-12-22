@@ -1,6 +1,5 @@
-import MapboxglSpiderifier from 'mapboxgl-spiderifier'
-import 'mapboxgl-spiderifier/index.css'
 import Layer from './Layer'
+import Spider from './Spider'
 import { isPoint, isPolygon, noCluster } from '../utils/filters'
 import { outlineColor, outlineWidth } from '../utils/style'
 
@@ -62,6 +61,8 @@ class Cluster extends Layer {
     }
 
     setOpacity(opacity) {
+        this.options.opacity = opacity
+
         if (this.isOnMap()) {
             const mapgl = this.getMapGL()
             const id = this.getId()
@@ -70,40 +71,24 @@ class Cluster extends Layer {
             mapgl.setPaintProperty(`${id}-polygons`, 'fill-opacity', opacity)
 
             if (this.spiderId) {
-                this.spiderifier.each(
-                    spiderLeg =>
-                        (spiderLeg.elements.container.style.opacity = opacity)
-                )
+                this.setSpiderClusterOpacity(this.spiderId, true)
+                this.spider.setOpacity(opacity)
             }
         }
-
-        this.options.opacity = opacity
     }
 
-    initializeSpiderLeg = spiderLeg => {
-        const { feature, elements, param } = spiderLeg
-        const { radius, fillColor, opacity } = this.options
-        const color = feature.properties.color || fillColor
-        const marker = document.createElement('div')
-        const { angle } = param
-        const deltaX = Math.cos(angle) * radius
-        const deltaY = Math.sin(angle) * radius
+    zoomToCluster = (clusterId, center) => {
+        if (this.isMaxZoom()) {
+            this.spiderfy(clusterId, center)
+        } else {
+            const mapgl = this.getMapGL()
+            const source = mapgl.getSource(this.getId())
 
-        marker.setAttribute(
-            'style',
-            `
-            width: ${radius * 2}px;
-            height: ${radius * 2}px;
-            margin-left: -${radius}px;
-            margin-top: -${radius}px;
-            background-color: ${color};
-            opacity: ${opacity};
-            border: ${outlineWidth}px solid ${outlineColor};
-            border-radius: 50%;
-            transform: translate(${deltaX}px, ${deltaY}px);`
-        )
-
-        elements.pin.appendChild(marker)
+            source.getClusterExpansionZoom(clusterId, (error, zoom) => {
+                if (error) return
+                mapgl.easeTo({ center, zoom: zoom + 1 })
+            })
+        }
     }
 
     async spiderfy(clusterId, lnglat) {
@@ -112,21 +97,21 @@ class Cluster extends Layer {
 
             const features = await this.getClusterFeatures(clusterId)
 
-            this.spiderifier.spiderfy(lnglat, features)
+            this.spider.spiderfy(lnglat, features)
 
             this.spiderId = clusterId
 
-            this.setClusterOpacity(clusterId, 0.1)
+            this.setSpiderClusterOpacity(clusterId, true)
         }
     }
 
     unspiderfy() {
-        this.setClusterOpacity(this.spiderId)
-        this.spiderifier.unspiderfy()
+        this.setSpiderClusterOpacity(this.spiderId)
+        this.spider.unspiderfy()
         this.spiderId = null
     }
 
-    setClusterOpacity() {}
+    setSpiderClusterOpacity() {}
 
     // Returns all features in a cluster
     getClusterFeatures = clusterId =>
@@ -141,16 +126,18 @@ class Cluster extends Layer {
 
     onAdd() {
         const mapgl = this.getMapGL()
+        const { radius, fillColor, opacity } = this.options
 
         mapgl.on('click', this.onMapClick)
 
-        this.spiderifier = new MapboxglSpiderifier(mapgl, {
-            animate: true,
-            animationSpeed: 200,
-            customPin: true,
-            initializeLeg: this.initializeSpiderLeg,
-            onClick: this.onSpiderClick,
+        this.spider = new Spider(mapgl, {
+            onClick: this.onClick,
+            radius,
+            fillColor,
+            opacity,
         })
+
+        this.setOpacity(this.options.opacity)
     }
 
     onRemove() {
@@ -158,30 +145,11 @@ class Cluster extends Layer {
 
         mapgl.off('click', this.onMapClick)
 
-        this.spiderifier = null
+        this.spider = null
     }
 
     onMapClick = () => {
         this.unspiderfy()
-    }
-
-    onSpiderClick = (evt, spiderLeg) => {
-        evt.stopPropagation()
-
-        const { feature, mapboxMarker, param } = spiderLeg
-        const { angle, legLength } = param
-        const length = legLength + this.options.radius
-        const deltaX = length * Math.cos(angle)
-        const deltaY = length * Math.sin(angle)
-        const { lng, lat } = mapboxMarker.getLngLat()
-
-        this.onClick({
-            type: 'click',
-            coordinates: [lng, lat],
-            position: [evt.x, evt.pageY || evt.y],
-            offset: [deltaX, deltaY],
-            feature: feature,
-        })
     }
 }
 

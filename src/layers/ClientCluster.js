@@ -1,5 +1,3 @@
-import MapboxglSpiderifier from 'mapboxgl-spiderifier'
-import 'mapboxgl-spiderifier/index.css'
 import Cluster from './Cluster'
 import { isCluster } from '../utils/filters'
 import {
@@ -95,22 +93,6 @@ class ClientCluster extends Cluster {
             )
             mapgl.setPaintProperty(`${id}-count`, 'text-opacity', opacity)
         }
-
-        this.options.opacity = opacity
-    }
-
-    zoomToCluster = (clusterId, center) => {
-        if (this.isMaxZoom()) {
-            this.spiderfy(clusterId, center)
-        } else {
-            const mapgl = this.getMapGL()
-            const source = mapgl.getSource(this.getId())
-
-            source.getClusterExpansionZoom(clusterId, (error, zoom) => {
-                if (error) return
-                mapgl.easeTo({ center, zoom: zoom + 1 })
-            })
-        }
     }
 
     // Returns all features in a cluster
@@ -125,8 +107,6 @@ class ClientCluster extends Cluster {
         })
 
     setClusterOpacity(clusterId, clusterOpacity) {
-        console.log('setClusterOpacity', clusterId, clusterOpacity)
-
         const { opacity } = this.options
 
         this.getMapGL().setPaintProperty(

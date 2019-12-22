@@ -21,7 +21,7 @@ class DonutCluster extends Cluster {
     }
 
     updateClusters = throttle(() => {
-        const { groups } = this.options
+        const { groups, opacity } = this.options
         const mapgl = this.getMapGL()
         const newClusters = {}
         const features = mapgl.querySourceFeatures(this.getId())
@@ -44,7 +44,9 @@ class DonutCluster extends Cluster {
                     count: properties[group.color],
                 }))
 
-                cluster = new DonutMarker(segments)
+                cluster = new DonutMarker(segments, {
+                    opacity,
+                })
 
                 cluster.setLngLat(coordinates)
                 cluster.on('click', () => {
@@ -135,41 +137,22 @@ class DonutCluster extends Cluster {
 
         if (this.isOnMap()) {
             for (const id in this.clusters) {
-                this.clusters[id].getElement().style.opacity = opacity
+                this.clusters[id].setOpacity(opacity)
             }
             if (this.spiderId) {
-                this.setClusterOpacity(this.spiderId, 0.1)
-
-                const cluster = this.clusters[this.spiderId]
-
-                if (cluster) {
-                    cluster.getElement().style.opacity =
-                        opacity < 0.1 ? opacity : 0.1
-                }
+                this.setSpiderClusterOpacity(this.spiderId, true)
             }
         }
     }
 
-    zoomToCluster = (clusterId, center) => {
-        if (this.isMaxZoom()) {
-            this.spiderfy(clusterId, center)
-        } else {
-            const mapgl = this.getMapGL()
-            const source = mapgl.getSource(this.getId())
-
-            source.getClusterExpansionZoom(clusterId, (error, zoom) => {
-                if (error) return
-                mapgl.easeTo({ center, zoom: zoom + 1 })
-            })
-        }
-    }
-
-    setClusterOpacity(clusterId, opacity) {
+    setSpiderClusterOpacity(clusterId, isExpanded) {
         const cluster = this.clusters[clusterId]
+        const { opacity } = this.options
 
         if (cluster) {
-            cluster.getElement().style.opacity =
-                opacity !== undefined ? opacity : this.options.opacity
+            cluster.setOpacity(
+                isExpanded ? (opacity < 0.1 ? opacity : 0.1) : opacity
+            )
         }
     }
 }

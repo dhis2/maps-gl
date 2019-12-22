@@ -2,11 +2,19 @@ import { Marker } from 'mapbox-gl'
 
 // Creates a donut marker component
 class DonutMarker extends Marker {
-    constructor(segments) {
+    constructor(segments, options = {}) {
         const element = donutChart(segments)
         super({ element })
 
+        this.setOpacity(options.opacity)
+
         element.addEventListener('click', this.onClick)
+    }
+
+    setOpacity(opacity) {
+        if (typeof opacity === 'number') {
+            this.getElement().style.opacity = opacity
+        }
     }
 
     onClick = evt => {
