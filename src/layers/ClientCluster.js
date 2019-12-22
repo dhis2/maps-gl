@@ -79,8 +79,6 @@ class ClientCluster extends Cluster {
     }
 
     setOpacity(opacity) {
-        super.setOpacity(opacity)
-
         if (this.isOnMap()) {
             const mapgl = this.getMapGL()
             const id = this.getId()
@@ -93,6 +91,8 @@ class ClientCluster extends Cluster {
             )
             mapgl.setPaintProperty(`${id}-count`, 'text-opacity', opacity)
         }
+
+        super.setOpacity(opacity)
     }
 
     // Returns all features in a cluster
@@ -106,20 +106,20 @@ class ClientCluster extends Cluster {
             )
         })
 
-    setClusterOpacity(clusterId, clusterOpacity) {
+    setClusterOpacity(clusterId, isExpanded) {
         const { opacity } = this.options
 
         this.getMapGL().setPaintProperty(
             `${this.getId()}-clusters`,
             'circle-opacity',
-            clusterOpacity === undefined
-                ? opacity
-                : [
+            isExpanded && opacity >= 0.1
+                ? [
                       'case',
                       ['==', ['get', 'cluster_id'], clusterId],
-                      clusterOpacity,
+                      0.1,
                       opacity,
                   ]
+                : opacity
         )
     }
 }

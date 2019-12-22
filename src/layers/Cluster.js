@@ -71,7 +71,7 @@ class Cluster extends Layer {
             mapgl.setPaintProperty(`${id}-polygons`, 'fill-opacity', opacity)
 
             if (this.spiderId) {
-                this.setSpiderClusterOpacity(this.spiderId, true)
+                this.setClusterOpacity(this.spiderId, true)
                 this.spider.setOpacity(opacity)
             }
         }
@@ -101,17 +101,17 @@ class Cluster extends Layer {
 
             this.spiderId = clusterId
 
-            this.setSpiderClusterOpacity(clusterId, true)
+            this.setClusterOpacity(clusterId, true)
         }
     }
 
     unspiderfy() {
-        this.setSpiderClusterOpacity(this.spiderId)
+        this.setClusterOpacity(this.spiderId)
         this.spider.unspiderfy()
         this.spiderId = null
     }
 
-    setSpiderClusterOpacity() {}
+    setClusterOpacity() {}
 
     // Returns all features in a cluster
     getClusterFeatures = clusterId =>
