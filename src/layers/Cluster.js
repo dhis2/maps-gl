@@ -139,7 +139,10 @@ class Cluster extends Layer {
         this.setOpacity(this.options.opacity)
     }
 
-    onRemove() {}
+    onRemove() {
+        this.spider.unspiderfy()
+        this.spider = null
+    }
 }
 
 export default Cluster

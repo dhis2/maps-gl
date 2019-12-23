@@ -139,7 +139,6 @@ class DonutCluster extends Cluster {
             for (const id in this.clusters) {
                 this.clusters[id].setOpacity(opacity)
             }
-            this.setClusterOpacity(this.spider.getId(), true)
         }
     }
 

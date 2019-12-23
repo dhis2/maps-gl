@@ -39,21 +39,27 @@ const Spider = function(map, options) {
     }
 
     const spiderfy = (clusterId, lnglat, features) => {
-        spider.spiderfy()
-        spiderId = clusterId
+        if (clusterId !== spiderId) {
+            spider.spiderfy(lnglat, features)
+            spiderId = clusterId
+
+            map.on('click', unspiderfy)
+        }
     }
 
     const unspiderfy = () => {
-        spider.unspiderfy()
+        if (spiderId) {
+            spider.unspiderfy()
 
-        if (options.onClose) {
-            options.onClose(spiderId)
+            if (options.onClose) {
+                options.onClose(spiderId)
+            }
+
+            spiderId = null
+
+            map.off('click', unspiderfy)
         }
-
-        spiderId = null
     }
-
-    const remove = () => map.off('click', unspiderfy)
 
     const isExpanded = clusterId => clusterId === spiderId
 
@@ -90,7 +96,6 @@ const Spider = function(map, options) {
         spiderfy,
         unspiderfy,
         setOpacity,
-        remove,
         isExpanded,
         getId,
     }
