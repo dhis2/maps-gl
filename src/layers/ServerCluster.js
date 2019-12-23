@@ -1,5 +1,14 @@
 import SphericalMercator from '@mapbox/sphericalmercator'
 import Cluster from './Cluster'
+import { isCluster } from '../utils/filters'
+import {
+    outlineColor,
+    outlineWidth,
+    clusterRadius,
+    textFont,
+    textSize,
+    textColor,
+} from '../utils/style'
 
 const earthRadius = 6378137
 
@@ -13,12 +22,10 @@ const clusterSize = 110 // TODO
 class ServerCluster extends Cluster {
     currentTiles = []
     tileClusters = {}
+    cluserCount = 0
 
     createSource() {
-        const id = this.getId()
-
-        this.setSource(id, {
-            type: 'geojson',
+        super.createSource({
             data: {
                 type: 'FeatureCollection',
                 features: [],
@@ -27,57 +34,39 @@ class ServerCluster extends Cluster {
     }
 
     createLayers(color, radius) {
+        super.createLayers(color, radius)
+
         const id = this.getId()
 
-        this.addLayer({
-            id: `${id}-clusters`,
-            type: 'circle',
-            source: id,
-            paint: {
-                'circle-color': color,
-                'circle-radius': [
-                    'step',
-                    ['get', 'count'],
-                    15,
-                    10,
-                    20,
-                    1000,
-                    25,
-                    10000,
-                    30,
-                ],
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#fff',
+        this.addLayer(
+            {
+                id: `${id}-clusters`,
+                type: 'circle',
+                source: id,
+                filter: isCluster,
+                paint: {
+                    'circle-color': color,
+                    'circle-radius': clusterRadius,
+                    'circle-stroke-width': outlineWidth,
+                    'circle-stroke-color': outlineColor,
+                },
             },
-            filter: ['>', 'count', 1],
-        })
+            true
+        )
 
         this.addLayer({
             id: `${id}-count`,
             type: 'symbol',
             source: id,
+            filter: isCluster,
             layout: {
-                'text-field': '{count}',
-                'text-font': ['Open Sans Bold'],
-                'text-size': 16,
+                'text-field': '{point_count_abbreviated}',
+                'text-font': textFont,
+                'text-size': textSize,
             },
             paint: {
-                'text-color': '#fff',
+                'text-color': textColor,
             },
-            filter: ['>', 'count', 1],
-        })
-
-        this.addLayer({
-            id: `${id}`,
-            type: 'circle',
-            source: id,
-            paint: {
-                'circle-color': 'red',
-                'circle-radius': 10,
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#fff',
-            },
-            filter: ['==', 'count', 1],
         })
     }
 
@@ -85,8 +74,6 @@ class ServerCluster extends Cluster {
     addClusters(tileId, clusters) {
         this.tileClusters[tileId] = clusters
         this._tiles[tileId] = 'loaded'
-
-        console.log('addClusters', tileId, clusters, this.clusterSource)
     }
 
     loadTiles(tiles) {
@@ -150,11 +137,27 @@ class ServerCluster extends Cluster {
                 type: 'FeatureCollection',
                 features: this.getVisibleClusters(),
             })
-            console.log('setData')
+        }
+    }
+
+    onClick = evt => {
+        const { feature } = evt
+        const { cluster, bounds, points } = feature.properties
+
+        if (cluster) {
+            if (points) {
+                this.spiderfy(feature)
+            } else {
+                this.zoomToBounds(bounds)
+            }
+        } else {
+            console.log('Single feature', points)
         }
     }
 
     onAdd() {
+        super.onAdd()
+
         const mapgl = this._map.getMapGL()
         mapgl.on('moveend', this.onMoveEnd)
 
@@ -191,6 +194,38 @@ class ServerCluster extends Cluster {
     getTileClusters = tileId => {
         const clusters = this.tileClusters[tileId]
         return Array.isArray(clusters) ? clusters : []
+    }
+
+    setOpacity(opacity) {}
+
+    zoomToBounds(bounds) {
+        if (bounds) {
+            const mapgl = this._map.getMapGL()
+
+            // TODO: Conversion in maps app?
+            const [ll, ur] = JSON.parse(bounds)
+            mapgl.fitBounds([ll.reverse(), ur.reverse()])
+        }
+    }
+
+    spiderfy(feature) {
+        const { geometry, properties } = feature
+        const { points } = properties
+
+        // TODO: Upper limit for properties to show?
+        // TODO: We don't support polygons in spiders
+        const features = points.split(',').map(id => ({
+            type: 'Feature',
+            id,
+            geometry,
+            properties: {
+                id,
+            },
+        }))
+
+        this.spider.spiderfy(123, geometry.coordinates, features)
+
+        // console.log('spiderfy', features)
     }
 }
 
