@@ -4,6 +4,7 @@ import { outlineColor, outlineWidth } from '../utils/style'
 
 const Spider = function(map, options) {
     let spider
+    let spiderId
 
     const initializeLeg = leg => {
         const { feature, elements, param } = leg
@@ -32,8 +33,31 @@ const Spider = function(map, options) {
     }
 
     const setOpacity = opacity => {
-        spider.each(leg => (leg.elements.container.style.opacity = opacity))
+        if (spiderId) {
+            spider.each(leg => (leg.elements.container.style.opacity = opacity))
+        }
     }
+
+    const spiderfy = (clusterId, lnglat, features) => {
+        spider.spiderfy()
+        spiderId = clusterId
+    }
+
+    const unspiderfy = () => {
+        spider.unspiderfy()
+
+        if (options.onClose) {
+            options.onClose(spiderId)
+        }
+
+        spiderId = null
+    }
+
+    const remove = () => map.off('click', unspiderfy)
+
+    const isExpanded = clusterId => clusterId === spiderId
+
+    const getId = () => spiderId
 
     const onClick = (evt, leg) => {
         evt.stopPropagation()
@@ -63,9 +87,12 @@ const Spider = function(map, options) {
     })
 
     return {
-        spiderfy: spider.spiderfy,
-        unspiderfy: spider.unspiderfy,
+        spiderfy,
+        unspiderfy,
         setOpacity,
+        remove,
+        isExpanded,
+        getId,
     }
 }
 

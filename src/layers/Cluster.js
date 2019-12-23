@@ -70,8 +70,8 @@ class Cluster extends Layer {
             mapgl.setPaintProperty(`${id}-points`, 'circle-opacity', opacity)
             mapgl.setPaintProperty(`${id}-polygons`, 'fill-opacity', opacity)
 
-            if (this.spiderId) {
-                this.setClusterOpacity(this.spiderId, true)
+            if (this.spider) {
+                this.setClusterOpacity(this.spider.getId(), true)
                 this.spider.setOpacity(opacity)
             }
         }
@@ -92,23 +92,19 @@ class Cluster extends Layer {
     }
 
     async spiderfy(clusterId, lnglat) {
-        if (clusterId !== this.spiderId) {
-            this.unspiderfy()
+        if (!this.spider.isExpanded(clusterId)) {
+            this.spider.unspiderfy()
 
             const features = await this.getClusterFeatures(clusterId)
 
-            this.spider.spiderfy(lnglat, features)
-
-            this.spiderId = clusterId
+            this.spider.spiderfy(clusterId, lnglat, features)
 
             this.setClusterOpacity(clusterId, true)
         }
     }
 
     unspiderfy() {
-        this.setClusterOpacity(this.spiderId)
-        this.spider.unspiderfy()
-        this.spiderId = null
+        this.setClusterOpacity(this.spider.getId())
     }
 
     setClusterOpacity() {}
@@ -124,33 +120,26 @@ class Cluster extends Layer {
             )
         })
 
+    onSpiderClose = clusterId => {
+        this.setClusterOpacity(clusterId)
+    }
+
     onAdd() {
         const mapgl = this.getMapGL()
         const { radius, fillColor, opacity } = this.options
-
-        mapgl.on('click', this.onMapClick)
 
         this.spider = new Spider(mapgl, {
             onClick: this.onClick,
             radius,
             fillColor,
             opacity,
+            onClose: this.onSpiderClose,
         })
 
         this.setOpacity(this.options.opacity)
     }
 
-    onRemove() {
-        const mapgl = this.getMapGL()
-
-        mapgl.off('click', this.onMapClick)
-
-        this.spider = null
-    }
-
-    onMapClick = () => {
-        this.unspiderfy()
-    }
+    onRemove() {}
 }
 
 export default Cluster

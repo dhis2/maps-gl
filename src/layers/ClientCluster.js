@@ -107,20 +107,22 @@ class ClientCluster extends Cluster {
         })
 
     setClusterOpacity(clusterId, isExpanded) {
-        const { opacity } = this.options
+        if (clusterId) {
+            const { opacity } = this.options
 
-        this.getMapGL().setPaintProperty(
-            `${this.getId()}-clusters`,
-            'circle-opacity',
-            isExpanded && opacity >= 0.1
-                ? [
-                      'case',
-                      ['==', ['get', 'cluster_id'], clusterId],
-                      0.1,
-                      opacity,
-                  ]
-                : opacity
-        )
+            this.getMapGL().setPaintProperty(
+                `${this.getId()}-clusters`,
+                'circle-opacity',
+                isExpanded && opacity >= 0.1
+                    ? [
+                          'case',
+                          ['==', ['get', 'cluster_id'], clusterId],
+                          0.1,
+                          opacity,
+                      ]
+                    : opacity
+            )
+        }
     }
 }
 
