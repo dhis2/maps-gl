@@ -77,11 +77,18 @@ class ServerCluster extends Cluster {
     }
 
     loadTiles(tiles) {
+        console.log('loadTiles', tiles)
         const nonPendingTiles = tiles.filter(
             id => this.tileClusters[id] !== 'pending'
         )
+        /*
         Promise.all(nonPendingTiles.map(this.loadTile)).then(
             this.updateClusters
+        )
+        */
+
+        nonPendingTiles.forEach(tileId =>
+            this.loadTile(tileId).then(this.updateClusters)
         )
     }
 
@@ -132,26 +139,24 @@ class ServerCluster extends Cluster {
     updateClusters = () => {
         const source = this.getMapGL().getSource(this.getId())
 
-        if (source) {
-            source.setData({
-                type: 'FeatureCollection',
-                features: this.getVisibleClusters(),
-            })
-        }
+        source.setData({
+            type: 'FeatureCollection',
+            features: this.getVisibleClusters(),
+        })
     }
 
     onClick = evt => {
         const { feature } = evt
-        const { cluster, bounds, points } = feature.properties
+        const { cluster, bounds, id } = feature.properties
 
         if (cluster) {
-            if (points) {
+            if (id) {
                 this.spiderfy(feature)
             } else {
                 this.zoomToBounds(bounds)
             }
         } else {
-            console.log('Single feature', points)
+            this.fire('click', evt)
         }
     }
 
@@ -159,9 +164,20 @@ class ServerCluster extends Cluster {
         super.onAdd()
 
         const mapgl = this._map.getMapGL()
-        mapgl.on('moveend', this.onMoveEnd)
 
-        this.onMoveEnd()
+        mapgl.on('sourcedata', this.onSourceData)
+    }
+
+    onSourceData = evt => {
+        const { sourceId } = evt
+        const mapgl = this._map.getMapGL()
+
+        // TODO: Better way to know that source tiles are available?
+        if (sourceId === this.getId() && this.getSourceCacheTiles().length) {
+            mapgl.off('sourcedata', this.onSourceData)
+            mapgl.on('moveend', this.onMoveEnd)
+            this.onMoveEnd()
+        }
     }
 
     onMoveEnd = () => {
@@ -175,18 +191,26 @@ class ServerCluster extends Cluster {
         }
     }
 
-    getVisibleTiles = () => {
-        const mapgl = this._map.getMapGL()
-        const sourceCache = mapgl.style.sourceCaches[this.getId()]
+    getBounds() {
+        const { bounds } = this.options
 
-        if (!sourceCache && !sourceCache._tiles) {
-            return []
+        if (bounds) {
+            const [ll, ur] = bounds
+            return [ll.reverse(), ur.reverse()] // TODO
+        } else {
+            // TODO
         }
+    }
 
-        return Object.values(sourceCache._tiles)
+    getSourceCacheTiles = () => {
+        const mapgl = this._map.getMapGL()
+        return Object.values(mapgl.style.sourceCaches[this.getId()]._tiles)
+    }
+
+    getVisibleTiles = () =>
+        this.getSourceCacheTiles()
             .map(this.getTileId)
             .sort()
-    }
 
     getVisibleClusters = () =>
         [].concat(...this.getVisibleTiles().map(this.getTileClusters))
@@ -196,7 +220,22 @@ class ServerCluster extends Cluster {
         return Array.isArray(clusters) ? clusters : []
     }
 
-    setOpacity(opacity) {}
+    setOpacity(opacity) {
+        if (this.isOnMap()) {
+            const mapgl = this.getMapGL()
+            const id = this.getId()
+
+            mapgl.setPaintProperty(`${id}-clusters`, 'circle-opacity', opacity)
+            mapgl.setPaintProperty(
+                `${id}-clusters`,
+                'circle-stroke-opacity',
+                opacity
+            )
+            mapgl.setPaintProperty(`${id}-count`, 'text-opacity', opacity)
+        }
+
+        super.setOpacity(opacity)
+    }
 
     zoomToBounds(bounds) {
         if (bounds) {
@@ -210,11 +249,10 @@ class ServerCluster extends Cluster {
 
     spiderfy(feature) {
         const { geometry, properties } = feature
-        const { points } = properties
 
         // TODO: Upper limit for properties to show?
         // TODO: We don't support polygons in spiders
-        const features = points.split(',').map(id => ({
+        const features = properties.id.split(',').map(id => ({
             type: 'Feature',
             id,
             geometry,
@@ -223,9 +261,7 @@ class ServerCluster extends Cluster {
             },
         }))
 
-        this.spider.spiderfy(123, geometry.coordinates, features)
-
-        // console.log('spiderfy', features)
+        this.spider.spiderfy(123, geometry.coordinates, features) // TODO
     }
 }
 

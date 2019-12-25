@@ -25,8 +25,8 @@ export class Map extends Evented {
                 layers: [],
                 glyphs: 'http://fonts.openmaptiles.org/{fontstack}/{range}.pbf', // TODO: Host ourseleves
             },
-            // maxZoom: 18,
-            maxZoom: 12,
+            maxZoom: 18,
+            // maxZoom: 12,
         })
 
         this._mapgl.on('load', evt => this.fire('ready', this))
