@@ -1,3 +1,4 @@
+import { LngLat } from 'mapbox-gl'
 import SphericalMercator from '@mapbox/sphericalmercator'
 import Cluster from './Cluster'
 import { isCluster } from '../utils/filters'
@@ -15,7 +16,9 @@ const earthRadius = 6378137
 // TODO: https://github.com/dhis2/maps-gl/blob/layer-handling/src/layers/ServerCluster.js
 class ServerCluster extends Cluster {
     currentTiles = []
-    currentClusters = ''
+    currentClusters = []
+    currentClusterIds = ''
+    currentZoom = 0
     tileClusters = {}
     cluserCount = 0
 
@@ -32,7 +35,7 @@ class ServerCluster extends Cluster {
             size: this.options.tileSize,
         })
 
-        this.getTileBounds = (x, y, z) => merc.bbox(x, y, z).join(',')
+        this.getTileBounds = (x, y, z) => merc.bbox(x, y, z)
     }
 
     createSource() {
@@ -111,8 +114,6 @@ class ServerCluster extends Cluster {
                 this.options.load(
                     this.getTileParams(tileId),
                     (id, clusters) => {
-                        console.log('clusters loaded', clusters)
-
                         cache[id] = clusters
                         resolve(id)
                     }
@@ -122,7 +123,7 @@ class ServerCluster extends Cluster {
 
     getTileId(tile) {
         const { x, y, z } = tile.tileID.canonical
-        console.log(`tile ${z}/${x}/${y}`)
+        // console.log(`tile ${z}/${x}/${y}`)
         return `${z}/${x}/${y}`
     }
 
@@ -138,36 +139,67 @@ class ServerCluster extends Cluster {
 
         return {
             tileId: tileId,
-            bbox: this.getTileBounds(x, y, z),
+            bbox: this.getTileBounds(x, y, z).join(','),
             clusterSize: Math.round(this.getResolution(z) * clusterSize),
             includeClusterPoints: Number(z) === mapgl.getMaxZoom(),
         }
     }
 
     // TODO: Pass in tile id / bounds and only replace clusters within bounds
-    updateClusters = () => {
-        const source = this.getMapGL().getSource(this.getId())
-        const clusters = this.getVisibleClusters()
+    updateClusters = tileId => {
+        // Only update if the tile is still visible
+        if (this.isTileVisible(tileId)) {
+            const zoom = this.getZoom()
+            const tileClusters = this.tileClusters[tileId]
+            let clusters = []
 
-        if (!clusters.length) {
-            console.log('##### NO CLUSTERS')
-        }
+            if (
+                // zoom !== this.currentZoom &&
+                tileClusters.length &&
+                this.currentClusters.length
+            ) {
+                const [z, x, y] = tileId.split('/')
+                const tileBounds = this.getTileBounds(x, y, z)
+                const isOutsideBounds = this.isOutsideBounds(tileBounds)
 
-        const clusterIds = clusters
-            .map(c => c.id)
-            .sort((a, b) => a - b)
-            .join()
+                clusters = [
+                    ...this.currentClusters.filter(isOutsideBounds),
+                    ...tileClusters,
+                ]
+            } else {
+                clusters = this.getVisibleClusters()
+            }
 
-        if (this.currentClusters !== clusterIds) {
-            this.currentClusters = clusterIds
-            console.log('UPDATE CLUSTERS', clusterIds)
+            const clusterIds = this.getClusterIds(clusters)
 
-            source.setData({
-                type: 'FeatureCollection',
-                features: clusters,
-            })
+            // console.log('Visible tile', tileId)
+
+            // Replace clusters within the same bounds
+
+            // console.log('updateClusters', tileId, this.tileClusters[tileId])
+
+            const source = this.getMapGL().getSource(this.getId())
+
+            if (!clusters.length) {
+                // console.log('##### NO CLUSTERS')
+            }
+
+            if (this.currentClusterIds !== clusterIds) {
+                this.currentClusterIds = clusterIds
+                // console.log('UPDATE CLUSTERS', clusterIds)
+
+                source.setData({
+                    type: 'FeatureCollection',
+                    features: clusters,
+                })
+
+                this.currentClusters = clusters
+                // this.currentZoom = zoom
+            } else {
+                // console.log('#### SAME CLUSTERS')
+            }
         } else {
-            console.log('#### SAME CLUSTERS')
+            // console.log('Tile not visible', tileId)
         }
     }
 
@@ -226,9 +258,24 @@ class ServerCluster extends Cluster {
         }
     }
 
+    getZoom = () => Math.floor(this._map.getMapGL().getZoom())
+
     getSourceCacheTiles = () => {
         const mapgl = this._map.getMapGL()
         return Object.values(mapgl.style.sourceCaches[this.getId()]._tiles)
+    }
+
+    isTileVisible = tileId => this.getVisibleTiles().includes(tileId)
+
+    // Could be static - use <=?
+    isOutsideBounds = bounds => feature => {
+        const [lng, lat] = feature.geometry.coordinates
+        return (
+            lng < bounds[0] ||
+            lng > bounds[2] ||
+            lat < bounds[1] ||
+            lat > bounds[3]
+        )
     }
 
     getVisibleTiles = () =>
@@ -243,6 +290,12 @@ class ServerCluster extends Cluster {
         const clusters = this.tileClusters[tileId]
         return Array.isArray(clusters) ? clusters : []
     }
+
+    getClusterIds = clusters =>
+        clusters
+            .map(c => c.id)
+            .sort((a, b) => a - b)
+            .join()
 
     setOpacity(opacity) {
         if (this.isOnMap()) {
