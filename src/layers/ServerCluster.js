@@ -12,17 +12,28 @@ import {
 
 const earthRadius = 6378137
 
-const merc = new SphericalMercator({
-    size: 512,
-})
-
-const clusterSize = 110 // TODO
-
 // TODO: https://github.com/dhis2/maps-gl/blob/layer-handling/src/layers/ServerCluster.js
 class ServerCluster extends Cluster {
     currentTiles = []
+    currentClusters = ''
     tileClusters = {}
     cluserCount = 0
+
+    constructor(options) {
+        super({
+            tileSize: 512,
+            clusterSize: 110,
+            maxSpiderSize: 50,
+            debug: true,
+            ...options,
+        })
+
+        const merc = new SphericalMercator({
+            size: this.options.tileSize,
+        })
+
+        this.getTileBounds = (x, y, z) => merc.bbox(x, y, z).join(',')
+    }
 
     createSource() {
         super.createSource({
@@ -77,15 +88,9 @@ class ServerCluster extends Cluster {
     }
 
     loadTiles(tiles) {
-        console.log('loadTiles', tiles)
         const nonPendingTiles = tiles.filter(
             id => this.tileClusters[id] !== 'pending'
         )
-        /*
-        Promise.all(nonPendingTiles.map(this.loadTile)).then(
-            this.updateClusters
-        )
-        */
 
         nonPendingTiles.forEach(tileId =>
             this.loadTile(tileId).then(this.updateClusters)
@@ -106,6 +111,8 @@ class ServerCluster extends Cluster {
                 this.options.load(
                     this.getTileParams(tileId),
                     (id, clusters) => {
+                        console.log('clusters loaded', clusters)
+
                         cache[id] = clusters
                         resolve(id)
                     }
@@ -115,6 +122,7 @@ class ServerCluster extends Cluster {
 
     getTileId(tile) {
         const { x, y, z } = tile.tileID.canonical
+        console.log(`tile ${z}/${x}/${y}`)
         return `${z}/${x}/${y}`
     }
 
@@ -125,24 +133,42 @@ class ServerCluster extends Cluster {
 
     getTileParams(tileId) {
         const [z, x, y] = tileId.split('/')
-        // const { clusterSize } = this.options
+        const { clusterSize } = this.options
         const mapgl = this._map.getMapGL()
 
         return {
             tileId: tileId,
-            bbox: merc.bbox(x, y, z).join(','),
+            bbox: this.getTileBounds(x, y, z),
             clusterSize: Math.round(this.getResolution(z) * clusterSize),
             includeClusterPoints: Number(z) === mapgl.getMaxZoom(),
         }
     }
 
+    // TODO: Pass in tile id / bounds and only replace clusters within bounds
     updateClusters = () => {
         const source = this.getMapGL().getSource(this.getId())
+        const clusters = this.getVisibleClusters()
 
-        source.setData({
-            type: 'FeatureCollection',
-            features: this.getVisibleClusters(),
-        })
+        if (!clusters.length) {
+            console.log('##### NO CLUSTERS')
+        }
+
+        const clusterIds = clusters
+            .map(c => c.id)
+            .sort((a, b) => a - b)
+            .join()
+
+        if (this.currentClusters !== clusterIds) {
+            this.currentClusters = clusterIds
+            console.log('UPDATE CLUSTERS', clusterIds)
+
+            source.setData({
+                type: 'FeatureCollection',
+                features: clusters,
+            })
+        } else {
+            console.log('#### SAME CLUSTERS')
+        }
     }
 
     onClick = evt => {
@@ -186,8 +212,6 @@ class ServerCluster extends Cluster {
         if (tiles.join('-') !== this.currentTiles.join('-')) {
             this.currentTiles = tiles
             this.loadTiles(tiles)
-        } else {
-            console.log('No change')
         }
     }
 
@@ -243,25 +267,50 @@ class ServerCluster extends Cluster {
 
             // TODO: Conversion in maps app?
             const [ll, ur] = JSON.parse(bounds)
-            mapgl.fitBounds([ll.reverse(), ur.reverse()])
+            mapgl.fitBounds([ll.reverse(), ur.reverse()], {
+                padding: 40,
+            })
         }
     }
 
     spiderfy(feature) {
         const { geometry, properties } = feature
 
-        // TODO: Upper limit for properties to show?
         // TODO: We don't support polygons in spiders
-        const features = properties.id.split(',').map(id => ({
-            type: 'Feature',
-            id,
-            geometry,
-            properties: {
+        const features = properties.id
+            .split(',')
+            .slice(0, this.options.maxSpiderSize)
+            .map(id => ({
+                type: 'Feature',
                 id,
-            },
-        }))
+                geometry,
+                properties: {
+                    id,
+                },
+            }))
 
-        this.spider.spiderfy(123, geometry.coordinates, features) // TODO
+        this.spider.spiderfy(feature.id, geometry.coordinates, features)
+    }
+
+    // TODO: Share method with client cluster?
+    setClusterOpacity(clusterId, isExpanded) {
+        // console.log('setClusterOpacity', clusterId, isExpanded)
+        if (clusterId) {
+            const { opacity } = this.options
+
+            this.getMapGL().setPaintProperty(
+                `${this.getId()}-clusters`,
+                'circle-opacity',
+                isExpanded && opacity >= 0.1
+                    ? [
+                          'case',
+                          ['==', ['get', 'cluster_id'], clusterId],
+                          0.1,
+                          opacity,
+                      ]
+                    : opacity
+            )
+        }
     }
 }
 
