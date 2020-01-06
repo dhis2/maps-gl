@@ -220,12 +220,13 @@ class ServerCluster extends Cluster {
 
     onAdd() {
         super.onAdd()
-
-        const mapgl = this._map.getMapGL()
-
-        mapgl.on('sourcedata', this.onSourceData)
+        this._map.getMapGL().on('sourcedata', this.onSourceData)
     }
 
+    onRemove() {
+        super.onRemove()
+        this._map.getMapGL().off('moveend', this.onMoveEnd)
+    }
     onSourceData = evt => {
         const { sourceId } = evt
         const mapgl = this._map.getMapGL()
@@ -233,6 +234,7 @@ class ServerCluster extends Cluster {
         // TODO: Better way to know that source tiles are available?
         if (sourceId === this.getId() && this.getSourceCacheTiles().length) {
             mapgl.off('sourcedata', this.onSourceData)
+            console.log('off sourcedata')
             mapgl.on('moveend', this.onMoveEnd)
             this.onMoveEnd()
         }
