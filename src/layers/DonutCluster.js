@@ -124,6 +124,7 @@ class DonutCluster extends Cluster {
                 evt.feature = { type, id, properties, geometry }
             }
 
+            // console.log('EVENT CLICK FIRED', evt);
             this.fire('click', evt)
         } else {
             this.zoomToCluster(

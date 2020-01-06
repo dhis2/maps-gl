@@ -92,7 +92,7 @@ class Cluster extends Layer {
     }
 
     async spiderfy(clusterId, lnglat) {
-        if (!this.spider.isExpanded(clusterId)) {
+        if (this.spider && !this.spider.isExpanded(clusterId)) {
             this.spider.unspiderfy()
 
             const features = await this.getClusterFeatures(clusterId)
@@ -103,7 +103,7 @@ class Cluster extends Layer {
         }
     }
 
-    unspiderfy() {
+    unspiderfy = () => {
         if (this.spider) {
             this.spider.unspiderfy()
             this.spider = null
