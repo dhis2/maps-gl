@@ -78,7 +78,7 @@ class DonutCluster extends Cluster {
 
         const mapgl = this.getMapGL()
 
-        mapgl.on('data', this.onData)
+        mapgl.on('sourcedata', this.onSourceData)
         mapgl.on('move', this.updateClusters)
         mapgl.on('moveend', this.updateClusters)
 
@@ -90,7 +90,7 @@ class DonutCluster extends Cluster {
 
         const mapgl = this.getMapGL()
 
-        mapgl.off('data', this.onData)
+        mapgl.off('sourcedata', this.onSourceData)
         mapgl.off('move', this.updateClusters)
         mapgl.off('moveend', this.updateClusters)
 
@@ -102,8 +102,9 @@ class DonutCluster extends Cluster {
         this.clusters = {}
     }
 
-    onData = evt => {
-        if (evt.sourceId === this.getId() && evt.isSourceLoaded) {
+    onSourceData = evt => {
+        if (evt.sourceId === this.getId() && this.getSourceFeatures().length) {
+            this.getMapGL().off('sourcedata', this.onSourceData)
             this.updateClusters()
         }
     }
@@ -153,6 +154,11 @@ class DonutCluster extends Cluster {
                 )
             }
         }
+    }
+
+    // Returns source features
+    getSourceFeatures() {
+        return this.getMapGL().querySourceFeatures(this.getId())
     }
 }
 
