@@ -100,13 +100,15 @@ class Cluster extends Layer {
             this.spider.spiderfy(clusterId, lnglat, features)
 
             this.setClusterOpacity(clusterId, true)
+
+            this.getMapGL().on('zoom', this.unspiderfy)
         }
     }
 
     unspiderfy = () => {
         if (this.spider) {
             this.spider.unspiderfy()
-            this.spider = null
+            this.getMapGL().off('zoom', this.unspiderfy)
         }
     }
 
@@ -140,13 +142,11 @@ class Cluster extends Layer {
         })
 
         this.setOpacity(this.options.opacity)
-
-        mapgl.on('zoom', this.unspiderfy)
     }
 
     onRemove() {
         this.unspiderfy()
-        this.getMapGL().off('zoom', this.unspiderfy)
+        this.spider = null
     }
 }
 

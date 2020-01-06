@@ -24,7 +24,7 @@ class DonutCluster extends Cluster {
         const { groups, opacity } = this.options
         const mapgl = this.getMapGL()
         const newClusters = {}
-        const features = mapgl.querySourceFeatures(this.getId())
+        const features = this.getSourceFeatures()
 
         // For every cluster on the screen, create an donut marker
         for (let i = 0; i < features.length; i++) {
@@ -124,7 +124,6 @@ class DonutCluster extends Cluster {
                 evt.feature = { type, id, properties, geometry }
             }
 
-            // console.log('EVENT CLICK FIRED', evt);
             this.fire('click', evt)
         } else {
             this.zoomToCluster(

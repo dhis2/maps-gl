@@ -262,8 +262,6 @@ export class Map extends Evented {
     }
 
     openPopup(content, lnglat, onClose, offset) {
-        // console.log('openPopup', content, lnglat);
-
         this._popup = new mapboxgl.Popup({
             offset: offset,
             maxWidth: 'auto',
@@ -278,8 +276,6 @@ export class Map extends Evented {
     }
 
     closePopup() {
-        // console.log('closePopup');
-
         if (this._popup) {
             this._popup.remove()
             this._popup = null
