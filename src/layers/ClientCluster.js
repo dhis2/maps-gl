@@ -106,6 +106,7 @@ class ClientCluster extends Cluster {
             )
         })
 
+    /*    
     setClusterOpacity(clusterId, isExpanded) {
         if (clusterId) {
             const { opacity } = this.options
@@ -124,6 +125,7 @@ class ClientCluster extends Cluster {
             )
         }
     }
+    */
 }
 
 export default ClientCluster

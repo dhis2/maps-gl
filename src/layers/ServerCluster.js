@@ -26,7 +26,7 @@ class ServerCluster extends Cluster {
         super({
             tileSize: 512,
             clusterSize: 110,
-            maxSpiderSize: 50,
+            maxSpiderSize: 500,
             debug: true,
             ...options,
         })
@@ -123,14 +123,13 @@ class ServerCluster extends Cluster {
 
     getTileId(tile) {
         const { x, y, z } = tile.tileID.canonical
-        // console.log(`tile ${z}/${x}/${y}`)
+
         return `${z}/${x}/${y}`
     }
 
     // Meters per pixel
-    getResolution(zoom) {
-        return (Math.PI * earthRadius * 2) / 256 / Math.pow(2, zoom)
-    }
+    getResolution = zoom =>
+        (Math.PI * earthRadius * 2) / this.options.tileSize / Math.pow(2, zoom)
 
     getTileParams(tileId) {
         const [z, x, y] = tileId.split('/')
@@ -145,7 +144,6 @@ class ServerCluster extends Cluster {
         }
     }
 
-    // TODO: Pass in tile id / bounds and only replace clusters within bounds
     updateClusters = tileId => {
         // Only update if the tile is still visible
         if (this.isTileVisible(tileId)) {
@@ -153,11 +151,7 @@ class ServerCluster extends Cluster {
             const tileClusters = this.tileClusters[tileId]
             let clusters = []
 
-            if (
-                // zoom !== this.currentZoom &&
-                tileClusters.length &&
-                this.currentClusters.length
-            ) {
+            if (tileClusters.length && this.currentClusters.length) {
                 const [z, x, y] = tileId.split('/')
                 const tileBounds = this.getTileBounds(x, y, z)
                 const isOutsideBounds = this.isOutsideBounds(tileBounds)
@@ -172,21 +166,10 @@ class ServerCluster extends Cluster {
 
             const clusterIds = this.getClusterIds(clusters)
 
-            // console.log('Visible tile', tileId)
-
-            // Replace clusters within the same bounds
-
-            // console.log('updateClusters', tileId, this.tileClusters[tileId])
-
             const source = this.getMapGL().getSource(this.getId())
-
-            if (!clusters.length) {
-                // console.log('##### NO CLUSTERS')
-            }
 
             if (this.currentClusterIds !== clusterIds) {
                 this.currentClusterIds = clusterIds
-                // console.log('UPDATE CLUSTERS', clusterIds)
 
                 source.setData({
                     type: 'FeatureCollection',
@@ -194,22 +177,17 @@ class ServerCluster extends Cluster {
                 })
 
                 this.currentClusters = clusters
-                // this.currentZoom = zoom
-            } else {
-                // console.log('#### SAME CLUSTERS')
             }
-        } else {
-            // console.log('Tile not visible', tileId)
         }
     }
 
     onClick = evt => {
-        const { feature } = evt
-        const { cluster, bounds, id } = feature.properties
+        const { geometry, properties } = evt.feature
+        const { cluster, bounds, id, cluster_id } = properties
 
         if (cluster) {
             if (id) {
-                this.spiderfy(feature)
+                this.spiderfy(cluster_id, geometry.coordinates)
             } else {
                 this.zoomToBounds(bounds)
             }
@@ -220,23 +198,27 @@ class ServerCluster extends Cluster {
 
     onAdd() {
         super.onAdd()
-        this._map.getMapGL().on('sourcedata', this.onSourceData)
+
+        const map = this._map.getMapGL()
+        map.on('sourcedata', this.onSourceData)
+        map.on('moveend', this.onMoveEnd)
     }
 
     onRemove() {
         super.onRemove()
-        this._map.getMapGL().off('moveend', this.onMoveEnd)
-    }
-    onSourceData = evt => {
-        const { sourceId } = evt
-        const mapgl = this._map.getMapGL()
 
-        // TODO: Better way to know that source tiles are available?
-        if (sourceId === this.getId() && this.getSourceCacheTiles().length) {
-            mapgl.off('sourcedata', this.onSourceData)
-            console.log('off sourcedata')
-            mapgl.on('moveend', this.onMoveEnd)
-            this.onMoveEnd()
+        const map = this._map.getMapGL()
+        map.off('sourcedata', this.onSourceData)
+        map.off('moveend', this.onMoveEnd)
+    }
+
+    onSourceData = evt => {
+        if (evt.sourceId === this.getId() && evt.tile) {
+            const tileId = this.getTileId(evt.tile)
+
+            if (!this.tileClusters[tileId]) {
+                this.loadTile(tileId).then(this.updateClusters)
+            }
         }
     }
 
@@ -245,9 +227,22 @@ class ServerCluster extends Cluster {
 
         if (tiles.join('-') !== this.currentTiles.join('-')) {
             this.currentTiles = tiles
-            this.loadTiles(tiles)
+
+            // const isPending = tiles.some(id => this.tileClusters[id] === 'pending')
+
+            // if (!isPending) {
+            const cachedTiles = tiles.filter(id =>
+                Array.isArray(this.tileClusters[id])
+            )
+
+            // TODO: Update clusters in one go
+            cachedTiles.forEach(this.updateClusters)
+            // }
         }
     }
+
+    areTilesReady = () =>
+        this.getSourceCacheTiles().every(tile => tile.state === 'loaded')
 
     getBounds() {
         const { bounds } = this.options
@@ -265,6 +260,24 @@ class ServerCluster extends Cluster {
     getSourceCacheTiles = () => {
         const mapgl = this._map.getMapGL()
         return Object.values(mapgl.style.sourceCaches[this.getId()]._tiles)
+    }
+
+    getClusterFeatures = clusterId => {
+        const cluster = this.currentClusters.find(c => c.id === clusterId)
+
+        if (cluster) {
+            return cluster.properties.id
+                .split(',')
+                .slice(0, this.options.maxSpiderSize)
+                .map(id => ({
+                    type: 'Feature',
+                    id,
+                    geometry: cluster.geometry,
+                    properties: {
+                        id,
+                    },
+                }))
+        }
     }
 
     isTileVisible = tileId => this.getVisibleTiles().includes(tileId)
@@ -325,46 +338,6 @@ class ServerCluster extends Cluster {
             mapgl.fitBounds([ll.reverse(), ur.reverse()], {
                 padding: 40,
             })
-        }
-    }
-
-    spiderfy(feature) {
-        const { geometry, properties } = feature
-
-        // TODO: We don't support polygons in spiders
-        const features = properties.id
-            .split(',')
-            .slice(0, this.options.maxSpiderSize)
-            .map(id => ({
-                type: 'Feature',
-                id,
-                geometry,
-                properties: {
-                    id,
-                },
-            }))
-
-        this.spider.spiderfy(feature.id, geometry.coordinates, features)
-    }
-
-    // TODO: Share method with client cluster?
-    setClusterOpacity(clusterId, isExpanded) {
-        // console.log('setClusterOpacity', clusterId, isExpanded)
-        if (clusterId) {
-            const { opacity } = this.options
-
-            this.getMapGL().setPaintProperty(
-                `${this.getId()}-clusters`,
-                'circle-opacity',
-                isExpanded && opacity >= 0.1
-                    ? [
-                          'case',
-                          ['==', ['get', 'cluster_id'], clusterId],
-                          0.1,
-                          opacity,
-                      ]
-                    : opacity
-            )
         }
     }
 }

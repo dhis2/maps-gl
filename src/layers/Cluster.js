@@ -112,7 +112,24 @@ class Cluster extends Layer {
         }
     }
 
-    setClusterOpacity() {}
+    setClusterOpacity(clusterId, isExpanded) {
+        if (clusterId) {
+            const { opacity } = this.options
+
+            this.getMapGL().setPaintProperty(
+                `${this.getId()}-clusters`,
+                'circle-opacity',
+                isExpanded && opacity >= 0.1
+                    ? [
+                          'case',
+                          ['==', ['get', 'cluster_id'], clusterId],
+                          0.1,
+                          opacity,
+                      ]
+                    : opacity
+            )
+        }
+    }
 
     // Returns all features in a cluster
     getClusterFeatures = clusterId =>
