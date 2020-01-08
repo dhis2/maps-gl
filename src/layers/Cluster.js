@@ -68,6 +68,11 @@ class Cluster extends Layer {
             const id = this.getId()
 
             mapgl.setPaintProperty(`${id}-points`, 'circle-opacity', opacity)
+            mapgl.setPaintProperty(
+                `${id}-points`,
+                'circle-stroke-opacity',
+                opacity
+            )
             mapgl.setPaintProperty(`${id}-polygons`, 'fill-opacity', opacity)
 
             if (this.spider) {
@@ -138,9 +143,14 @@ class Cluster extends Layer {
             const source = mapgl.getSource(this.getId())
 
             source.getClusterLeaves(clusterId, null, null, (error, features) =>
-                error ? reject(error) : resolve(features)
+                error
+                    ? reject(error)
+                    : resolve(this.sortClusterFeatures(features))
             )
         })
+
+    // Overrided in DonutCluster
+    sortClusterFeatures = features => features
 
     onSpiderClose = clusterId => {
         this.setClusterOpacity(clusterId)

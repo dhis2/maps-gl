@@ -33,7 +33,7 @@ export const donutChart = segments => {
     const w = r * 2
     let offset = 0
 
-    let html = `<svg width="${w}" height="${w}" viewbox="0 0 ${w} ${w}" text-anchor="middle" style="font:${fontSize}px sans-serif;cursor:pointer;">`
+    let html = `<svg width="${w}" height="${w}" viewbox="0 0 ${w} ${w}" text-anchor="middle" style="font:${fontSize}px sans-serif;cursor:pointer;filter:drop-shadow(0 0 2px #777);">`
 
     segments.forEach(segment => {
         html += donutSegment(
