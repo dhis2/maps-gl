@@ -84,46 +84,8 @@ class ServerCluster extends Cluster {
         })
     }
 
-    // Add clusters for one tile
-    addClusters(tileId, clusters) {
-        this.tileClusters[tileId] = clusters
-        this._tiles[tileId] = 'loaded'
-    }
-
-    loadTiles(tiles) {
-        const nonPendingTiles = tiles.filter(
-            id => this.tileClusters[id] !== 'pending'
-        )
-
-        nonPendingTiles.forEach(tileId =>
-            this.loadTile(tileId).then(this.updateClusters)
-        )
-    }
-
-    // TODO: Error handling
-    loadTile = tileId =>
-        new Promise((resolve, reject) => {
-            const cache = this.tileClusters
-            const tileCache = cache[tileId]
-
-            if (Array.isArray(tileCache)) {
-                resolve(tileId)
-            } else {
-                cache[tileId] = 'pending'
-
-                this.options.load(
-                    this.getTileParams(tileId),
-                    (id, clusters) => {
-                        cache[id] = clusters
-                        resolve(id)
-                    }
-                )
-            }
-        })
-
     getTileId(tile) {
         const { x, y, z } = tile.tileID.canonical
-
         return `${z}/${x}/${y}`
     }
 
@@ -144,40 +106,32 @@ class ServerCluster extends Cluster {
         }
     }
 
-    updateClusters = tileId => {
-        // Only update if the tile is still visible
-        if (this.isTileVisible(tileId)) {
-            const zoom = this.getZoom()
-            const tileClusters = this.tileClusters[tileId]
-            let clusters = []
+    // Replace clusters within the same tile bounds
+    updateClusters = tiles => {
+        const clusters = tiles.reduce((newClusters, tileId) => {
+            const [z, x, y] = tileId.split('/')
+            const isOutsideBounds = this.isOutsideBounds(
+                this.getTileBounds(x, y, z)
+            )
 
-            if (tileClusters.length && this.currentClusters.length) {
-                const [z, x, y] = tileId.split('/')
-                const tileBounds = this.getTileBounds(x, y, z)
-                const isOutsideBounds = this.isOutsideBounds(tileBounds)
+            return [
+                ...newClusters.filter(isOutsideBounds),
+                ...this.tileClusters[tileId],
+            ]
+        }, this.currentClusters)
 
-                clusters = [
-                    ...this.currentClusters.filter(isOutsideBounds),
-                    ...tileClusters,
-                ]
-            } else {
-                clusters = this.getVisibleClusters()
-            }
+        const clusterIds = this.getClusterIds(clusters)
 
-            const clusterIds = this.getClusterIds(clusters)
-
+        if (this.currentClusterIds !== clusterIds) {
             const source = this.getMapGL().getSource(this.getId())
 
-            if (this.currentClusterIds !== clusterIds) {
-                this.currentClusterIds = clusterIds
+            source.setData({
+                type: 'FeatureCollection',
+                features: clusters,
+            })
 
-                source.setData({
-                    type: 'FeatureCollection',
-                    features: clusters,
-                })
-
-                this.currentClusters = clusters
-            }
+            this.currentClusterIds = clusterIds
+            this.currentClusters = clusters
         }
     }
 
@@ -212,12 +166,14 @@ class ServerCluster extends Cluster {
         map.off('moveend', this.onMoveEnd)
     }
 
+    // Load clusters when new tiles are requested
     onSourceData = evt => {
         if (evt.sourceId === this.getId() && evt.tile) {
             const tileId = this.getTileId(evt.tile)
 
             if (!this.tileClusters[tileId]) {
-                this.loadTile(tileId).then(this.updateClusters)
+                this.tileClusters[tileId] = 'pending'
+                this.options.load(this.getTileParams(tileId), this.onTileLoad)
             }
         }
     }
@@ -228,40 +184,34 @@ class ServerCluster extends Cluster {
         if (tiles.join('-') !== this.currentTiles.join('-')) {
             this.currentTiles = tiles
 
-            // const isPending = tiles.some(id => this.tileClusters[id] === 'pending')
-
-            // if (!isPending) {
             const cachedTiles = tiles.filter(id =>
                 Array.isArray(this.tileClusters[id])
             )
 
-            // TODO: Update clusters in one go
-            cachedTiles.forEach(this.updateClusters)
-            // }
+            if (cachedTiles.length) {
+                this.updateClusters(cachedTiles)
+            }
         }
     }
 
-    areTilesReady = () =>
-        this.getSourceCacheTiles().every(tile => tile.state === 'loaded')
+    // Keep tile clusters in memory and update map if needed
+    onTileLoad = (tileId, clusters) => {
+        this.tileClusters[tileId] = clusters
 
-    getBounds() {
-        const { bounds } = this.options
-
-        if (bounds) {
-            const [ll, ur] = bounds
-            return [ll.reverse(), ur.reverse()] // TODO
-        } else {
-            // TODO
+        // If tile still visible after loading
+        if (this.isTileVisible(tileId)) {
+            this.updateClusters([tileId])
         }
     }
 
-    getZoom = () => Math.floor(this._map.getMapGL().getZoom())
+    getBounds = () => this.options.bounds
 
     getSourceCacheTiles = () => {
         const mapgl = this._map.getMapGL()
         return Object.values(mapgl.style.sourceCaches[this.getId()]._tiles)
     }
 
+    // Called by parent class
     getClusterFeatures = clusterId => {
         const cluster = this.currentClusters.find(c => c.id === clusterId)
 
@@ -282,14 +232,14 @@ class ServerCluster extends Cluster {
 
     isTileVisible = tileId => this.getVisibleTiles().includes(tileId)
 
-    // Could be static - use <=?
+    // TODO: Could be static - use <=?
     isOutsideBounds = bounds => feature => {
         const [lng, lat] = feature.geometry.coordinates
         return (
-            lng < bounds[0] ||
-            lng > bounds[2] ||
-            lat < bounds[1] ||
-            lat > bounds[3]
+            lng <= bounds[0] ||
+            lng >= bounds[2] ||
+            lat <= bounds[1] ||
+            lat >= bounds[3]
         )
     }
 
@@ -298,14 +248,7 @@ class ServerCluster extends Cluster {
             .map(this.getTileId)
             .sort()
 
-    getVisibleClusters = () =>
-        [].concat(...this.getVisibleTiles().map(this.getTileClusters))
-
-    getTileClusters = tileId => {
-        const clusters = this.tileClusters[tileId]
-        return Array.isArray(clusters) ? clusters : []
-    }
-
+    // TODO: Could be static
     getClusterIds = clusters =>
         clusters
             .map(c => c.id)
@@ -331,11 +274,11 @@ class ServerCluster extends Cluster {
 
     zoomToBounds(bounds) {
         if (bounds) {
-            const mapgl = this._map.getMapGL()
+            // https://github.com/mapbox/mapbox-gl-js/issues/2434
+            const zoomBounds =
+                typeof bounds === 'string' ? JSON.parse(bounds) : bounds // TODO: Error handling
 
-            // TODO: Conversion in maps app?
-            const [ll, ur] = JSON.parse(bounds)
-            mapgl.fitBounds([ll.reverse(), ur.reverse()], {
+            this._map.getMapGL().fitBounds(zoomBounds, {
                 padding: 40,
             })
         }
