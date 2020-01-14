@@ -7,6 +7,7 @@ import ClientCluster from './ClientCluster'
 import DonutCluster from './DonutCluster'
 import ServerCluster from './ServerCluster'
 import EarthEngine from './EarthEngine'
+import BingLayer from './BingLayer'
 
 export default {
     tileLayer: TileLayer, // basemap / external layer
@@ -19,4 +20,5 @@ export default {
     donutCluster: DonutCluster, // event layer
     serverCluster: ServerCluster, // event layer
     earthEngine: EarthEngine, // google earth engine layer
+    bingLayer: BingLayer, // bing layer basemap
 }
