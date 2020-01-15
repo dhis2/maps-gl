@@ -2,7 +2,7 @@ import fetchJsonp from 'fetch-jsonp'
 import Layer from './Layer'
 import { bboxIntersect } from '../utils/geo'
 
-const key = 'AotYGLQC0RDcofHC5pWLaW7k854n-6T9mTunsev9LEFwVqGaVnG8b4KERNY9PeKA' // TODO: Don't push!
+const key = '' // TODO: Don't push!
 
 // http://dev.virtualearth.net/REST/V1/Imagery/Metadata/Road?output=json&include=ImageryProviders&key=BingMapsKey
 // https://docs.microsoft.com/en-us/bingmaps/rest-services/directly-accessing-the-bing-maps-tiles
