@@ -179,7 +179,12 @@ class Layer extends Evented {
 
     setIndex(index = 0) {
         this.options.index = index
-        this.getMap().orderLayers()
+
+        const map = this.getMap()
+
+        if (map) {
+            map.orderLayers()
+        }
     }
 
     getIndex() {
