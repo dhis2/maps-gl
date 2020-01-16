@@ -1,11 +1,17 @@
+import './Search.css'
+
 const defaultOptions = {}
 
+// Inspired by https://github.com/lemmingapex/mapbox-gl-generic-geocoder
+// https://css-tricks.com/using-svg/
 class SearchControl {
     constructor(options) {
         this.options = {
             ...defaultOptions,
             ...options,
         }
+
+        console.log('search control')
     }
 
     getDefaultPosition() {
@@ -14,17 +20,24 @@ class SearchControl {
 
     onAdd(map) {
         this._map = map
-        this._container = document.createElement('div')
-        this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-search'
+        this.container = document.createElement('div')
+        this.container.className = 'mapboxgl-ctrl dhis2-maps-search'
 
-        map.getContainer().appendChild(this._container)
+        const icon = document.createElement('span')
+        icon.className =
+            'dhis2-maps-search-icon dhis2-maps-search-icon-magnifier'
 
-        return this._container
+        this.container.appendChild(icon)
+
+        // map.getContainer().appendChild(this._container)
+
+        return this.container
     }
 
     onRemove() {
-        map.getContainer().removeChild(this._container)
+        this.container.parentNode.removeChild(this.container)
         delete this._map
+        return this
     }
 }
 

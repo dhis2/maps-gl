@@ -1,9 +1,10 @@
 import { Map, AttributionControl, Popup } from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Evented } from 'mapbox-gl'
-import getControl from './controls'
+// import getControl from './controls'
 import Layer from './layers/Layer'
 import layerTypes from './layers/layerTypes'
+import controlTypes from './controls/controlTypes'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
 import './Map.css'
@@ -12,6 +13,11 @@ export class MapGL extends Evented {
     // Returns true if the layer type is supported
     static hasLayerSupport(type) {
         return !!layerTypes[type]
+    }
+
+    // Returns true if the control type is supported
+    static hasControlSupport(type) {
+        return !!controlTypes[type]
     }
 
     constructor(el) {
@@ -102,13 +108,15 @@ export class MapGL extends Evented {
         return !!this._layers.find(l => l === layer)
     }
 
-    addControl(control) {
-        const { type } = control
-        const mapboxControl = getControl(control)
+    addControl(config) {
+        const { type } = config
 
-        if (mapboxControl) {
-            this._mapgl.addControl(mapboxControl)
-            this._controls[type] = mapboxControl
+        if (controlTypes[type]) {
+            const control = new controlTypes[type](config)
+
+            this._mapgl.addControl(control)
+
+            this._controls[type] = control
         }
     }
 
