@@ -3,5 +3,8 @@
  */
 
 import Map from './Map'
+import types from './layers/layerTypes'
+
+export const layerTypes = Object.keys(types)
 
 export default Map
