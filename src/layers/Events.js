@@ -1,6 +1,10 @@
 import Layer from './Layer'
 
-class Dots extends Layer {
+const strokeColor = '#fff'
+const strokeWeight = 1
+const hoverStrokeWeight = 3
+
+class Events extends Layer {
     constructor(options) {
         super(options)
 
@@ -23,17 +27,25 @@ class Dots extends Layer {
     createLayers(radius) {
         const id = this.getId()
 
-        this.addLayer({
-            id,
-            type: 'circle',
-            source: id,
-            paint: {
-                'circle-color': ['get', 'color'],
-                'circle-radius': radius,
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#fff',
+        this.addLayer(
+            {
+                id,
+                type: 'circle',
+                source: id,
+                paint: {
+                    'circle-color': ['get', 'color'],
+                    'circle-radius': radius,
+                    'circle-stroke-width': [
+                        'case',
+                        ['boolean', ['feature-state', 'hover'], false],
+                        hoverStrokeWeight,
+                        strokeWeight,
+                    ],
+                    'circle-stroke-color': strokeColor,
+                },
             },
-        })
+            true
+        )
     }
 
     setOpacity(opacity) {
@@ -47,4 +59,4 @@ class Dots extends Layer {
     }
 }
 
-export default Dots
+export default Events

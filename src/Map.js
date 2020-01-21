@@ -1,40 +1,28 @@
-import mapboxgl from 'mapbox-gl'
+import { Map, AttributionControl, Popup } from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Evented } from 'mapbox-gl'
-import getControl from './controls'
 import Layer from './layers/Layer'
-import TileLayer from './layers/TileLayer'
-import Choropleth from './layers/Choropleth'
-import Boundary from './layers/Boundary'
-import Markers from './layers/Markers'
-import Dots from './layers/Dots'
-import ClientCluster from './layers/ClientCluster'
-import EarthEngine from './layers/EarthEngine'
+import layerTypes from './layers/layerTypes'
+import controlTypes from './controls/controlTypes'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
 import './Map.css'
 
-const layers = {
-    tileLayer: TileLayer,
-    wmsLayer: TileLayer,
-    choropleth: Choropleth,
-    boundary: Boundary,
-    markers: Markers,
-    dots: Dots,
-    clientCluster: ClientCluster,
-    earthEngine: EarthEngine,
-}
-
-export class Map extends Evented {
+export class MapGL extends Evented {
     // Returns true if the layer type is supported
     static hasLayerSupport(type) {
-        return !!layers[type]
+        return !!layerTypes[type]
+    }
+
+    // Returns true if the control type is supported
+    static hasControlSupport(type) {
+        return !!controlTypes[type]
     }
 
     constructor(el) {
         super()
 
-        this._mapgl = new mapboxgl.Map({
+        this._mapgl = new Map({
             container: el,
             style: {
                 version: 8,
@@ -43,7 +31,11 @@ export class Map extends Evented {
                 glyphs: 'http://fonts.openmaptiles.org/{fontstack}/{range}.pbf', // TODO: Host ourseleves
             },
             maxZoom: 18,
+            attributionControl: false,
         })
+
+        this._attributionControl = new AttributionControl()
+        this._mapgl.addControl(this._attributionControl)
 
         this._mapgl.on('load', evt => this.fire('ready', this))
         this._mapgl.on('click', evt => this.onClick(evt))
@@ -54,6 +46,8 @@ export class Map extends Evented {
 
         this._layers = []
         this._controls = {}
+
+        // console.log('AttributionControl', this._attributionControl);
     }
 
     fitBounds(bounds) {
@@ -80,15 +74,6 @@ export class Map extends Evented {
 
     getMapGL() {
         return this._mapgl
-    }
-
-    async addLayerWhenReady(layer) {
-        if (!layer.isOnMap()) {
-            await layer.addTo(this)
-        }
-        this._layers.push(layer)
-
-        this.orderLayers()
     }
 
     async addLayer(layer) {
@@ -122,13 +107,15 @@ export class Map extends Evented {
         return !!this._layers.find(l => l === layer)
     }
 
-    addControl(control) {
-        const { type } = control
-        const mapboxControl = getControl(control)
+    addControl(config) {
+        const { type } = config
 
-        if (mapboxControl) {
-            this._mapgl.addControl(mapboxControl)
-            this._controls[type] = mapboxControl
+        if (controlTypes[type]) {
+            const control = new controlTypes[type](config)
+
+            this._mapgl.addControl(control)
+
+            this._controls[type] = control
         }
     }
 
@@ -137,8 +124,8 @@ export class Map extends Evented {
     }
 
     createLayer(config) {
-        if (layers[config.type]) {
-            return new layers[config.type](config)
+        if (layerTypes[config.type]) {
+            return new layerTypes[config.type](config)
         } else {
             console.log('Unknown layer type', config.type)
             return new Layer()
@@ -286,8 +273,11 @@ export class Map extends Evented {
         }
     }
 
-    openPopup(content, lnglat, onClose) {
-        this._popup = new mapboxgl.Popup()
+    openPopup(content, lnglat, onClose, offset) {
+        this._popup = new Popup({
+            offset: offset,
+            maxWidth: 'auto',
+        })
             .setLngLat(lnglat)
             .setDOMContent(content)
             .addTo(this._mapgl)
@@ -304,6 +294,11 @@ export class Map extends Evented {
         }
     }
 
+    // Only called within the API
+    _updateAttributions() {
+        this._attributionControl._updateAttributions()
+    }
+
     _createClickEvent(evt) {
         const { lngLat, originalEvent } = evt
         const type = 'click'
@@ -318,4 +313,4 @@ export class Map extends Evented {
     }
 }
 
-export default Map
+export default MapGL

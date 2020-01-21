@@ -1,81 +1,81 @@
-import Layer from './Layer'
+import Cluster from './Cluster'
+import { isCluster } from '../utils/filters'
+import {
+    outlineColor,
+    outlineWidth,
+    clusterRadius,
+    textFont,
+    textSize,
+    textColor,
+} from '../utils/style'
 
-class ClientCluster extends Layer {
-    constructor(options) {
-        super(options)
-
-        const { data, color, radius } = options
-        this.setFeatures(data)
-        this.createSource()
-        this.createLayers(color, radius)
-    }
-
+class ClientCluster extends Cluster {
     createSource() {
-        const id = this.getId()
-        const features = this.getFeatures()
-
-        this.setSource(id, {
-            type: 'geojson',
-            data: features,
+        super.createSource({
             cluster: true,
-            clusterMaxZoom: 14,
-            clusterRadius: 50,
+            data: this.getFeatures(),
         })
     }
 
     createLayers(color, radius) {
+        super.createLayers(color, radius)
+
         const id = this.getId()
 
-        this.addLayer({
-            id: `${id}-clusters`,
-            type: 'circle',
-            source: id,
-            filter: ['has', 'point_count'],
-            paint: {
-                'circle-color': color,
-                'circle-radius': [
-                    'step',
-                    ['get', 'point_count'],
-                    15,
-                    10,
-                    20,
-                    1000,
-                    25,
-                    10000,
-                    30,
-                ],
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#fff',
+        this.addLayer(
+            {
+                id: `${id}-clusters`,
+                type: 'circle',
+                source: id,
+                filter: isCluster,
+                paint: {
+                    'circle-color': color,
+                    'circle-radius': clusterRadius,
+                    'circle-stroke-width': outlineWidth,
+                    'circle-stroke-color': outlineColor,
+                },
             },
-        })
+            true
+        )
 
         this.addLayer({
             id: `${id}-count`,
             type: 'symbol',
             source: id,
-            filter: ['has', 'point_count'],
+            filter: isCluster,
             layout: {
                 'text-field': '{point_count_abbreviated}',
-                'text-font': ['Open Sans Bold'],
-                'text-size': 16,
+                'text-font': textFont,
+                'text-size': textSize,
             },
             paint: {
-                'text-color': '#fff',
+                'text-color': textColor,
             },
         })
+    }
 
-        this.addLayer({
-            id,
-            type: 'circle',
-            source: id,
-            filter: ['!', ['has', 'point_count']],
-            paint: {
-                'circle-color': ['get', 'color'],
-                'circle-radius': radius,
-                'circle-stroke-width': 1,
-                'circle-stroke-color': '#fff',
-            },
-        })
+    onClick = evt => {
+        const { feature } = evt
+
+        if (!feature.properties.cluster) {
+            // Hack until Mapbox GL JS support string ids
+            // https://github.com/mapbox/mapbox-gl-js/issues/2716
+            if (
+                typeof feature.id === 'number' &&
+                typeof feature.properties.id === 'string'
+            ) {
+                const { type, properties, geometry } = feature
+                const { id } = properties
+                evt.feature = { type, id, properties, geometry }
+            }
+
+            this.fire('click', evt)
+        } else {
+            this.zoomToCluster(
+                feature.properties.cluster_id,
+                feature.geometry.coordinates
+            )
+        }
     }
 
     setOpacity(opacity) {
@@ -83,8 +83,6 @@ class ClientCluster extends Layer {
             const mapgl = this.getMapGL()
             const id = this.getId()
 
-            mapgl.setPaintProperty(id, 'circle-opacity', opacity)
-            mapgl.setPaintProperty(id, 'circle-stroke-opacity', opacity)
             mapgl.setPaintProperty(`${id}-clusters`, 'circle-opacity', opacity)
             mapgl.setPaintProperty(
                 `${id}-clusters`,
@@ -93,7 +91,41 @@ class ClientCluster extends Layer {
             )
             mapgl.setPaintProperty(`${id}-count`, 'text-opacity', opacity)
         }
+
+        super.setOpacity(opacity)
     }
+
+    // Returns all features in a cluster
+    getClusterFeatures = clusterId =>
+        new Promise((resolve, reject) => {
+            const mapgl = this.getMapGL()
+            const source = mapgl.getSource(this.getId())
+
+            source.getClusterLeaves(clusterId, null, null, (error, features) =>
+                error ? reject(error) : resolve(features)
+            )
+        })
+
+    /*    
+    setClusterOpacity(clusterId, isExpanded) {
+        if (clusterId) {
+            const { opacity } = this.options
+
+            this.getMapGL().setPaintProperty(
+                `${this.getId()}-clusters`,
+                'circle-opacity',
+                isExpanded && opacity >= 0.1
+                    ? [
+                          'case',
+                          ['==', ['get', 'cluster_id'], clusterId],
+                          0.1,
+                          opacity,
+                      ]
+                    : opacity
+            )
+        }
+    }
+    */
 }
 
 export default ClientCluster

@@ -18,13 +18,14 @@ class Layer extends Evented {
     }
 
     async addTo(map) {
-        const { onClick, onRightClick } = this.options
+        const { opacity, onClick, onRightClick } = this.options
 
         this._map = map
 
         const mapgl = map.getMapGL()
         const images = this.getImages()
-        const source = await this.getSource()
+        // const source = await this.getSource()
+        const source = this.getSource()
         const layers = this.getLayers()
 
         if (images) {
@@ -34,6 +35,10 @@ class Layer extends Evented {
         Object.keys(source).forEach(id => mapgl.addSource(id, source[id]))
         layers.forEach(layer => mapgl.addLayer(layer))
 
+        if (opacity) {
+            this.setOpacity(opacity)
+        }
+
         if (onClick) {
             this.on('click', onClick)
         }
@@ -41,6 +46,8 @@ class Layer extends Evented {
         if (onRightClick) {
             this.on('contextmenu', onRightClick)
         }
+
+        this.onAdd()
     }
 
     removeFrom(map) {
@@ -48,6 +55,8 @@ class Layer extends Evented {
         const source = this.getSource()
         const layers = this.getLayers()
         const { onClick, onRightClick } = this.options
+
+        this.onRemove()
 
         layers.forEach(layer => mapgl.removeLayer(layer.id))
         Object.keys(source).forEach(id => mapgl.removeSource(id))
@@ -91,9 +100,11 @@ class Layer extends Evented {
         return this._map && this._map.getMapGL()
     }
 
+    // Returns true if one of the layers are added to the map
     isOnMap() {
         const mapgl = this.getMapGL()
-        return Boolean(mapgl && mapgl.getLayer(this._id))
+
+        return Boolean(mapgl && this._layers.find(l => mapgl.getLayer(l.id)))
     }
 
     isVisible() {
@@ -101,8 +112,8 @@ class Layer extends Evented {
     }
 
     isInteractive() {
-        return (
-            !!this._interactiveIds.length && this.isOnMap() && this.isVisible()
+        return Boolean(
+            this._interactiveIds.length && this.isOnMap() && this.isVisible()
         )
     }
 
@@ -168,7 +179,12 @@ class Layer extends Evented {
 
     setIndex(index = 0) {
         this.options.index = index
-        this.getMap().orderLayers()
+
+        const map = this.getMap()
+
+        if (map) {
+            map.orderLayers()
+        }
     }
 
     getIndex() {
@@ -184,6 +200,17 @@ class Layer extends Evented {
             return bbox(data)
         }
     }
+
+    isMaxZoom() {
+        const mapgl = this.getMapGL()
+        return mapgl.getZoom() === mapgl.getMaxZoom()
+    }
+
+    // Override if needed in subclass
+    onAdd() {}
+
+    // Override if needed in subclass
+    onRemove() {}
 
     // "Normalise" event before passing back to app
     onClick = evt => this.fire('click', evt)
