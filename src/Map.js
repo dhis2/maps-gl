@@ -46,8 +46,6 @@ export class MapGL extends Evented {
 
         this._layers = []
         this._controls = {}
-
-        // console.log('AttributionControl', this._attributionControl);
     }
 
     fitBounds(bounds) {
@@ -113,7 +111,11 @@ export class MapGL extends Evented {
         if (controlTypes[type]) {
             const control = new controlTypes[type](config)
 
-            this._mapgl.addControl(control)
+            if (control.addTo) {
+                control.addTo(this)
+            } else {
+                this._mapgl.addControl(control)
+            }
 
             this._controls[type] = control
         }

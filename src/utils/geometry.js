@@ -1,15 +1,17 @@
 import { LngLatBounds } from 'mapbox-gl'
 
-export const getBoundsFromLayers = layers => {
-    const bounds = new LngLatBounds()
+export const getBoundsFromLayers = (layers = []) => {
+    const bounds = layers.reduce((b, l) => {
+        if (l.getBounds) {
+            const layerBounds = l.getBounds()
 
-    layers.forEach(layer => {
-        const layerBounds = layer.getBounds()
-
-        if (layerBounds) {
-            bounds.extend(layerBounds)
+            if (layerBounds) {
+                return b.extend(layerBounds)
+            }
         }
-    })
+
+        return b
+    }, new LngLatBounds())
 
     return bounds.isEmpty() ? null : bounds.toArray()
 }

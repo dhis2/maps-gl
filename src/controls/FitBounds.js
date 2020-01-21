@@ -1,51 +1,49 @@
 import './FitBounds.css'
 
-const defaultOptions = {}
-
-// https://github.com/mapbox/mapbox-gl-js/blob/master/src/css/mapbox-gl.css
 class FitBoundsControl {
     constructor(options) {
-        this.options = {
-            ...defaultOptions,
-            ...options,
-        }
+        this.options = options
     }
 
     getDefaultPosition() {
         return 'top-right'
     }
 
-    getLayersBounds() {
-        console.log('getLayersBounds', this._map)
+    addTo(map) {
+        this._map = map
+        map.getMapGL().addControl(this)
     }
 
-    onAdd(map) {
-        this._map = map
-        this._container = document.createElement('div')
-        this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group'
+    onAdd() {
+        const container = document.createElement('div')
 
-        this._button = document.createElement('div')
-        this._button.className = 'dhis2-maps-ctrl-fitbounds'
-        this._button.type = 'button'
+        container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group'
 
-        this._container.appendChild(this._button)
+        const button = document.createElement('div')
 
-        this._container.addEventListener('click', this.onClick)
+        button.className = 'dhis2-maps-ctrl-fitbounds'
+        button.type = 'button'
 
-        return this._container
+        container.appendChild(button)
+        container.addEventListener('click', this.onClick)
+
+        this._container = container
+
+        return container
     }
 
     onRemove() {
         this._container.removeEventListener('click', this.onClick)
+        this._container.parentNode.removeChild(this._container)
 
-        map.getContainer().removeChild(this._container)
+        delete this._container
+        delete this._button
         delete this._map
+        delete this._mapgl
     }
 
     onClick = () => {
-        console.log('CLICK!')
-
-        const bounds = this.getLayersBounds()
+        const bounds = this._map.getLayersBounds()
 
         if (bounds) {
             this._map.fitBounds(bounds)

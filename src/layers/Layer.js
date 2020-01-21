@@ -197,7 +197,9 @@ class Layer extends Evented {
         const data = this.getFeatures()
 
         if (data && data.features.length) {
-            return bbox(data)
+            const [x1, y1, x2, y2] = bbox(data)
+
+            return [[x1, y1], [x2, y2]]
         }
     }
 
