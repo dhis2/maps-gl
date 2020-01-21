@@ -1,3 +1,5 @@
+import './FitBounds.css'
+
 const defaultOptions = {}
 
 // https://github.com/mapbox/mapbox-gl-js/blob/master/src/css/mapbox-gl.css
@@ -7,8 +9,6 @@ class FitBoundsControl {
             ...defaultOptions,
             ...options,
         }
-
-        console.log('fit bounds control')
     }
 
     getDefaultPosition() {

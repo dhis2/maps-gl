@@ -1,7 +1,6 @@
 import { Map, AttributionControl, Popup } from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Evented } from 'mapbox-gl'
-// import getControl from './controls'
 import Layer from './layers/Layer'
 import layerTypes from './layers/layerTypes'
 import controlTypes from './controls/controlTypes'

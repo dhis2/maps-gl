@@ -1,13 +1,14 @@
+import './Measure.css'
+
 const defaultOptions = {}
 
+// https://github.com/mapbox/mapbox-gl-js/blob/master/src/css/mapbox-gl.css
 class MeasureControl {
     constructor(options) {
         this.options = {
             ...defaultOptions,
             ...options,
         }
-
-        console.log('measure control')
     }
 
     getDefaultPosition() {
@@ -17,9 +18,13 @@ class MeasureControl {
     onAdd(map) {
         this._map = map
         this._container = document.createElement('div')
-        this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-search'
+        this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group'
 
-        map.getContainer().appendChild(this._container)
+        this._button = document.createElement('div')
+        this._button.className = 'dhis2-maps-ctrl-measure'
+        this._button.type = 'button'
+
+        this._container.appendChild(this._button)
 
         return this._container
     }

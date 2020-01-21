@@ -1,0 +1,11 @@
+.dhis2-maps-ctrl-measure {
+    width: 30px;
+    height: 30px;
+    border-radius: 5px;
+    background-position: 50% 50%;
+    background-repeat: no-repeat;
+    background-color: #fff;
+    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAGJJREFUOI1jYGBgOM3AwPAfCTMwMDA8QxPDhT8xoAlIM5AG/jMi2QoDjKQYwITEkSFRM9w2qrkA5oqBc8EIDYNHDAzkp0I4QE/fMDF5YvnoBsiTwscWBiQBJgYGhpMU6D8CAJDrOVecOVsbAAAAAElFTkSuQmCC);
+    background-size: 18px 18px;
+    cursor: pointer;
+}

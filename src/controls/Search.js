@@ -10,8 +10,6 @@ class SearchControl {
             ...defaultOptions,
             ...options,
         }
-
-        console.log('search control')
     }
 
     getDefaultPosition() {
@@ -20,18 +18,16 @@ class SearchControl {
 
     onAdd(map) {
         this._map = map
-        this.container = document.createElement('div')
-        this.container.className = 'mapboxgl-ctrl dhis2-maps-search'
+        this._container = document.createElement('div')
+        this._container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group'
 
-        const icon = document.createElement('span')
-        icon.className =
-            'dhis2-maps-search-icon dhis2-maps-search-icon-magnifier'
+        this._button = document.createElement('div')
+        this._button.className = 'dhis2-maps-ctrl-search'
+        this._button.type = 'button'
 
-        this.container.appendChild(icon)
+        this._container.appendChild(this._button)
 
-        // map.getContainer().appendChild(this._container)
-
-        return this.container
+        return this._container
     }
 
     onRemove() {

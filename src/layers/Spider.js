@@ -1,3 +1,4 @@
+import { Point } from 'mapbox-gl'
 import MapboxglSpiderifier from 'mapboxgl-spiderifier'
 import 'mapboxgl-spiderifier/index.css'
 import { outlineColor, outlineWidth } from '../utils/style'
@@ -71,15 +72,17 @@ const Spider = function(map, options) {
         const { feature, mapboxMarker, param } = leg
         const { angle, legLength } = param
         const length = legLength + options.radius
-        const deltaX = length * Math.cos(angle)
-        const deltaY = length * Math.sin(angle)
-        const { lng, lat } = mapboxMarker.getLngLat()
+        const offset = new Point(
+            length * Math.cos(angle),
+            length * Math.sin(angle)
+        )
+        const point = map.project(mapboxMarker.getLngLat()).add(offset)
+        const { lng, lat } = map.unproject(point)
 
         options.onClick({
             type: 'click',
             coordinates: [lng, lat],
             position: [evt.x, evt.pageY || evt.y],
-            offset: [deltaX, deltaY],
             feature: feature,
         })
     }
