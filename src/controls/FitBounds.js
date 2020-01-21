@@ -15,6 +15,10 @@ class FitBoundsControl {
         return 'top-right'
     }
 
+    getLayersBounds() {
+        console.log('getLayersBounds', this._map)
+    }
+
     onAdd(map) {
         this._map = map
         this._container = document.createElement('div')
@@ -26,12 +30,26 @@ class FitBoundsControl {
 
         this._container.appendChild(this._button)
 
+        this._container.addEventListener('click', this.onClick)
+
         return this._container
     }
 
     onRemove() {
+        this._container.removeEventListener('click', this.onClick)
+
         map.getContainer().removeChild(this._container)
         delete this._map
+    }
+
+    onClick = () => {
+        console.log('CLICK!')
+
+        const bounds = this.getLayersBounds()
+
+        if (bounds) {
+            this._map.fitBounds(bounds)
+        }
     }
 }
 
