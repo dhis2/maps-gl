@@ -275,9 +275,8 @@ export class MapGL extends Evented {
         }
     }
 
-    openPopup(content, lnglat, onClose, offset) {
+    openPopup(content, lnglat, onClose) {
         this._popup = new Popup({
-            offset: offset,
             maxWidth: 'auto',
         })
             .setLngLat(lnglat)
