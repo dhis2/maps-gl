@@ -37,7 +37,7 @@ class MeasureControl {
 
     _setupUI() {
         const label = this._map._getUIString(
-            'MeasureControl.MeasureDistancesAndAreas'
+            'MeasureControl.MeasureDistanceAndArea'
         )
 
         this._button = document.createElement('button')

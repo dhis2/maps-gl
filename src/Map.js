@@ -8,10 +8,21 @@ import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
 import './Map.css'
 
-const defaultLocale = {
+const controlsLocale = {
     'SearchControl.SearchForPlace': 'Search for place or address',
     'FitBoundsControl.ZoomToContent': 'Zoom to content',
-    'MeasureControl.MeasureDistancesAndAreas': 'Measure distances and areas',
+    'MeasureControl.MeasureDistanceAndArea': 'Measure distance and area',
+    'MeasureControl.ClickStartMeasurement':
+        'Click where you want to start the measurement',
+    'MeasureControl.ClickNextPosition': 'Click the next position',
+    'MeasureControl.Cancel': 'Cancel',
+    'MeasureControl.FinishMeasurement': 'Finish measurement',
+    'MeasureControl.PathDistance': 'Path distance',
+    'MeasureControl.Area': 'Area',
+    'MeasureControl.Kilometers': 'km',
+    'MeasureControl.Miles': 'mi',
+    'MeasureControl.Hectares': 'ha',
+    'MeasureControl.Acres': 'acres',
 }
 
 export class MapGL extends Evented {
@@ -30,7 +41,7 @@ export class MapGL extends Evented {
 
         const { locale, ...opts } = options
 
-        this._mapgl = new Map({
+        const mapgl = new Map({
             container: el,
             style: {
                 version: 8,
@@ -40,22 +51,31 @@ export class MapGL extends Evented {
             },
             maxZoom: 18,
             attributionControl: false,
-            locale: {
-                ...defaultLocale,
-                ...locale,
-            },
+            locale: controlsLocale,
             ...opts,
         })
 
-        this._attributionControl = new AttributionControl()
-        this._mapgl.addControl(this._attributionControl)
+        this._mapgl = mapgl
 
-        this._mapgl.on('load', evt => this.fire('ready', this))
-        this._mapgl.on('click', evt => this.onClick(evt))
-        this._mapgl.on('contextmenu', evt => this.onContextMenu(evt))
+        // Translate strings
+        if (locale) {
+            Object.keys(mapgl._locale).forEach(id => {
+                const str = mapgl._locale[id]
+                if (locale[str]) {
+                    mapgl._locale[id] = locale[str]
+                }
+            })
+        }
+
+        this._attributionControl = new AttributionControl()
+        mapgl.addControl(this._attributionControl)
+
+        mapgl.on('load', evt => this.fire('ready', this))
+        mapgl.on('click', evt => this.onClick(evt))
+        mapgl.on('contextmenu', evt => this.onContextMenu(evt))
 
         // TODO: Don't add before we have any vector layers
-        this._mapgl.on('mousemove', evt => this.onMouseMove(evt))
+        mapgl.on('mousemove', evt => this.onMouseMove(evt))
 
         this._layers = []
         this._controls = {}

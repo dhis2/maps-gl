@@ -16,8 +16,9 @@
     right: 116px;
     z-index: 2000;
     white-space: nowrap;
-    background-color: rgba(0, 0, 0, 0.6);
-    color: #fff;
+    /* background-color: rgba(0, 0, 0, 0.6); */
+    background-color: #fff;
+    /* color: #fff; */
     font-size: 14px;
     line-height: 39px;
     display: block;
