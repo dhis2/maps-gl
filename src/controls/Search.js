@@ -2,13 +2,12 @@ import { Popup } from 'mapbox-gl'
 import Typeahead from 'suggestions'
 import './Search.css'
 
-// https://nominatim.openstreetmap.org/search?q=60.06756%2C%2010.82801&limit=5&format=json&addressdetails=1
-// https://nominatim.openstreetmap.org/search?q=Oslo&limit=5&format=json&addressdetails=1
-// 60.06756, 10.82801 Oslo
+// Inspired by https://github.com/lemmingapex/mapbox-gl-generic-geocoder/
+// TODO: Replace suggestions dependency
 
 const defaultOptions = {
     placeholder: 'Search for Place or Address',
-    zoom: 16, // TODO
+    maxZoom: 15,
     limit: 5,
 }
 
@@ -110,13 +109,14 @@ class SearchControl {
     _onChange = () => {
         const { value } = this._inputEl
         const { selected } = this._typeahead
+        const { maxZoom } = this.options
 
         if (value) {
             if (!selected) {
                 this._geocode(value)
             } else {
                 const { bounds, lng, lat, name } = selected
-                this._map.fitBounds(bounds)
+                this._map.fitBounds(bounds, { maxZoom })
                 this._popup.setLngLat([lng, lat]).setText(name)
 
                 if (!this._popup.isOpen()) {
@@ -133,9 +133,12 @@ class SearchControl {
 
         this.geocodeRequest(searchInput, this._map.getBounds(), this.options)
             .then(results => {
+                let items = results
+
+                console.log('results', results.length, results)
                 this._loadingEl.style.display = 'none'
-                if (results.length) {
-                    results = results.slice(0, this.options.limit)
+                if (items.length) {
+                    items = results.slice(0, this.options.limit)
                     this._clearEl.style.display = 'block'
                 } else {
                     this._clearEl.style.display = 'none'
@@ -144,11 +147,10 @@ class SearchControl {
 
                 this._typeahead.update(results)
 
-                // TODO
-                if (results.length === 1) {
-                    this._typeahead.value(results[1])
+                // Select search item if only one
+                if (items.length === 1) {
+                    this._typeahead.value(items[0])
                 }
-                console.log('results', results)
             })
             .catch(() => (this._loadingEl.style.display = 'none'))
     }

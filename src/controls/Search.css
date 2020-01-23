@@ -166,6 +166,7 @@
 }
 
 .dhis2-maps-ctrl-search-collapsed input, 
-.dhis2-maps-ctrl-search-collapsed .geocoder-pin-right {
+.dhis2-maps-ctrl-search-collapsed .geocoder-pin-right,
+.dhis2-maps-ctrl-search-collapsed .suggestions-wrapper {
     display: none;
 }
