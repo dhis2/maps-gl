@@ -1,5 +1,6 @@
 import './FitBounds.css'
 
+// TODO: Hide when no vector layers
 class FitBoundsControl {
     constructor(options) {
         this.options = options
@@ -15,6 +16,8 @@ class FitBoundsControl {
     }
 
     onAdd() {
+        const mapgl = this._map.getMapGL()
+        const label = mapgl._getUIString('FitBoundsControl.ZoomToContent')
         const container = document.createElement('div')
 
         container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group'
@@ -23,6 +26,8 @@ class FitBoundsControl {
 
         button.className = 'dhis2-maps-ctrl-fitbounds'
         button.type = 'button'
+        button.title = label
+        button.setAttribute('aria-label', label)
 
         container.appendChild(button)
         container.addEventListener('click', this.onClick)

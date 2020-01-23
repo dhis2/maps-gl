@@ -8,7 +8,7 @@
           box-sizing:border-box;
   }
 .mapboxgl-ctrl-generic-geocoder {
-  font:15px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+  font:18px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
   position:relative;
   background-color:white;
   width:33.3333%;

@@ -6,7 +6,6 @@ import './Search.css'
 // TODO: Replace suggestions dependency
 
 const defaultOptions = {
-    placeholder: 'Search for Place or Address',
     maxZoom: 15,
     limit: 5,
 }
@@ -46,15 +45,21 @@ class SearchControl {
 
     onAdd(map) {
         this._map = map
+
+        const label = map._getUIString('SearchControl.SearchForPlace')
+
         const el = (this.container = document.createElement('div'))
         el.className = 'mapboxgl-ctrl-generic-geocoder mapboxgl-ctrl'
 
         const icon = document.createElement('span')
         icon.className = 'geocoder-icon geocoder-icon-search'
+        icon.title = label
+        icon.setAttribute('aria-label', label)
 
         this._inputEl = document.createElement('input')
         this._inputEl.type = 'text'
-        this._inputEl.placeholder = this.options.placeholder
+
+        this._inputEl.placeholder = label
         this._inputEl.addEventListener('change', this._onChange)
         this._inputEl.addEventListener('click', this._showSuggestions)
 

@@ -8,6 +8,12 @@ import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
 import './Map.css'
 
+const defaultLocale = {
+    'SearchControl.SearchForPlace': 'Search for place or address',
+    'FitBoundsControl.ZoomToContent': 'Zoom to content',
+    'MeasureControl.MeasureDistancesAndAreas': 'Measure distances and areas',
+}
+
 export class MapGL extends Evented {
     // Returns true if the layer type is supported
     static hasLayerSupport(type) {
@@ -19,8 +25,10 @@ export class MapGL extends Evented {
         return !!controlTypes[type]
     }
 
-    constructor(el) {
+    constructor(el, options) {
         super()
+
+        const { locale, ...opts } = options
 
         this._mapgl = new Map({
             container: el,
@@ -32,6 +40,11 @@ export class MapGL extends Evented {
             },
             maxZoom: 18,
             attributionControl: false,
+            locale: {
+                ...defaultLocale,
+                ...locale,
+            },
+            ...opts,
         })
 
         this._attributionControl = new AttributionControl()
