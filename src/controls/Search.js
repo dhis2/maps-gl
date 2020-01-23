@@ -135,7 +135,6 @@ class SearchControl {
             .then(results => {
                 let items = results
 
-                console.log('results', results.length, results)
                 this._loadingEl.style.display = 'none'
                 if (items.length) {
                     items = results.slice(0, this.options.limit)
@@ -147,7 +146,7 @@ class SearchControl {
 
                 this._typeahead.update(results)
 
-                // Select search item if only one
+                // Select search item direcly if only one
                 if (items.length === 1) {
                     this._typeahead.value(items[0])
                 }
