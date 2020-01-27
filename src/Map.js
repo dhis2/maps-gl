@@ -4,30 +4,10 @@ import { Evented } from 'mapbox-gl'
 import Layer from './layers/Layer'
 import layerTypes from './layers/layerTypes'
 import controlTypes from './controls/controlTypes'
+import controlsLocale from './controls/controlsLocale'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
 import './Map.css'
-
-const controlsLocale = {
-    'SearchControl.SearchForPlace': 'Search for place or address',
-    'FitBoundsControl.ZoomToContent': 'Zoom to content',
-    'MeasureControl.MeasureDistancesAndAreas': 'Measure distances and areas',
-    'MeasureControl.ClickStartMeasurement':
-        'Click where you want to start the measurement',
-    'MeasureControl.ClickNextPosition': 'Click the next position',
-    'MeasureControl.Cancel': 'Cancel',
-    'MeasureControl.Delete': 'Delete',
-    'MeasureControl.FinishMeasurement': 'Finish measurement',
-    'MeasureControl.CenterMapOnLine': 'Center map on line',
-    'MeasureControl.CenterMapOnArea': 'Center map on area',
-    'MeasureControl.Distance': 'Distance',
-    'MeasureControl.Perimeter': 'Perimeter',
-    'MeasureControl.Area': 'Area',
-    'MeasureControl.Kilometers': 'km',
-    'MeasureControl.Miles': 'mi',
-    'MeasureControl.Hectares': 'ha',
-    'MeasureControl.Acres': 'acres',
-}
 
 export class MapGL extends Evented {
     // Returns true if the layer type is supported
@@ -310,6 +290,8 @@ export class MapGL extends Evented {
                 }
             }
         }
+
+        this.fire('layersort')
     }
 
     openPopup(content, lnglat, onClose) {

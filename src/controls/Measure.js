@@ -7,7 +7,9 @@ import './Measure.css'
 
 const twoDecimals = value => (Math.round(value * 100) / 100).toLocaleString()
 
-const createElement = (element, className, text) => {
+const kmToMiles = value => value * 0.621371192
+
+const createElement = (element, className, text, appendTo) => {
     const el = document.createElement(element)
 
     if (className) {
@@ -16,6 +18,10 @@ const createElement = (element, className, text) => {
 
     if (text) {
         el.innerText = text
+    }
+
+    if (appendTo) {
+        appendTo.appendChild(el)
     }
 
     return el
@@ -27,8 +33,16 @@ class MeasureControl {
         this._type = 'measure'
     }
 
-    onAdd(map) {
+    addTo(map) {
         this._map = map
+        const mapgl = map.getMapGL()
+
+        this.locale = mapgl._getUIString.bind(mapgl)
+
+        mapgl.addControl(this)
+    }
+
+    onAdd() {
         this._container = createElement(
             'div',
             'mapboxgl-ctrl mapboxgl-ctrl-group'
@@ -47,34 +61,33 @@ class MeasureControl {
     }
 
     _setupUI() {
-        const label = this._map._getUIString(
-            'MeasureControl.MeasureDistancesAndAreas'
-        )
+        const label = this.locale('MeasureControl.MeasureDistancesAndAreas')
 
         this._button = createElement(
             'button',
-            'mapboxgl-ctrl-icon dhis2-maps-ctrl-measure'
+            'mapboxgl-ctrl-icon dhis2-maps-ctrl-measure',
+            '',
+            this._container
         )
+
         this._button.type = 'button'
         this._button.setAttribute('title', label)
         this._button.setAttribute('aria-label', label)
         this._button.addEventListener('click', this._onButtonClick)
-
-        this._container.appendChild(this._button)
     }
 
     _setupMapWhenReady() {
-        const map = this._map
+        const mapgl = this._map.getMapGL()
 
-        if (map.isStyleLoaded()) {
+        if (mapgl.isStyleLoaded()) {
             this._setupMap()
         } else {
-            map.once('styledata', this._setupMap)
+            mapgl.once('styledata', this._setupMap)
         }
     }
 
     _setupMap = () => {
-        const map = this._map
+        const mapgl = this._map.getMapGL()
 
         const color = '#ffa500'
 
@@ -103,13 +116,13 @@ class MeasureControl {
         }
 
         // Add source to map
-        map.addSource('measure', {
+        mapgl.addSource('measure', {
             type: 'geojson',
             data: this._geojson,
         })
 
         // Add point styles
-        map.addLayer({
+        mapgl.addLayer({
             id: 'measure-points',
             type: 'circle',
             source: 'measure',
@@ -121,7 +134,7 @@ class MeasureControl {
         })
 
         // Add line styles
-        map.addLayer({
+        mapgl.addLayer({
             id: 'measure-line',
             type: 'line',
             source: 'measure',
@@ -137,7 +150,7 @@ class MeasureControl {
         })
 
         // Add polygon styles
-        map.addLayer({
+        mapgl.addLayer({
             id: 'measure-polygon',
             type: 'fill',
             source: 'measure',
@@ -149,47 +162,44 @@ class MeasureControl {
             filter: ['in', '$type', 'Polygon'],
         })
 
-        map.on('click', this._onMapClick)
-        map.on('mousemove', this._onMouseMove)
+        mapgl.on('click', this._onMapClick)
+        mapgl.on('mousemove', this._onMouseMove)
 
-        map.fire('measurestart')
+        this._map.on('layersort', this._onLayerSort)
     }
 
     _clearMap = () => {
-        const map = this._map
+        const mapgl = this._map.getMapGL()
 
-        if (map.getLayer('measure-points')) {
-            map.removeLayer('measure-points')
+        if (mapgl.getLayer('measure-points')) {
+            mapgl.removeLayer('measure-points')
         }
 
-        if (map.getLayer('measure-line')) {
-            map.removeLayer('measure-line')
+        if (mapgl.getLayer('measure-line')) {
+            mapgl.removeLayer('measure-line')
         }
 
-        if (map.getLayer('measure-polygon')) {
-            map.removeLayer('measure-polygon')
+        if (mapgl.getLayer('measure-polygon')) {
+            mapgl.removeLayer('measure-polygon')
         }
 
-        if (map.getSource('measure')) {
-            map.removeSource('measure')
+        if (mapgl.getSource('measure')) {
+            mapgl.removeSource('measure')
         }
 
-        map.off('click', this._onMapClick)
-        map.off('mousemove', this._onMouseMove)
+        mapgl.off('click', this._onMapClick)
+        mapgl.off('mousemove', this._onMouseMove)
 
-        map.fire('measureend')
-
-        map.getCanvas().style.cursor = 'pointer'
+        mapgl.getCanvas().style.cursor = 'grab'
 
         this._geojson = null
         this._linestring = null
         this._polygon = null
-
         this._isActive = false
     }
 
     _startMeasure = () => {
-        const map = this._map
+        const mapgl = this._map.getMapGL()
 
         this._button.classList.add('active')
 
@@ -197,45 +207,53 @@ class MeasureControl {
             this._setupMapWhenReady()
         }
 
-        this._distanceContainer = document.createElement('div')
-        this._distanceContainer.className = 'dhis2-maps-ctrl-measure-result'
-
-        const headerEl = document.createElement('div')
-        headerEl.className = 'dhis2-maps-ctrl-measure-header'
-        headerEl.innerText = map._getUIString(
-            'MeasureControl.MeasureDistancesAndAreas'
+        this._distanceContainer = createElement(
+            'div',
+            'dhis2-maps-ctrl-measure-result',
+            '',
+            mapgl.getContainer()
         )
-        this._distanceContainer.appendChild(headerEl)
 
-        this._distanceText = document.createElement('p')
-        this._distanceText.innerText = map._getUIString(
-            'MeasureControl.ClickStartMeasurement'
+        createElement(
+            'div',
+            'dhis2-maps-ctrl-measure-header',
+            this.locale('MeasureControl.MeasureDistancesAndAreas'),
+            this._distanceContainer
         )
-        this._distanceContainer.appendChild(this._distanceText)
 
-        this._actionsEl = document.createElement('div')
-        this._actionsEl.className = 'dhis2-maps-ctrl-measure-actions'
-        this._distanceContainer.appendChild(this._actionsEl)
+        this._distanceText = createElement(
+            'p',
+            '',
+            this.locale('MeasureControl.ClickStartMeasurement'),
+            this._distanceContainer
+        )
 
-        this._cancelEl = document.createElement('span')
-        this._cancelEl.className = 'dhis2-maps-ctrl-measure-cancel'
-        this._cancelEl.innerText = map._getUIString('MeasureControl.Cancel')
+        this._actionsEl = createElement(
+            'div',
+            'dhis2-maps-ctrl-measure-actions',
+            '',
+            this._distanceContainer
+        )
+
+        this._cancelEl = createElement(
+            'span',
+            'dhis2-maps-ctrl-measure-cancel',
+            this.locale('MeasureControl.Cancel'),
+            this._actionsEl
+        )
         this._cancelEl.addEventListener('click', this._endMeasure)
-        this._actionsEl.appendChild(this._cancelEl)
 
-        this._finishEl = document.createElement('span')
-        this._finishEl.className = 'dhis2-maps-ctrl-measure-finish'
-        this._finishEl.innerText = map._getUIString(
-            'MeasureControl.FinishMeasurement'
+        this._finishEl = createElement(
+            'span',
+            'dhis2-maps-ctrl-measure-finish',
+            this.locale('MeasureControl.FinishMeasurement'),
+            this._actionsEl
         )
         this._finishEl.addEventListener('click', this._finishMeasure)
-        this._actionsEl.appendChild(this._finishEl)
-
-        this._map.getContainer().appendChild(this._distanceContainer)
     }
 
     _finishMeasure = () => {
-        const map = this._map
+        const mapgl = this._map.getMapGL()
         const geojson = this._geojson
         const points = geojson.features.filter(f => f.geometry.type === 'Point')
 
@@ -253,37 +271,46 @@ class MeasureControl {
 
             geojson.features[lineIndex] = this._linestring
 
-            map.getSource('measure').setData(geojson)
+            mapgl.getSource('measure').setData(geojson)
 
             const length = turfLength(this._linestring)
-            const miles = length * 0.621371192
+            const miles = kmToMiles(length)
 
-            const perimeterText = `${map._getUIString(
+            const perimeterText = `${this.locale(
                 'MeasureControl.Perimeter'
-            )}: ${twoDecimals(length)} ${map._getUIString(
+            )}: ${twoDecimals(length)} ${this.locale(
                 'MeasureControl.Kilometers'
-            )} (${twoDecimals(miles)} ${map._getUIString(
-                'MeasureControl.Miles'
-            )})`
+            )} (${twoDecimals(miles)} ${this.locale('MeasureControl.Miles')})`
 
             this._distanceEl.textContent = perimeterText
         }
 
         this._actionsEl.innerText = ''
 
-        this._centerEl = document.createElement('span')
-        this._centerEl.className = 'dhis2-maps-ctrl-measure-center'
-        this._centerEl.innerText = map._getUIString(
-            `MeasureControl.CenterMapOn${points.length === 2 ? 'Line' : 'Area'}`
+        this._centerEl = createElement(
+            'span',
+            'dhis2-maps-ctrl-measure-center',
+            this.locale(
+                `MeasureControl.CenterMapOn${
+                    points.length === 2 ? 'Line' : 'Area'
+                }`
+            ),
+            this._actionsEl
         )
         this._centerEl.addEventListener('click', this._centerMap)
-        this._actionsEl.appendChild(this._centerEl)
 
-        this._deleteEl = document.createElement('span')
-        this._deleteEl.className = 'dhis2-maps-ctrl-measure-delete'
-        this._deleteEl.innerText = map._getUIString('MeasureControl.Delete')
+        this._deleteEl = createElement(
+            'span',
+            'dhis2-maps-ctrl-measure-delete',
+            this.locale('MeasureControl.Delete'),
+            this._actionsEl
+        )
         this._deleteEl.addEventListener('click', this._endMeasure)
-        this._actionsEl.appendChild(this._deleteEl)
+
+        mapgl.off('click', this._onMapClick)
+        mapgl.off('mousemove', this._onMouseMove)
+
+        mapgl.getCanvas().style.cursor = 'grab'
     }
 
     _endMeasure = () => {
@@ -292,7 +319,10 @@ class MeasureControl {
 
         if (this._distanceContainer) {
             this._finishEl.removeEventListener('click', this._endMeasure)
-            this._map.getContainer().removeChild(this._distanceContainer)
+            this._map
+                .getMapGL()
+                .getContainer()
+                .removeChild(this._distanceContainer)
             this._distanceContainer = null
         }
     }
@@ -300,7 +330,7 @@ class MeasureControl {
     _centerMap = () => {
         const [x1, y1, x2, y2] = bbox(this._geojson)
 
-        this._map.fitBounds([[x1, y1], [x2, y2]], {
+        this._map.getMapGL().fitBounds([[x1, y1], [x2, y2]], {
             padding: 100,
         })
     }
@@ -311,11 +341,11 @@ class MeasureControl {
     }
 
     _onMapClick = evt => {
-        const map = this._map
+        const mapgl = this._map.getMapGL()
         const geojson = this._geojson
         let points = geojson.features.filter(f => f.geometry.type === 'Point')
 
-        const clikedFeature = map.queryRenderedFeatures(evt.point, {
+        const clikedFeature = mapgl.queryRenderedFeatures(evt.point, {
             layers: ['measure-points'],
         })[0]
 
@@ -342,7 +372,7 @@ class MeasureControl {
         geojson.features = [...points]
 
         if (points.length === 1) {
-            this._distanceText.innerText = map._getUIString(
+            this._distanceText.innerText = this.locale(
                 'MeasureControl.ClickNextPosition'
             )
         } else {
@@ -353,23 +383,21 @@ class MeasureControl {
             geojson.features.push(this._linestring)
 
             const length = turfLength(this._linestring)
-            const miles = length * 0.621371192
+            const miles = kmToMiles(length)
 
-            const distanceText = `${map._getUIString(
+            const distanceText = `${this.locale(
                 'MeasureControl.Distance'
-            )}: ${twoDecimals(length)} ${map._getUIString(
+            )}: ${twoDecimals(length)} ${this.locale(
                 'MeasureControl.Kilometers'
-            )} (${twoDecimals(miles)} ${map._getUIString(
-                'MeasureControl.Miles'
-            )})`
-
-            this._distanceEl = document.createElement('div')
-            this._distanceEl.className = 'dhis2-maps-ctrl-measure-distance'
-
-            this._distanceEl.textContent = distanceText
+            )} (${twoDecimals(miles)} ${this.locale('MeasureControl.Miles')})`
 
             this._distanceText.innerText = ''
-            this._distanceText.appendChild(this._distanceEl)
+            this._distanceEl = createElement(
+                'div',
+                'dhis2-maps-ctrl-measure-distance',
+                distanceText,
+                this._distanceText
+            )
         }
 
         if (points.length > 2) {
@@ -390,25 +418,39 @@ class MeasureControl {
                 acres
             )} acres)`
 
-            const areaEl = document.createElement('div')
-            areaEl.className = 'dhis2-maps-ctrl-measure-area'
-            areaEl.textContent = areaText
-
-            this._distanceText.appendChild(areaEl)
+            createElement(
+                'div',
+                'dhis2-maps-ctrl-measure-area',
+                areaText,
+                this._distanceText
+            )
         }
 
-        map.getSource('measure').setData(geojson)
+        mapgl.getSource('measure').setData(geojson)
     }
 
     _onMouseMove = evt => {
-        const map = this._map
+        const mapgl = this._map.getMapGL()
 
-        const features = map.queryRenderedFeatures(evt.point, {
+        const features = mapgl.queryRenderedFeatures(evt.point, {
             layers: ['measure-points'],
         })
 
         // UI indicator for clicking/hovering a point on the map
-        map.getCanvas().style.cursor = features.length ? 'pointer' : 'crosshair'
+        mapgl.getCanvas().style.cursor = features.length
+            ? 'pointer'
+            : 'crosshair'
+    }
+
+    _onLayerSort = () => {
+        const mapgl = this._map.getMapGL()
+        const layers = ['measure-points', 'measure-line', 'measure-polygon']
+
+        layers.forEach(layer => {
+            if (mapgl.getLayer(layer)) {
+                mapgl.moveLayer(layer)
+            }
+        })
     }
 }
 
