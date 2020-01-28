@@ -13,6 +13,9 @@ class FitBoundsControl {
     addTo(map) {
         this._map = map
         map.getMapGL().addControl(this)
+
+        map.on('layeradd', this.onLayerChange)
+        map.on('layerremove', this.onLayerChange)
     }
 
     onAdd() {
@@ -38,6 +41,9 @@ class FitBoundsControl {
     }
 
     onRemove() {
+        this._map.on('layeradd', this.onLayerChange)
+        this._map.on('layerremove', this.onLayerChange)
+
         this._container.removeEventListener('click', this.onClick)
         this._container.parentNode.removeChild(this._container)
 
@@ -53,6 +59,12 @@ class FitBoundsControl {
         if (bounds) {
             this._map.fitBounds(bounds)
         }
+    }
+
+    onLayerChange = () => {
+        this._container.style.display = this._map.getLayersBounds()
+            ? 'block'
+            : 'none'
     }
 }
 

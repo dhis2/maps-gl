@@ -1,32 +1,13 @@
 import turfLength from '@turf/length'
 import turfArea from '@turf/area'
 import bbox from '@turf/bbox'
+import { createElement } from '../utils/dom'
+import { twoDecimals, kmToMiles } from '../utils/numbers'
 import './Measure.css'
 
 // Inspired by https://github.com/ljagis/leaflet-measure
 
-const twoDecimals = value => (Math.round(value * 100) / 100).toLocaleString()
-
-const kmToMiles = value => value * 0.621371192
-
-const createElement = (element, className, text, appendTo) => {
-    const el = document.createElement(element)
-
-    if (className) {
-        el.className = className
-    }
-
-    if (text) {
-        el.innerText = text
-    }
-
-    if (appendTo) {
-        appendTo.appendChild(el)
-    }
-
-    return el
-}
-
+// TODO: Proper clean-up on remove
 class MeasureControl {
     constructor() {
         this._isActive = false

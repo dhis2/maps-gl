@@ -49,7 +49,7 @@ class SearchControl {
         const label = map._getUIString('SearchControl.SearchForPlace')
 
         const el = (this.container = document.createElement('div'))
-        el.className = 'mapboxgl-ctrl-generic-geocoder mapboxgl-ctrl'
+        el.className = 'mapboxgl-ctrl dhis2-maps-ctrl-search'
 
         const icon = document.createElement('span')
         icon.className = 'geocoder-icon geocoder-icon-search'

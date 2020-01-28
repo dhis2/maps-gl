@@ -97,6 +97,8 @@ export class MapGL extends Evented {
         if (!layer.isOnMap()) {
             await layer.addTo(this)
 
+            this.fire('layeradd', this._layers)
+
             // Layer is removed while being created
             if (!this.hasLayer(layer)) {
                 this.removeLayer(layer)
@@ -112,6 +114,8 @@ export class MapGL extends Evented {
         }
 
         this._layers = this._layers.filter(l => l !== layer)
+
+        this.fire('layerremove', this._layers)
     }
 
     remove() {
