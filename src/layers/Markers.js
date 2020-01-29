@@ -56,9 +56,8 @@ class Markers extends Layer {
             type: 'symbol',
             source: id,
             layout: {
-                'icon-image':
-                    'http://localhost:8080/images/orgunitgroup/05.png',
-                'icon-size': 0.05,
+                'icon-image': ['get', 'iconUrl'],
+                'icon-size': 1,
                 'icon-allow-overlap': true,
             },
         }

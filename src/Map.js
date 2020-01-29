@@ -5,6 +5,7 @@ import Layer from './layers/Layer'
 import layerTypes from './layers/layerTypes'
 import controlTypes from './controls/controlTypes'
 import controlsLocale from './controls/controlsLocale'
+import { transformRequest } from './utils/images'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
 import './Map.css'
@@ -37,6 +38,7 @@ export class MapGL extends Evented {
             preserveDrawingBuffer: true, // TODO: requred for map download, but reduced performance
             attributionControl: false,
             locale: controlsLocale,
+            transformRequest,
             ...opts,
         })
 
