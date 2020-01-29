@@ -180,3 +180,7 @@
 .dhis2-maps-ctrl-search-collapsed:hover {
     background-color: #f5f5f5;
 }
+
+.dhis2-map-download .dhis2-maps-ctrl-search {
+    display: none;
+}

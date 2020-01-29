@@ -76,3 +76,7 @@
 .dhis2-maps-ctrl-measure-delete {
     background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAsAAAAMCAYAAAC0qUeeAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEwAACxMBAJqcGAAAALlJREFUKJFjZEACcWmn5zMwMCbA+P///ZuzeI5ZKozPaF+/n4WBgYFB7gmfKiPj30PfeP/Irem3+h5SeIyT4yvLQxZGFuv7Eh/vMzAwMDDGpJz6wcTExM5AEPz7BbX+zH98ymDyTMiCsamnq7HRMICimJGRsQUbjVUxIUAvxf8ZqrDSSCoY49JO/UtLO8OFzbSkpCO8cSlnfjMwMDCwMDAw/mdgOD3nBwPDp7i0MxiK/0BsmMbAwMAAACl8PxDSJvyvAAAAAElFTkSuQmCC);
 }
+
+.dhis2-map-download .dhis2-maps-ctrl-measure {
+    display: none;
+}

@@ -15,3 +15,8 @@
     background-color: #eee;
 }
 */
+
+
+.dhis2-map-download .dhis2-maps-ctrl-fitbounds {
+    display: none;
+}

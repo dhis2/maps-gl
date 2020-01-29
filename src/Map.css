@@ -36,3 +36,13 @@
     padding-right: 5px;
 }
 
+.dhis2-map-download .mapboxgl-ctrl-zoom-in,
+.dhis2-map-download .mapboxgl-ctrl-zoom-out,
+.dhis2-map-download .mapboxgl-ctrl-compass,
+.dhis2-map-download .mapboxgl-ctrl-fullscreen {
+    display: none;
+}
+
+.dhis2-map-download .mapboxgl-ctrl-attrib {
+    white-space: nowrap;
+}
