@@ -48,7 +48,7 @@ class SearchControl {
 
         const label = map._getUIString('SearchControl.SearchForPlace')
 
-        const el = (this.container = document.createElement('div'))
+        const el = (this._container = document.createElement('div'))
         el.className = 'mapboxgl-ctrl dhis2-maps-ctrl-search'
 
         const icon = document.createElement('span')
@@ -93,7 +93,7 @@ class SearchControl {
     }
 
     onRemove() {
-        this.container.parentNode.removeChild(this.container)
+        this._container.parentNode.removeChild(this._container)
         this._map = null
         return this
     }
@@ -181,17 +181,17 @@ class SearchControl {
     }
 
     _toggleSearchControl = () => {
-        this.container.classList.toggle('dhis2-maps-ctrl-search-collapsed')
+        this._container.classList.toggle('dhis2-maps-ctrl-search-collapsed')
     }
 
     _collapseSearchControl = () => {
         this._toggleSearchControl()
-        this.container.addEventListener('click', this._expandSearchControl)
+        this._container.addEventListener('click', this._expandSearchControl)
     }
 
     _expandSearchControl = () => {
         this._toggleSearchControl()
-        this.container.removeEventListener('click', this._expandSearchControl)
+        this._container.removeEventListener('click', this._expandSearchControl)
         this._map.once('click', this._collapseSearchControl)
         this._inputEl.focus()
     }

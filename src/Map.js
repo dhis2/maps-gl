@@ -1,4 +1,4 @@
-import { Map, AttributionControl, Popup } from 'mapbox-gl'
+import { Map, Popup } from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Evented } from 'mapbox-gl'
 import Layer from './layers/Layer'
@@ -21,7 +21,7 @@ export class MapGL extends Evented {
         return !!controlTypes[type]
     }
 
-    constructor(el, options) {
+    constructor(el, options = {}) {
         super()
 
         const { locale, ...opts } = options
@@ -54,9 +54,6 @@ export class MapGL extends Evented {
             })
         }
 
-        this._attributionControl = new AttributionControl()
-        mapgl.addControl(this._attributionControl)
-
         mapgl.on('load', evt => this.fire('ready', this))
         mapgl.on('click', evt => this.onClick(evt))
         mapgl.on('contextmenu', evt => this.onContextMenu(evt))
@@ -66,6 +63,10 @@ export class MapGL extends Evented {
 
         this._layers = []
         this._controls = {}
+
+        if (options.attributionControl !== false) {
+            this.addControl({ type: 'attribution' })
+        }
     }
 
     fitBounds(bounds) {
@@ -323,7 +324,9 @@ export class MapGL extends Evented {
 
     // Only called within the API
     _updateAttributions() {
-        this._attributionControl._updateAttributions()
+        if (this._controls.attribution) {
+            this._controls.attribution._updateAttributions()
+        }
     }
 
     _createClickEvent(evt) {
