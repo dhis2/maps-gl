@@ -1,4 +1,5 @@
 import Layer from './Layer'
+import loadEarthEngineApi from '../utils/eeapi'
 
 const defaultOptions = {
     url:
@@ -19,8 +20,7 @@ class EarthEngine extends Layer {
     }
 
     async getSource() {
-        this._ee = await this.loadEarthEngineApi()
-
+        this._ee = await loadEarthEngineApi()
         await this.setAuthToken()
 
         const eeImage = this.createImage()
@@ -169,7 +169,12 @@ class EarthEngine extends Layer {
         })
     }
 
-    setOpacity(opacity) {}
+    setOpacity(opacity) {
+        if (this.isOnMap()) {
+            const mapgl = this.getMapGL()
+            mapgl.setPaintProperty(this.getId(), 'raster-opacity', opacity)
+        }
+    }
 
     createLegend() {
         const params = this.options.params
@@ -355,58 +360,23 @@ class EarthEngine extends Layer {
         })
     }
 
-    showValue(latlng) {
-        console.log('showValue', latlng)
-    }
-
-    // Check if Earth Engine API is loaded
-    earthEngineApiLoaded() {
-        return typeof window.ee !== 'undefined'
-    }
-
-    // Load Earth Engine API
-    /*
-    loadEarthEngineApi() {
-        EarthEngine._apiIsLoading = true
-
-        const script = document.createElement('script'); 
-        script.src = 'https://cdn.rawgit.com/google/earthengine-api/master/javascript/build/ee_api_js.js'; // TODO: Don't use master
-        document.getElementsByTagName('head')[0].appendChild(script); 
-
-        console.log('loadEarthEngineApi')
-    }
-    */
-
-    // Inspired by https://gitlab.com/IvanSanchez/Leaflet.GridLayer.GoogleMutant/blob/master/Leaflet.GoogleMutant.js#L29
-    // TODO Handle if two maps are requesting the api at the same time
-    loadEarthEngineApi = () =>
-        new Promise((resolve, reject) => {
-            if (window.ee) {
-                return resolve(window.ee)
+    // TODO: Move popup handling to the maps app
+    showValue = latlng => {
+        this.getValue(latlng, value => {
+            const { lng, lat } = latlng
+            const options = {
+                ...this.options,
+                value,
             }
 
-            const script = document.createElement('script')
-            script.src =
-                'https://cdn.rawgit.com/google/earthengine-api/v0.1.172/javascript/build/ee_api_js.js' // TODO: Safer to host overselves?
-            document.getElementsByTagName('head')[0].appendChild(script)
+            const content = options.popup.replace(
+                /\{ *([\w_-]+) *\}/g,
+                (str, key) => options[key]
+            )
 
-            let checkCounter = 0
-            let intervalId
-
-            intervalId = setInterval(() => {
-                if (checkCounter >= 40) {
-                    clearInterval(intervalId)
-                    return reject(
-                        new Error('window.ee not found after 20 seconds')
-                    )
-                }
-                if (!!window.ee) {
-                    clearInterval(intervalId)
-                    return resolve(window.ee)
-                }
-                checkCounter++
-            }, 500)
+            this._map.openPopup(document.createTextNode(content), [lng, lat])
         })
+    }
 }
 
 export default EarthEngine
