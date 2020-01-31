@@ -85,3 +85,11 @@
 .dhis2-map-download .mapboxgl-ctrl-attrib {
     white-space: nowrap;
 }
+
+.dhis2-map-plugin .dhis2-map-legend {
+    box-sizing: border-box;
+    top: 146px;
+    padding: 1px 2px 2px 1px;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+    border-radius: 5px;
+} 
