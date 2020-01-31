@@ -42,11 +42,12 @@ export const addTextProperties = (config, label, style) => {
             'text-font': [fonts[font]],
             'text-size': size,
             'text-optional': true,
+            'text-anchor': 'top',
         },
         paint: {
             ...config.paint,
             'text-color': color || '#333',
-            'text-translate': [0, 20],
+            'text-translate': [0, 10],
         },
     }
 }
