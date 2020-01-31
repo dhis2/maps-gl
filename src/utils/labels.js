@@ -49,8 +49,6 @@ export const addTextProperties = (config, label, style) => {
             'text-translate': [0, 20],
         },
     }
-
-    return config
 }
 
 export const getLabelsLayer = (id, label, style) => {
