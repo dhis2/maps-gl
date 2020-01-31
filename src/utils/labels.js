@@ -11,7 +11,11 @@ const fonts = {
     'italic-bold': 'Open Sans Bold Italic',
 }
 
-export const getLablesSource = data => ({
+// Returns offset in ems
+const getOffsetEms = (type, radius, fontSize) =>
+    type === 'Point' ? radius / parseInt(fontSize, 10) + 0.4 : 0
+
+export const getLablesSource = (data, { fontSize }) => ({
     type: 'geojson',
     data: {
         type: 'FeatureCollection',
@@ -23,6 +27,11 @@ export const getLablesSource = data => ({
             },
             properties: {
                 name: properties.name,
+                anchor: geometry.type === 'Point' ? 'top' : 'center',
+                offset: [
+                    0,
+                    getOffsetEms(geometry.type, properties.radius, fontSize),
+                ],
             },
         })),
     },
@@ -65,14 +74,22 @@ export const getLabelsLayer = (id, label, style) => {
             'text-field': label || '{name}',
             'text-font': [fonts[font]],
             'text-size': size,
+            'text-anchor': ['get', 'anchor'],
+            'text-offset': ['get', 'offset'],
+            // 'text-offset': [0, 2.5],
         },
         paint: {
             'text-color': color || '#333',
+            //'text-translate': ['get', 'offset'],
         },
     }
 }
 
 export const getLabelPosition = ({ type, coordinates }) => {
+    if (type === 'Point') {
+        return coordinates
+    }
+
     let polygon = coordinates
 
     if (type === 'MultiPolygon') {

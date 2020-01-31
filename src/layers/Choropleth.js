@@ -19,7 +19,7 @@ class Choropleth extends Layer {
     createSource() {
         const id = this.getId()
         const features = this.getFeatures()
-        const { label } = this.options
+        const { label, labelStyle } = this.options
 
         this.setSource(id, {
             type: 'geojson',
@@ -27,7 +27,10 @@ class Choropleth extends Layer {
         })
 
         if (label) {
-            this.setSource(`${id}-labels`, getLablesSource(features))
+            this.setSource(
+                `${id}-labels`,
+                getLablesSource(features, labelStyle)
+            )
         }
     }
 
