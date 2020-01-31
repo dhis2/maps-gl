@@ -1012,7 +1012,7 @@
     prettier "^1.15.3"
     yargs "^13.1.0"
 
-"@google/earthengine@^0.1.212":
+"@google/earthengine@^0.1.168":
   version "0.1.212"
   resolved "https://registry.yarnpkg.com/@google/earthengine/-/earthengine-0.1.212.tgz#63b73c335b87db8139af7afed3d71687cadc6150"
   integrity sha512-03nhKFgwf4bl5PfudIak2K5Ij6qb7KO70txMgWeK1/NoyX9GwCjLeyr154e0MKNcaR/kvHIT6iD/FMwwDTtfjw==
