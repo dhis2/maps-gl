@@ -62,11 +62,10 @@ class Markers extends Layer {
             },
         }
 
-        if (label) {
-            addTextProperties(config, label, labelStyle)
-        }
-
-        this.addLayer(config, true)
+        this.addLayer(
+            label ? addTextProperties(config, label, labelStyle) : config,
+            true
+        )
     }
 
     setOpacity(opacity) {

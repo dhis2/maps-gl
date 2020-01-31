@@ -28,21 +28,29 @@ export const getLablesSource = data => ({
     },
 })
 
-// Add label properties to layer config - TODO: Make immutable?
+// Add label properties to layer config
 export const addTextProperties = (config, label, style) => {
     const { fontSize, fontStyle, fontWeight, color } = style
     const font = `${fontStyle || 'normal'}-${fontWeight || 'normal'}`
     const size = fontSize ? parseInt(fontSize, 10) : 12
 
-    config.layout['text-field'] = label || '{name}'
-    config.layout['text-font'] = [fonts[font]]
-    config.layout['text-size'] = size
-    config.layout['text-optional'] = true
-
-    config.paint = {
-        'text-color': '#333',
-        'text-translate': [0, 20],
+    return {
+        ...config,
+        layout: {
+            ...config.layout,
+            'text-field': label || '{name}',
+            'text-font': [fonts[font]],
+            'text-size': size,
+            'text-optional': true,
+        },
+        paint: {
+            ...config.paint,
+            'text-color': color || '#333',
+            'text-translate': [0, 20],
+        },
     }
+
+    return config
 }
 
 export const getLabelsLayer = (id, label, style) => {
