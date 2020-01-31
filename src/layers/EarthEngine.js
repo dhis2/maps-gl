@@ -1,9 +1,6 @@
-import ee from '@google/earthengine'
 import Layer from './Layer'
 
-window.ee = ee // Required to initalize the ee api
-
-const defaults = {
+const defaultOptions = {
     url:
         'https://earthengine.googleapis.com/map/{mapid}/{z}/{x}/{y}?token={token}',
     tokenType: 'Bearer',
@@ -13,12 +10,17 @@ const defaults = {
 
 class EarthEngine extends Layer {
     constructor(options) {
-        super(Object.assign(defaults, options)) // TODO: Use spread
+        super({
+            ...defaultOptions,
+            ...options,
+        })
 
         this._legend = options.legend || this.createLegend()
     }
 
     async getSource() {
+        this._ee = await this.loadEarthEngineApi()
+
         await this.setAuthToken()
 
         const eeImage = this.createImage()
@@ -45,31 +47,29 @@ class EarthEngine extends Layer {
     }
 
     // Configures client-side authentication of EE API calls by providing a OAuth2 token to use.
-    async setAuthToken() {
-        const { accessToken, tokenType } = this.options
+    setAuthToken = () =>
+        new Promise((resolve, reject) => {
+            const { accessToken, tokenType } = this.options
 
-        if (accessToken) {
-            const token = await accessToken
+            if (accessToken) {
+                accessToken.then(token => {
+                    const { access_token, client_id, expires_in } = token
 
-            if (token) {
-                const { access_token, client_id, expires_in } = token
+                    this._ee.data.setAuthToken(
+                        client_id,
+                        tokenType,
+                        access_token,
+                        expires_in
+                    )
 
-                ee.data.setAuthToken(
-                    client_id,
-                    tokenType,
-                    access_token,
-                    expires_in
-                )
-                ee.data.setAuthTokenRefresher(
-                    this.refreshAccessToken.bind(this)
-                )
+                    this._ee.data.setAuthTokenRefresher(
+                        this.refreshAccessToken.bind(this)
+                    )
 
-                return new Promise(resolve =>
-                    ee.initialize(null, null, resolve)
-                )
+                    this._ee.initialize(null, null, resolve)
+                })
             }
-        }
-    }
+        })
 
     // Get OAuth2 token needed to create and load Google Earth Engine layers
     getAuthToken(callback) {
@@ -103,9 +103,14 @@ class EarthEngine extends Layer {
         const { access_token, client_id, expires_in } = token
         const { tokenType } = this.options
 
-        ee.data.setAuthToken(client_id, tokenType, access_token, expires_in)
-        ee.data.setAuthTokenRefresher(this.refreshAccessToken.bind(this))
-        ee.initialize(null, null, this.createImage.bind(this))
+        this._ee.data.setAuthToken(
+            client_id,
+            tokenType,
+            access_token,
+            expires_in
+        )
+        this._ee.data.setAuthTokenRefresher(this.refreshAccessToken.bind(this))
+        this._ee.initialize(null, null, this.createImage.bind(this))
     }
 
     // Create EE tile layer from params (override for each layer type)
@@ -118,7 +123,7 @@ class EarthEngine extends Layer {
 
         if (options.filter) {
             // Image collection
-            eeCollection = ee.ImageCollection(options.datasetId) // eslint-disable-line
+            eeCollection = this._ee.ImageCollection(options.datasetId) // eslint-disable-line
 
             eeCollection = this.applyFilter(eeCollection)
 
@@ -126,11 +131,11 @@ class EarthEngine extends Layer {
                 this.eeCollection = eeCollection
                 eeImage = eeCollection.mosaic()
             } else {
-                eeImage = ee.Image(eeCollection.first()) // eslint-disable-line
+                eeImage = this._ee.Image(eeCollection.first()) // eslint-disable-line
             }
         } else {
             // Single image
-            eeImage = ee.Image(options.datasetId) // eslint-disable-line
+            eeImage = this._ee.Image(options.datasetId) // eslint-disable-line
         }
 
         if (options.band) {
@@ -157,8 +162,6 @@ class EarthEngine extends Layer {
     }
 
     createLayer() {
-        console.log('create layer')
-
         this.addLayer({
             id: this.getId(),
             type: 'raster',
@@ -254,7 +257,7 @@ class EarthEngine extends Layer {
         if (filter) {
             filter.forEach(item => {
                 collection = collection.filter(
-                    ee.Filter[item.type].apply(this, item.arguments)
+                    this._ee.Filter[item.type].apply(this, item.arguments)
                 ) // eslint-disable-line
             })
         }
@@ -319,19 +322,22 @@ class EarthEngine extends Layer {
 
     // Returns value at location in a callback
     getValue(latlng, callback) {
-        const point = ee.Geometry.Point(latlng.lng, latlng.lat) // eslint-disable-line
+        const point = this._ee.Geometry.Point(latlng.lng, latlng.lat) // eslint-disable-line
         const options = this.options
         let dictionary
 
         if (options.aggregation === 'mosaic') {
             dictionary = this.eeImage.reduceRegion(
-                ee.Reducer.mean(),
+                this._ee.Reducer.mean(),
                 point,
                 options.resolution,
                 options.projection
             ) // eslint-disable-line
         } else {
-            dictionary = this.eeImage.reduceRegion(ee.Reducer.mean(), point) // eslint-disable-line
+            dictionary = this.eeImage.reduceRegion(
+                this._ee.Reducer.mean(),
+                point
+            ) // eslint-disable-line
         }
 
         dictionary.getInfo(valueObj => {
@@ -352,6 +358,55 @@ class EarthEngine extends Layer {
     showValue(latlng) {
         console.log('showValue', latlng)
     }
+
+    // Check if Earth Engine API is loaded
+    earthEngineApiLoaded() {
+        return typeof window.ee !== 'undefined'
+    }
+
+    // Load Earth Engine API
+    /*
+    loadEarthEngineApi() {
+        EarthEngine._apiIsLoading = true
+
+        const script = document.createElement('script'); 
+        script.src = 'https://cdn.rawgit.com/google/earthengine-api/master/javascript/build/ee_api_js.js'; // TODO: Don't use master
+        document.getElementsByTagName('head')[0].appendChild(script); 
+
+        console.log('loadEarthEngineApi')
+    }
+    */
+
+    // Inspired by https://gitlab.com/IvanSanchez/Leaflet.GridLayer.GoogleMutant/blob/master/Leaflet.GoogleMutant.js#L29
+    // TODO Handle if two maps are requesting the api at the same time
+    loadEarthEngineApi = () =>
+        new Promise((resolve, reject) => {
+            if (window.ee) {
+                return resolve(window.ee)
+            }
+
+            const script = document.createElement('script')
+            script.src =
+                'https://cdn.rawgit.com/google/earthengine-api/v0.1.172/javascript/build/ee_api_js.js' // TODO: Safer to host overselves?
+            document.getElementsByTagName('head')[0].appendChild(script)
+
+            let checkCounter = 0
+            let intervalId
+
+            intervalId = setInterval(() => {
+                if (checkCounter >= 40) {
+                    clearInterval(intervalId)
+                    return reject(
+                        new Error('window.ee not found after 20 seconds')
+                    )
+                }
+                if (!!window.ee) {
+                    clearInterval(intervalId)
+                    return resolve(window.ee)
+                }
+                checkCounter++
+            }, 500)
+        })
 }
 
 export default EarthEngine
