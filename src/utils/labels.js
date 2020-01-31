@@ -12,10 +12,10 @@ const fonts = {
 }
 
 // Returns offset in ems
-const getOffsetEms = (type, radius, fontSize) =>
+const getOffsetEms = (type, radius = 5, fontSize = 11) =>
     type === 'Point' ? radius / parseInt(fontSize, 10) + 0.4 : 0
 
-export const getLablesSource = (data, { fontSize }) => ({
+export const getLablesSource = (data, { fontSize }, isBoundary) => ({
     type: 'geojson',
     data: {
         type: 'FeatureCollection',
@@ -32,6 +32,7 @@ export const getLablesSource = (data, { fontSize }) => ({
                     0,
                     getOffsetEms(geometry.type, properties.radius, fontSize),
                 ],
+                color: isBoundary ? properties.color : '#333',
             },
         })),
     },
@@ -78,7 +79,8 @@ export const getLabelsLayer = (id, label, style) => {
             'text-offset': ['get', 'offset'],
         },
         paint: {
-            'text-color': color || '#333',
+            'text-color': color ? color : ['get', 'color'], //  || '#333',
+            // 'text-color': ['get', 'color'], //  || '#333',
         },
     }
 }
