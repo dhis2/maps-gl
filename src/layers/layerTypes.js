@@ -8,6 +8,8 @@ import DonutCluster from './DonutCluster'
 import ServerCluster from './ServerCluster'
 import EarthEngine from './EarthEngine'
 import BingLayer from './BingLayer'
+import GeoJson from './GeoJson'
+import LayerGroup from './LayerGroup'
 
 export default {
     tileLayer: TileLayer, // basemap / external layer
@@ -21,4 +23,6 @@ export default {
     serverCluster: ServerCluster, // event layer
     earthEngine: EarthEngine, // google earth engine layer
     bingLayer: BingLayer, // bing layer basemap
+    geoJson: GeoJson, // tracked entity layer
+    group: LayerGroup, // tracked entity layer
 }
