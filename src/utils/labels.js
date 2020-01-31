@@ -76,11 +76,9 @@ export const getLabelsLayer = (id, label, style) => {
             'text-size': size,
             'text-anchor': ['get', 'anchor'],
             'text-offset': ['get', 'offset'],
-            // 'text-offset': [0, 2.5],
         },
         paint: {
             'text-color': color || '#333',
-            //'text-translate': ['get', 'offset'],
         },
     }
 }
