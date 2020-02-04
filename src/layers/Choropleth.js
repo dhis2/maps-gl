@@ -1,4 +1,5 @@
 import Layer from './Layer'
+import { isPoint, isPolygon, isHover } from '../utils/filters'
 import { getLablesSource, getLabelsLayer } from '../utils/labels'
 
 const borderColor = '#333'
@@ -47,7 +48,7 @@ class Choropleth extends Layer {
                 paint: {
                     'fill-color': ['get', 'color'],
                 },
-                filter: ['==', '$type', 'Polygon'],
+                filter: isPolygon,
             },
             true
         )
@@ -62,12 +63,12 @@ class Choropleth extends Layer {
                 'line-color': borderColor,
                 'line-width': [
                     'case',
-                    ['boolean', ['feature-state', 'hover'], false],
+                    isHover,
                     hoverBorderWeight,
                     borderWeight,
                 ],
             },
-            filter: ['==', '$type', 'Polygon'],
+            filter: isPolygon,
         })
 
         // Point layer
@@ -81,13 +82,13 @@ class Choropleth extends Layer {
                     'circle-radius': ['get', 'radius'],
                     'circle-stroke-width': [
                         'case',
-                        ['boolean', ['feature-state', 'hover'], false],
+                        isHover,
                         hoverBorderWeight,
                         borderWeight,
                     ],
                     'circle-stroke-color': borderColor,
                 },
-                filter: ['==', '$type', 'Point'],
+                filter: isPoint,
             },
             true
         )
