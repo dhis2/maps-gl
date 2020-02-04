@@ -207,6 +207,14 @@ export class MapGL extends Evented {
             featureId = feature.id
             sourceId = feature.source
             featureSourceId = `${featureId}-${sourceId}`
+
+            const layer = this.getLayerFromId(feature.layer.id)
+
+            if (layer) {
+                layer.onMouseMove(evt, feature)
+            }
+        } else {
+            this.hideLabel()
         }
 
         if (featureSourceId !== this._hoverId) {
@@ -319,6 +327,30 @@ export class MapGL extends Evented {
         if (this._popup) {
             this._popup.remove()
             this._popup = null
+        }
+    }
+
+    showLabel(content, lnglat) {
+        if (!this._label) {
+            this._label = new Popup({
+                closeButton: false,
+                closeOnClick: false,
+                anchor: 'left',
+                className: 'dhis2-maps-label',
+                offset: [10, 0],
+            })
+        }
+
+        this._label.setText(content).setLngLat(lnglat)
+
+        if (!this._label.isOpen()) {
+            this._label.addTo(this._mapgl)
+        }
+    }
+
+    hideLabel() {
+        if (this._label) {
+            this._label.remove()
         }
     }
 

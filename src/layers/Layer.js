@@ -220,6 +220,23 @@ class Layer extends Evented {
     onRightClick(evt) {
         console.log('onRightClick', evt)
     }
+
+    onMouseMove(evt, feature) {
+        const { label, hoverLabel } = this.options
+
+        if (hoverLabel || label) {
+            const { properties } = feature
+            const content = (hoverLabel || label).replace(
+                /\{ *([\w_-]+) *\}/g,
+                (str, key) => properties[key]
+            )
+            const { lngLat, point } = evt
+
+            this._map.showLabel(content, lngLat)
+
+            // console.log('layer onMouseMove', content, lngLat, point)
+        }
+    }
 }
 
 export default Layer
