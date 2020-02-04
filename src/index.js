@@ -1,7 +1,7 @@
 import Map from './Map'
 import supportedLayers from './layers/layerTypes'
 import supportedControls from './controls/controlTypes'
-import earthEngineLoader from '../utils/eeapi'
+import earthEngineLoader from './utils/eeapi'
 
 /**
  *  Wrapper around Mapbox GL JS for DHIS2 Maps
