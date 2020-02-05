@@ -1,5 +1,7 @@
 # maps-gl
 
+![DHIS2 Build and Release](https://github.com/dhis2/maps-gl/workflows/DHIS2%20Build%20and%20Release/badge.svg)
+
 WebGL/vector tiles engine for DHIS2 Maps
 
 ```sh
