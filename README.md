@@ -14,7 +14,6 @@ WebGL/vector tiles engine for DHIS2 Maps
 ## Link to DHIS2 Maps:
 
 maps-gl folder: `yarn link`
-
 maps-app folder: `yarn link @dhis2/maps-gl`
 
 ## Build from source
@@ -24,3 +23,7 @@ In order to use the library you must first build it from source using the comman
 You may also watch the src directory for changes with the command `yarn watch`
 
 Both of these commands will run the javascript files in the `src` directory through babel to produce both CommonJS and ES Module builds in the `build` directory.
+
+## Publishing
+
+Publication is done automatically by a GitHub action for all commits on the `master` branch.  Commits (including pull-request squashed commits) should follow the [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/) guidelines so that the release bot can determine which version to cut - breaking, feature, or bug
