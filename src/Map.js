@@ -32,7 +32,8 @@ export class MapGL extends Evented {
                 version: 8,
                 sources: {},
                 layers: [],
-                glyphs: 'http://fonts.openmaptiles.org/{fontstack}/{range}.pbf', // TODO: Host ourseleves
+                glyphs:
+                    'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf', // TODO: Host ourseleves
             },
             maxZoom: 18,
             preserveDrawingBuffer: true, // TODO: requred for map download, but reduced performance
@@ -336,7 +337,7 @@ export class MapGL extends Evented {
                 closeButton: false,
                 closeOnClick: false,
                 anchor: 'left',
-                className: 'dhis2-maps-label',
+                className: 'dhis2-map-label',
                 offset: [10, 0],
             })
         }
