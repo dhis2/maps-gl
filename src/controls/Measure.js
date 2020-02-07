@@ -46,7 +46,7 @@ class MeasureControl {
 
         this._button = createElement(
             'button',
-            'mapboxgl-ctrl-icon dhis2-map-ctrl-measure',
+            'mapboxgl-ctrl-icon dhis2-maps-ctrl-measure',
             '',
             this._container
         )
@@ -190,14 +190,14 @@ class MeasureControl {
 
         this._distanceContainer = createElement(
             'div',
-            'dhis2-map-ctrl-measure-result',
+            'dhis2-maps-ctrl-measure-result',
             '',
             mapgl.getContainer()
         )
 
         createElement(
             'div',
-            'dhis2-map-ctrl-measure-header',
+            'dhis2-maps-ctrl-measure-header',
             this.locale('MeasureControl.MeasureDistancesAndAreas'),
             this._distanceContainer
         )
@@ -211,14 +211,14 @@ class MeasureControl {
 
         this._actionsEl = createElement(
             'div',
-            'dhis2-map-ctrl-measure-actions',
+            'dhis2-maps-ctrl-measure-actions',
             '',
             this._distanceContainer
         )
 
         this._cancelEl = createElement(
             'span',
-            'dhis2-map-ctrl-measure-cancel',
+            'dhis2-maps-ctrl-measure-cancel',
             this.locale('MeasureControl.Cancel'),
             this._actionsEl
         )
@@ -226,7 +226,7 @@ class MeasureControl {
 
         this._finishEl = createElement(
             'span',
-            'dhis2-map-ctrl-measure-finish',
+            'dhis2-maps-ctrl-measure-finish',
             this.locale('MeasureControl.FinishMeasurement'),
             this._actionsEl
         )
@@ -270,7 +270,7 @@ class MeasureControl {
 
         this._centerEl = createElement(
             'span',
-            'dhis2-map-ctrl-measure-center',
+            'dhis2-maps-ctrl-measure-center',
             this.locale(
                 `MeasureControl.CenterMapOn${
                     points.length === 2 ? 'Line' : 'Area'
@@ -282,7 +282,7 @@ class MeasureControl {
 
         this._deleteEl = createElement(
             'span',
-            'dhis2-map-ctrl-measure-delete',
+            'dhis2-maps-ctrl-measure-delete',
             this.locale('MeasureControl.Delete'),
             this._actionsEl
         )
@@ -375,7 +375,7 @@ class MeasureControl {
             this._distanceText.innerText = ''
             this._distanceEl = createElement(
                 'div',
-                'dhis2-map-ctrl-measure-distance',
+                'dhis2-maps-ctrl-measure-distance',
                 distanceText,
                 this._distanceText
             )
@@ -401,7 +401,7 @@ class MeasureControl {
 
             createElement(
                 'div',
-                'dhis2-map-ctrl-measure-area',
+                'dhis2-maps-ctrl-measure-area',
                 areaText,
                 this._distanceText
             )
