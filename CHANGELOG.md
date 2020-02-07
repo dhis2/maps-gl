@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/dhis2/maps-gl/compare/v1.0.1...v1.0.2) (2020-02-07)
+
+
+### Bug Fixes
+
+* repo description ([690888f](https://github.com/dhis2/maps-gl/commit/690888f3fef9d12a1eea725bbb4126f4ec1a79f0))
+
 ## [1.0.1](https://github.com/dhis2/maps-gl/compare/v1.0.0...v1.0.1) (2020-02-07)
 
 
