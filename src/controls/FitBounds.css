@@ -1,4 +1,4 @@
-.dhis2-map-ctrl-fitbounds {
+.dhis2-maps-ctrl-fitbounds {
     width: 30px;
     height: 30px;
     border-radius: 5px;
@@ -11,11 +11,12 @@
 }
 
 /* TODO: Make icon transparent
-.dhis2-map-ctrl-fitbounds:hover {
+.dhis2-maps-ctrl-fitbounds:hover {
     background-color: #eee;
 }
 */
 
-.dhis2-map-download .dhis2-map-ctrl-fitbounds {
+
+.dhis2-map-download .dhis2-maps-ctrl-fitbounds {
     display: none;
 }

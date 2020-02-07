@@ -49,7 +49,7 @@ class SearchControl {
         const label = map._getUIString('SearchControl.SearchForPlace')
 
         const el = (this._container = document.createElement('div'))
-        el.className = 'mapboxgl-ctrl dhis2-map-ctrl-search'
+        el.className = 'mapboxgl-ctrl dhis2-maps-ctrl-search'
 
         const icon = document.createElement('span')
         icon.className = 'geocoder-icon geocoder-icon-search'
@@ -181,7 +181,7 @@ class SearchControl {
     }
 
     _toggleSearchControl = () => {
-        this._container.classList.toggle('-ctrl-search-collapsed')
+        this._container.classList.toggle('dhis2-maps-ctrl-search-collapsed')
     }
 
     _collapseSearchControl = () => {
