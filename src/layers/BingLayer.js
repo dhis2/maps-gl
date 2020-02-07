@@ -58,7 +58,7 @@ class BingLayer extends Layer {
             const container = mapgl.getContainer()
 
             container.removeChild(this._brandLogoImg)
-            container.classList.remove('dhis2-map-bing')
+            container.classList.remove('dhis2-maps-bing')
         }
     }
 
@@ -98,10 +98,10 @@ class BingLayer extends Layer {
         const img = document.createElement('img')
 
         img.src = this._brandLogoUri
-        img.className = 'dhis2-map-bing-logo'
+        img.className = 'dhis2-maps-bing-logo'
 
         container.appendChild(img)
-        container.classList.add('dhis2-map-bing')
+        container.classList.add('dhis2-maps-bing')
 
         this._brandLogoImg = img
     }

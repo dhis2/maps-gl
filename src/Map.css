@@ -1,12 +1,12 @@
 #dhis2-map-container .mapboxgl-popup-content {
-    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 3px 14px rgba(0,0,0,0.4);
 }
 
-.dhis2-map-bing .mapboxgl-ctrl-bottom-left {
+.dhis2-maps-bing .mapboxgl-ctrl-bottom-left {
     left: 60px;
 }
 
-.dhis2-map-bing-logo {
+.dhis2-maps-bing-logo {
     position: absolute;
     bottom: 5px;
     left: 3px;
@@ -36,14 +36,12 @@
     padding-right: 5px;
 }
 
-.dhis2-map-label .mapboxgl-popup-tip {
+.dhis2-maps-label .mapboxgl-popup-tip {
     display: none;
 }
 
-#dhis2-map-container .dhis2-map-label .mapboxgl-popup-content {
+#dhis2-map-container .dhis2-maps-label .mapboxgl-popup-content {
     padding: 2px 5px;
-    box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.2),
-        0px 1px 1px 0px rgba(0, 0, 0, 0.14),
-        0px 2px 1px -1px rgba(0, 0, 0, 0.12);
-    background-color: rgba(255, 255, 255, 0.9);
+    box-shadow: 0px 1px 3px 0px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 2px 1px -1px rgba(0,0,0,0.12);
+    background-color:rgba(255,255,255,0.9);
 }

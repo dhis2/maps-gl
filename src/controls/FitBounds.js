@@ -27,7 +27,7 @@ class FitBoundsControl {
 
         const button = document.createElement('div')
 
-        button.className = 'dhis2-map-ctrl-fitbounds'
+        button.className = 'dhis2-maps-ctrl-fitbounds'
         button.type = 'button'
         button.title = label
         button.setAttribute('aria-label', label)
