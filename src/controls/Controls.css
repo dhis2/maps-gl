@@ -98,5 +98,4 @@
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
     border-radius: 5px;
     max-height: calc(100% - 126px);
-    overflow-y: auto;
 }

@@ -1,5 +1,6 @@
 import { FullscreenControl } from 'mapbox-gl'
 
+// Extended to include map name and legend in fullscreen for dashboard maps
 class Fullscreen extends FullscreenControl {
     constructor(options) {
         super(options)
