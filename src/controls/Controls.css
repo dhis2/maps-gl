@@ -1,22 +1,21 @@
-
 .dhis2-map-split-view .mapboxgl-ctrl-group {
     box-shadow: none;
 }
 
 .dhis2-map-split-view .mapboxgl-ctrl-zoom-in,
 .dhis2-map-split-view .mapboxgl-ctrl-zoom-out,
-.dhis2-map-split-view .mapboxgl-ctrl-compass  {
+.dhis2-map-split-view .mapboxgl-ctrl-compass {
     position: absolute;
     right: 0;
     background: #fff;
-    box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
-.dhis2-map-split-view .mapboxgl-ctrl-zoom-in:not(:disabled):hover,  
+.dhis2-map-split-view .mapboxgl-ctrl-zoom-in:not(:disabled):hover,
 .dhis2-map-split-view .mapboxgl-ctrl-zoom-out:not(:disabled):hover,
 .dhis2-map-split-view .mapboxgl-ctrl-compass:not(:disabled):hover {
     background-color: #f3f3f3;
-} 
+}
 
 .dhis2-map-split-view .mapboxgl-ctrl-zoom-in {
     top: 0;
@@ -38,14 +37,14 @@
     z-index: 1000;
 }
 
-.dhis2-map-split-view .dhis2-maps-ctrl-fitbounds {
+.dhis2-map-split-view .dhis2-map-ctrl-fitbounds {
     position: absolute;
     top: 98px;
     right: 0;
-    box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
-.dhis2-map-split-view .dhis2-maps-ctrl-search {
+.dhis2-map-split-view .dhis2-map-ctrl-search {
     position: absolute;
     top: 150px;
     right: 10px;
@@ -64,7 +63,9 @@
     padding-top: 4px;
 }
 
-.dhis2-map-split-view .mapboxgl-ctrl-attrib.mapboxgl-compact:hover .mapboxgl-ctrl-attrib-inner {
+.dhis2-map-split-view
+    .mapboxgl-ctrl-attrib.mapboxgl-compact:hover
+    .mapboxgl-ctrl-attrib-inner {
     position: relative;
     right: 0;
     padding: 2px 8px;
@@ -86,10 +87,16 @@
     white-space: nowrap;
 }
 
+.dhis2-map-plugin .mapboxgl-ctrl-compass {
+    display: none;
+}
+
 .dhis2-map-plugin .dhis2-map-legend {
     box-sizing: border-box;
-    top: 146px;
+    top: 117px;
     padding: 1px 2px 2px 1px;
-    box-shadow: 0 0 0 2px rgba(0,0,0,0.1);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
     border-radius: 5px;
-} 
+    max-height: calc(100% - 126px);
+    overflow-y: auto;
+}
