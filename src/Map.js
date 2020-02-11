@@ -356,10 +356,8 @@ export class MapGL extends Evented {
         const { lngLat, originalEvent } = evt
         const type = 'click'
         const coordinates = [lngLat.lng, lngLat.lat]
-        const position = [
-            originalEvent.x,
-            originalEvent.pageY || originalEvent.y,
-        ]
+        const { x, y } = this.getMapGL().project(lngLat)
+        const position = [x, y]
         const feature = this.getEventFeature(evt)
 
         return { type, coordinates, position, feature }
