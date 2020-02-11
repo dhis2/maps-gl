@@ -308,6 +308,7 @@ export class MapGL extends Evented {
     openPopup(content, lnglat, onClose) {
         this._popup = new Popup({
             maxWidth: 'auto',
+            className: 'dhis2-map-popup',
         })
             .setLngLat(lnglat)
             .setDOMContent(content)
