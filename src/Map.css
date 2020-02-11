@@ -24,9 +24,9 @@
 }
 
 .dhis2-map-popup-event {
-    width: 300px;
     max-height: 300px;
     overflow: auto;
+    line-height: 14px;
 }
 
 .dhis2-map-popup-event th {
