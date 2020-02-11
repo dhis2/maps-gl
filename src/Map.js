@@ -292,19 +292,13 @@ export class MapGL extends Evented {
     }
 
     orderLayers() {
-        const outOfOrder = this._layers.some(
-            (layer, index) => layer.getIndex() !== index
-        )
+        this._layers.sort((a, b) => a.getIndex() - b.getIndex())
 
-        if (outOfOrder) {
-            this._layers.sort((a, b) => a.getIndex() - b.getIndex())
+        for (let i = 1; i < this._layers.length; i++) {
+            const layer = this._layers[i]
 
-            for (let i = 1; i < this._layers.length; i++) {
-                const layer = this._layers[i]
-
-                if (layer.isOnMap()) {
-                    layer.moveToTop()
-                }
+            if (layer.isOnMap()) {
+                layer.moveToTop()
             }
         }
 
