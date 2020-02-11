@@ -8,6 +8,7 @@ import controlsLocale from './controls/controlsLocale'
 import { transformRequest } from './utils/images'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
+import Label from './ui/Label'
 import './Map.css'
 
 export class MapGL extends Evented {
@@ -328,13 +329,7 @@ export class MapGL extends Evented {
 
     showLabel(content, lnglat) {
         if (!this._label) {
-            this._label = new Popup({
-                closeButton: false,
-                closeOnClick: false,
-                anchor: 'left',
-                className: 'dhis2-map-label',
-                offset: [10, 0],
-            })
+            this._label = new Label()
         }
 
         this._label.setText(content).setLngLat(lnglat)
