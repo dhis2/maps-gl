@@ -7,6 +7,7 @@ jest.mock('mapbox-gl', () => ({
     }),
     Evented: () => {},
     Marker: () => {},
+    Popup: () => {},
     FullscreenControl: () => {},
 }))
 
