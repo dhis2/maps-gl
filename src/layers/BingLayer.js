@@ -42,9 +42,10 @@ class BingLayer extends Layer {
 
         this.createLayer()
 
-        super.addTo(map)
+        await super.addTo(map)
 
         this.getMapGL().on('moveend', this.updateAttribution)
+
         this.updateAttribution()
         this.addBingMapsLogo()
     }
@@ -128,7 +129,6 @@ class BingLayer extends Layer {
         const source = this.getMapGL().getSource(this.getId())
 
         source.attribution = this.getAttribution()
-
         this.getMap()._updateAttributions()
     }
 

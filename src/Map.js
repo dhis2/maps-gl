@@ -8,6 +8,7 @@ import controlsLocale from './controls/controlsLocale'
 import { transformRequest } from './utils/images'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
+import Label from './ui/Label'
 import './Map.css'
 
 export class MapGL extends Evented {
@@ -292,19 +293,13 @@ export class MapGL extends Evented {
     }
 
     orderLayers() {
-        const outOfOrder = this._layers.some(
-            (layer, index) => layer.getIndex() !== index
-        )
+        this._layers.sort((a, b) => a.getIndex() - b.getIndex())
 
-        if (outOfOrder) {
-            this._layers.sort((a, b) => a.getIndex() - b.getIndex())
+        for (let i = 1; i < this._layers.length; i++) {
+            const layer = this._layers[i]
 
-            for (let i = 1; i < this._layers.length; i++) {
-                const layer = this._layers[i]
-
-                if (layer.isOnMap()) {
-                    layer.moveToTop()
-                }
+            if (layer.isOnMap()) {
+                layer.moveToTop()
             }
         }
 
@@ -314,6 +309,7 @@ export class MapGL extends Evented {
     openPopup(content, lnglat, onClose) {
         this._popup = new Popup({
             maxWidth: 'auto',
+            className: 'dhis2-map-popup',
         })
             .setLngLat(lnglat)
             .setDOMContent(content)
@@ -333,13 +329,7 @@ export class MapGL extends Evented {
 
     showLabel(content, lnglat) {
         if (!this._label) {
-            this._label = new Popup({
-                closeButton: false,
-                closeOnClick: false,
-                anchor: 'left',
-                className: 'dhis2-map-label',
-                offset: [10, 0],
-            })
+            this._label = new Label()
         }
 
         this._label.setText(content).setLngLat(lnglat)
@@ -366,10 +356,8 @@ export class MapGL extends Evented {
         const { lngLat, originalEvent } = evt
         const type = 'click'
         const coordinates = [lngLat.lng, lngLat.lat]
-        const position = [
-            originalEvent.x,
-            originalEvent.pageY || originalEvent.y,
-        ]
+        const { x, y } = this.getMapGL().project(lngLat)
+        const position = [x, y]
         const feature = this.getEventFeature(evt)
 
         return { type, coordinates, position, feature }

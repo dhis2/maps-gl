@@ -181,7 +181,7 @@ class SearchControl {
     }
 
     _toggleSearchControl = () => {
-        this._container.classList.toggle('-ctrl-search-collapsed')
+        this._container.classList.toggle('dhis2-map-ctrl-search-collapsed')
     }
 
     _collapseSearchControl = () => {

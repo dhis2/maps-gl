@@ -16,7 +16,18 @@ class Fullscreen extends FullscreenControl {
             this._container = map.getContainer().parentNode.parentNode
         }
 
+        this._scrollZoomIsDisabled = !map.scrollZoom.isEnabled()
+
         return super.onAdd(map)
+    }
+
+    _onClickFullscreen() {
+        // Always enable scroll zoom in fullscreen
+        if (this._scrollZoomIsDisabled) {
+            this._map.scrollZoom[this._isFullscreen() ? 'disable' : 'enable']()
+        }
+
+        super._onClickFullscreen()
     }
 }
 
