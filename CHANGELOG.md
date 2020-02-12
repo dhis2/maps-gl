@@ -1,3 +1,11 @@
+## [1.0.3](https://github.com/dhis2/maps-gl/compare/v1.0.2...v1.0.3) (2020-02-12)
+
+
+### Bug Fixes
+
+* bug fixes and styling ([#39](https://github.com/dhis2/maps-gl/issues/39)) ([efd96ad](https://github.com/dhis2/maps-gl/commit/efd96ad58b86d92b7fd555c2049db1fa08362fbd))
+* mock mapbox popup component ([a544632](https://github.com/dhis2/maps-gl/commit/a5446325d04a92d36faede2e283517bfb0331db1))
+
 ## [1.0.2](https://github.com/dhis2/maps-gl/compare/v1.0.1...v1.0.2) (2020-02-07)
 
 
