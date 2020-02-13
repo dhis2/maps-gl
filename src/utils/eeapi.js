@@ -1,4 +1,4 @@
-// import ee from '@google/earthengine'
+// import ee from '@google/earthengine' // Run "yarn add @google/earthengine"
 
 // Load EE API in demand
 const apiVersion = 'v0.1.213'
