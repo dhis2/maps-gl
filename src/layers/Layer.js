@@ -71,6 +71,16 @@ class Layer extends Evented {
         this._map = null
     }
 
+    createSource() {
+        const id = this.getId()
+        const features = this.getFeatures()
+
+        this.setSource(id, {
+            type: 'geojson',
+            data: features,
+        })
+    }
+
     setVisibility(isVisible) {
         if (this.isOnMap()) {
             const mapgl = this.getMapGL()
@@ -190,7 +200,23 @@ class Layer extends Evented {
         return this.options.index || 0
     }
 
-    setOpacity() {}
+    setOpacity(opacity) {
+        const mapgl = this.getMapGL()
+        const id = this.getId()
+
+        if (mapgl.getLayer(`${id}-point`)) {
+            mapgl.setPaintProperty(`${id}-point`, 'circle-opacity', opacity)
+            mapgl.setPaintProperty(`${id}-point`, 'circle-stroke-opacity', opacity)
+        }
+
+        if (mapgl.getLayer(`${id}-polygon`)) {
+            mapgl.setPaintProperty(`${id}-polygon`, 'fill-opacity', opacity)
+        }
+
+        if (mapgl.getLayer(`${id}-outline`)) {
+            mapgl.setPaintProperty(`${id}-outline`, 'line-opacity', opacity)
+        }
+    }
 
     getBounds() {
         const data = this.getFeatures()

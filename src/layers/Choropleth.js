@@ -1,6 +1,6 @@
 import Layer from './Layer'
-import { isPoint, isPolygon, isHover } from '../utils/filters'
 import { getLablesSource, getLabelsLayer } from '../utils/labels'
+import { isPoint, isPolygon, isHover } from '../utils/filters'
 
 const borderColor = '#333'
 const borderWeight = 1

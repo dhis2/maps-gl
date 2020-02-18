@@ -1,7 +1,8 @@
 import Layer from './Layer'
 import Spider from './Spider'
-import { isPoint, isPolygon, noCluster } from '../utils/filters'
 import { outlineColor, outlineWidth } from '../utils/style'
+import { isPoint, isPolygon, noCluster } from '../utils/filters'
+import { colorExpr } from '../utils/expressions'
 
 class Cluster extends Layer {
     constructor(options) {
@@ -25,7 +26,6 @@ class Cluster extends Layer {
 
     createLayers(color, radius) {
         const id = this.getId()
-        const colorExpr = ['case', ['has', 'color'], ['get', 'color'], color]
 
         // Non-clustered points
         this.addLayer(
@@ -35,7 +35,7 @@ class Cluster extends Layer {
                 source: id,
                 filter: ['all', noCluster, isPoint],
                 paint: {
-                    'circle-color': colorExpr,
+                    'circle-color': colorExpr(color),
                     'circle-radius': radius,
                     'circle-stroke-width': outlineWidth,
                     'circle-stroke-color': outlineColor,
@@ -52,7 +52,7 @@ class Cluster extends Layer {
                 source: id,
                 filter: ['all', noCluster, isPolygon],
                 paint: {
-                    'fill-color': colorExpr,
+                    'fill-color': colorExpr(color),
                     'fill-outline-color': outlineColor,
                 },
             },
