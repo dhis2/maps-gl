@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/dhis2/maps-gl/compare/v1.0.3...v1.0.4) (2020-02-18)
+
+
+### Bug Fixes
+
+* upgrade to latest EE API and fix tile loading ([#45](https://github.com/dhis2/maps-gl/issues/45)) ([022ec22](https://github.com/dhis2/maps-gl/commit/022ec22c041c3dc028033a3dcf473e6df30bc5da))
+
 ## [1.0.3](https://github.com/dhis2/maps-gl/compare/v1.0.2...v1.0.3) (2020-02-12)
 
 
