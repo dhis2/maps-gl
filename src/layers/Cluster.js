@@ -10,6 +10,11 @@ class Cluster extends Layer {
 
         const { data, fillColor, radius } = options
 
+        /*
+        const polygon = data.filter(d => d.id === 'vexvMPiL7fL')
+        console.log('polygon', polygon);
+        */
+
         this.setFeatures(data)
         this.createSource()
         this.createLayers(fillColor, radius)
@@ -18,7 +23,7 @@ class Cluster extends Layer {
     createSource(props) {
         this.setSource(this.getId(), {
             type: 'geojson',
-            clusterMaxZoom: 12, // 14,
+            clusterMaxZoom: 14,
             clusterRadius: 50,
             ...props,
         })

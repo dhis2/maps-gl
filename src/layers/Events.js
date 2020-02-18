@@ -16,7 +16,7 @@ class Events extends Layer {
         const id = this.getId()
 
         this.addLayer(pointLayer({ id, color, radius }), true)
-        this.addLayer(polygonLayer({id, color }), true)
+        this.addLayer(polygonLayer({ id, color }), true)
         this.addLayer(outlineLayer({ id }))
     }
 }
