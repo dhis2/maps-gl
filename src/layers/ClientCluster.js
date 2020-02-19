@@ -55,6 +55,30 @@ class ClientCluster extends Cluster {
         })
     }
 
+    onAdd() {
+        super.onAdd()
+
+        if (this._hasPolygons) {
+            const mapgl = this.getMapGL()
+
+            mapgl.on('sourcedata', this.onSourceData)
+            mapgl.on('moveend', this.updatePolygons)
+
+            this.updatePolygons()
+        }
+    }
+
+    onRemove() {
+        super.onRemove()
+
+        if (this._hasPolygons) {
+            const mapgl = this.getMapGL()
+
+            mapgl.off('sourcedata', this.onSourceData)
+            mapgl.off('moveend', this.updatePolygons)
+        }
+    }
+
     onClick = evt => {
         const { feature } = evt
 
@@ -78,6 +102,14 @@ class ClientCluster extends Cluster {
             )
         }
     }
+
+    onSourceData = evt => {
+        if (evt.sourceId === this.getId() && this.getSourceFeatures().length) {
+            this.getMapGL().off('sourcedata', this.onSourceData)
+            this.updatePolygons()
+        }
+    }
+    
 
     setOpacity(opacity) {
         if (this.isOnMap()) {
@@ -106,27 +138,6 @@ class ClientCluster extends Cluster {
                 error ? reject(error) : resolve(features)
             )
         })
-
-    /*    
-    setClusterOpacity(clusterId, isExpanded) {
-        if (clusterId) {
-            const { opacity } = this.options
-
-            this.getMapGL().setPaintProperty(
-                `${this.getId()}-clusters`,
-                'circle-opacity',
-                isExpanded && opacity >= 0.1
-                    ? [
-                          'case',
-                          ['==', ['get', 'cluster_id'], clusterId],
-                          0.1,
-                          opacity,
-                      ]
-                    : opacity
-            )
-        }
-    }
-    */
 }
 
 export default ClientCluster

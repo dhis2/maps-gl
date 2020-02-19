@@ -176,15 +176,7 @@ class Cluster extends Layer {
         } 
     }
 
-    // TODO: Needed?
-    onSourceData = evt => {
-        if (evt.sourceId === this.getId() && this.getSourceFeatures().length) {
-            this.getMapGL().off('sourcedata', this.onSourceData)
-            this.updatePolygons()
-        }
-    }
-
-    // Returns source features - TODO: Move to Layer?
+    // Returns source features 
     getSourceFeatures() {
         return this.getMapGL().querySourceFeatures(this.getId())
     }
@@ -206,27 +198,11 @@ class Cluster extends Layer {
         })
 
         this.setOpacity(this.options.opacity)
-
-        if (this._hasPolygons) {
-            const mapgl = this.getMapGL()
-
-            mapgl.on('sourcedata', this.onSourceData)
-            mapgl.on('moveend', this.updatePolygons)
-
-            this.updatePolygons()
-        }
     }
 
     onRemove() {
         this.unspiderfy()
         this.spider = null
-
-        if (this._hasPolygons) {
-            const mapgl = this.getMapGL()
-
-            mapgl.off('sourcedata', this.onSourceData)
-            mapgl.off('moveend', this.updatePolygons)
-        }
     }
 }
 

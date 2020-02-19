@@ -103,11 +103,6 @@ class DonutCluster extends Cluster {
         }
     }
 
-    // Returns source features
-    getSourceFeatures() {
-        return this.getMapGL().querySourceFeatures(this.getId())
-    }
-
     // Sort cluster features after legend colors before spiderfy
     sortClusterFeatures = features => {
         const colors = this.options.groups.map(g => g.color)
@@ -170,6 +165,10 @@ class DonutCluster extends Cluster {
             }
         }
         this.clustersOnScreen = newClusters
+
+        if (this._hasPolygons) {
+            this.updatePolygons()
+        }
     }, 100)
 }
 
