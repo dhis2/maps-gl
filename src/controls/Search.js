@@ -25,7 +25,7 @@ class SearchControl {
         const params = { format: 'json', q: query, limit: options.limit }
         const urlParams = new URLSearchParams(Object.entries(params))
 
-        return fetch(`http://nominatim.openstreetmap.org/search?${urlParams}`)
+        return fetch(`https://nominatim.openstreetmap.org/search?${urlParams}`)
             .then(response => (response.ok ? response.json() : []))
             .then(json =>
                 json.map(result => {
