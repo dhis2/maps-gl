@@ -2,12 +2,7 @@ import fetchJsonp from 'fetch-jsonp'
 import Layer from './Layer'
 import { bboxIntersect } from '../utils/geo'
 
-// https://dev.virtualearth.net/REST/V1/Imagery/Metadata/Road?output=json&include=ImageryProviders&key=BingMapsKey
 // https://docs.microsoft.com/en-us/bingmaps/rest-services/directly-accessing-the-bing-maps-tiles
-// https://github.com/mapbox/mapbox-gl-js/issues/4137
-// https://github.com/mapbox/mapbox-gl-native/issues/4653
-// https://github.com/digidem/leaflet-bing-layer
-// https://github.com/shramov/leaflet-plugins/blob/master/layer/tile/Bing.md
 class BingLayer extends Layer {
     async createSource() {
         const {
