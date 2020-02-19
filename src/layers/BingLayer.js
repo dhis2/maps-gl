@@ -108,6 +108,7 @@ class BingLayer extends Layer {
         const mapBbox = [...lngLat1.reverse(), ...lngLat2.reverse()]
         const mapZoom = mapgl.getZoom() < 1 ? 1 : mapgl.getZoom()
 
+        // TODO: boxIntersect or bboxOverlaps?
         const providers = this._imageryProviders.filter(({ coverageAreas }) =>
             coverageAreas.some(
                 ({ bbox, zoomMin, zoomMax }) =>

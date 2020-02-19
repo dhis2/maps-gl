@@ -16,7 +16,7 @@ class Cluster extends Layer {
         this.createLayers(fillColor, radius)
     }
 
-    setFeatures(data) {
+    setFeatures(data = []) {
         super.setFeatures(data) // Assigns id to each feature
 
         this._hasPolygons = data.some(f => f.geometry.type === 'Polygon');
@@ -55,12 +55,10 @@ class Cluster extends Layer {
             ...props,
         })
 
-        if (this._hasPolygons) {
-            this.setSource(`${id}-polygons`, {
-                type: 'geojson',
-                data: featureCollection()
-            })
-        }
+        this.setSource(`${id}-polygons`, {
+            type: 'geojson',
+            data: featureCollection()
+        })
     }
 
     createLayers(color, radius) {
@@ -70,10 +68,8 @@ class Cluster extends Layer {
         this.addLayer(pointLayer({ id, color, radius, filter: isClusterPoint }), true)
 
         // Non-clustered polygons
-        if (this._hasPolygons) {
-            this.addLayer(polygonLayer({ id, color, source: `${id}-polygons` }), true)
-            this.addLayer(outlineLayer({ id, source: `${id}-polygons` }))
-        }
+        this.addLayer(polygonLayer({ id, color, source: `${id}-polygons` }), true)
+        this.addLayer(outlineLayer({ id, source: `${id}-polygons` }))
     }
 
     setOpacity(opacity) {

@@ -1,8 +1,10 @@
-import { LngLat } from 'mapbox-gl'
 import SphericalMercator from '@mapbox/sphericalmercator'
+import bbox from '@turf/bbox'
 import Cluster from './Cluster'
-import { isCluster } from '../utils/filters'
+import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
+import { isCluster, isClusterPoint } from '../utils/filters'
 import { featureCollection } from '../utils/geometry'
+import { bboxOverlap } from '../utils/geo'
 import {
     outlineColor,
     outlineWidth,
@@ -46,9 +48,14 @@ class ServerCluster extends Cluster {
     }
 
     createLayers(color, radius) {
-        super.createLayers(color, radius)
-
         const id = this.getId()
+
+        // Non-clustered points
+        this.addLayer(pointLayer({ id, color, radius, filter: isClusterPoint }), true)
+
+        // Non-clustered polygons
+        this.addLayer(polygonLayer({ id, color }), true)
+        this.addLayer(outlineLayer({ id }))
 
         this.addLayer(
             {
@@ -123,6 +130,15 @@ class ServerCluster extends Cluster {
         if (this.currentClusterIds !== clusterIds) {
             const source = this.getMapGL().getSource(this.getId())
 
+            // TODO: Remove
+            /*
+            clusters.forEach(f => {
+                if (f.geometry.type == 'Polygon') {
+                    console.log('cluster', f)
+                }
+            })
+            */
+
             source.setData(featureCollection(clusters))
 
             this.currentClusterIds = clusterIds
@@ -195,6 +211,10 @@ class ServerCluster extends Cluster {
 
         // If tile still visible after loading
         if (this.isTileVisible(tileId)) {
+            if (!this._hasPolygons && clusters.some(c => c.geometry.type === 'Polygon')) {
+                console.log('POLYGONS HERE!')
+            }
+
             this.updateClusters([tileId])
         }
     }
@@ -227,15 +247,30 @@ class ServerCluster extends Cluster {
 
     isTileVisible = tileId => this.getVisibleTiles().includes(tileId)
 
-    // TODO: Could be static - use <=?
-    isOutsideBounds = bounds => feature => {
-        const [lng, lat] = feature.geometry.coordinates
-        return (
-            lng <= bounds[0] ||
-            lng >= bounds[2] ||
-            lat <= bounds[1] ||
-            lat >= bounds[3]
-        )
+    // TODO: Could be static 
+    isOutsideBounds = bounds => ({ geometry }) => {
+        if (geometry.type === 'Point') {
+            const [lng, lat] = geometry.coordinates
+
+            return (
+                lng <= bounds[0] ||
+                lng >= bounds[2] ||
+                lat <= bounds[1] ||
+                lat >= bounds[3]
+            )
+        } 
+
+        // const [minLng, minLat, maxLng, maxLat] = bbox(geometry)
+        const test = bboxOverlap(bounds, bbox(geometry))
+
+
+        // TODO: Check polygons bounds
+        //  [minX, minY, maxX, maxY] 
+
+
+        console.log('Polygon overlaps', test)
+
+        return test;
     }
 
     getVisibleTiles = () =>
