@@ -2,6 +2,7 @@ import { LngLat } from 'mapbox-gl'
 import SphericalMercator from '@mapbox/sphericalmercator'
 import Cluster from './Cluster'
 import { isCluster } from '../utils/filters'
+import { featureCollection } from '../utils/geometry'
 import {
     outlineColor,
     outlineWidth,
@@ -40,10 +41,7 @@ class ServerCluster extends Cluster {
 
     createSource() {
         super.createSource({
-            data: {
-                type: 'FeatureCollection',
-                features: [],
-            },
+            data: featureCollection(),
         })
     }
 
@@ -125,10 +123,7 @@ class ServerCluster extends Cluster {
         if (this.currentClusterIds !== clusterIds) {
             const source = this.getMapGL().getSource(this.getId())
 
-            source.setData({
-                type: 'FeatureCollection',
-                features: clusters,
-            })
+            source.setData(featureCollection(clusters))
 
             this.currentClusterIds = clusterIds
             this.currentClusters = clusters

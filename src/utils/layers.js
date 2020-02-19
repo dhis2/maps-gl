@@ -5,10 +5,11 @@ const strokeColor = '#fff';
 const strokeWeight = 1;
 const hoverStrokeWeight = 3;
 
-export const pointLayer = ({ id, color, radius }) => ({        
+// Layer with point features
+export const pointLayer = ({ id, color, radius, source, filter }) => ({        
     id: `${id}-point`,
     type: 'circle',
-    source: id,
+    source: source || id,
     paint: {
         'circle-color': colorExpr(color),
         'circle-radius': radius,
@@ -20,25 +21,26 @@ export const pointLayer = ({ id, color, radius }) => ({
         ],
         'circle-stroke-color': strokeColor,
     },
-    filter: isPoint,
+    filter: filter || isPoint,
 })
 
-export const polygonLayer = ({ id, color }) => ({
+// Layer with polygon features
+export const polygonLayer = ({ id, color, source, filter }) => ({
     id: `${id}-polygon`,
     type: 'fill',
-    source: id,
+    source: source || id,
     paint: {
         'fill-color': colorExpr(color),
     },
-    filter: isPolygon,
+    filter: filter || isPolygon,
 })
 
 // Polygon outline and hover state
 // https://github.com/mapbox/mapbox-gl-js/issues/3018
-export const outlineLayer = ({ id }) => ({
+export const outlineLayer = ({ id, source, filter }) => ({
     id: `${id}-outline`,
     type: 'line',
-    source: id,
+    source: source || id,
     paint: {
         'line-color': strokeColor,
         'line-width': [
@@ -48,5 +50,5 @@ export const outlineLayer = ({ id }) => ({
             strokeWeight,
         ],
     },
-    filter: isPolygon,
+    filter: filter || isPolygon,
 })

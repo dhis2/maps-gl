@@ -1,8 +1,9 @@
+import centerOfMass from '@turf/center-of-mass'
 import Layer from './Layer'
 import Spider from './Spider'
-import { outlineColor, outlineWidth } from '../utils/style'
-import { isPoint, isPolygon, noCluster } from '../utils/filters'
-import { colorExpr } from '../utils/expressions'
+import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
+import { isClusterPoint } from '../utils/filters'
+import { featureCollection } from '../utils/geometry'
 
 class Cluster extends Layer {
     constructor(options) {
@@ -10,80 +11,77 @@ class Cluster extends Layer {
 
         const { data, fillColor, radius } = options
 
-        /*
-        const polygon = data.filter(d => d.id === 'vexvMPiL7fL')
-        console.log('polygon', polygon);
-        */
-
         this.setFeatures(data)
         this.createSource()
         this.createLayers(fillColor, radius)
     }
 
+    setFeatures(data) {
+        super.setFeatures(data) // Assigns id to each feature
+
+        this._hasPolygons = data.some(f => f.geometry.type === 'Polygon');
+
+        if (this._hasPolygons) {
+            this._polygons = {}
+            this._polygonsOnMap = []
+
+            // Translate from polygon to point before clustering
+            this._features = this._features.map(f => {
+                if (f.geometry.type === 'Polygon') {
+                    this._polygons[f.id] = f
+
+                    return {
+                        ...f,
+                        geometry: centerOfMass(f).geometry,
+                        properties: {
+                            ...f.properties,
+                            isPolygon: true,
+                        }
+                    }
+                }
+
+                return f
+            })
+        }
+    }
+
     createSource(props) {
-        this.setSource(this.getId(), {
+        const id = this.getId()
+
+        this.setSource(id, {
             type: 'geojson',
             clusterMaxZoom: 14,
             clusterRadius: 50,
             ...props,
         })
+
+        if (this._hasPolygons) {
+            this.setSource(`${id}-polygons`, {
+                type: 'geojson',
+                data: featureCollection()
+            })
+        }
     }
 
     createLayers(color, radius) {
         const id = this.getId()
 
         // Non-clustered points
-        this.addLayer(
-            {
-                id: `${id}-points`,
-                type: 'circle',
-                source: id,
-                filter: ['all', noCluster, isPoint],
-                paint: {
-                    'circle-color': colorExpr(color),
-                    'circle-radius': radius,
-                    'circle-stroke-width': outlineWidth,
-                    'circle-stroke-color': outlineColor,
-                },
-            },
-            true
-        )
+        this.addLayer(pointLayer({ id, color, radius, filter: isClusterPoint }), true)
 
         // Non-clustered polygons
-        this.addLayer(
-            {
-                id: `${id}-polygons`,
-                type: 'fill',
-                source: id,
-                filter: ['all', noCluster, isPolygon],
-                paint: {
-                    'fill-color': colorExpr(color),
-                    'fill-outline-color': outlineColor,
-                },
-            },
-            true
-        )
+        if (this._hasPolygons) {
+            this.addLayer(polygonLayer({ id, color, source: `${id}-polygons` }), true)
+            this.addLayer(outlineLayer({ id, source: `${id}-polygons` }))
+        }
     }
 
     setOpacity(opacity) {
-        this.options.opacity = opacity
+        super.setOpacity(opacity)
 
-        if (this.isOnMap()) {
-            const mapgl = this.getMapGL()
-            const id = this.getId()
-
-            mapgl.setPaintProperty(`${id}-points`, 'circle-opacity', opacity)
-            mapgl.setPaintProperty(
-                `${id}-points`,
-                'circle-stroke-opacity',
-                opacity
-            )
-            mapgl.setPaintProperty(`${id}-polygons`, 'fill-opacity', opacity)
-
-            if (this.spider) {
-                this.setClusterOpacity(this.spider.getId(), true)
-                this.spider.setOpacity(opacity)
-            }
+        if (this.spider) {
+            this.setClusterOpacity(this.spider.getId(), true)
+            this.spider.setOpacity(opacity)
         }
     }
 
@@ -157,6 +155,40 @@ class Cluster extends Layer {
     // Overrided in DonutCluster
     sortClusterFeatures = features => features
 
+    updatePolygons = () => {
+        // Returns polygons visible on the map (within the map view and not clustered)
+        const polygons = this.getSourceFeatures().filter(f => f.properties.isPolygon)
+        let polygonIds = []
+
+        if (polygons.length) {
+            // Using set as features might be returned multipe times due to tiling
+            polygonIds = [...new Set(polygons.map(f => f.id))].sort()      
+        }   
+
+        // Only update source if there is a change
+        if (polygonIds.length !== this._polygonsOnMap.length || polygonIds.some((id, index) => id !== this._polygonsOnMap[index])) {
+            this._polygonsOnMap = polygonIds
+
+            const features = polygonIds.map(id => this._polygons[id])
+            const source = this.getMapGL().getSource(`${this.getId()}-polygons`)
+    
+            source.setData(featureCollection(features))
+        } 
+    }
+
+    // TODO: Needed?
+    onSourceData = evt => {
+        if (evt.sourceId === this.getId() && this.getSourceFeatures().length) {
+            this.getMapGL().off('sourcedata', this.onSourceData)
+            this.updatePolygons()
+        }
+    }
+
+    // Returns source features - TODO: Move to Layer?
+    getSourceFeatures() {
+        return this.getMapGL().querySourceFeatures(this.getId())
+    }
+
     onSpiderClose = clusterId => {
         this.setClusterOpacity(clusterId)
     }
@@ -174,11 +206,27 @@ class Cluster extends Layer {
         })
 
         this.setOpacity(this.options.opacity)
+
+        if (this._hasPolygons) {
+            const mapgl = this.getMapGL()
+
+            mapgl.on('sourcedata', this.onSourceData)
+            mapgl.on('moveend', this.updatePolygons)
+
+            this.updatePolygons()
+        }
     }
 
     onRemove() {
         this.unspiderfy()
         this.spider = null
+
+        if (this._hasPolygons) {
+            const mapgl = this.getMapGL()
+
+            mapgl.off('sourcedata', this.onSourceData)
+            mapgl.off('moveend', this.updatePolygons)
+        }
     }
 }
 

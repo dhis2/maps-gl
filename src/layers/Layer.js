@@ -2,6 +2,7 @@ import uuid from 'uuid/v4'
 import bbox from '@turf/bbox'
 import { Evented } from 'mapbox-gl'
 import { addImages } from '../utils/images'
+import { featureCollection } from '../utils/geometry'
 
 class Layer extends Evented {
     constructor(options = {}) {
@@ -163,15 +164,12 @@ class Layer extends Evented {
     }
 
     getFeatures() {
-        return {
-            type: 'FeatureCollection',
-            features: this._features,
-        }
+        return featureCollection(this._features)
     }
 
     // Adds integer id for each feature (required by Feature State)
     setFeatures(data = []) {
-        this._features = data.map((f, i) => ({ ...f, id: i }))
+        this._features = data.map((f, i) => ({ ...f, id: i + 1 }))
     }
 
     getImages() {

@@ -1,11 +1,9 @@
 import circle from '@turf/circle'
+import { featureCollection } from './geometry'
 
 export const getCirclesSource = (features, radius) => ({
     type: 'geojson',
-    data: {
-        type: 'FeatureCollection',
-        features: features.map(feature => circle(feature, radius / 1000)),
-    },
+    data: featureCollection(features.map(feature => circle(feature, radius / 1000))),
 })
 
 export const getCirclesLayer = (id, options) => ({

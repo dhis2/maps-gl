@@ -1,5 +1,6 @@
 import area from '@turf/area'
 import polylabel from 'polylabel'
+import { featureCollection } from './geometry'
 
 // TODO: Sould we host the fonts ourselves?
 // https://github.com/openmaptiles/fonts
@@ -17,9 +18,7 @@ const getOffsetEms = (type, radius = 5, fontSize = 11) =>
 
 export const getLablesSource = (data, { fontSize }, isBoundary) => ({
     type: 'geojson',
-    data: {
-        type: 'FeatureCollection',
-        features: data.features.map(({ geometry, properties }) => ({
+    data: featureCollection(data.features.map(({ geometry, properties }) => ({
             type: 'Feature',
             geometry: {
                 type: 'Point',
@@ -35,7 +34,7 @@ export const getLablesSource = (data, { fontSize }, isBoundary) => ({
                 color: isBoundary ? properties.color : '#333',
             },
         })),
-    },
+    ),
 })
 
 // Add label properties to layer config
