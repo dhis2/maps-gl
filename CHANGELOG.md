@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/dhis2/maps-gl/compare/v1.0.4...v1.0.5) (2020-02-19)
+
+
+### Bug Fixes
+
+* use https ([#46](https://github.com/dhis2/maps-gl/issues/46)) ([7addb1f](https://github.com/dhis2/maps-gl/commit/7addb1fdf5e3dc23539576b6c47f49a28ca345ee))
+
 ## [1.0.4](https://github.com/dhis2/maps-gl/compare/v1.0.3...v1.0.4) (2020-02-18)
 
 
