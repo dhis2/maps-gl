@@ -1,5 +1,5 @@
 import Layer from './Layer'
-import loadEarthEngineApi from '../utils/eeapi'
+import getEarthEngineApi from '../utils/eeapi'
 
 const defaultOptions = {
     url:
@@ -20,20 +20,14 @@ class EarthEngine extends Layer {
     }
 
     async getSource() {
-        this._ee = await loadEarthEngineApi()
+        this._ee = await getEarthEngineApi()
+        
         await this.setAuthToken()
 
-        const eeImage = this.createImage()
-        const eeMap = await this.visualize(eeImage)
-
-        const { mapid, token } = eeMap
-
-        const url = `https://earthengine.googleapis.com/map/${mapid}/{z}/{x}/{y}?token=${token}`
-        const tiles = [url]
+        this._eeMap = await this.visualize(this.createImage())
 
         this.setSource(this.getId(), {
             type: 'raster',
-            tiles,
             tileSize: 256,
         })
 
@@ -44,6 +38,22 @@ class EarthEngine extends Layer {
         })
 
         return this._source
+    }
+
+    // Overrides tile.loadTile function to get tile url from EE API
+    // https://issuetracker.google.com/issues/149420532
+    onAdd() {
+        const source = this.getMapGL().getSource(this.getId())
+        const loadTile = source.loadTile.bind(source)
+
+        source.loadTile = (tile, callback) => {
+            const { canonical } = tile.tileID
+            const { x, y, z } = canonical
+
+            canonical.url = () => this._ee.data.getTileUrl(this._eeMap, x, y, z)
+
+            loadTile(tile, callback)
+        }
     }
 
     // Configures client-side authentication of EE API calls by providing a OAuth2 token to use.
@@ -97,20 +107,6 @@ class EarthEngine extends Layer {
                 expires_in: token.expires_in,
             })
         })
-    }
-
-    onValidAuthToken(token) {
-        const { access_token, client_id, expires_in } = token
-        const { tokenType } = this.options
-
-        this._ee.data.setAuthToken(
-            client_id,
-            tokenType,
-            access_token,
-            expires_in
-        )
-        this._ee.data.setAuthTokenRefresher(this.refreshAccessToken.bind(this))
-        this._ee.initialize(null, null, this.createImage.bind(this))
     }
 
     // Create EE tile layer from params (override for each layer type)
@@ -212,50 +208,6 @@ class EarthEngine extends Layer {
         })
     }
 
-    // Returns a HTML legend for this EE layer
-    getLegend() {
-        // eslint-disable-line
-        const options = this.options
-        let legend = '<div class="dhis2-legend">'
-
-        legend += '<h2>' + options.name
-
-        if (options.image) {
-            legend += ' ' + options.image
-        }
-
-        legend += '</h2>'
-
-        if (options.description) {
-            legend += '<p>' + options.description + '</p>'
-        }
-
-        legend += '<dl>'
-
-        if (options.unit) {
-            legend += '<dt></dt><dd><strong>' + options.unit + '</strong></dd>'
-        }
-
-        for (let i = 0, item; i < this._legend.length; i++) {
-            item = this._legend[i]
-            legend +=
-                '<dt style="background-color:' +
-                item.color +
-                ';box-shadow:1px 1px 2px #aaa;"></dt>'
-            legend += '<dd>' + item.name
-        }
-
-        legend += '</dl>'
-
-        if (options.attribution) {
-            legend += '<p>Data: ' + options.attribution + '</p>'
-        }
-
-        legend += '<div>'
-
-        return legend
-    }
-
     applyFilter(collection, filterOpt) {
         const filter = filterOpt || this.options.filter
 
@@ -271,8 +223,6 @@ class EarthEngine extends Layer {
     }
 
     // Run methods on image
-    // https://code.earthengine.google.com/a19f5cec73720aba049b457d55672cee
-    // https://code.earthengine.google.com/37e4e9cc4436a22e5c3e0f63acb4c0bc
     runMethods(image) {
         const methods = this.options.methods
         let eeImage = image
