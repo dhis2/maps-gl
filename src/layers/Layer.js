@@ -3,6 +3,7 @@ import bbox from '@turf/bbox'
 import { Evented } from 'mapbox-gl'
 import { addImages } from '../utils/images'
 import { featureCollection } from '../utils/geometry'
+import { bufferSource, bufferOpacityFactor } from '../utils/buffers'
 
 class Layer extends Evented {
     constructor(options = {}) {
@@ -14,6 +15,10 @@ class Layer extends Evented {
         this._features = []
         this._isVisible = true
         this._interactiveIds = []
+
+        if (options.data) {
+            this.setFeatures(options.data)
+        }
 
         this.options = options
     }
@@ -75,11 +80,19 @@ class Layer extends Evented {
     createSource() {
         const id = this.getId()
         const features = this.getFeatures()
+        const { buffer } = this.options 
 
         this.setSource(id, {
             type: 'geojson',
-            data: features,
+            data: featureCollection(features),
         })
+
+        if (buffer) {
+            this.setSource(
+                `${id}-buffer`,
+                bufferSource(features, buffer / 1000)
+            )
+        }
     }
 
     setVisibility(isVisible) {
@@ -164,7 +177,7 @@ class Layer extends Evented {
     }
 
     getFeatures() {
-        return featureCollection(this._features)
+        return this._features
     }
 
     // Adds integer id for each feature (required by Feature State)
@@ -214,13 +227,21 @@ class Layer extends Evented {
         if (mapgl.getLayer(`${id}-outline`)) {
             mapgl.setPaintProperty(`${id}-outline`, 'line-opacity', opacity)
         }
+
+        if (mapgl.getLayer(`${id}-buffer`)) {
+            mapgl.setPaintProperty(`${id}-buffer`, 'fill-opacity', opacity * bufferOpacityFactor)
+        }
+
+        if (mapgl.getLayer(`${id}-buffer-outline`)) {
+            mapgl.setPaintProperty(`${id}-buffer-outline`, 'line-opacity', opacity * bufferOpacityFactor)
+        }
     }
 
     getBounds() {
-        const data = this.getFeatures()
+        const features = this.getFeatures()
 
-        if (data && data.features.length) {
-            const [x1, y1, x2, y2] = bbox(data)
+        if (features.length) {
+            const [x1, y1, x2, y2] = bbox(featureCollection(features))
 
             return [[x1, y1], [x2, y2]]
         }

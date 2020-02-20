@@ -1,19 +1,23 @@
 import Layer from './Layer'
 import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
+import { bufferLayer, bufferOutlineLayer } from '../utils/buffers'
 
 class Events extends Layer {
     constructor(options) {
         super(options)
 
-        const { data, fillColor, radius } = options
-
-        this.setFeatures(data)
         this.createSource()
-        this.createLayers(fillColor, radius)
+        this.createLayers()
     }
 
-    createLayers(color, radius) {
+    createLayers() {
         const id = this.getId()
+        const { fillColor: color, radius, buffer, bufferStyle } = this.options
+
+        if (buffer) {
+            this.addLayer(bufferLayer({ id, ...bufferStyle }))
+            this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
+        }
 
         this.addLayer(pointLayer({ id, color, radius }), true)
         this.addLayer(polygonLayer({ id, color }), true)

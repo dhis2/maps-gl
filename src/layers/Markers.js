@@ -1,5 +1,5 @@
 import Layer from './Layer'
-import { getCirclesSource, getCirclesLayer } from '../utils/circles'
+import { bufferLayer } from '../utils/buffers'
 import { addTextProperties } from '../utils/labels'
 
 class Markers extends Layer {
@@ -25,30 +25,12 @@ class Markers extends Layer {
         this._images = Object.keys(images)
     }
 
-    createSource() {
-        const id = this.getId()
-        const data = this.getFeatures()
-        const { buffer } = this.options
-
-        this.setSource(id, {
-            type: 'geojson',
-            data,
-        })
-
-        if (buffer) {
-            this.setSource(
-                `${id}-buffers`,
-                getCirclesSource(data.features, buffer)
-            )
-        }
-    }
-
     createLayer() {
         const id = this.getId()
         const { buffer, bufferStyle, label, labelStyle } = this.options
 
         if (buffer) {
-            this.addLayer(getCirclesLayer(id, bufferStyle))
+            this.addLayer(bufferLayer(id, bufferStyle))
         }
 
         const config = {

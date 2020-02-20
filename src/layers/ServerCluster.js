@@ -234,7 +234,8 @@ class ServerCluster extends Cluster {
 
     // TODO: Could be static 
     isOutsideBounds = bounds => ({ geometry }) => {
-        const [lng, lat] = (geometry.type === 'Point' ? geometry : centroid(geometry).geometry).coordinates
+        const { coordinates } = geometry.type === 'Point' ? geometry : centroid(geometry).geometry
+        const [lng, lat] = coordinates
 
         return (
             lng <= bounds[0] ||
