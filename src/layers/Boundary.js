@@ -1,27 +1,21 @@
 import Layer from './Layer'
-import { getLablesSource, getLabelsLayer } from '../utils/labels'
-
-const borderColor = '#333'
-const borderWeight = 1
-const hoverBorderWeight = 3
+import { labelLayer } from '../utils/labels'
 
 class Boundary extends Layer {
     constructor(options) {
         super(options)
 
-        const { data } = options
-        this.setFeatures(data)
         this.createSource()
         this.createLayers()
     }
 
     // TODO: Find better way keep style
     setFeatures(data = []) {
-        const { radius = 5 } = this.options.style
+        const { radius = 6 } = this.options.style
 
         this._features = data.map((f, i) => ({
             ...f,
-            id: i,
+            id: i + 1,
             properties: {
                 ...f.properties,
                 color: f.properties.style.color,
@@ -31,24 +25,6 @@ class Boundary extends Layer {
         }))
     }
 
-    createSource() {
-        const id = this.getId()
-        const features = this.getFeatures()
-        const { label, labelStyle } = this.options
-
-        this.setSource(id, {
-            type: 'geojson',
-            data: features,
-        })
-
-        if (label) {
-            this.setSource(
-                `${id}-labels`,
-                getLablesSource(features, labelStyle, true)
-            )
-        }
-    }
-
     createLayers() {
         const id = this.getId()
         const { label, labelStyle } = this.options
@@ -56,7 +32,7 @@ class Boundary extends Layer {
         // Line later
         this.addLayer(
             {
-                id,
+                id: `${id}-line`,
                 type: 'line',
                 source: id,
                 paint: {
@@ -96,16 +72,7 @@ class Boundary extends Layer {
         )
 
         if (label) {
-            this.addLayer(getLabelsLayer(id, label, labelStyle))
-        }
-    }
-
-    setOpacity(opacity) {
-        if (this.isOnMap()) {
-            const mapgl = this.getMapGL()
-            const id = this.getId()
-
-            mapgl.setPaintProperty(id, 'line-opacity', opacity)
+            this.addLayer(labelLayer({ id, label, ...labelStyle }))
         }
     }
 }

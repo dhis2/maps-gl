@@ -3,6 +3,7 @@ import turfArea from '@turf/area'
 import bbox from '@turf/bbox'
 import { createElement } from '../utils/dom'
 import { twoDecimals, kmToMiles } from '../utils/numbers'
+import { featureCollection } from '../utils/geometry'
 import './Measure.css'
 
 // Inspired by https://github.com/ljagis/leaflet-measure
@@ -73,10 +74,7 @@ class MeasureControl {
         const color = '#ffa500'
 
         // GeoJSON object to hold our measurement features
-        this._geojson = {
-            type: 'FeatureCollection',
-            features: [],
-        }
+        this._geojson = featureCollection()
 
         // Used to draw a line between points
         this._linestring = {

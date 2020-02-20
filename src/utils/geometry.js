@@ -15,3 +15,8 @@ export const getBoundsFromLayers = (layers = []) => {
 
     return bounds.isEmpty() ? null : bounds.toArray()
 }
+
+export const featureCollection = (features = []) => ({
+    type: 'FeatureCollection',
+    features,
+})

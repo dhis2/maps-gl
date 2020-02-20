@@ -1,61 +1,27 @@
 import Layer from './Layer'
-
-const strokeColor = '#fff'
-const strokeWeight = 1
-const hoverStrokeWeight = 3
+import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
+import { bufferLayer, bufferOutlineLayer } from '../utils/buffers'
 
 class Events extends Layer {
     constructor(options) {
         super(options)
 
-        const { data, radius } = options
-        this.setFeatures(data)
         this.createSource()
-        this.createLayers(radius)
+        this.createLayers()
     }
 
-    createSource() {
+    createLayers() {
         const id = this.getId()
-        const features = this.getFeatures()
+        const { fillColor: color, radius, buffer, bufferStyle } = this.options
 
-        this.setSource(id, {
-            type: 'geojson',
-            data: features,
-        })
-    }
-
-    createLayers(radius) {
-        const id = this.getId()
-
-        this.addLayer(
-            {
-                id,
-                type: 'circle',
-                source: id,
-                paint: {
-                    'circle-color': ['get', 'color'],
-                    'circle-radius': radius,
-                    'circle-stroke-width': [
-                        'case',
-                        ['boolean', ['feature-state', 'hover'], false],
-                        hoverStrokeWeight,
-                        strokeWeight,
-                    ],
-                    'circle-stroke-color': strokeColor,
-                },
-            },
-            true
-        )
-    }
-
-    setOpacity(opacity) {
-        if (this.isOnMap()) {
-            const mapgl = this.getMapGL()
-            const id = this.getId()
-
-            mapgl.setPaintProperty(id, 'circle-opacity', opacity)
-            mapgl.setPaintProperty(id, 'circle-stroke-opacity', opacity)
+        if (buffer) {
+            this.addLayer(bufferLayer({ id, ...bufferStyle }))
+            this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
         }
+
+        this.addLayer(pointLayer({ id, color, radius }), true)
+        this.addLayer(polygonLayer({ id, color }), true)
+        this.addLayer(outlineLayer({ id }))
     }
 }
 

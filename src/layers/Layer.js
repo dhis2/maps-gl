@@ -2,6 +2,10 @@ import uuid from 'uuid/v4'
 import bbox from '@turf/bbox'
 import { Evented } from 'mapbox-gl'
 import { addImages } from '../utils/images'
+import { featureCollection } from '../utils/geometry'
+import { bufferSource } from '../utils/buffers'
+import { labelSource } from '../utils/labels'
+import { setLayersOpacity } from '../utils/opacity'
 
 class Layer extends Evented {
     constructor(options = {}) {
@@ -15,6 +19,10 @@ class Layer extends Evented {
         this._interactiveIds = []
 
         this.options = options
+
+        if (options.data) {
+            this.setFeatures(options.data)
+        }
     }
 
     async addTo(map) {
@@ -69,6 +77,31 @@ class Layer extends Evented {
         }
 
         this._map = null
+    }
+
+    createSource() {
+        const id = this.getId()
+        const features = this.getFeatures()
+        const { buffer, label, labelStyle } = this.options 
+
+        this.setSource(id, {
+            type: 'geojson',
+            data: featureCollection(features),
+        })
+
+        if (buffer) {
+            this.setSource(
+                `${id}-buffer`,
+                bufferSource(features, buffer / 1000)
+            )
+        }
+
+        if (label) {
+            this.setSource(
+                `${id}-label`,
+                labelSource(features, labelStyle)
+            )
+        }
     }
 
     setVisibility(isVisible) {
@@ -153,15 +186,12 @@ class Layer extends Evented {
     }
 
     getFeatures() {
-        return {
-            type: 'FeatureCollection',
-            features: this._features,
-        }
+        return this._features
     }
 
     // Adds integer id for each feature (required by Feature State)
     setFeatures(data = []) {
-        this._features = data.map((f, i) => ({ ...f, id: i }))
+        this._features = data.map((f, i) => ({ ...f, id: i + 1 }))
     }
 
     getImages() {
@@ -190,13 +220,15 @@ class Layer extends Evented {
         return this.options.index || 0
     }
 
-    setOpacity() {}
+   setOpacity(opacity) {
+        setLayersOpacity(this.getMapGL(), this.getId(), opacity)
+   }
 
     getBounds() {
-        const data = this.getFeatures()
+        const features = this.getFeatures()
 
-        if (data && data.features.length) {
-            const [x1, y1, x2, y2] = bbox(data)
+        if (features.length) {
+            const [x1, y1, x2, y2] = bbox(featureCollection(features))
 
             return [[x1, y1], [x2, y2]]
         }
@@ -233,8 +265,6 @@ class Layer extends Evented {
             const { lngLat, point } = evt
 
             this._map.showLabel(content, lngLat)
-
-            // console.log('layer onMouseMove', content, lngLat, point)
         }
     }
 }

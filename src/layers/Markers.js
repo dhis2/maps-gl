@@ -1,23 +1,21 @@
 import Layer from './Layer'
-import { getCirclesSource, getCirclesLayer } from '../utils/circles'
+import { bufferLayer, bufferOutlineLayer } from '../utils/buffers'
 import { addTextProperties } from '../utils/labels'
 
 class Markers extends Layer {
     constructor(options) {
         super(options)
-        const { data } = options
 
-        this.setFeatures(data)
         this.setImages()
         this.createSource()
         this.createLayer()
     }
 
     setImages() {
-        const data = this.getFeatures()
+        const features = this.getFeatures()
         const images = {}
 
-        data.features.forEach(f => {
+        features.forEach(f => {
             images[f.properties.icon.iconUrl] = f.properties.icon.iconSize
             f.properties.iconUrl = f.properties.icon.iconUrl
         })
@@ -25,30 +23,13 @@ class Markers extends Layer {
         this._images = Object.keys(images)
     }
 
-    createSource() {
-        const id = this.getId()
-        const data = this.getFeatures()
-        const { buffer } = this.options
-
-        this.setSource(id, {
-            type: 'geojson',
-            data,
-        })
-
-        if (buffer) {
-            this.setSource(
-                `${id}-buffers`,
-                getCirclesSource(data.features, buffer)
-            )
-        }
-    }
-
     createLayer() {
         const id = this.getId()
         const { buffer, bufferStyle, label, labelStyle } = this.options
 
         if (buffer) {
-            this.addLayer(getCirclesLayer(id, bufferStyle))
+            this.addLayer(bufferLayer({ id, ...bufferStyle }))
+            this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
         }
 
         const config = {
@@ -69,11 +50,10 @@ class Markers extends Layer {
     }
 
     setOpacity(opacity) {
-        if (this.isOnMap()) {
-            const mapgl = this.getMapGL()
-            const id = this.getId()
+        super.setOpacity(opacity)
 
-            mapgl.setPaintProperty(id, 'icon-opacity', opacity)
+        if (this.isOnMap()) {
+            this.getMapGL().setPaintProperty(this.getId(), 'icon-opacity', opacity)
         }
     }
 }

@@ -1,7 +1,9 @@
-import { LngLat } from 'mapbox-gl'
 import SphericalMercator from '@mapbox/sphericalmercator'
+import centroid from '@turf/centroid'
 import Cluster from './Cluster'
-import { isCluster } from '../utils/filters'
+import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
+import { isCluster, isClusterPoint } from '../utils/filters'
+import { featureCollection } from '../utils/geometry'
 import {
     outlineColor,
     outlineWidth,
@@ -13,7 +15,6 @@ import {
 
 const earthRadius = 6378137
 
-// TODO: https://github.com/dhis2/maps-gl/blob/layer-handling/src/layers/ServerCluster.js
 class ServerCluster extends Cluster {
     currentTiles = []
     currentClusters = []
@@ -40,21 +41,24 @@ class ServerCluster extends Cluster {
 
     createSource() {
         super.createSource({
-            data: {
-                type: 'FeatureCollection',
-                features: [],
-            },
+            data: featureCollection(),
         })
     }
 
-    createLayers(color, radius) {
-        super.createLayers(color, radius)
-
+    createLayers() {
         const id = this.getId()
+        const { fillColor: color, radius } = this.options
+
+        // Non-clustered points
+        this.addLayer(pointLayer({ id, color, radius, filter: isClusterPoint }), true)
+
+        // Non-clustered polygons
+        this.addLayer(polygonLayer({ id, color }), true)
+        this.addLayer(outlineLayer({ id }))
 
         this.addLayer(
             {
-                id: `${id}-clusters`,
+                id: `${id}-cluster`,
                 type: 'circle',
                 source: id,
                 filter: isCluster,
@@ -125,10 +129,7 @@ class ServerCluster extends Cluster {
         if (this.currentClusterIds !== clusterIds) {
             const source = this.getMapGL().getSource(this.getId())
 
-            source.setData({
-                type: 'FeatureCollection',
-                features: clusters,
-            })
+            source.setData(featureCollection(clusters))
 
             this.currentClusterIds = clusterIds
             this.currentClusters = clusters
@@ -232,9 +233,11 @@ class ServerCluster extends Cluster {
 
     isTileVisible = tileId => this.getVisibleTiles().includes(tileId)
 
-    // TODO: Could be static - use <=?
-    isOutsideBounds = bounds => feature => {
-        const [lng, lat] = feature.geometry.coordinates
+    // TODO: Could be static 
+    isOutsideBounds = bounds => ({ geometry }) => {
+        const { coordinates } = geometry.type === 'Point' ? geometry : centroid(geometry).geometry
+        const [lng, lat] = coordinates
+
         return (
             lng <= bounds[0] ||
             lng >= bounds[2] ||
@@ -254,23 +257,6 @@ class ServerCluster extends Cluster {
             .map(c => c.id)
             .sort((a, b) => a - b)
             .join()
-
-    setOpacity(opacity) {
-        if (this.isOnMap()) {
-            const mapgl = this.getMapGL()
-            const id = this.getId()
-
-            mapgl.setPaintProperty(`${id}-clusters`, 'circle-opacity', opacity)
-            mapgl.setPaintProperty(
-                `${id}-clusters`,
-                'circle-stroke-opacity',
-                opacity
-            )
-            mapgl.setPaintProperty(`${id}-count`, 'text-opacity', opacity)
-        }
-
-        super.setOpacity(opacity)
-    }
 
     zoomToBounds(bounds) {
         if (bounds) {

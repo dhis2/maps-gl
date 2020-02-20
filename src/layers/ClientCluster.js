@@ -1,4 +1,6 @@
+
 import Cluster from './Cluster'
+import { featureCollection } from '../utils/geometry'
 import { isCluster } from '../utils/filters'
 import {
     outlineColor,
@@ -13,18 +15,19 @@ class ClientCluster extends Cluster {
     createSource() {
         super.createSource({
             cluster: true,
-            data: this.getFeatures(),
+            data: featureCollection(this.getFeatures()),
         })
     }
 
-    createLayers(color, radius) {
-        super.createLayers(color, radius)
-
+    createLayers() {
         const id = this.getId()
+        const { fillColor: color } = this.options
+
+        super.createLayers()
 
         this.addLayer(
             {
-                id: `${id}-clusters`,
+                id: `${id}-cluster`,
                 type: 'circle',
                 source: id,
                 filter: isCluster,
@@ -54,6 +57,30 @@ class ClientCluster extends Cluster {
         })
     }
 
+    onAdd() {
+        super.onAdd()
+
+        if (this._hasPolygons) {
+            const mapgl = this.getMapGL()
+
+            mapgl.on('sourcedata', this.onSourceData)
+            mapgl.on('moveend', this.updatePolygons)
+
+            this.updatePolygons()
+        }
+    }
+
+    onRemove() {
+        super.onRemove()
+
+        if (this._hasPolygons) {
+            const mapgl = this.getMapGL()
+
+            mapgl.off('sourcedata', this.onSourceData)
+            mapgl.off('moveend', this.updatePolygons)
+        }
+    }
+
     onClick = evt => {
         const { feature } = evt
 
@@ -78,22 +105,13 @@ class ClientCluster extends Cluster {
         }
     }
 
-    setOpacity(opacity) {
-        if (this.isOnMap()) {
-            const mapgl = this.getMapGL()
-            const id = this.getId()
-
-            mapgl.setPaintProperty(`${id}-clusters`, 'circle-opacity', opacity)
-            mapgl.setPaintProperty(
-                `${id}-clusters`,
-                'circle-stroke-opacity',
-                opacity
-            )
-            mapgl.setPaintProperty(`${id}-count`, 'text-opacity', opacity)
+    onSourceData = evt => {
+        if (evt.sourceId === this.getId() && this.getSourceFeatures().length) {
+            this.getMapGL().off('sourcedata', this.onSourceData)
+            this.updatePolygons()
         }
-
-        super.setOpacity(opacity)
     }
+    
 
     // Returns all features in a cluster
     getClusterFeatures = clusterId =>
@@ -105,27 +123,6 @@ class ClientCluster extends Cluster {
                 error ? reject(error) : resolve(features)
             )
         })
-
-    /*    
-    setClusterOpacity(clusterId, isExpanded) {
-        if (clusterId) {
-            const { opacity } = this.options
-
-            this.getMapGL().setPaintProperty(
-                `${this.getId()}-clusters`,
-                'circle-opacity',
-                isExpanded && opacity >= 0.1
-                    ? [
-                          'case',
-                          ['==', ['get', 'cluster_id'], clusterId],
-                          0.1,
-                          opacity,
-                      ]
-                    : opacity
-            )
-        }
-    }
-    */
 }
 
 export default ClientCluster
