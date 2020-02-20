@@ -1,13 +1,11 @@
 import Layer from './Layer'
 import { labelLayer } from '../utils/labels'
 
-const borderColor = '#333'
-const borderWeight = 1
-const hoverBorderWeight = 3
-
 class Boundary extends Layer {
     constructor(options) {
         super(options)
+
+        console.log('Boundary constructor');
 
         this.createSource()
         this.createLayers()
@@ -15,11 +13,13 @@ class Boundary extends Layer {
 
     // TODO: Find better way keep style
     setFeatures(data = []) {
-        const { radius = 5 } = this.options.style
+        console.log('setFeatures', data, this.options);
+
+        const { radius = 6 } = this.options.style
 
         this._features = data.map((f, i) => ({
             ...f,
-            id: i,
+            id: i + 1,
             properties: {
                 ...f.properties,
                 color: f.properties.style.color,
@@ -36,7 +36,7 @@ class Boundary extends Layer {
         // Line later
         this.addLayer(
             {
-                id,
+                id: `${id}-line`,
                 type: 'line',
                 source: id,
                 paint: {
@@ -77,15 +77,6 @@ class Boundary extends Layer {
 
         if (label) {
             this.addLayer(labelLayer({ id, label, ...labelStyle }))
-        }
-    }
-
-    setOpacity(opacity) {
-        if (this.isOnMap()) {
-            const mapgl = this.getMapGL()
-            const id = this.getId()
-
-            mapgl.setPaintProperty(id, 'line-opacity', opacity)
         }
     }
 }

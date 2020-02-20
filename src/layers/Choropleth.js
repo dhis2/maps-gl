@@ -6,6 +6,8 @@ class Choropleth extends Layer {
     constructor(options) {
         super(options)
 
+        console.log('Choropleth constructor')
+
         this.createSource()
         this.createLayers()
     }

@@ -18,6 +18,8 @@ class Layer extends Evented {
         this._isVisible = true
         this._interactiveIds = []
 
+        console.log('Layer constructor')
+
         if (options.data) {
             this.setFeatures(options.data)
         }
@@ -219,40 +221,6 @@ class Layer extends Evented {
     getIndex() {
         return this.options.index || 0
     }
-
-    /*
-    setOpacity(opacity) {
-        const mapgl = this.getMapGL()
-        const id = this.getId()
-
-        setLayersOpacity(mapgl, opacity)
-
-        if (mapgl.getLayer(`${id}-point`)) {
-            mapgl.setPaintProperty(`${id}-point`, 'circle-opacity', opacity)
-            mapgl.setPaintProperty(`${id}-point`, 'circle-stroke-opacity', opacity)
-        }
-
-        if (mapgl.getLayer(`${id}-polygon`)) {
-            mapgl.setPaintProperty(`${id}-polygon`, 'fill-opacity', opacity)
-        }
-
-        if (mapgl.getLayer(`${id}-outline`)) {
-            mapgl.setPaintProperty(`${id}-outline`, 'line-opacity', opacity)
-        }
-
-        if (mapgl.getLayer(`${id}-buffer`)) {
-            mapgl.setPaintProperty(`${id}-buffer`, 'fill-opacity', opacity * bufferOpacityFactor)
-        }
-
-        if (mapgl.getLayer(`${id}-buffer-outline`)) {
-            mapgl.setPaintProperty(`${id}-buffer-outline`, 'line-opacity', opacity * bufferOpacityFactor)
-        }
-
-        if (mapgl.getLayer(`${id}-label`)) {
-            mapgl.setPaintProperty(`${id}-label`, 'text-opacity', opacity)
-        }
-    }
-    */
 
    setOpacity(opacity) {
         setLayersOpacity(this.getMapGL(), this.getId(), opacity)

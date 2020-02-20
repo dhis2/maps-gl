@@ -1,6 +1,7 @@
 const properties = {
     'point': ['circle-opacity', 'circle-stroke-opacity'],
     'polygon': ['fill-opacity'],
+    'line': ['line-opacity'],
     'outline': ['line-opacity'],
     'buffer': ['fill-opacity'],
     'buffer-outline': ['line-opacity'],
