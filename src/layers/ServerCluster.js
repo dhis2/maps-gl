@@ -45,8 +45,9 @@ class ServerCluster extends Cluster {
         })
     }
 
-    createLayers(color, radius) {
+    createLayers() {
         const id = this.getId()
+        const { fillColor: color, radius } = this.options
 
         // Non-clustered points
         this.addLayer(pointLayer({ id, color, radius, filter: isClusterPoint }), true)
@@ -57,7 +58,7 @@ class ServerCluster extends Cluster {
 
         this.addLayer(
             {
-                id: `${id}-clusters`,
+                id: `${id}-cluster`,
                 type: 'circle',
                 source: id,
                 filter: isCluster,

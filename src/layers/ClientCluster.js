@@ -1,5 +1,6 @@
 
 import Cluster from './Cluster'
+import { featureCollection } from '../utils/geometry'
 import { isCluster } from '../utils/filters'
 import {
     outlineColor,
@@ -14,7 +15,7 @@ class ClientCluster extends Cluster {
     createSource() {
         super.createSource({
             cluster: true,
-            data: this.getFeatures(),
+            data: featureCollection(this.getFeatures()),
         })
     }
 

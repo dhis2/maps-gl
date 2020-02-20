@@ -1,6 +1,7 @@
 import throttle from 'lodash.throttle'
 import Cluster from './Cluster'
 import DonutMarker from './DonutMarker'
+import { featureCollection } from '../utils/geometry'
 
 class DonutCluster extends Cluster {
     clusters = {}
@@ -16,7 +17,7 @@ class DonutCluster extends Cluster {
                 ]
                 return obj
             }, {}),
-            data: this.getFeatures(),
+            data: featureCollection(this.getFeatures()),
         })
     }
 
