@@ -84,6 +84,19 @@ class LayerGroup extends Evented {
             }
         }
     }
+
+    onMouseMove = evt => {
+        const { feature } = evt
+
+        if (feature) {
+            const { id } = feature.layer
+            const layer = this._layers.find(l => l.hasLayerId(id))
+
+            if (layer) {
+                layer.onMouseMove(evt, feature)
+            }
+        }
+    }
 }
 
 export default LayerGroup
