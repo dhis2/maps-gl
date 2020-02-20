@@ -1,5 +1,5 @@
 import Layer from './Layer'
-import { bufferLayer } from '../utils/buffers'
+import { bufferLayer, bufferOutlineLayer } from '../utils/buffers'
 import { addTextProperties } from '../utils/labels'
 
 class Markers extends Layer {
@@ -14,10 +14,10 @@ class Markers extends Layer {
     }
 
     setImages() {
-        const data = this.getFeatures()
+        const features = this.getFeatures()
         const images = {}
 
-        data.features.forEach(f => {
+        features.forEach(f => {
             images[f.properties.icon.iconUrl] = f.properties.icon.iconSize
             f.properties.iconUrl = f.properties.icon.iconUrl
         })
@@ -30,7 +30,8 @@ class Markers extends Layer {
         const { buffer, bufferStyle, label, labelStyle } = this.options
 
         if (buffer) {
-            this.addLayer(bufferLayer(id, bufferStyle))
+            this.addLayer(bufferLayer({ id, ...bufferStyle }))
+            this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
         }
 
         const config = {
@@ -51,11 +52,10 @@ class Markers extends Layer {
     }
 
     setOpacity(opacity) {
-        if (this.isOnMap()) {
-            const mapgl = this.getMapGL()
-            const id = this.getId()
+        super.setOpacity(opacity)
 
-            mapgl.setPaintProperty(id, 'icon-opacity', opacity)
+        if (this.isOnMap()) {
+            this.getMapGL().setPaintProperty(this.getId(), 'icon-opacity', opacity)
         }
     }
 }
