@@ -1,9 +1,13 @@
 import { isPoint, isPolygon, isHover } from '../utils/filters'
-import { colorExpr } from './expressions'
+import { colorExpr, radiusExpr } from './expressions'
 
-const strokeColor = '#fff';
-const strokeWeight = 1;
-const hoverStrokeWeight = 3;
+const defaults = {
+    noDataColor: '#CCC',
+    strokeColor: '#333', // '#fff',
+    strokeWeight: 1,
+    hoverStrokeWeight: 3,
+    radius: 6,
+}
 
 // Layer with point features
 export const pointLayer = ({ id, color, radius, source, filter }) => ({        
@@ -11,15 +15,15 @@ export const pointLayer = ({ id, color, radius, source, filter }) => ({
     type: 'circle',
     source: source || id,
     paint: {
-        'circle-color': colorExpr(color),
-        'circle-radius': radius,
+        'circle-color': colorExpr(color || defaults.noDataColor),
+        'circle-radius': radiusExpr(radius || defaults.radius),
         'circle-stroke-width': [
             'case',
             ['boolean', ['feature-state', 'hover'], false],
-            hoverStrokeWeight,
-            strokeWeight,
+            defaults.hoverStrokeWeight,
+            defaults.strokeWeight,
         ],
-        'circle-stroke-color': strokeColor,
+        'circle-stroke-color': defaults.strokeColor,
     },
     filter: filter || isPoint,
 })
@@ -30,7 +34,7 @@ export const polygonLayer = ({ id, color, source, filter }) => ({
     type: 'fill',
     source: source || id,
     paint: {
-        'fill-color': colorExpr(color),
+        'fill-color': colorExpr(color || defaults.noDataColor),
     },
     filter: filter || isPolygon,
 })
@@ -42,12 +46,12 @@ export const outlineLayer = ({ id, source, filter }) => ({
     type: 'line',
     source: source || id,
     paint: {
-        'line-color': strokeColor,
+        'line-color': defaults.strokeColor,
         'line-width': [
             'case',
             isHover,
-            hoverStrokeWeight,
-            strokeWeight,
+            defaults.hoverStrokeWeight,
+            defaults.strokeWeight,
         ],
     },
     filter: filter || isPolygon,

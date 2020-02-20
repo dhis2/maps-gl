@@ -11,8 +11,6 @@ const defaults = {
 const getBufferGeometry = ({ geometry }, buffer) => 
     (geometry.type === 'Point' ? circle(geometry, buffer) : polygonBuffer(geometry, buffer)).geometry
 
-export const bufferOpacityFactor = 0.2  
-
 // Buffer in km
 export const bufferSource = (features, buffer) => ({
     type: 'geojson',

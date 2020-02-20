@@ -1,5 +1,5 @@
 import Layer from './Layer'
-import { getLablesSource, getLabelsLayer } from '../utils/labels'
+import { labelLayer } from '../utils/labels'
 
 const borderColor = '#333'
 const borderWeight = 1
@@ -27,24 +27,6 @@ class Boundary extends Layer {
                 radius,
             },
         }))
-    }
-
-    createSource() {
-        const id = this.getId()
-        const features = this.getFeatures()
-        const { label, labelStyle } = this.options
-
-        this.setSource(id, {
-            type: 'geojson',
-            data: features,
-        })
-
-        if (label) {
-            this.setSource(
-                `${id}-labels`,
-                getLablesSource(features, labelStyle, true)
-            )
-        }
     }
 
     createLayers() {
@@ -94,7 +76,7 @@ class Boundary extends Layer {
         )
 
         if (label) {
-            this.addLayer(getLabelsLayer(id, label, labelStyle))
+            this.addLayer(labelLayer({ id, label, ...labelStyle }))
         }
     }
 

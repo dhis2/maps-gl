@@ -3,7 +3,9 @@ import bbox from '@turf/bbox'
 import { Evented } from 'mapbox-gl'
 import { addImages } from '../utils/images'
 import { featureCollection } from '../utils/geometry'
-import { bufferSource, bufferOpacityFactor } from '../utils/buffers'
+import { bufferSource } from '../utils/buffers'
+import { labelSource } from '../utils/labels'
+import { setLayersOpacity } from '../utils/opacity'
 
 class Layer extends Evented {
     constructor(options = {}) {
@@ -80,7 +82,7 @@ class Layer extends Evented {
     createSource() {
         const id = this.getId()
         const features = this.getFeatures()
-        const { buffer } = this.options 
+        const { buffer, label, labelStyle } = this.options 
 
         this.setSource(id, {
             type: 'geojson',
@@ -91,6 +93,13 @@ class Layer extends Evented {
             this.setSource(
                 `${id}-buffer`,
                 bufferSource(features, buffer / 1000)
+            )
+        }
+
+        if (label) {
+            this.setSource(
+                `${id}-label`,
+                labelSource(features, labelStyle)
             )
         }
     }
@@ -211,9 +220,12 @@ class Layer extends Evented {
         return this.options.index || 0
     }
 
+    /*
     setOpacity(opacity) {
         const mapgl = this.getMapGL()
         const id = this.getId()
+
+        setLayersOpacity(mapgl, opacity)
 
         if (mapgl.getLayer(`${id}-point`)) {
             mapgl.setPaintProperty(`${id}-point`, 'circle-opacity', opacity)
@@ -235,7 +247,16 @@ class Layer extends Evented {
         if (mapgl.getLayer(`${id}-buffer-outline`)) {
             mapgl.setPaintProperty(`${id}-buffer-outline`, 'line-opacity', opacity * bufferOpacityFactor)
         }
+
+        if (mapgl.getLayer(`${id}-label`)) {
+            mapgl.setPaintProperty(`${id}-label`, 'text-opacity', opacity)
+        }
     }
+    */
+
+   setOpacity(opacity) {
+        setLayersOpacity(this.getMapGL(), this.getId(), opacity)
+   }
 
     getBounds() {
         const features = this.getFeatures()
