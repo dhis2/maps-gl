@@ -28,24 +28,3 @@ export const bboxIntersect = (bbox1, bbox2) =>
         bbox1[3] < bbox2[1] ||
         bbox1[1] > bbox2[3]
     )
-
-// Returns true if two bbox'es overlaps
-// https://rbrundritt.wordpress.com/2009/10/03/determining-if-two-bounding-boxes-overlap/
-export const bboxOverlap = (bbox1, bbox2) => {
-    const [minLng1, minLat1, maxLng1, maxLat1] = bbox1
-    const [minLng2, minLat2, maxLng2, maxLat2] = bbox1
-
-    const absLng = Math.abs(minLng1 + maxLng1 - minLng2 - maxLng2) 
-    const absLat = Math.abs(maxLat1 + minLat1 - maxLat2 - minLat2) 
-
-    const raxLng = maxLng1 - minLng1 + maxLng2 - minLng2
-    const raxLat = maxLat1 - minLat1 + maxLat2 - minLat2
-
-    if (absLng <= raxLng && absLat <= raxLat) {
-        return true;
-    }
-
-    return false
-}
-
-    
