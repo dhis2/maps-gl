@@ -1,5 +1,6 @@
 import Layer from './Layer'
 import { pointLayer, lineLayer, polygonLayer, outlineLayer } from '../utils/layers'
+import { bufferLayer, bufferOutlineLayer } from '../utils/buffers'
 
 class GeoJson extends Layer {
     constructor(options) {
@@ -11,7 +12,13 @@ class GeoJson extends Layer {
 
     createLayers() {
         const id = this.getId()
-        const { radius, color, weight } = this.options.style || {}   
+        const { style = {}, buffer, bufferStyle } = this.options
+        const { radius, color, weight } = style  
+
+        if (buffer) {
+            this.addLayer(bufferLayer({ id, ...bufferStyle }))
+            this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
+        }
 
         this.addLayer(polygonLayer({ id,color }), true)
         this.addLayer(outlineLayer({ id, color}))
