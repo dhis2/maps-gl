@@ -4,12 +4,12 @@ class TileLayer extends Layer {
     constructor(options) {
         super(options)
 
-        const { url, layers, format, attribution } = options
-        this.createSource(url, layers, format, attribution)
+        this.createSource()
         this.createLayer()
     }
 
-    createSource(url, layers, format = 'image/png', attribution = '') {
+    createSource() {
+        const { url, layers, format = 'image/png', attribution = '' } = this.options
         let tiles
 
         if (layers) {

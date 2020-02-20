@@ -9,11 +9,8 @@ class Cluster extends Layer {
     constructor(options) {
         super(options)
 
-        const { data, fillColor, radius } = options
-
-        this.setFeatures(data)
         this.createSource()
-        this.createLayers(fillColor, radius)
+        this.createLayers()
     }
 
     setFeatures(data = []) {
@@ -61,8 +58,9 @@ class Cluster extends Layer {
         })
     }
 
-    createLayers(color, radius) {
+    createLayers() {
         const id = this.getId()
+        const { fillColor: color, radius } = options
 
         // Non-clustered points
         this.addLayer(pointLayer({ id, color, radius, filter: isClusterPoint }), true)

@@ -10,9 +10,6 @@ class Choropleth extends Layer {
     constructor(options) {
         super(options)
 
-        const { data } = options
-
-        this.setFeatures(data)
         this.createSource()
         this.createLayers()
     }

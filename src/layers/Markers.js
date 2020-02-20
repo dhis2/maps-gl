@@ -5,9 +5,7 @@ import { addTextProperties } from '../utils/labels'
 class Markers extends Layer {
     constructor(options) {
         super(options)
-        const { data } = options
 
-        this.setFeatures(data)
         this.setImages()
         this.createSource()
         this.createLayer()
