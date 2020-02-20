@@ -1,3 +1,10 @@
+## [1.0.6](https://github.com/dhis2/maps-gl/compare/v1.0.5...v1.0.6) (2020-02-20)
+
+
+### Bug Fixes
+
+* event polygons, event and TEI buffers, refactoring ([#48](https://github.com/dhis2/maps-gl/issues/48)) ([e6ab248](https://github.com/dhis2/maps-gl/commit/e6ab2480c75609c9be039397d331f43cf32b1cd0))
+
 ## [1.0.5](https://github.com/dhis2/maps-gl/compare/v1.0.4...v1.0.5) (2020-02-19)
 
 
