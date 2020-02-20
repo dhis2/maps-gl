@@ -18,13 +18,11 @@ class Layer extends Evented {
         this._isVisible = true
         this._interactiveIds = []
 
-        console.log('Layer constructor')
+        this.options = options
 
         if (options.data) {
             this.setFeatures(options.data)
         }
-
-        this.options = options
     }
 
     async addTo(map) {
@@ -267,8 +265,6 @@ class Layer extends Evented {
             const { lngLat, point } = evt
 
             this._map.showLabel(content, lngLat)
-
-            // console.log('layer onMouseMove', content, lngLat, point)
         }
     }
 }

@@ -5,16 +5,12 @@ class Boundary extends Layer {
     constructor(options) {
         super(options)
 
-        console.log('Boundary constructor');
-
         this.createSource()
         this.createLayers()
     }
 
     // TODO: Find better way keep style
     setFeatures(data = []) {
-        console.log('setFeatures', data, this.options);
-
         const { radius = 6 } = this.options.style
 
         this._features = data.map((f, i) => ({

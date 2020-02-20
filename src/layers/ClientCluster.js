@@ -18,14 +18,15 @@ class ClientCluster extends Cluster {
         })
     }
 
-    createLayers(color, radius) {
-        super.createLayers(color, radius)
-
+    createLayers() {
         const id = this.getId()
+        const { fillColor: color } = this.options
+
+        super.createLayers()
 
         this.addLayer(
             {
-                id: `${id}-clusters`,
+                id: `${id}-cluster`,
                 type: 'circle',
                 source: id,
                 filter: isCluster,
@@ -110,23 +111,6 @@ class ClientCluster extends Cluster {
         }
     }
     
-
-    setOpacity(opacity) {
-        if (this.isOnMap()) {
-            const mapgl = this.getMapGL()
-            const id = this.getId()
-
-            mapgl.setPaintProperty(`${id}-clusters`, 'circle-opacity', opacity)
-            mapgl.setPaintProperty(
-                `${id}-clusters`,
-                'circle-stroke-opacity',
-                opacity
-            )
-            mapgl.setPaintProperty(`${id}-count`, 'text-opacity', opacity)
-        }
-
-        super.setOpacity(opacity)
-    }
 
     // Returns all features in a cluster
     getClusterFeatures = clusterId =>

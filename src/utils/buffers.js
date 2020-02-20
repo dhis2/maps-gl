@@ -21,7 +21,7 @@ export const bufferSource = (features, buffer) => ({
 })
 
 // Layer with buffer features
-export const bufferLayer = ({ id, color, fillOpacity }) => ({
+export const bufferLayer = ({ id, color }) => ({
     id: `${id}-buffer`,
     type: 'fill',
     source: `${id}-buffer`,
@@ -31,7 +31,7 @@ export const bufferLayer = ({ id, color, fillOpacity }) => ({
 })
 
 // Buffer outline
-export const bufferOutlineLayer = ({ id, color, weight, opacity }) => ({
+export const bufferOutlineLayer = ({ id, color, weight }) => ({
     id: `${id}-buffer-outline`,
     type: 'line',
     source: `${id}-buffer`,

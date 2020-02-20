@@ -257,23 +257,6 @@ class ServerCluster extends Cluster {
             .sort((a, b) => a - b)
             .join()
 
-    setOpacity(opacity) {
-        if (this.isOnMap()) {
-            const mapgl = this.getMapGL()
-            const id = this.getId()
-
-            mapgl.setPaintProperty(`${id}-clusters`, 'circle-opacity', opacity)
-            mapgl.setPaintProperty(
-                `${id}-clusters`,
-                'circle-stroke-opacity',
-                opacity
-            )
-            mapgl.setPaintProperty(`${id}-count`, 'text-opacity', opacity)
-        }
-
-        super.setOpacity(opacity)
-    }
-
     zoomToBounds(bounds) {
         if (bounds) {
             // https://github.com/mapbox/mapbox-gl-js/issues/2434

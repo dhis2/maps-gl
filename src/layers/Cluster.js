@@ -60,7 +60,7 @@ class Cluster extends Layer {
 
     createLayers() {
         const id = this.getId()
-        const { fillColor: color, radius } = options
+        const { fillColor: color, radius } = this.options
 
         // Non-clustered points
         this.addLayer(pointLayer({ id, color, radius, filter: isClusterPoint }), true)
@@ -119,7 +119,7 @@ class Cluster extends Layer {
             const { opacity } = this.options
 
             this.getMapGL().setPaintProperty(
-                `${this.getId()}-clusters`,
+                `${this.getId()}-cluster`,
                 'circle-opacity',
                 isExpanded && opacity >= 0.1
                     ? [
