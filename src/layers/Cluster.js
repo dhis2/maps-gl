@@ -4,6 +4,7 @@ import Spider from './Spider'
 import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
 import { isClusterPoint } from '../utils/filters'
 import { featureCollection } from '../utils/geometry'
+import { eventStrokeColor } from '../utils/style'
 
 class Cluster extends Layer {
     constructor(options) {
@@ -63,11 +64,11 @@ class Cluster extends Layer {
         const { fillColor: color, radius } = this.options
 
         // Non-clustered points
-        this.addLayer(pointLayer({ id, color, radius, filter: isClusterPoint }), true)
+        this.addLayer(pointLayer({ id, color, strokeColor: eventStrokeColor, radius, filter: isClusterPoint }), true)
 
         // Non-clustered polygons
         this.addLayer(polygonLayer({ id, color, source: `${id}-polygons` }), true)
-        this.addLayer(outlineLayer({ id, source: `${id}-polygons` }))
+        this.addLayer(outlineLayer({ id, color: eventStrokeColor, source: `${id}-polygons` }))
     }
 
     setOpacity(opacity) {

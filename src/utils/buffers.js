@@ -5,7 +5,7 @@ import { colorExpr } from './expressions'
 
 const defaults = {
     color: '#95c8fb',
-    weight: 1,
+    width: 1,
 }
 
 const getBufferGeometry = ({ geometry }, buffer) => 
@@ -31,12 +31,12 @@ export const bufferLayer = ({ id, color }) => ({
 })
 
 // Buffer outline
-export const bufferOutlineLayer = ({ id, color, weight }) => ({
+export const bufferOutlineLayer = ({ id, color, width }) => ({
     id: `${id}-buffer-outline`,
     type: 'line',
     source: `${id}-buffer`,
     paint: {
         'line-color': colorExpr(color || defaults.color),
-        'line-width': weight || defaults.weight,
+        'line-width': width || defaults.width,
     },
 })

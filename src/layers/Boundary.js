@@ -19,7 +19,7 @@ class Boundary extends Layer {
             properties: {
                 ...f.properties,
                 color: f.properties.style.color,
-                weight: f.properties.style.weight,
+                width: f.properties.style.weight,
                 radius,
             },
         }))
@@ -40,8 +40,8 @@ class Boundary extends Layer {
                     'line-width': [
                         'case',
                         ['boolean', ['feature-state', 'hover'], false],
-                        ['+', ['get', 'weight'], 2],
-                        ['get', 'weight'],
+                        ['+', ['get', 'width'], 2],
+                        ['get', 'width'],
                     ],
                 },
                 filter: ['==', '$type', 'Polygon'],
@@ -62,8 +62,8 @@ class Boundary extends Layer {
                     'circle-stroke-width': [
                         'case',
                         ['boolean', ['feature-state', 'hover'], false],
-                        ['+', ['get', 'weight'], 2],
-                        ['get', 'weight'],
+                        ['+', ['get', 'width'], 2],
+                        ['get', 'width'],
                     ],
                 },
                 filter: ['==', '$type', 'Point'],

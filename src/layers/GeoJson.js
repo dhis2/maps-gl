@@ -13,7 +13,7 @@ class GeoJson extends Layer {
     createLayers() {
         const id = this.getId()
         const { style = {}, buffer, bufferStyle } = this.options
-        const { radius, color, weight } = style  
+        const { radius, color, weight: width } = style  
 
         if (buffer) {
             this.addLayer(bufferLayer({ id, ...bufferStyle }))
@@ -22,7 +22,7 @@ class GeoJson extends Layer {
 
         this.addLayer(polygonLayer({ id,color }), true)
         this.addLayer(outlineLayer({ id, color}))
-        this.addLayer(lineLayer({ id, color, weight }), true)
+        this.addLayer(lineLayer({ id, color, width }), true)
         this.addLayer(pointLayer({ id, color, radius }), true)
     }
 }
