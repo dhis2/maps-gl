@@ -1,4 +1,4 @@
-import { Map, Popup } from 'mapbox-gl'
+import { Map } from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Evented } from 'mapbox-gl'
 import Layer from './layers/Layer'
@@ -8,6 +8,7 @@ import controlsLocale from './controls/controlsLocale'
 import { transformRequest } from './utils/images'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
+import Popup from './ui/Popup'
 import Label from './ui/Label'
 import './Map.css'
 
@@ -307,23 +308,32 @@ export class MapGL extends Evented {
     }
 
     openPopup(content, lnglat, onClose) {
-        this._popup = new Popup({
-            maxWidth: 'auto',
-            className: 'dhis2-map-popup',
-        })
-            .setLngLat(lnglat)
+        if (!this._popup) {
+            this._popup = new Popup()
+        }
+
+        // this._onPopupClose = onClose
+
+        console.log('opened by user');
+
+        this._popup.setLngLat(lnglat)
             .setDOMContent(content)
+            .onClose(onClose)
             .addTo(this._mapgl)
 
+        /*    
         if (typeof onClose === 'function') {
-            this._popup.once('close', onClose)
+            this._popup.on('close', this._onPopupClose)
         }
+        */
     }
 
     closePopup() {
         if (this._popup) {
-            this._popup.remove()
-            this._popup = null
+            console.log('closed by app');
+            // this._popup.off('close', this._onPopupClose )
+            this._popup.remove(true)
+            // this._popup = null
         }
     }
 
