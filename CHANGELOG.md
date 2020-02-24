@@ -1,3 +1,10 @@
+## [1.0.8](https://github.com/dhis2/maps-gl/compare/v1.0.7...v1.0.8) (2020-02-24)
+
+
+### Bug Fixes
+
+* popup handling ([#51](https://github.com/dhis2/maps-gl/issues/51)) ([a9e1fa8](https://github.com/dhis2/maps-gl/commit/a9e1fa80d02b1b39f1a790a8d3bf28cec8bdb832))
+
 ## [1.0.7](https://github.com/dhis2/maps-gl/compare/v1.0.6...v1.0.7) (2020-02-24)
 
 
