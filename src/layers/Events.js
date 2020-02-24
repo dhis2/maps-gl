@@ -2,6 +2,8 @@ import Layer from './Layer'
 import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
 import { bufferLayer, bufferOutlineLayer } from '../utils/buffers'
 
+const strokeColor = '#fff'
+
 class Events extends Layer {
     constructor(options) {
         super(options)
@@ -19,9 +21,9 @@ class Events extends Layer {
             this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
         }
 
-        this.addLayer(pointLayer({ id, color, radius }), true)
+        this.addLayer(pointLayer({ id, color, radius, strokeColor }), true)
         this.addLayer(polygonLayer({ id, color }), true)
-        this.addLayer(outlineLayer({ id }))
+        this.addLayer(outlineLayer({ id, color: strokeColor }))
     }
 }
 
