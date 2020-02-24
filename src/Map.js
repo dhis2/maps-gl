@@ -312,28 +312,16 @@ export class MapGL extends Evented {
             this._popup = new Popup()
         }
 
-        // this._onPopupClose = onClose
-
-        console.log('opened by user');
-
-        this._popup.setLngLat(lnglat)
+        this._popup
+            .setLngLat(lnglat)
             .setDOMContent(content)
             .onClose(onClose)
-            .addTo(this._mapgl)
-
-        /*    
-        if (typeof onClose === 'function') {
-            this._popup.on('close', this._onPopupClose)
-        }
-        */
+            .addTo(this)
     }
 
     closePopup() {
         if (this._popup) {
-            console.log('closed by app');
-            // this._popup.off('close', this._onPopupClose )
-            this._popup.remove(true)
-            // this._popup = null
+            this._popup.remove()
         }
     }
 
@@ -363,7 +351,7 @@ export class MapGL extends Evented {
     }
 
     _createClickEvent(evt) {
-        const { lngLat, originalEvent } = evt
+        const { lngLat } = evt
         const type = 'click'
         const coordinates = [lngLat.lng, lngLat.lat]
         const { x, y } = this.getMapGL().project(lngLat)
