@@ -1,19 +1,11 @@
 import SphericalMercator from '@mapbox/sphericalmercator'
 import centroid from '@turf/centroid'
 import Cluster from './Cluster'
-import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
-import { isCluster, isClusterPoint } from '../utils/filters'
+import { pointLayer, polygonLayer, outlineLayer, clusterLayer, clusterCountLayer } from '../utils/layers'
+import { isClusterPoint } from '../utils/filters'
 import { featureCollection } from '../utils/geometry'
-import {
-    outlineColor,
-    outlineWidth,
-    clusterRadius,
-    textFont,
-    textSize,
-    textColor,
-} from '../utils/style'
-
-const earthRadius = 6378137
+import { eventStrokeColor as strokeColor } from '../utils/style'
+import { earthRadius } from '../utils/geo'
 
 class ServerCluster extends Cluster {
     currentTiles = []
@@ -50,42 +42,15 @@ class ServerCluster extends Cluster {
         const { fillColor: color, radius } = this.options
 
         // Non-clustered points
-        this.addLayer(pointLayer({ id, color, radius, filter: isClusterPoint }), true)
+        this.addLayer(pointLayer({ id, color, strokeColor, radius, filter: isClusterPoint }), true)
 
         // Non-clustered polygons
         this.addLayer(polygonLayer({ id, color }), true)
-        this.addLayer(outlineLayer({ id }))
+        this.addLayer(outlineLayer({ id, color: strokeColor }))
 
-        this.addLayer(
-            {
-                id: `${id}-cluster`,
-                type: 'circle',
-                source: id,
-                filter: isCluster,
-                paint: {
-                    'circle-color': color,
-                    'circle-radius': clusterRadius,
-                    'circle-stroke-width': outlineWidth,
-                    'circle-stroke-color': outlineColor,
-                },
-            },
-            true
-        )
-
-        this.addLayer({
-            id: `${id}-count`,
-            type: 'symbol',
-            source: id,
-            filter: isCluster,
-            layout: {
-                'text-field': '{point_count_abbreviated}',
-                'text-font': textFont,
-                'text-size': textSize,
-            },
-            paint: {
-                'text-color': textColor,
-            },
-        })
+        // Clusters
+        this.addLayer(clusterLayer({ id, color, strokeColor }), true)
+        this.addLayer(clusterCountLayer({ id }))        
     }
 
     getTileId(tile) {

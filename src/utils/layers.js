@@ -1,19 +1,12 @@
-import { isPoint, isPolygon, isLine, isHover } from '../utils/filters'
-import { colorExpr, radiusExpr } from './expressions'
+import { isPoint, isPolygon, isLine, isCluster, isHover } from '../utils/filters'
+import { colorExpr, radiusExpr, clusterRadiusExpr } from './expressions'
+import defaults from './style' 
 
-const defaults = {
-    noDataColor: '#CCC',
-    strokeColor: '#333', 
-    strokeWeight: 1,
-    hoverStrokeWeight: 3,
-    radius: 6,
-}
-
-const getWeight = (weight = 0) => [
+const getStrokeWidth = (width = 0) => [
     'case',
     isHover,
-    weight + defaults.hoverStrokeWeight,
-    weight + defaults.strokeWeight,
+    width + defaults.hoverStrokeWidth,
+    width + defaults.strokeWidth,
 ]
 
 // Layer with point features
@@ -24,20 +17,20 @@ export const pointLayer = ({ id, color, strokeColor, radius, source, filter }) =
     paint: {
         'circle-color': colorExpr(color || defaults.noDataColor),
         'circle-radius': radiusExpr(radius || defaults.radius),
-        'circle-stroke-width': getWeight(),
+        'circle-stroke-width': getStrokeWidth(),
         'circle-stroke-color': strokeColor || defaults.strokeColor,
     },
     filter: filter || isPoint,
 })
 
 // Layer with line features
-export const lineLayer = ({ id, color, weight, source, filter }) => ({
+export const lineLayer = ({ id, color, width, source, filter }) => ({
     id: `${id}-line`,
     type: 'line',
     source: source || id,
     paint: {
         'line-color': color,
-        'line-width': getWeight(weight),
+        'line-width': getStrokeWidth(width),
     },
     filter: filter || isLine,
 })
@@ -61,7 +54,37 @@ export const outlineLayer = ({ id, color, source, filter }) => ({
     source: source || id,
     paint: {
         'line-color': color || defaults.strokeColor,
-        'line-width': getWeight(),
+        'line-width': getStrokeWidth(),
     },
     filter: filter || isPolygon,
+})
+
+// Layer with cluster (circles)
+export const clusterLayer = ({ id, color }) => ({
+    id: `${id}-cluster`,
+    type: 'circle',
+    source: id,
+    filter: isCluster,
+    paint: {
+        'circle-color': color,
+        'circle-radius': clusterRadiusExpr,
+        'circle-stroke-width': defaults.strokeWidth,
+        'circle-stroke-color': defaults.eventStrokeColor,
+    },
+})
+
+//  Layer with cluster counts (text)
+export const clusterCountLayer = ({ id }) => ({
+    id: `${id}-count`,
+    type: 'symbol',
+    source: id,
+    filter: isCluster,
+    layout: {
+        'text-field': '{point_count_abbreviated}',
+        'text-font': defaults.textFont,
+        'text-size': defaults.textSize,
+    },
+    paint: {
+        'text-color': defaults.textColor,
+    },
 })

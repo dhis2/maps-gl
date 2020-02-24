@@ -1,7 +1,7 @@
 import { Point } from 'mapbox-gl'
 import MapboxglSpiderifier from 'mapboxgl-spiderifier'
 import 'mapboxgl-spiderifier/index.css'
-import { outlineColor, outlineWidth } from '../utils/style'
+import { eventStrokeColor as strokeColor, strokeWidth } from '../utils/style'
 
 const Spider = function(map, options) {
     let spider
@@ -24,7 +24,7 @@ const Spider = function(map, options) {
             margin-left: -${radius}px;
             margin-top: -${radius}px;
             background-color: ${color};
-            border: ${outlineWidth}px solid ${outlineColor};
+            border: ${strokeWidth}px solid ${strokeColor};
             border-radius: 50%;
             transform: translate(${deltaX}px, ${deltaY}px);`
         )

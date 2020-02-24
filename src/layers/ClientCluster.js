@@ -1,15 +1,8 @@
 
 import Cluster from './Cluster'
 import { featureCollection } from '../utils/geometry'
-import { isCluster } from '../utils/filters'
-import {
-    outlineColor,
-    outlineWidth,
-    clusterRadius,
-    textFont,
-    textSize,
-    textColor,
-} from '../utils/style'
+import { clusterLayer, clusterCountLayer } from '../utils/layers'
+import { eventStrokeColor as strokeColor } from '../utils/style'
 
 class ClientCluster extends Cluster {
     createSource() {
@@ -25,36 +18,9 @@ class ClientCluster extends Cluster {
 
         super.createLayers()
 
-        this.addLayer(
-            {
-                id: `${id}-cluster`,
-                type: 'circle',
-                source: id,
-                filter: isCluster,
-                paint: {
-                    'circle-color': color,
-                    'circle-radius': clusterRadius,
-                    'circle-stroke-width': outlineWidth,
-                    'circle-stroke-color': outlineColor,
-                },
-            },
-            true
-        )
-
-        this.addLayer({
-            id: `${id}-count`,
-            type: 'symbol',
-            source: id,
-            filter: isCluster,
-            layout: {
-                'text-field': '{point_count_abbreviated}',
-                'text-font': textFont,
-                'text-size': textSize,
-            },
-            paint: {
-                'text-color': textColor,
-            },
-        })
+        // Clusters
+        this.addLayer(clusterLayer({ id, color, strokeColor }), true)
+        this.addLayer(clusterCountLayer({ id }))
     }
 
     onAdd() {

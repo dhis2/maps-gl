@@ -1,4 +1,4 @@
-const earthRadius = 6378137
+export const earthRadius = 6378137
 
 const tile2lon = (x, z) => (x / Math.pow(2, z)) * 360 - 180
 
