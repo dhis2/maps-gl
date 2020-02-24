@@ -1,4 +1,4 @@
-import { Map, Popup } from 'mapbox-gl'
+import { Map } from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Evented } from 'mapbox-gl'
 import Layer from './layers/Layer'
@@ -8,6 +8,7 @@ import controlsLocale from './controls/controlsLocale'
 import { transformRequest } from './utils/images'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
+import Popup from './ui/Popup'
 import Label from './ui/Label'
 import './Map.css'
 
@@ -307,23 +308,20 @@ export class MapGL extends Evented {
     }
 
     openPopup(content, lnglat, onClose) {
-        this._popup = new Popup({
-            maxWidth: 'auto',
-            className: 'dhis2-map-popup',
-        })
+        if (!this._popup) {
+            this._popup = new Popup()
+        }
+
+        this._popup
             .setLngLat(lnglat)
             .setDOMContent(content)
-            .addTo(this._mapgl)
-
-        if (typeof onClose === 'function') {
-            this._popup.once('close', onClose)
-        }
+            .onClose(onClose)
+            .addTo(this)
     }
 
     closePopup() {
         if (this._popup) {
             this._popup.remove()
-            this._popup = null
         }
     }
 
@@ -353,7 +351,7 @@ export class MapGL extends Evented {
     }
 
     _createClickEvent(evt) {
-        const { lngLat, originalEvent } = evt
+        const { lngLat } = evt
         const type = 'click'
         const coordinates = [lngLat.lng, lngLat.lat]
         const { x, y } = this.getMapGL().project(lngLat)
