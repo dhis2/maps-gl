@@ -57,12 +57,12 @@ export class MapGL extends Evented {
             })
         }
 
-        mapgl.on('load', evt => this.fire('ready', this))
-        mapgl.on('click', evt => this.onClick(evt))
-        mapgl.on('contextmenu', evt => this.onContextMenu(evt))
+        mapgl.on('load', this.onLoad)
+        mapgl.on('click', this.onClick)
+        mapgl.on('contextmenu', this.onContextMenu)
 
         // TODO: Don't add before we have any vector layers
-        mapgl.on('mousemove', evt => this.onMouseMove(evt))
+        mapgl.on('mousemove', this.onMouseMove)
 
         this._layers = []
         this._controls = {}
@@ -116,7 +116,7 @@ export class MapGL extends Evented {
     }
 
     removeLayer(layer) {
-        if (layer.isOnMap()) {
+        if (this._mapgl && layer.isOnMap()) {
             layer.removeFrom(this)
         }
 
@@ -126,7 +126,16 @@ export class MapGL extends Evented {
     }
 
     remove() {
-        // console.log("remove map");
+        const mapgl = this._mapgl
+
+        mapgl.off('load', this.onLoad)
+        mapgl.off('click', this.onClick)
+        mapgl.off('contextmenu', this.onContextMenu)
+        mapgl.off('mousemove', this.onMouseMove)
+
+        mapgl.remove()
+
+        this._mapgl = null;
     }
 
     hasLayer(layer) {
@@ -176,7 +185,11 @@ export class MapGL extends Evented {
         syncMaps.remove(id, this._mapgl)
     }
 
-    onClick(evt) {
+    onLoad = () => {
+        this.fire('ready', this)
+    }
+
+    onClick = (evt) => {
         const eventObj = this._createClickEvent(evt)
         const { feature } = eventObj
 
@@ -189,7 +202,7 @@ export class MapGL extends Evented {
         }
     }
 
-    onContextMenu(evt) {
+    onContextMenu = (evt) => {
         const eventObj = this._createClickEvent(evt)
 
         if (eventObj.feature) {
@@ -200,7 +213,7 @@ export class MapGL extends Evented {
         }
     }
 
-    onMouseMove(evt) {
+    onMouseMove = (evt) => {
         const feature = this.getEventFeature(evt)
         let featureId
         let sourceId
