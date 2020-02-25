@@ -1,3 +1,10 @@
+## [1.0.9](https://github.com/dhis2/maps-gl/compare/v1.0.8...v1.0.9) (2020-02-25)
+
+
+### Bug Fixes
+
+* map remove handler ([#53](https://github.com/dhis2/maps-gl/issues/53)) ([f12f8b9](https://github.com/dhis2/maps-gl/commit/f12f8b9b60765058e8094350137abed7b10fbe19))
+
 ## [1.0.8](https://github.com/dhis2/maps-gl/compare/v1.0.7...v1.0.8) (2020-02-24)
 
 
