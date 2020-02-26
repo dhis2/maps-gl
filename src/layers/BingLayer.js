@@ -130,15 +130,6 @@ class BingLayer extends Layer {
         source.attribution = this.getAttribution()
         this.getMap()._updateAttributions()
     }
-
-    /*
-    setOpacity(opacity) {
-        if (this.isOnMap()) {
-            const mapgl = this.getMapGL()
-            mapgl.setPaintProperty(this.getId(), 'raster-opacity', opacity)
-        }
-    }
-    */
 }
 
 export default BingLayer
