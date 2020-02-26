@@ -2,19 +2,28 @@ import { FullscreenControl } from 'mapbox-gl'
 
 // Extended to include map name and legend in fullscreen for dashboard maps
 class Fullscreen extends FullscreenControl {
-    constructor(options) {
+    constructor(options = {}) {
         super(options)
 
-        if (options.isPlugin) {
-            this._isPlugin = true
-        }
+        this.options = options
     }
 
     onAdd(map) {
-        if (this._isPlugin) {
+        const { isPlugin, isSplitView } = this.options 
+
+
+
+        if (isPlugin) {
             // TODO: This should be done in a cleaner way
             this._container = map.getContainer().parentNode.parentNode
         }
+
+        if (isSplitView) {
+            // TODO: This should be done in a cleaner way
+            this._container = map.getContainer().parentNode.parentNode.parentNode
+        }
+
+        console.log(isPlugin, isSplitView, this._container);
 
         this._scrollZoomIsDisabled = !map.scrollZoom.isEnabled()
 
