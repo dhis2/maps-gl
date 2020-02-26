@@ -12,7 +12,8 @@ class BingLayer extends Layer {
             brandLogoUri,
         } = await this.loadMetaData()
 
-        this._brandLogoUri = brandLogoUri
+        this._brandLogoUri = brandLogoUri.replace('http:', 'https:')
+
         this._imageryProviders = imageryProviders
 
         this.setSource(this.getId(), {
@@ -65,7 +66,7 @@ class BingLayer extends Layer {
         const culture = 'en-GB'
 
         // https://docs.microsoft.com/en-us/bingmaps/rest-services/imagery/get-imagery-metadata
-        const metaDataUrl = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/${style}?output=json&include=ImageryProviders&culture=${culture}&key=${apiKey}`
+        const metaDataUrl = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/${style}?output=json&include=ImageryProviders&culture=${culture}&key=${apiKey}&uriScheme=https`
 
         return fetchJsonp(metaDataUrl, { jsonpCallback: 'jsonp' })
             .then(response => response.json())
