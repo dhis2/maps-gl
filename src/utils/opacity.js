@@ -1,4 +1,5 @@
 const properties = {
+    'raster': ['raster-opacity'],
     'point': ['circle-opacity', 'circle-stroke-opacity'],
     'polygon': ['fill-opacity'],
     'line': ['line-opacity'],

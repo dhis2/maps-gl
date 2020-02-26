@@ -20,21 +20,23 @@ class EarthEngine extends Layer {
     }
 
     async getSource() {
+        const id = this.getId()
+
         this._ee = await getEarthEngineApi()
         
         await this.setAuthToken()
 
         this._eeMap = await this.visualize(this.createImage())
 
-        this.setSource(this.getId(), {
+        this.setSource(id, {
             type: 'raster',
             tileSize: 256,
         })
 
         this.addLayer({
-            id: this.getId(),
+            id: `${id}-raster`,
             type: 'raster',
-            source: this.getId(),
+            source: id,
         })
 
         return this._source
@@ -155,21 +157,6 @@ class EarthEngine extends Layer {
         }
 
         return eeImage
-    }
-
-    createLayer() {
-        this.addLayer({
-            id: this.getId(),
-            type: 'raster',
-            source: this.getId(),
-        })
-    }
-
-    setOpacity(opacity) {
-        if (this.isOnMap()) {
-            const mapgl = this.getMapGL()
-            mapgl.setPaintProperty(this.getId(), 'raster-opacity', opacity)
-        }
     }
 
     createLegend() {

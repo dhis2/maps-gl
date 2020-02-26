@@ -32,18 +32,13 @@ class TileLayer extends Layer {
     }
 
     createLayer() {
-        this.addLayer({
-            id: this.getId(),
-            type: 'raster',
-            source: this.getId(),
-        })
-    }
+        const id = this.getId()
 
-    setOpacity(opacity) {
-        if (this.isOnMap()) {
-            const mapgl = this.getMapGL()
-            mapgl.setPaintProperty(this.getId(), 'raster-opacity', opacity)
-        }
+        this.addLayer({
+            id: `${id}-raster`,
+            type: 'raster',
+            source: id,
+        })
     }
 }
 

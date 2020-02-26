@@ -26,10 +26,12 @@ class BingLayer extends Layer {
     }
 
     createLayer = () => {
+        const id = this.getId()
+
         this.addLayer({
-            id: this.getId(),
+            id: `${id}-raster`,
             type: 'raster',
-            source: this.getId(),
+            source: id,
         })
     }
 
@@ -129,12 +131,14 @@ class BingLayer extends Layer {
         this.getMap()._updateAttributions()
     }
 
+    /*
     setOpacity(opacity) {
         if (this.isOnMap()) {
             const mapgl = this.getMapGL()
             mapgl.setPaintProperty(this.getId(), 'raster-opacity', opacity)
         }
     }
+    */
 }
 
 export default BingLayer
