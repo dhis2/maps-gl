@@ -299,8 +299,10 @@ export class MapGL extends Evented {
 
     // Returns the dom element of the control
     getControlContainer(type) {
-        if (this._controls[type]) {
-            return this._controls[type]._container
+        const control = this._controls[type]
+
+        if (control) {
+            return control._controlContainer || control._container
         }
 
         return document.createElement('div') // TODO
