@@ -1,3 +1,10 @@
+## [1.0.10](https://github.com/dhis2/maps-gl/compare/v1.0.9...v1.0.10) (2020-02-26)
+
+
+### Bug Fixes
+
+* bing tiles over ssh and map control styles  ([#55](https://github.com/dhis2/maps-gl/issues/55)) ([dce77e2](https://github.com/dhis2/maps-gl/commit/dce77e2c0ccacec8795c050c210092c3fa61dba5))
+
 ## [1.0.9](https://github.com/dhis2/maps-gl/compare/v1.0.8...v1.0.9) (2020-02-25)
 
 
