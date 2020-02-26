@@ -62,9 +62,11 @@ class FitBoundsControl {
     }
 
     onLayerChange = () => {
-        this._container.style.display = this._map.getLayersBounds()
-            ? 'block'
-            : 'none'
+        if (this._container) {
+            this._container.style.display = this._map.getLayersBounds()
+                ? 'block'
+                : 'none'
+        }
     }
 }
 

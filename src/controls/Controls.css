@@ -1,3 +1,12 @@
+.dhis2-map .mapboxgl-ctrl-scale {
+    margin-bottom: 5px;
+}
+
+.dhis2-map .mapboxgl-ctrl-attrib.mapboxgl-compact {
+    margin-bottom: 3px;
+    margin-right: 3px;
+}
+
 .dhis2-map-split-view .mapboxgl-ctrl-group {
     box-shadow: none;
 }
