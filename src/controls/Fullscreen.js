@@ -11,8 +11,6 @@ class Fullscreen extends FullscreenControl {
     onAdd(map) {
         const { isPlugin, isSplitView } = this.options 
 
-
-
         if (isPlugin) {
             // TODO: This should be done in a cleaner way
             this._container = map.getContainer().parentNode.parentNode
@@ -22,8 +20,6 @@ class Fullscreen extends FullscreenControl {
             // TODO: This should be done in a cleaner way
             this._container = map.getContainer().parentNode.parentNode.parentNode
         }
-
-        console.log(isPlugin, isSplitView, this._container);
 
         this._scrollZoomIsDisabled = !map.scrollZoom.isEnabled()
 
