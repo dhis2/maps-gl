@@ -100,6 +100,10 @@
     bottom: 0;
 }
 
+.dhis2-map-split-view .dhis2-map-bing-logo {
+    display: none;
+}
+
 .dhis2-map-download .mapboxgl-ctrl-zoom-in,
 .dhis2-map-download .mapboxgl-ctrl-zoom-out,
 .dhis2-map-download .mapboxgl-ctrl-compass,

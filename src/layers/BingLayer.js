@@ -1,6 +1,7 @@
 import fetchJsonp from 'fetch-jsonp'
 import Layer from './Layer'
 import { bboxIntersect } from '../utils/geo'
+import './BingLayer.css'
 
 // https://docs.microsoft.com/en-us/bingmaps/rest-services/directly-accessing-the-bing-maps-tiles
 class BingLayer extends Layer {
