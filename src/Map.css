@@ -1,13 +1,3 @@
-.dhis2-map-bing .mapboxgl-ctrl-bottom-left {
-    left: 60px;
-}
-
-.dhis2-map-bing-logo {
-    position: absolute;
-    bottom: 3px;
-    left: 3px;
-}
-
 .dhis2-map-split-view .mapboxgl-ctrl-group {
     position: absolute;
     top: 10px;
