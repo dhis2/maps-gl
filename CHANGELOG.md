@@ -1,3 +1,11 @@
+## [1.0.12](https://github.com/dhis2/maps-gl/compare/v1.0.11...v1.0.12) (2020-03-02)
+
+
+### Bug Fixes
+
+*  hide bing maps logo if download and reset map tilt in navigation control ([#60](https://github.com/dhis2/maps-gl/issues/60)) ([ee83d0d](https://github.com/dhis2/maps-gl/commit/ee83d0d6628e6dbb3b647d8bdb15852f72531501))
+* test ([b245ccb](https://github.com/dhis2/maps-gl/commit/b245ccb5abf4be3072df567435e9e1b3308628dd))
+
 ## [1.0.11](https://github.com/dhis2/maps-gl/compare/v1.0.10...v1.0.11) (2020-02-26)
 
 
