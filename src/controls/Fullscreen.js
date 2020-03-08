@@ -9,7 +9,7 @@ class Fullscreen extends FullscreenControl {
     }
 
     onAdd(map) {
-        const { isPlugin, isSplitView } = this.options 
+        const { isPlugin, isSplitView } = this.options
 
         if (isPlugin) {
             // TODO: This should be done in a cleaner way

@@ -2,9 +2,7 @@ import area from '@turf/area'
 import polylabel from 'polylabel'
 import { featureCollection } from './geometry'
 
-// TODO: Sould we host the fonts ourselves?
-// https://github.com/openmaptiles/fonts
-// https://github.com/openmaptiles/fonts/blob/gh-pages/fontstacks.json
+// Default fonts
 const fonts = {
     'normal-normal': 'Open Sans Regular',
     'normal-bold': 'Open Sans Bold',
@@ -18,7 +16,8 @@ const getOffsetEms = (type, radius = 5, fontSize = 11) =>
 
 export const labelSource = (features, { fontSize }, isBoundary) => ({
     type: 'geojson',
-    data: featureCollection(features.map(({ geometry, properties }) => ({
+    data: featureCollection(
+        features.map(({ geometry, properties }) => ({
             type: 'Feature',
             geometry: {
                 type: 'Point',
@@ -33,7 +32,7 @@ export const labelSource = (features, { fontSize }, isBoundary) => ({
                 ],
                 color: isBoundary ? properties.color : '#333',
             },
-        })),
+        }))
     ),
 })
 
@@ -61,7 +60,14 @@ export const addTextProperties = (config, label, style) => {
     }
 }
 
-export const labelLayer = ({ id, label, fontSize, fontStyle, fontWeight, color }) => {
+export const labelLayer = ({
+    id,
+    label,
+    fontSize,
+    fontStyle,
+    fontWeight,
+    color,
+}) => {
     const font = `${fontStyle || 'normal'}-${fontWeight || 'normal'}`
     const size = fontSize ? parseInt(fontSize, 10) : 12
 
@@ -77,8 +83,7 @@ export const labelLayer = ({ id, label, fontSize, fontStyle, fontWeight, color }
             'text-offset': ['get', 'offset'],
         },
         paint: {
-            'text-color': color ? color : ['get', 'color'], //  || '#333',
-            // 'text-color': ['get', 'color'], //  || '#333',
+            'text-color': color ? color : ['get', 'color'],
         },
     }
 }

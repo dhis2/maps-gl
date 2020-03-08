@@ -74,7 +74,6 @@ class BingLayer extends Layer {
         return fetchJsonp(metaDataUrl, { jsonpCallback: 'jsonp' })
             .then(response => response.json())
             .then(this.onMetaDataLoad)
-            .catch(console.error.bind(console)) // TODO
     }
 
     onMetaDataLoad = metaData => {

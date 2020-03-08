@@ -1,7 +1,13 @@
 import SphericalMercator from '@mapbox/sphericalmercator'
 import centroid from '@turf/centroid'
 import Cluster from './Cluster'
-import { pointLayer, polygonLayer, outlineLayer, clusterLayer, clusterCountLayer } from '../utils/layers'
+import {
+    pointLayer,
+    polygonLayer,
+    outlineLayer,
+    clusterLayer,
+    clusterCountLayer,
+} from '../utils/layers'
 import { isClusterPoint } from '../utils/filters'
 import { featureCollection } from '../utils/geometry'
 import { eventStrokeColor as strokeColor } from '../utils/style'
@@ -42,7 +48,16 @@ class ServerCluster extends Cluster {
         const { fillColor: color, radius } = this.options
 
         // Non-clustered points
-        this.addLayer(pointLayer({ id, color, strokeColor, radius, filter: isClusterPoint }), true)
+        this.addLayer(
+            pointLayer({
+                id,
+                color,
+                strokeColor,
+                radius,
+                filter: isClusterPoint,
+            }),
+            true
+        )
 
         // Non-clustered polygons
         this.addLayer(polygonLayer({ id, color }), true)
@@ -50,7 +65,7 @@ class ServerCluster extends Cluster {
 
         // Clusters
         this.addLayer(clusterLayer({ id, color, strokeColor }), true)
-        this.addLayer(clusterCountLayer({ id }))        
+        this.addLayer(clusterCountLayer({ id }))
     }
 
     getTileId(tile) {
@@ -198,9 +213,10 @@ class ServerCluster extends Cluster {
 
     isTileVisible = tileId => this.getVisibleTiles().includes(tileId)
 
-    // TODO: Could be static 
+    // Returms true if geometry is outside bounds
     isOutsideBounds = bounds => ({ geometry }) => {
-        const { coordinates } = geometry.type === 'Point' ? geometry : centroid(geometry).geometry
+        const { coordinates } =
+            geometry.type === 'Point' ? geometry : centroid(geometry).geometry
         const [lng, lat] = coordinates
 
         return (
@@ -216,7 +232,7 @@ class ServerCluster extends Cluster {
             .map(this.getTileId)
             .sort()
 
-    // TODO: Could be static
+    // Returns sorted array of cluster ids
     getClusterIds = clusters =>
         clusters
             .map(c => c.id)
@@ -225,13 +241,24 @@ class ServerCluster extends Cluster {
 
     zoomToBounds(bounds) {
         if (bounds) {
-            // https://github.com/mapbox/mapbox-gl-js/issues/2434
-            const zoomBounds =
-                typeof bounds === 'string' ? JSON.parse(bounds) : bounds // TODO: Error handling
+            let zoomBounds
 
-            this._map.getMapGL().fitBounds(zoomBounds, {
-                padding: 40,
-            })
+            if (Array.isArray(bounds)) {
+                zoomBounds = bounds
+            } else if (typeof bounds === 'string') {
+                // https://github.com/mapbox/mapbox-gl-js/issues/2434
+                try {
+                    zoomBounds = JSON.parse(bounds)
+                } catch (evt) {
+                    return
+                }
+            }
+
+            if (zoomBounds) {
+                this._map.getMapGL().fitBounds(zoomBounds, {
+                    padding: 40,
+                })
+            }
         }
     }
 }

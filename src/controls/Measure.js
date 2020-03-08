@@ -8,7 +8,6 @@ import './Measure.css'
 
 // Inspired by https://github.com/ljagis/leaflet-measure
 
-// TODO: Proper clean-up on remove
 class MeasureControl {
     constructor() {
         this._isActive = false
