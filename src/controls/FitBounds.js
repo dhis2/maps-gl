@@ -1,6 +1,5 @@
 import './FitBounds.css'
 
-// TODO: Hide when no vector layers
 class FitBoundsControl {
     constructor(options) {
         this.options = options

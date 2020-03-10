@@ -135,7 +135,7 @@ export class MapGL extends Evented {
 
         mapgl.remove()
 
-        this._mapgl = null;
+        this._mapgl = null
     }
 
     hasLayer(layer) {
@@ -159,7 +159,7 @@ export class MapGL extends Evented {
     }
 
     removeControl(control) {
-        // console.log('removeControl', control)
+        this._mapgl.removeControl(control)
     }
 
     createLayer(config) {
@@ -189,7 +189,7 @@ export class MapGL extends Evented {
         this.fire('ready', this)
     }
 
-    onClick = (evt) => {
+    onClick = evt => {
         const eventObj = this._createClickEvent(evt)
         const { feature } = eventObj
 
@@ -202,7 +202,7 @@ export class MapGL extends Evented {
         }
     }
 
-    onContextMenu = (evt) => {
+    onContextMenu = evt => {
         const eventObj = this._createClickEvent(evt)
 
         if (eventObj.feature) {
@@ -213,7 +213,7 @@ export class MapGL extends Evented {
         }
     }
 
-    onMouseMove = (evt) => {
+    onMouseMove = evt => {
         const feature = this.getEventFeature(evt)
         let featureId
         let sourceId
@@ -302,7 +302,7 @@ export class MapGL extends Evented {
         const control = this._controls[type]
 
         if (control) {
-            return control._controlContainer || control._container
+            return control._controlContainer || control._container
         }
 
         return document.createElement('div') // TODO
