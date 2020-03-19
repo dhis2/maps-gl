@@ -1,3 +1,10 @@
+## [1.0.14](https://github.com/dhis2/maps-gl/compare/v1.0.13...v1.0.14) (2020-03-19)
+
+
+### Bug Fixes
+
+* index and ordering for layer groups ([#69](https://github.com/dhis2/maps-gl/issues/69)) ([00bc7d0](https://github.com/dhis2/maps-gl/commit/00bc7d002c6a6c2cca80471e90fc1500caec9f81))
+
 ## [1.0.13](https://github.com/dhis2/maps-gl/compare/v1.0.12...v1.0.13) (2020-03-10)
 
 
