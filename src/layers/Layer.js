@@ -82,7 +82,7 @@ class Layer extends Evented {
     createSource() {
         const id = this.getId()
         const features = this.getFeatures()
-        const { buffer, label, labelStyle } = this.options 
+        const { buffer, label, labelStyle } = this.options
 
         this.setSource(id, {
             type: 'geojson',
@@ -97,10 +97,7 @@ class Layer extends Evented {
         }
 
         if (label) {
-            this.setSource(
-                `${id}-label`,
-                labelSource(features, labelStyle)
-            )
+            this.setSource(`${id}-label`, labelSource(features, labelStyle))
         }
     }
 
@@ -220,9 +217,9 @@ class Layer extends Evented {
         return this.options.index || 0
     }
 
-   setOpacity(opacity) {
+    setOpacity(opacity) {
         setLayersOpacity(this.getMapGL(), this.getId(), opacity)
-   }
+    }
 
     getBounds() {
         const features = this.getFeatures()
