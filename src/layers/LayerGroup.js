@@ -27,7 +27,7 @@ class LayerGroup extends Evented {
     }
 
     removeFrom(map) {
-        this._layers.some(layer => layer.removeFrom(map))
+        this._layers.forEach(layer => layer.removeFrom(map))
         this._layers = []
         this._layerConfigs = []
     }
@@ -42,6 +42,11 @@ class LayerGroup extends Evented {
 
     isInteractive() {
         return this._layers.some(layer => layer.isInteractive())
+    }
+
+    setIndex(index = 0) {
+        this.options.index = index
+        this._layers.forEach(layer => layer.setIndex(index))
     }
 
     getIndex() {
