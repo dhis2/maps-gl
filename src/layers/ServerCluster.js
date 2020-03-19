@@ -156,6 +156,9 @@ class ServerCluster extends Cluster {
                 this.tileClusters[tileId] = 'pending'
                 this.options.load(this.getTileParams(tileId), this.onTileLoad)
             }
+
+            // Trigger cluster update
+            this.onMoveEnd()
         }
     }
 
