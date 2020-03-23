@@ -190,7 +190,7 @@ class ServerCluster extends Cluster {
     getBounds = () => this.options.bounds
 
     // Returns true if all tiles aligns with the zoom level
-    isTilesUpdated = () => {
+    areTilesUpdated = () => {
         const mapgl = this._map.getMapGL()
         const zoom = Math.floor(mapgl.getZoom())
 
@@ -238,7 +238,7 @@ class ServerCluster extends Cluster {
     }
 
     getVisibleTiles = async () => {
-        while (!this.isTilesUpdated()) {
+        while (!this.areTilesUpdated()) {
             await new Promise(r => setTimeout(r, 100))
         }
 
