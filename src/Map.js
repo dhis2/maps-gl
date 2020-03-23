@@ -61,8 +61,8 @@ export class MapGL extends Evented {
         mapgl.on('click', this.onClick)
         mapgl.on('contextmenu', this.onContextMenu)
 
-        // TODO: Don't add before we have any vector layers
         mapgl.on('mousemove', this.onMouseMove)
+        mapgl.on('mouseout', this.onMouseOut)
 
         this._layers = []
         this._controls = {}
@@ -132,6 +132,7 @@ export class MapGL extends Evented {
         mapgl.off('click', this.onClick)
         mapgl.off('contextmenu', this.onContextMenu)
         mapgl.off('mousemove', this.onMouseMove)
+        mapgl.off('mouseout', this.onMouseOut)
 
         mapgl.remove()
 
@@ -257,6 +258,8 @@ export class MapGL extends Evented {
 
         this._hoverId = featureSourceId
     }
+
+    onMouseOut = () => this.hideLabel()
 
     // Returns the map zoom level
     getZoom() {
