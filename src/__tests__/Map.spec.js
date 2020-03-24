@@ -15,7 +15,7 @@ jest.mock('mapbox-gl', () => ({
 describe('DHIS2 Maps-gl Map', () => {
     it('should initialize correctly', () => {
         const map = new Map('el')
-        expect(map.getMapGL().on).toHaveBeenCalledTimes(4)
+        expect(map.getMapGL().on).toHaveBeenCalledTimes(5)
         expect(map.getMapGL().container).toBe('el')
     })
 })
