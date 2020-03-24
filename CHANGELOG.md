@@ -1,3 +1,10 @@
+## [1.0.15](https://github.com/dhis2/maps-gl/compare/v1.0.14...v1.0.15) (2020-03-24)
+
+
+### Bug Fixes
+
+* trigger cluster update when new cluster tiles are loaded (DHIS2-8498) ([#70](https://github.com/dhis2/maps-gl/issues/70)) ([4e7ec77](https://github.com/dhis2/maps-gl/commit/4e7ec776748e8e7bbc6a20cf90a59f419dbea40b))
+
 ## [1.0.14](https://github.com/dhis2/maps-gl/compare/v1.0.13...v1.0.14) (2020-03-19)
 
 
