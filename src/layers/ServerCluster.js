@@ -159,8 +159,8 @@ class ServerCluster extends Cluster {
         }
     }
 
-    onMoveEnd = () => {
-        const tiles = this.getVisibleTiles()
+    onMoveEnd = async () => {
+        const tiles = await this.getVisibleTiles()
 
         if (tiles.join('-') !== this.currentTiles.join('-')) {
             this.currentTiles = tiles
@@ -176,16 +176,28 @@ class ServerCluster extends Cluster {
     }
 
     // Keep tile clusters in memory and update map if needed
-    onTileLoad = (tileId, clusters) => {
+    onTileLoad = async (tileId, clusters) => {
         this.tileClusters[tileId] = clusters
 
-        // If tile still visible after loading
-        if (this.isTileVisible(tileId)) {
+        // Check if tile is still visible after loading
+        const visibleTiles = await this.getVisibleTiles()
+
+        if (visibleTiles.includes(tileId)) {
             this.updateClusters([tileId])
         }
     }
 
     getBounds = () => this.options.bounds
+
+    // Returns true if all tiles aligns with the zoom level
+    areTilesUpdated = () => {
+        const mapgl = this._map.getMapGL()
+        const zoom = Math.floor(mapgl.getZoom())
+
+        return this.getSourceCacheTiles().every(
+            ({ tileID }) => tileID.canonical.z === zoom
+        )
+    }
 
     getSourceCacheTiles = () => {
         const mapgl = this._map.getMapGL()
@@ -211,8 +223,6 @@ class ServerCluster extends Cluster {
         }
     }
 
-    isTileVisible = tileId => this.getVisibleTiles().includes(tileId)
-
     // Returms true if geometry is outside bounds
     isOutsideBounds = bounds => ({ geometry }) => {
         const { coordinates } =
@@ -227,10 +237,15 @@ class ServerCluster extends Cluster {
         )
     }
 
-    getVisibleTiles = () =>
-        this.getSourceCacheTiles()
+    getVisibleTiles = async () => {
+        while (!this.areTilesUpdated()) {
+            await new Promise(r => setTimeout(r, 100))
+        }
+
+        return this.getSourceCacheTiles()
             .map(this.getTileId)
             .sort()
+    }
 
     // Returns sorted array of cluster ids
     getClusterIds = clusters =>
