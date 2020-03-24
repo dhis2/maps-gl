@@ -1,3 +1,11 @@
+## [1.0.16](https://github.com/dhis2/maps-gl/compare/v1.0.15...v1.0.16) (2020-03-24)
+
+
+### Bug Fixes
+
+* fix failing test ([4a6cd5b](https://github.com/dhis2/maps-gl/commit/4a6cd5bc3b23b2e40f6d0bacf34754bf7628bbbc))
+* hide label when mouse cursor leaves the map ([#76](https://github.com/dhis2/maps-gl/issues/76)) ([8d06361](https://github.com/dhis2/maps-gl/commit/8d063615c5914f674ef6b9f74299307fa52819ed))
+
 ## [1.0.15](https://github.com/dhis2/maps-gl/compare/v1.0.14...v1.0.15) (2020-03-24)
 
 
