@@ -27,7 +27,7 @@
 .dhis2-map-split-view .mapboxgl-ctrl-compass:not(:disabled):hover,
 .dhis2-map-split-view .mapboxgl-ctrl-fullscreen:not(:disabled):hover,
 .dhis2-map-split-view .mapboxgl-ctrl-shrink:not(:disabled):hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: #f3f3f3;
 }
 
 .dhis2-map-split-view .mapboxgl-ctrl-zoom-in {
