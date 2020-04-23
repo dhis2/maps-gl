@@ -1,3 +1,10 @@
+## [1.0.17](https://github.com/dhis2/maps-gl/compare/v1.0.16...v1.0.17) (2020-03-25)
+
+
+### Bug Fixes
+
+* use parent container for fullscreen map (DHIS2-8524) ([#77](https://github.com/dhis2/maps-gl/issues/77)) ([e1290d6](https://github.com/dhis2/maps-gl/commit/e1290d637c3a34289d3182c66fc132d194818f9c))
+
 ## [1.0.16](https://github.com/dhis2/maps-gl/compare/v1.0.15...v1.0.16) (2020-03-24)
 
 
