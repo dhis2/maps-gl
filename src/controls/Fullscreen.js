@@ -31,6 +31,11 @@ class Fullscreen extends FullscreenControl {
 
         super._onClickFullscreen()
     }
+
+    _changeIcon() {
+        this._map.resize()
+        super._changeIcon()
+    }
 }
 
 export default Fullscreen
