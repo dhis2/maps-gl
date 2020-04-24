@@ -1,3 +1,10 @@
+## [1.0.18](https://github.com/dhis2/maps-gl/compare/v1.0.17...v1.0.18) (2020-04-24)
+
+
+### Bug Fixes
+
+* resize map when toggling fullscreen view (DHIS2-8702) ([#85](https://github.com/dhis2/maps-gl/issues/85)) ([da61a02](https://github.com/dhis2/maps-gl/commit/da61a025bdc84b287040aead0d6dcb2207a28f18))
+
 ## [1.0.17](https://github.com/dhis2/maps-gl/compare/v1.0.16...v1.0.17) (2020-03-25)
 
 
