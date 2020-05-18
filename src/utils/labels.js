@@ -1,6 +1,4 @@
-import area from '@turf/area'
-import polylabel from 'polylabel'
-import { featureCollection } from './geometry'
+import { featureCollection, poleOfInaccessibility } from './geometry'
 
 // Default fonts
 const fonts = {
@@ -21,7 +19,7 @@ export const labelSource = (features, { fontSize }, isBoundary) => ({
             type: 'Feature',
             geometry: {
                 type: 'Point',
-                coordinates: getLabelPosition(geometry),
+                coordinates: poleOfInaccessibility(geometry),
             },
             properties: {
                 name: properties.name,
@@ -86,25 +84,4 @@ export const labelLayer = ({
             'text-color': color ? color : ['get', 'color'],
         },
     }
-}
-
-export const getLabelPosition = ({ type, coordinates }) => {
-    if (type === 'Point') {
-        return coordinates
-    }
-
-    let polygon = coordinates
-
-    if (type === 'MultiPolygon') {
-        const areas = coordinates.map(coords =>
-            area({
-                type: 'Polygon',
-                coordinates: coords,
-            })
-        )
-        const maxIndex = areas.indexOf(Math.max.apply(null, areas))
-        polygon = coordinates[maxIndex]
-    }
-
-    return polylabel(polygon, 0.1)
 }
