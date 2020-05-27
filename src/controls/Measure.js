@@ -321,6 +321,7 @@ class MeasureControl {
     _onMapClick = evt => {
         const mapgl = this._map.getMapGL()
         const geojson = this._geojson
+        const locale = this.locale;
         let points = geojson.features.filter(f => f.geometry.type === 'Point')
 
         const clikedFeature = mapgl.queryRenderedFeatures(evt.point, {
@@ -350,7 +351,7 @@ class MeasureControl {
         geojson.features = [...points]
 
         if (points.length === 1) {
-            this._distanceText.innerText = this.locale(
+            this._distanceText.innerText = locale(
                 'MeasureControl.ClickNextPosition'
             )
         } else {
@@ -363,11 +364,11 @@ class MeasureControl {
             const length = turfLength(this._linestring)
             const miles = kmToMiles(length)
 
-            const distanceText = `${this.locale(
+            const distanceText = `${locale(
                 'MeasureControl.Distance'
-            )}: ${twoDecimals(length)} ${this.locale(
+            )}: ${twoDecimals(length)} ${locale(
                 'MeasureControl.Kilometers'
-            )} (${twoDecimals(miles)} ${this.locale('MeasureControl.Miles')})`
+            )} (${twoDecimals(miles)} ${locale('MeasureControl.Miles')})`
 
             this._distanceText.innerText = ''
             this._distanceEl = createElement(
@@ -392,9 +393,15 @@ class MeasureControl {
             const hectares = area / 10000
             const acres = hectares * 2.47105381
 
-            const areaText = `Area: ${twoDecimals(hectares)} ha (${twoDecimals(
+            const areaText = `${locale(
+                'MeasureControl.Area'
+            )}: ${twoDecimals(hectares)} ${locale(
+                'MeasureControl.Hectares'
+            )} (${twoDecimals(
                 acres
-            )} acres)`
+            )} ${locale(
+                'MeasureControl.Acres'
+            )})`
 
             createElement(
                 'div',
