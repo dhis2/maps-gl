@@ -178,6 +178,7 @@ class MeasureControl {
 
     _startMeasure = () => {
         const mapgl = this._map.getMapGL()
+        const locale = this.locale;
 
         this._button.classList.add('active')
 
@@ -195,14 +196,14 @@ class MeasureControl {
         createElement(
             'div',
             'dhis2-map-ctrl-measure-header',
-            this.locale('MeasureControl.MeasureDistancesAndAreas'),
+            locale('MeasureControl.MeasureDistancesAndAreas'),
             this._distanceContainer
         )
 
         this._distanceText = createElement(
             'p',
             '',
-            this.locale('MeasureControl.ClickStartMeasurement'),
+            locale('MeasureControl.ClickStartMeasurement'),
             this._distanceContainer
         )
 
@@ -216,7 +217,7 @@ class MeasureControl {
         this._cancelEl = createElement(
             'span',
             'dhis2-map-ctrl-measure-cancel',
-            this.locale('MeasureControl.Cancel'),
+            locale('MeasureControl.Cancel'),
             this._actionsEl
         )
         this._cancelEl.addEventListener('click', this._endMeasure)
@@ -224,7 +225,7 @@ class MeasureControl {
         this._finishEl = createElement(
             'span',
             'dhis2-map-ctrl-measure-finish',
-            this.locale('MeasureControl.FinishMeasurement'),
+            locale('MeasureControl.FinishMeasurement'),
             this._actionsEl
         )
         this._finishEl.addEventListener('click', this._finishMeasure)
@@ -234,6 +235,7 @@ class MeasureControl {
         const mapgl = this._map.getMapGL()
         const geojson = this._geojson
         const points = geojson.features.filter(f => f.geometry.type === 'Point')
+        const locale = this.locale;
 
         if (points.length < 2) {
             return this._endMeasure()
@@ -254,11 +256,11 @@ class MeasureControl {
             const length = turfLength(this._linestring)
             const miles = kmToMiles(length)
 
-            const perimeterText = `${this.locale(
+            const perimeterText = `${locale(
                 'MeasureControl.Perimeter'
-            )}: ${twoDecimals(length)} ${this.locale(
+            )}: ${twoDecimals(length)} ${locale(
                 'MeasureControl.Kilometers'
-            )} (${twoDecimals(miles)} ${this.locale('MeasureControl.Miles')})`
+            )} (${twoDecimals(miles)} ${locale('MeasureControl.Miles')})`
 
             this._distanceEl.textContent = perimeterText
         }
@@ -268,7 +270,7 @@ class MeasureControl {
         this._centerEl = createElement(
             'span',
             'dhis2-map-ctrl-measure-center',
-            this.locale(
+            locale(
                 `MeasureControl.CenterMapOn${
                     points.length === 2 ? 'Line' : 'Area'
                 }`
@@ -280,7 +282,7 @@ class MeasureControl {
         this._deleteEl = createElement(
             'span',
             'dhis2-map-ctrl-measure-delete',
-            this.locale('MeasureControl.Delete'),
+            locale('MeasureControl.Delete'),
             this._actionsEl
         )
         this._deleteEl.addEventListener('click', this._endMeasure)
@@ -321,6 +323,7 @@ class MeasureControl {
     _onMapClick = evt => {
         const mapgl = this._map.getMapGL()
         const geojson = this._geojson
+        const locale = this.locale;
         let points = geojson.features.filter(f => f.geometry.type === 'Point')
 
         const clikedFeature = mapgl.queryRenderedFeatures(evt.point, {
@@ -350,7 +353,7 @@ class MeasureControl {
         geojson.features = [...points]
 
         if (points.length === 1) {
-            this._distanceText.innerText = this.locale(
+            this._distanceText.innerText = locale(
                 'MeasureControl.ClickNextPosition'
             )
         } else {
@@ -363,11 +366,11 @@ class MeasureControl {
             const length = turfLength(this._linestring)
             const miles = kmToMiles(length)
 
-            const distanceText = `${this.locale(
+            const distanceText = `${locale(
                 'MeasureControl.Distance'
-            )}: ${twoDecimals(length)} ${this.locale(
+            )}: ${twoDecimals(length)} ${locale(
                 'MeasureControl.Kilometers'
-            )} (${twoDecimals(miles)} ${this.locale('MeasureControl.Miles')})`
+            )} (${twoDecimals(miles)} ${locale('MeasureControl.Miles')})`
 
             this._distanceText.innerText = ''
             this._distanceEl = createElement(
@@ -392,9 +395,15 @@ class MeasureControl {
             const hectares = area / 10000
             const acres = hectares * 2.47105381
 
-            const areaText = `Area: ${twoDecimals(hectares)} ha (${twoDecimals(
+            const areaText = `${locale(
+                'MeasureControl.Area'
+            )}: ${twoDecimals(hectares)} ${locale(
+                'MeasureControl.Hectares'
+            )} (${twoDecimals(
                 acres
-            )} acres)`
+            )} ${locale(
+                'MeasureControl.Acres'
+            )})`
 
             createElement(
                 'div',
