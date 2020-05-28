@@ -1,3 +1,10 @@
+## [1.0.19](https://github.com/dhis2/maps-gl/compare/v1.0.18...v1.0.19) (2020-05-28)
+
+
+### Bug Fixes
+
+* add missing locale strings in measure controls ([#101](https://github.com/dhis2/maps-gl/issues/101)) ([6ef0b7e](https://github.com/dhis2/maps-gl/commit/6ef0b7e1399c5ad6fe2be593eefc847f2f57d5dd))
+
 ## [1.0.18](https://github.com/dhis2/maps-gl/compare/v1.0.17...v1.0.18) (2020-04-24)
 
 
