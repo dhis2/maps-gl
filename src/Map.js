@@ -227,8 +227,6 @@ export class MapGL extends Evented {
 
             const layer = this.getLayerFromId(feature.layer.id)
 
-            console.log('onMouseMove #####', featureSourceId, layer, feature);
-
             if (layer) {
                 layer.onMouseMove(evt, feature)
             }

@@ -30,8 +30,6 @@ class Layer extends Evented {
 
         this._map = map
 
-        console.log('addTo', this.options);
-
         const mapgl = map.getMapGL()
         const images = this.getImages()
         const source = await this.getSource()
@@ -249,7 +247,7 @@ class Layer extends Evented {
 
     // "Normalise" event before passing back to app
     onRightClick(evt) {
-        console.log('onRightClick', evt)
+
     }
 
     onMouseMove(evt, feature) {

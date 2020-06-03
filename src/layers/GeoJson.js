@@ -15,8 +15,6 @@ class GeoJson extends Layer {
         const { style = {}, buffer, bufferStyle } = this.options
         const { radius, color, weight: width } = style  
 
-        console.log(radius, color, width);
-
         if (buffer) {
             this.addLayer(bufferLayer({ id, ...bufferStyle }))
             this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
