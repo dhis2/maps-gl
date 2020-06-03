@@ -98,9 +98,7 @@ class LayerGroup extends Evented {
         console.log('onRightClick', feature);
     }
 
-    onMouseMove = evt => {
-        const { feature } = evt
-
+    onMouseMove = (evt, feature) => {
         if (feature) {
             const { id } = feature.layer
             const layer = this._layers.find(l => l.hasLayerId(id))
