@@ -80,6 +80,8 @@ class LayerGroup extends Evented {
     onClick = evt => {
         const { feature } = evt
 
+        console.log('onClick', feature);
+
         if (feature) {
             const { id } = feature.layer
             const layer = this._layers.find(l => l.hasLayerId(id))
@@ -88,6 +90,12 @@ class LayerGroup extends Evented {
                 layer.fire('click', evt)
             }
         }
+    }
+
+    onRightClick = evt => {
+        const { feature } = evt
+
+        console.log('onRightClick', feature);
     }
 
     onMouseMove = evt => {

@@ -29,7 +29,7 @@ class Boundary extends Layer {
         const id = this.getId()
         const { label, labelStyle } = this.options
 
-        // Line later
+        // Line layer
         this.addLayer(
             {
                 id: `${id}-line`,

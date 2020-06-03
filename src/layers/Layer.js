@@ -30,6 +30,8 @@ class Layer extends Evented {
 
         this._map = map
 
+        console.log('addTo', this.options);
+
         const mapgl = map.getMapGL()
         const images = this.getImages()
         const source = await this.getSource()
