@@ -23,14 +23,17 @@ class EarthEngine extends Layer {
         const id = this.getId()
 
         this._ee = await getEarthEngineApi()
-        
+
         await this.setAuthToken()
 
         this._eeMap = await this.visualize(this.createImage())
 
+        console.log('eeMap', this._eeMap.urlFormat)
+
         this.setSource(id, {
             type: 'raster',
             tileSize: 256,
+            tiles: [this._eeMap.urlFormat],
         })
 
         this.addLayer({
@@ -40,22 +43,6 @@ class EarthEngine extends Layer {
         })
 
         return this._source
-    }
-
-    // Overrides tile.loadTile function to get tile url from EE API
-    // https://issuetracker.google.com/issues/149420532
-    onAdd() {
-        const source = this.getMapGL().getSource(this.getId())
-        const loadTile = source.loadTile.bind(source)
-
-        source.loadTile = (tile, callback) => {
-            const { canonical } = tile.tileID
-            const { x, y, z } = canonical
-
-            canonical.url = () => this._ee.data.getTileUrl(this._eeMap, x, y, z)
-
-            loadTile(tile, callback)
-        }
     }
 
     // Configures client-side authentication of EE API calls by providing a OAuth2 token to use.
