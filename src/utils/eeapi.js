@@ -1,7 +1,7 @@
 // import ee from '@google/earthengine' // Run "yarn add @google/earthengine"
 
 // Load EE API in demand
-const apiVersion = 'v0.1.226' // 'v0.1.213'
+const apiVersion = 'v0.1.226'
 const scriptUrl = `https://cdn.rawgit.com/google/earthengine-api/${apiVersion}/javascript/build/ee_api_js.js`
 
 // Returns the Earth Engine API as a promise
@@ -35,12 +35,5 @@ const getEarthEngineApi = () => {
 
     return window._eePromise
 }
-
-/* We don't want to include the full EE API in the maps-gl bundle
-const getEarthEngineApi = () => {
-    global.ee = ee // https://issuetracker.google.com/issues/149423765
-    return ee
-}
-*/
 
 export default getEarthEngineApi
