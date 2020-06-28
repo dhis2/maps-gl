@@ -28,8 +28,6 @@ class EarthEngine extends Layer {
 
         this._eeMap = await this.visualize(this.createImage())
 
-        console.log('eeMap', this._eeMap.urlFormat)
-
         this.setSource(id, {
             type: 'raster',
             tileSize: 256,
