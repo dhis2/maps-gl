@@ -1,4 +1,4 @@
-import uuid from 'uuid/v4'
+import { v4 as uuid } from 'uuid'
 import bbox from '@turf/bbox'
 import { Evented } from 'mapbox-gl'
 import { addImages } from '../utils/images'
