@@ -1,4 +1,4 @@
-import uuid from 'uuid/v4'
+import { v4 as uuid } from 'uuid'
 import bbox from '@turf/bbox'
 import { Evented } from 'mapbox-gl'
 import { addImages } from '../utils/images'
@@ -246,9 +246,7 @@ class Layer extends Evented {
     onClick = evt => this.fire('click', evt)
 
     // "Normalise" event before passing back to app
-    onRightClick(evt) {
-
-    }
+    onRightClick(evt) {}
 
     onMouseMove(evt, feature) {
         const { label, hoverLabel } = this.options
