@@ -1,3 +1,10 @@
+## [1.0.20](https://github.com/dhis2/maps-gl/compare/v1.0.19...v1.0.20) (2020-06-29)
+
+
+### Bug Fixes
+
+* dependency upgrades ([#120](https://github.com/dhis2/maps-gl/issues/120)) ([5a9e2ec](https://github.com/dhis2/maps-gl/commit/5a9e2ecfa47e4bff9ba7d24fa443ba10ab3774cb))
+
 ## [1.0.19](https://github.com/dhis2/maps-gl/compare/v1.0.18...v1.0.19) (2020-05-28)
 
 
