@@ -246,9 +246,7 @@ class Layer extends Evented {
     onClick = evt => this.fire('click', evt)
 
     // "Normalise" event before passing back to app
-    onRightClick(evt) {
-        console.log('onRightClick', evt)
-    }
+    onRightClick(evt) {}
 
     onMouseMove(evt, feature) {
         const { label, hoverLabel } = this.options

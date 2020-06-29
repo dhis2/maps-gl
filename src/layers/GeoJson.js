@@ -20,7 +20,7 @@ class GeoJson extends Layer {
             this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
         }
 
-        this.addLayer(polygonLayer({ id,color }), true)
+        this.addLayer(polygonLayer({ id, color }), true)
         this.addLayer(outlineLayer({ id, color}))
         this.addLayer(lineLayer({ id, color, width }), true)
         this.addLayer(pointLayer({ id, color, radius }), true)

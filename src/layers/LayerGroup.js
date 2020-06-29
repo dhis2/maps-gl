@@ -24,6 +24,8 @@ class LayerGroup extends Evented {
 
             this._layers.push(layer)
         })
+
+        this.on('contextmenu', this.onContextMenu)
     }
 
     removeFrom(map) {
@@ -90,9 +92,20 @@ class LayerGroup extends Evented {
         }
     }
 
-    onMouseMove = evt => {
+    onContextMenu = evt => {
         const { feature } = evt
 
+        if (feature) {
+            const { id } = feature.layer
+            const layer = this._layers.find(l => l.hasLayerId(id))
+
+            if (layer) {
+                layer.fire('contextmenu', evt)
+            }
+        }
+    }
+
+    onMouseMove = (evt, feature) => {
         if (feature) {
             const { id } = feature.layer
             const layer = this._layers.find(l => l.hasLayerId(id))
