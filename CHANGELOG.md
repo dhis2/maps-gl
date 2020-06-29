@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/dhis2/maps-gl/compare/v1.0.20...v1.1.0) (2020-06-29)
+
+
+### Features
+
+* pole of inaccessibility (DHIS2-8572) ([#93](https://github.com/dhis2/maps-gl/issues/93)) ([deca78e](https://github.com/dhis2/maps-gl/commit/deca78ec8627df3d67ac5ec4f2d4da9b0928cf75))
+
 ## [1.0.20](https://github.com/dhis2/maps-gl/compare/v1.0.19...v1.0.20) (2020-06-29)
 
 
