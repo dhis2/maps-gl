@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/dhis2/maps-gl/compare/v1.1.0...v1.2.0) (2020-07-06)
+
+
+### Features
+
+* color option for choropleth layers (DHIS2-8642) ([#129](https://github.com/dhis2/maps-gl/issues/129)) ([bfdaa44](https://github.com/dhis2/maps-gl/commit/bfdaa446df4c983411ec043cda3b30bad8f38e87))
+
 # [1.1.0](https://github.com/dhis2/maps-gl/compare/v1.0.20...v1.1.0) (2020-06-29)
 
 
