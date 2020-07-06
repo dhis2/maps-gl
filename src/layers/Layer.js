@@ -255,7 +255,7 @@ class Layer extends Evented {
             const { properties } = feature
             const content = (hoverLabel || label).replace(
                 /\{ *([\w_-]+) *\}/g,
-                (str, key) => properties[key]
+                (str, key) => properties[key] || ''
             )
             const { lngLat, point } = evt
 
