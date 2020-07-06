@@ -12,11 +12,11 @@ class Choropleth extends Layer {
 
     createLayers() {
         const id = this.getId()
-        const { label, labelStyle, noDataColor } = this.options
+        const { label, labelStyle, color } = this.options
 
-        this.addLayer(polygonLayer({ id, color: noDataColor }), true)
+        this.addLayer(polygonLayer({ id, color }), true)
         this.addLayer(outlineLayer({ id }))
-        this.addLayer(pointLayer({ id, color: noDataColor }), true)
+        this.addLayer(pointLayer({ id, color }), true)
 
         if (label) {
             this.addLayer(labelLayer({ id, label, ...labelStyle }))
