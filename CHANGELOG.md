@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/dhis2/maps-gl/compare/v1.2.0...v1.2.1) (2020-08-28)
+
+
+### Bug Fixes
+
+* visibility toggle for layer groups ([bbafa62](https://github.com/dhis2/maps-gl/commit/bbafa6257b84eb52da028fdb1b050187fb2114d5))
+
 # [1.2.0](https://github.com/dhis2/maps-gl/compare/v1.1.0...v1.2.0) (2020-07-06)
 
 
