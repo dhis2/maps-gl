@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/dhis2/maps-gl/compare/v1.2.1...v1.3.0) (2020-09-08)
+
+
+### Features
+
+* scroll zoom toggle ([#168](https://github.com/dhis2/maps-gl/issues/168)) ([1e91ffd](https://github.com/dhis2/maps-gl/commit/1e91ffd185e8e6fc8b665d80123e67840de9034f))
+
 ## [1.2.1](https://github.com/dhis2/maps-gl/compare/v1.2.0...v1.2.1) (2020-08-28)
 
 
