@@ -74,7 +74,7 @@ export class MapGL extends Evented {
     fitBounds(bounds) {
         if (bounds) {
             this._mapgl.fitBounds(bounds, {
-                padding: 20,
+                padding: 10,
                 duration: 0,
             })
         }
@@ -358,6 +358,10 @@ export class MapGL extends Evented {
         if (this._label) {
             this._label.remove()
         }
+    }
+
+    toggleScrollZoom(isEnabled) {
+        this.getMapGL().scrollZoom[isEnabled ? 'enable' : 'disable']()
     }
 
     // Only called within the API
