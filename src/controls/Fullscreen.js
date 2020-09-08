@@ -40,6 +40,4 @@ class Fullscreen extends FullscreenControl {
     }
 }
 
-
-
 export default Fullscreen
