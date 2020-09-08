@@ -8,6 +8,13 @@ class Fullscreen extends FullscreenControl {
         this.options = options
     }
 
+    addTo(map) {
+        this._eventMap = map;
+        this._map = map.getMapGL()
+
+        this._map.addControl(this)
+    }
+
     onAdd(map) {
         const { isSplitView } = this.options
 
@@ -18,16 +25,11 @@ class Fullscreen extends FullscreenControl {
             this._container = this._container.parentNode
         }
 
-        this._scrollZoomIsDisabled = !map.scrollZoom.isEnabled()
-
         return super.onAdd(map)
     }
 
     _onClickFullscreen() {
-        // Always enable scroll zoom in fullscreen
-        if (this._scrollZoomIsDisabled) {
-            this._map.scrollZoom[this._isFullscreen() ? 'disable' : 'enable']()
-        }
+        this._eventMap.fire('fullscreenchange', { isFullscreen: !this._isFullscreen() });
 
         super._onClickFullscreen()
     }
