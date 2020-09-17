@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/dhis2/maps-gl/compare/v1.3.0...v1.3.1) (2020-09-17)
+
+
+### Bug Fixes
+
+* ee api upgrade ([#170](https://github.com/dhis2/maps-gl/issues/170)) ([31129bf](https://github.com/dhis2/maps-gl/commit/31129bf0c356b2789e34d8ff5af3f89d7f6a38db))
+
 # [1.3.0](https://github.com/dhis2/maps-gl/compare/v1.2.1...v1.3.0) (2020-09-08)
 
 
