@@ -1,3 +1,10 @@
+## [1.3.3](https://github.com/dhis2/maps-gl/compare/v1.3.2...v1.3.3) (2020-09-21)
+
+
+### Bug Fixes
+
+* remove map outline style ([8b51b9c](https://github.com/dhis2/maps-gl/commit/8b51b9c0cf8c51b25bd28d5c4f9b87dd88b340d1))
+
 ## [1.3.2](https://github.com/dhis2/maps-gl/compare/v1.3.1...v1.3.2) (2020-09-21)
 
 
