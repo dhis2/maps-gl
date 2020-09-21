@@ -1,3 +1,10 @@
+## [1.3.2](https://github.com/dhis2/maps-gl/compare/v1.3.1...v1.3.2) (2020-09-21)
+
+
+### Bug Fixes
+
+* style fix ([6465766](https://github.com/dhis2/maps-gl/commit/64657661d4ad0b4a0a1fa066ca7b5153282ec2fa))
+
 ## [1.3.1](https://github.com/dhis2/maps-gl/compare/v1.3.0...v1.3.1) (2020-09-17)
 
 
