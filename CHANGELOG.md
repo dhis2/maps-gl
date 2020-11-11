@@ -1,3 +1,10 @@
+## [1.3.4](https://github.com/dhis2/maps-gl/compare/v1.3.3...v1.3.4) (2020-11-11)
+
+
+### Bug Fixes
+
+* cut release to finish jira migration ([a33892c](https://github.com/dhis2/maps-gl/commit/a33892cf746ec94c4e676dbeb6df8bcab56acdd2))
+
 ## [1.3.3](https://github.com/dhis2/maps-gl/compare/v1.3.2...v1.3.3) (2020-09-21)
 
 
