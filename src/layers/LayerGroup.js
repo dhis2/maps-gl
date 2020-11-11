@@ -69,6 +69,15 @@ class LayerGroup extends Evented {
         this._layers.forEach(layer => layer.setOpacity(opacity))
     }
 
+    setVisibility(isVisible) {
+        this._layers.forEach(layer => layer.setVisibility(isVisible))
+        this._isVisible = isVisible
+    }
+
+    isVisible() {
+        return this._isVisible
+    }
+
     moveToTop() {
         this._layers.forEach(layer => layer.moveToTop())
     }

@@ -1,3 +1,8 @@
+.dhis2-map canvas {
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
 .dhis2-map-split-view .mapboxgl-ctrl-group {
     position: absolute;
     top: 10px;

@@ -27,3 +27,15 @@ Both of these commands will run the javascript files in the `src` directory thro
 ## Publishing
 
 Publication is done automatically by a GitHub action for all commits on the `master` branch.  Commits (including pull-request squashed commits) should follow the [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/) guidelines so that the release bot can determine which version to cut - breaking, feature, or bug
+
+## Report an issue
+
+The issue tracker can be found in [DHIS2 JIRA](https://jira.dhis2.org)
+under the [LIBS](https://jira.dhis2.org/projects/LIBS) project.
+
+Deep links:
+
+-   [Bug](https://jira.dhis2.org/secure/CreateIssueDetails!init.jspa?pid=10700&issuetype=10006&components=11028)
+-   [New Feature](https://jira.dhis2.org/secure/CreateIssueDetails!init.jspa?pid=10700&issuetype=10005&components=11028)
+-   [Improvement](https://jira.dhis2.org/secure/CreateIssueDetails!init.jspa?pid=10700&issuetype=10002&components=11028)
+-   [Task](https://jira.dhis2.org/secure/CreateIssueDetails!init.jspa?pid=10700&issuetype=10003&components=11028)

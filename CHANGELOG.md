@@ -1,3 +1,45 @@
+## [1.3.4](https://github.com/dhis2/maps-gl/compare/v1.3.3...v1.3.4) (2020-11-11)
+
+
+### Bug Fixes
+
+* cut release to finish jira migration ([a33892c](https://github.com/dhis2/maps-gl/commit/a33892cf746ec94c4e676dbeb6df8bcab56acdd2))
+
+## [1.3.3](https://github.com/dhis2/maps-gl/compare/v1.3.2...v1.3.3) (2020-09-21)
+
+
+### Bug Fixes
+
+* remove map outline style ([8b51b9c](https://github.com/dhis2/maps-gl/commit/8b51b9c0cf8c51b25bd28d5c4f9b87dd88b340d1))
+
+## [1.3.2](https://github.com/dhis2/maps-gl/compare/v1.3.1...v1.3.2) (2020-09-21)
+
+
+### Bug Fixes
+
+* style fix ([6465766](https://github.com/dhis2/maps-gl/commit/64657661d4ad0b4a0a1fa066ca7b5153282ec2fa))
+
+## [1.3.1](https://github.com/dhis2/maps-gl/compare/v1.3.0...v1.3.1) (2020-09-17)
+
+
+### Bug Fixes
+
+* ee api upgrade ([#170](https://github.com/dhis2/maps-gl/issues/170)) ([31129bf](https://github.com/dhis2/maps-gl/commit/31129bf0c356b2789e34d8ff5af3f89d7f6a38db))
+
+# [1.3.0](https://github.com/dhis2/maps-gl/compare/v1.2.1...v1.3.0) (2020-09-08)
+
+
+### Features
+
+* scroll zoom toggle ([#168](https://github.com/dhis2/maps-gl/issues/168)) ([1e91ffd](https://github.com/dhis2/maps-gl/commit/1e91ffd185e8e6fc8b665d80123e67840de9034f))
+
+## [1.2.1](https://github.com/dhis2/maps-gl/compare/v1.2.0...v1.2.1) (2020-08-28)
+
+
+### Bug Fixes
+
+* visibility toggle for layer groups ([bbafa62](https://github.com/dhis2/maps-gl/commit/bbafa6257b84eb52da028fdb1b050187fb2114d5))
+
 # [1.2.0](https://github.com/dhis2/maps-gl/compare/v1.1.0...v1.2.0) (2020-07-06)
 
 

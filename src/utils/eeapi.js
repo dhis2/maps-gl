@@ -1,7 +1,7 @@
 // import ee from '@google/earthengine' // Run "yarn add @google/earthengine"
 
 // Load EE API in demand
-const apiVersion = 'v0.1.226'
+const apiVersion = 'v0.1.235'
 const scriptUrl = `https://cdn.rawgit.com/google/earthengine-api/${apiVersion}/javascript/build/ee_api_js.js`
 
 // Returns the Earth Engine API as a promise
