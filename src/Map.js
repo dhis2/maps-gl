@@ -200,6 +200,8 @@ export class MapGL extends Evented {
                 layer.onClick(eventObj)
             }
         }
+
+        this.fire('click', eventObj)
     }
 
     onContextMenu = evt => {
