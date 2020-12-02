@@ -1,3 +1,10 @@
+## [1.3.5](https://github.com/dhis2/maps-gl/compare/v1.3.4...v1.3.5) (2020-12-02)
+
+
+### Bug Fixes
+
+* pass map click event back to app ([#215](https://github.com/dhis2/maps-gl/issues/215)) ([2cda62f](https://github.com/dhis2/maps-gl/commit/2cda62ffd32ba403620aa46f45ea4acb52e08ad0))
+
 ## [1.3.4](https://github.com/dhis2/maps-gl/compare/v1.3.3...v1.3.4) (2020-11-11)
 
 
