@@ -3,18 +3,18 @@ import { getParamString } from './utils'
 
 export const DEFAULT_WMS_VERSION = '1.1.1'
 
-export const getMapUrl = (baseUrl, params) => `${baseUrl}?${getParamString({
-    service: 'WMS',
-    version: DEFAULT_WMS_VERSION,
-    request: 'GetMap',
-    srs: 'EPSG:3857',
-    transparent: true,
-    width: 256,
-    height: 256,
-    bbox='{bbox-epsg-3857}', // Translated by Mapbox GL JS
-    ...params,
-})}`;
-
+export const getMapUrl = (baseUrl, params) =>
+    `${baseUrl}?${getParamString({
+        service: 'WMS',
+        version: DEFAULT_WMS_VERSION,
+        request: 'GetMap',
+        srs: 'EPSG:3857',
+        transparent: true,
+        width: 256,
+        height: 256,
+        bbox: '{bbox-epsg-3857}', // Translated by Mapbox GL JS
+        ...params,
+    })}`
 
 // https://gis.stackexchange.com/questions/79201/lat-long-values-in-a-wms-getfeatureinfo-request
 // https://github.com/openlayers/openlayers/blob/main/src/ol/source/ImageWMS.js#L163
