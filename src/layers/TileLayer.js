@@ -1,5 +1,5 @@
 import Layer from './Layer'
-import { getMapUrl } from '../utils/wms'
+import { getMapUrl, getFeatureInfoUrl } from '../utils/wms'
 
 class TileLayer extends Layer {
     constructor(options) {
@@ -19,6 +19,8 @@ class TileLayer extends Layer {
         let tiles
 
         if (layers) {
+            console.log(getMapUrl(url, { layers, format }))
+
             tiles = [getMapUrl(url, { layers, format })] // WMS
         } else if (url.includes('{s}')) {
             tiles = ['a', 'b', 'c'].map(letter => url.replace('{s}', letter))
@@ -42,6 +44,20 @@ class TileLayer extends Layer {
             type: 'raster',
             source: id,
         })
+    }
+
+    onAdd() {
+        this.getMap().on('click', this.onClick)
+    }
+
+    onClick = ({ coordinates }) => {
+        const { url, layers } = this.options
+
+        // console.log('###', coordinates)
+
+        const test = getFeatureInfoUrl(url, { coordinates, layers })
+
+        // console.log('onClick', coordinates, test)
     }
 }
 

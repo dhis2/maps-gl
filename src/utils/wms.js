@@ -20,8 +20,9 @@ export const getMapUrl = (baseUrl, params) =>
 // https://github.com/openlayers/openlayers/blob/main/src/ol/source/ImageWMS.js#L163
 // https://docs.geoserver.org/stable/en/user/services/wms/reference.html
 // https://enterprise.arcgis.com/en/server/latest/publish-services/linux/customizing-a-wms-getfeatureinfo-response.htm
-export const getFeatureInfoUrl = ({ coordinate, layers }) => {
-    const [lng, lat] = coordinate
+// https://gis.stackexchange.com/questions/359528/how-to-view-url-of-getfeatureinfo-request-in-qgis
+export const getFeatureInfoUrl = (baseUrl, { coordinates, layers }) => {
+    const [lng, lat] = coordinates
     const bbox = [[lng - 0.1], [lat - 0.1], [lng + 0.1], [lat + 0.1]]
 
     const params = {
@@ -31,8 +32,8 @@ export const getFeatureInfoUrl = ({ coordinate, layers }) => {
         layers: layers,
         query_layers: layers,
         feature_count: 10,
-        info_format: 'text/javascript',
-        format_options: 'callback:handleJson',
+        // info_format: 'text/javascript',
+        // format_options: 'callback:handleJson',
         SrsName: 'EPSG:4326',
         width: 101,
         height: 101,
@@ -40,4 +41,6 @@ export const getFeatureInfoUrl = ({ coordinate, layers }) => {
         y: 50,
         bbox: bbox.join(),
     }
+
+    return `${baseUrl}?${getParamString(params)}`
 }
