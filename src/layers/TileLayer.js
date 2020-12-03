@@ -1,4 +1,5 @@
 import Layer from './Layer'
+import { getMapUrl } from '../utils/wms'
 
 class TileLayer extends Layer {
     constructor(options) {
@@ -9,14 +10,16 @@ class TileLayer extends Layer {
     }
 
     createSource() {
-        const { url, layers, format = 'image/png', attribution = '' } = this.options
+        const {
+            url,
+            layers,
+            format = 'image/png',
+            attribution = '',
+        } = this.options
         let tiles
 
         if (layers) {
-            // WMS
-            tiles = [
-                `${url}?bbox={bbox-epsg-3857}&format=${format}&service=WMS&version=1.1.1&request=GetMap&srs=EPSG:3857&transparent=true&width=256&height=256&layers=${layers}`,
-            ]
+            tiles = [getMapUrl(url, { layers, format })] // WMS
         } else if (url.includes('{s}')) {
             tiles = ['a', 'b', 'c'].map(letter => url.replace('{s}', letter))
         } else {
