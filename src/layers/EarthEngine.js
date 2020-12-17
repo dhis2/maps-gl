@@ -1,5 +1,8 @@
 import Layer from './Layer'
 import getEarthEngineApi from '../utils/eeapi'
+import { getCrs, combineReducers } from '../utils/earthengine'
+import { featureCollection } from '../utils/geometry'
+import { outlineLayer } from '../utils/layers'
 
 const defaultOptions = {
     url:
@@ -19,12 +22,26 @@ class EarthEngine extends Layer {
         this._legend = options.legend || this.createLegend()
     }
 
+    addFeatures() {
+        const id = this.getId()
+        const featureSource = `${id}-features`
+
+        this.setSource(featureSource, {
+            type: 'geojson',
+            data: featureCollection(this.getFeatures()),
+        })
+
+        this.addLayer(outlineLayer({ id, source: featureSource }))
+    }
+
     async getSource() {
         const id = this.getId()
 
         this._ee = await getEarthEngineApi()
 
         await this.setAuthToken()
+
+        this.createFeatureCollection()
 
         this._eeMap = await this.visualize(this.createImage())
 
@@ -39,6 +56,8 @@ class EarthEngine extends Layer {
             type: 'raster',
             source: id,
         })
+
+        this.addFeatures()
 
         return this._source
     }
@@ -96,6 +115,19 @@ class EarthEngine extends Layer {
         })
     }
 
+    createFeatureCollection() {
+        const features = this.getFeatures()
+
+        if (features.length) {
+            this._featureCollection = this._ee.FeatureCollection(
+                this.getFeatures().map(f => ({
+                    ...f,
+                    id: String(f.id), // EE requries id to be string, Mapbox integer
+                }))
+            )
+        }
+    }
+
     // Create EE tile layer from params (override for each layer type)
     createImage() {
         // eslint-disable-line
@@ -134,6 +166,9 @@ class EarthEngine extends Layer {
         eeImage = this.runMethods(eeImage)
 
         this.eeImage = eeImage
+
+        // Image is ready for aggregations
+        this.fire('image')
 
         // Classify image
         if (!options.legend) {
@@ -232,6 +267,10 @@ class EarthEngine extends Layer {
     visualize(eeImage) {
         const { legend, params } = this.options
 
+        if (this._featureCollection) {
+            eeImage = eeImage.clipToCollection(this._featureCollection)
+        }
+
         return new Promise(resolve =>
             eeImage
                 .visualize(
@@ -299,6 +338,51 @@ class EarthEngine extends Layer {
             this._map.openPopup(document.createTextNode(content), [lng, lat])
         })
     }
+
+    getImage = () =>
+        new Promise(resolve =>
+            this.eeImage
+                ? resolve(this.eeImage)
+                : this.once('image', () => resolve(this.eeImage))
+        )
+
+    aggregate = () =>
+        new Promise(async (resolve, reject) => {
+            const { aggregationTypes } = this.options
+            const image = await this.getImage()
+            const collection = this._featureCollection
+            const ee = this._ee
+
+            if (collection && aggregationTypes && aggregationTypes.length) {
+                const reducer = combineReducers(ee)(aggregationTypes)
+                const { crs, crsTransform } = getCrs(ee)(image) // Only needed for mosaics
+
+                const aggFeatures = image
+                    .reduceRegions({
+                        collection,
+                        reducer,
+                        crs,
+                        crsTransform,
+                    })
+                    .select(aggregationTypes, null, false) // Only return values
+
+                aggFeatures.getInfo((data, error) => {
+                    if (error) {
+                        reject(error)
+                    } else {
+                        resolve(
+                            data.features.reduce(
+                                (obj, f) => ({
+                                    ...obj,
+                                    [f.id]: f.properties,
+                                }),
+                                {}
+                            )
+                        )
+                    }
+                })
+            }
+        })
 }
 
 export default EarthEngine
