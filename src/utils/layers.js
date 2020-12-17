@@ -1,6 +1,12 @@
-import { isPoint, isPolygon, isLine, isCluster, isHover } from '../utils/filters'
+import {
+    isPoint,
+    isPolygon,
+    isLine,
+    isCluster,
+    isHover,
+} from '../utils/filters'
 import { colorExpr, radiusExpr, clusterRadiusExpr } from './expressions'
-import defaults from './style' 
+import defaults from './style'
 
 const getStrokeWidth = (width = 0) => [
     'case',
@@ -10,10 +16,17 @@ const getStrokeWidth = (width = 0) => [
 ]
 
 // Layer with point features
-export const pointLayer = ({ id, color, strokeColor, radius, source, filter }) => ({        
+export const pointLayer = ({
+    id,
+    color,
+    strokeColor,
+    radius,
+    source,
+    filter,
+}) => ({
     id: `${id}-point`,
     type: 'circle',
-    source: source || id,
+    source: source || id,
     paint: {
         'circle-color': colorExpr(color || defaults.noDataColor),
         'circle-radius': radiusExpr(radius || defaults.radius),
@@ -32,7 +45,7 @@ export const lineLayer = ({ id, color, width, source, filter }) => ({
         'line-color': color,
         'line-width': getStrokeWidth(width),
     },
-    filter: filter || isLine,
+    filter: filter || isLine,
 })
 
 // Layer with polygon features
@@ -43,7 +56,7 @@ export const polygonLayer = ({ id, color, source, filter }) => ({
     paint: {
         'fill-color': colorExpr(color || defaults.noDataColor),
     },
-    filter: filter || isPolygon,
+    filter: filter || isPolygon,
 })
 
 // Polygon outline and hover state

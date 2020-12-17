@@ -2,7 +2,7 @@ import Layer from './Layer'
 import getEarthEngineApi from '../utils/eeapi'
 import { getCrs, combineReducers } from '../utils/earthengine'
 import { featureCollection } from '../utils/geometry'
-import { outlineLayer } from '../utils/layers'
+import { polygonLayer, outlineLayer } from '../utils/layers'
 
 const defaultOptions = {
     url:
@@ -24,14 +24,15 @@ class EarthEngine extends Layer {
 
     addFeatures() {
         const id = this.getId()
-        const featureSource = `${id}-features`
+        const source = `${id}-features`
 
-        this.setSource(featureSource, {
+        this.setSource(source, {
             type: 'geojson',
             data: featureCollection(this.getFeatures()),
         })
 
-        this.addLayer(outlineLayer({ id, source: featureSource }))
+        this.addLayer(polygonLayer({ id, source: source, opacity: 0.9 }), true)
+        this.addLayer(outlineLayer({ id, source: source }))
     }
 
     async getSource() {
@@ -383,6 +384,19 @@ class EarthEngine extends Layer {
                 })
             }
         })
+
+    setOpacity(opacity) {
+        super.setOpacity(opacity)
+
+        // Clickable polygon layer should always be transparent
+        const id = this.getId()
+        const layerId = `${id}-polygon`
+        const mapgl = this.getMapGL()
+
+        if (mapgl.getLayer(layerId)) {
+            mapgl.setPaintProperty(layerId, 'fill-opacity', 0)
+        }
+    }
 }
 
 export default EarthEngine
