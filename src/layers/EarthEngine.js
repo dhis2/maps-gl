@@ -123,7 +123,7 @@ class EarthEngine extends Layer {
             this._featureCollection = this._ee.FeatureCollection(
                 this.getFeatures().map(f => ({
                     ...f,
-                    id: String(f.id), // EE requries id to be string, Mapbox integer
+                    id: f.properties.id, // EE requries id to be string, Mapbox integer
                 }))
             )
         }
