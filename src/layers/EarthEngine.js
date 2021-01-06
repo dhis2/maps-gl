@@ -44,21 +44,26 @@ class EarthEngine extends Layer {
 
         this.createFeatureCollection()
 
-        this._eeMap = await this.visualize(this.createImage())
+        const image = this.createImage()
+        this._eeMap = await this.visualize(image)
 
-        this.setSource(id, {
-            type: 'raster',
-            tileSize: 256,
-            tiles: [this._eeMap.urlFormat],
-        })
+        if (this._eeMap) {
+            this.setSource(id, {
+                type: 'raster',
+                tileSize: 256,
+                tiles: [this._eeMap.urlFormat],
+            })
 
-        this.addLayer({
-            id: `${id}-raster`,
-            type: 'raster',
-            source: id,
-        })
+            this.addLayer({
+                id: `${id}-raster`,
+                type: 'raster',
+                source: id,
+            })
+        }
 
         this.addFeatures()
+
+        this.onLoad() // TODO: Call after render or aggregation is done
 
         return this._source
     }
@@ -121,7 +126,7 @@ class EarthEngine extends Layer {
 
         if (features.length) {
             this._featureCollection = this._ee.FeatureCollection(
-                this.getFeatures().map(f => ({
+                features.map(f => ({
                     ...f,
                     id: f.properties.id, // EE requries id to be string, Mapbox integer
                 }))
@@ -355,8 +360,8 @@ class EarthEngine extends Layer {
             const ee = this._ee
 
             if (collection && aggregationTypes && aggregationTypes.length) {
+                const { crs, crsTransform } = getCrs(ee)(this.eeCollection) // Only needed for mosaics
                 const reducer = combineReducers(ee)(aggregationTypes)
-                const { crs, crsTransform } = getCrs(ee)(image) // Only needed for mosaics
 
                 const aggFeatures = image
                     .reduceRegions({
