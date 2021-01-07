@@ -354,14 +354,14 @@ class EarthEngine extends Layer {
 
     aggregate = () =>
         new Promise(async (resolve, reject) => {
-            const { aggregationTypes } = this.options
+            const { aggregationType } = this.options
             const image = await this.getImage()
             const collection = this._featureCollection
             const ee = this._ee
 
-            if (collection && aggregationTypes && aggregationTypes.length) {
+            if (collection && aggregationType && aggregationType.length) {
                 const { crs, crsTransform } = getCrs(ee)(this.eeCollection) // Only needed for mosaics
-                const reducer = combineReducers(ee)(aggregationTypes)
+                const reducer = combineReducers(ee)(aggregationType)
 
                 const aggFeatures = image
                     .reduceRegions({
@@ -370,7 +370,7 @@ class EarthEngine extends Layer {
                         crs,
                         crsTransform,
                     })
-                    .select(aggregationTypes, null, false) // Only return values
+                    .select(aggregationType, null, false) // Only return values
 
                 aggFeatures.getInfo((data, error) => {
                     if (error) {
