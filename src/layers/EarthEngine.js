@@ -12,11 +12,21 @@ const defaultOptions = {
     popup: '{name}: {value} {unit}',
 }
 
+const backwardCompability = options => {
+    const opts = { ...options }
+
+    if (opts.aggregation === 'mosaic') {
+        opts.mosaic = true
+    }
+
+    return opts
+}
+
 class EarthEngine extends Layer {
     constructor(options) {
         super({
             ...defaultOptions,
-            ...options,
+            ...backwardCompability(options),
         })
 
         this._legend = options.legend || this.createLegend()
@@ -148,7 +158,8 @@ class EarthEngine extends Layer {
 
             eeCollection = this.applyFilter(eeCollection)
 
-            if (options.aggregation === 'mosaic') {
+            // if (options.aggregation === 'mosaic') { // TODO: backward compability
+            if (options.mosaic) {
                 this.eeCollection = eeCollection
                 eeImage = eeCollection.mosaic()
             } else {
@@ -298,12 +309,12 @@ class EarthEngine extends Layer {
         const options = this.options
         let dictionary
 
-        if (options.aggregation === 'mosaic') {
+        if (options.mosaic) {
             dictionary = this.eeImage.reduceRegion(
                 this._ee.Reducer.mean(),
                 point,
-                options.resolution,
-                options.projection
+                1,
+                'EPSG:4326' // TODO
             ) // eslint-disable-line
         } else {
             dictionary = this.eeImage.reduceRegion(
