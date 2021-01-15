@@ -371,7 +371,9 @@ class EarthEngine extends Layer {
             const ee = this._ee
 
             if (collection && aggregationType && aggregationType.length) {
-                const { crs, crsTransform } = getCrs(ee)(this.eeCollection) // Only needed for mosaics
+                const { crs, crsTransform } = await getCrs(ee)(
+                    this.eeCollection || image
+                ) // Only needed for mosaics
                 const reducer = combineReducers(ee)(aggregationType)
 
                 const aggFeatures = image
