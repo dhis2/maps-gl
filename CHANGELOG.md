@@ -1,3 +1,11 @@
+## [1.3.6](https://github.com/dhis2/maps-gl/compare/v1.3.5...v1.3.6) (2021-01-19)
+
+
+### Bug Fixes
+
+* failing test in previous merge ([#239](https://github.com/dhis2/maps-gl/issues/239)) ([1e55526](https://github.com/dhis2/maps-gl/commit/1e555266c71faac2a89d2ff1b6f7cb4bbbb9b73f))
+* multitouch for map panning (DHIS2-10252) ([7cfbeaf](https://github.com/dhis2/maps-gl/commit/7cfbeaff17b9c283ebb7c681e6d70db6eee88fa3))
+
 ## [1.3.5](https://github.com/dhis2/maps-gl/compare/v1.3.4...v1.3.5) (2020-12-02)
 
 
