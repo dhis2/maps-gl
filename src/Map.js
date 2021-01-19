@@ -45,10 +45,6 @@ export class MapGL extends Evented {
             ...opts,
         })
 
-        // Added to allow dashboards to be scrolled on touch devices
-        // Map can be panned with two fingers instead of one
-        mapgl.addControl(new MultiTouch())
-
         this._mapgl = mapgl
 
         // Translate strings
@@ -73,6 +69,10 @@ export class MapGL extends Evented {
         if (options.attributionControl !== false) {
             this.addControl({ type: 'attribution' })
         }
+
+        // Added to allow dashboards to be scrolled on touch devices
+        // Map can be panned with two fingers instead of one
+        mapgl.addControl(new MultiTouch())
     }
 
     fitBounds(bounds) {

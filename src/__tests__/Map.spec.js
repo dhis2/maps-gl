@@ -4,6 +4,7 @@ jest.mock('mapbox-gl', () => ({
     Map: ({ container }) => ({
         container,
         on: jest.fn(),
+        addControl: jest.fn(),
     }),
     Evented: () => {},
     Marker: () => {},
