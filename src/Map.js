@@ -1,6 +1,6 @@
-import { Map } from 'mapbox-gl'
+import { Evented, Map } from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { Evented } from 'mapbox-gl'
+import MultiTouch from 'mapbox-gl-multitouch'
 import Layer from './layers/Layer'
 import layerTypes from './layers/layerTypes'
 import controlTypes from './controls/controlTypes'
@@ -69,6 +69,10 @@ export class MapGL extends Evented {
         if (options.attributionControl !== false) {
             this.addControl({ type: 'attribution' })
         }
+
+        // Added to allow dashboards to be scrolled on touch devices
+        // Map can be panned with two fingers instead of one
+        mapgl.addControl(new MultiTouch())
     }
 
     fitBounds(bounds) {
