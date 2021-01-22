@@ -146,35 +146,43 @@ class EarthEngine extends Layer {
 
     // Create EE tile layer from params (override for each layer type)
     createImage() {
-        // eslint-disable-line
-        const options = this.options
+        const {
+            datasetId,
+            band,
+            filter,
+            reducer,
+            mosaic,
+            mask,
+            legend,
+        } = this.options
 
         let eeCollection
         let eeImage
 
-        if (options.filter) {
+        if (filter) {
             // Image collection
-            eeCollection = this._ee.ImageCollection(options.datasetId) // eslint-disable-line
+            eeCollection = this._ee.ImageCollection(datasetId) // eslint-disable-line
 
             eeCollection = this.applyFilter(eeCollection)
 
-            // if (options.aggregation === 'mosaic') { // TODO: backward compability
-            if (options.mosaic) {
+            if (mosaic) {
                 this.eeCollection = eeCollection
                 eeImage = eeCollection.mosaic()
+            } else if (reducer) {
+                eeImage = eeCollection.reduce(ee.Reducer[reducer]())
             } else {
                 eeImage = this._ee.Image(eeCollection.first()) // eslint-disable-line
             }
         } else {
             // Single image
-            eeImage = this._ee.Image(options.datasetId) // eslint-disable-line
+            eeImage = this._ee.Image(datasetId) // eslint-disable-line
         }
 
-        if (options.band) {
-            eeImage = eeImage.select(options.band)
+        if (band) {
+            eeImage = eeImage.select(`${band}${reducer ? `_${reducer}` : ''}`)
         }
 
-        if (options.mask) {
+        if (mask) {
             // Mask out 0-values
             eeImage = eeImage.updateMask(eeImage.gt(0))
         }
@@ -188,7 +196,7 @@ class EarthEngine extends Layer {
         this.fire('image')
 
         // Classify image
-        if (!options.legend) {
+        if (!legend) {
             // Don't classify if legend is provided
             eeImage = this.classifyImage(eeImage)
         }
@@ -197,7 +205,7 @@ class EarthEngine extends Layer {
     }
 
     createLegend() {
-        const params = this.options.params
+        const { params } = this.options
         const min = params.min
         const max = params.max
         const palette = params.palette.split(',')
