@@ -1,3 +1,17 @@
+import { sqMetersToSqKm } from './numbers'
+
+// Makes getInfo a promise
+export const getInfo = instance =>
+    new Promise((resolve, reject) =>
+        instance.getInfo((data, error) => {
+            if (error) {
+                reject(error)
+            } else {
+                resolve(data)
+            }
+        })
+    )
+
 export const getCrs = ee => image =>
     new Promise(async (resolve, reject) => {
         const instance =
@@ -25,3 +39,23 @@ export const combineReducers = ee => types =>
                   }),
         ee.Reducer
     )
+
+export const getScale = image => getInfo(image.projection().nominalScale())
+
+export const getHistogramStatistics = (data, scale) =>
+    data.features.reduce((obj, { id, properties }) => {
+        const { histogram } = properties
+        const sum = Object.values(histogram).reduce((a, b) => a + b, 0)
+
+        obj[id] = Object.keys(histogram).reduce((values, key) => {
+            const count = histogram[key]
+            const area = sqMetersToSqKm(count * (scale * scale))
+            const percent = (count / sum) * 100
+
+            values[key] = { count, area, percent }
+
+            return values
+        }, {})
+
+        return obj
+    }, {})

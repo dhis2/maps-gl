@@ -1,6 +1,12 @@
 import Layer from './Layer'
 import getEarthEngineApi from '../utils/eeapi'
-import { getCrs, combineReducers } from '../utils/earthengine'
+import {
+    getInfo,
+    getCrs,
+    getScale,
+    combineReducers,
+    getHistogramStatistics,
+} from '../utils/earthengine'
 import { featureCollection } from '../utils/geometry'
 import { polygonLayer, outlineLayer } from '../utils/layers'
 
@@ -55,7 +61,12 @@ class EarthEngine extends Layer {
         this.createFeatureCollection()
 
         const image = this.createImage()
+
+        // console.log('Image created')
+
         this._eeMap = await this.visualize(image)
+
+        // console.log('visualize')
 
         if (this._eeMap) {
             this.setSource(id, {
@@ -163,6 +174,9 @@ class EarthEngine extends Layer {
             // Image collection
             eeCollection = this._ee.ImageCollection(datasetId) // eslint-disable-line
 
+            // console.log('COLLECTION', filter)
+            // eeCollection.getInfo(info => console.log('info', info))
+
             eeCollection = this.applyFilter(eeCollection)
 
             if (mosaic) {
@@ -179,6 +193,7 @@ class EarthEngine extends Layer {
         }
 
         if (band) {
+            // console.log('band', `${band}${reducer ? `_${reducer}` : ''}`)
             eeImage = eeImage.select(`${band}${reducer ? `_${reducer}` : ''}`)
         }
 
@@ -187,6 +202,16 @@ class EarthEngine extends Layer {
             eeImage = eeImage.updateMask(eeImage.gt(0))
         }
 
+        // eeImage.projection().getInfo(console.log)
+        /*
+        eeImage
+            .projection()
+            .nominalScale()
+            .getInfo(scale => {
+                console.log('nominalScale', scale)
+            })
+        */
+
         // Run methods on image
         eeImage = this.runMethods(eeImage)
 
@@ -194,6 +219,10 @@ class EarthEngine extends Layer {
 
         // Image is ready for aggregations
         this.fire('image')
+
+        // eeImage.getInfo(console.log)
+
+        // console.log('legend', legend)
 
         // Classify image
         if (!legend) {
@@ -242,6 +271,8 @@ class EarthEngine extends Layer {
 
     applyFilter(collection, filterOpt) {
         const filter = filterOpt || this.options.filter
+
+        // console.log('filter', filter)
 
         if (filter) {
             filter.forEach(item => {
@@ -373,12 +404,25 @@ class EarthEngine extends Layer {
 
     aggregate = () =>
         new Promise(async (resolve, reject) => {
-            const { aggregationType } = this.options
+            const { classes, aggregationType } = this.options
             const image = await this.getImage()
             const collection = this._featureCollection
             const ee = this._ee
 
-            if (collection && aggregationType && aggregationType.length) {
+            if (classes) {
+                const scale = await getScale(image)
+                const reducer = ee.Reducer.frequencyHistogram()
+
+                getInfo(
+                    image
+                        .reduceRegions(collection, reducer, scale)
+                        .select(['histogram'], null, false)
+                ).then(data => resolve(getHistogramStatistics(data, scale)))
+            } else if (
+                collection &&
+                aggregationType &&
+                aggregationType.length
+            ) {
                 const { crs, crsTransform } = await getCrs(ee)(
                     this.eeCollection || image
                 ) // Only needed for mosaics
