@@ -404,12 +404,12 @@ class EarthEngine extends Layer {
 
     aggregate = () =>
         new Promise(async (resolve, reject) => {
-            const { classes, aggregationType } = this.options
+            const { aggregationType, classes, legend } = this.options
             const image = await this.getImage()
             const collection = this._featureCollection
             const ee = this._ee
 
-            if (classes) {
+            if (classes && legend) {
                 const scale = await getScale(image)
                 const reducer = ee.Reducer.frequencyHistogram()
 
@@ -417,7 +417,9 @@ class EarthEngine extends Layer {
                     image
                         .reduceRegions(collection, reducer, scale)
                         .select(['histogram'], null, false)
-                ).then(data => resolve(getHistogramStatistics(data, scale)))
+                ).then(data =>
+                    resolve(getHistogramStatistics(data, scale, legend))
+                )
             } else if (
                 collection &&
                 aggregationType &&

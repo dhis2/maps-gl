@@ -42,17 +42,18 @@ export const combineReducers = ee => types =>
 
 export const getScale = image => getInfo(image.projection().nominalScale())
 
-export const getHistogramStatistics = (data, scale) =>
+export const getHistogramStatistics = (data, scale, legend) =>
     data.features.reduce((obj, { id, properties }) => {
         const { histogram } = properties
         const sum = Object.values(histogram).reduce((a, b) => a + b, 0)
 
-        obj[id] = Object.keys(histogram).reduce((values, key) => {
-            const count = histogram[key]
-            const area = sqMetersToSqKm(count * (scale * scale))
+        obj[id] = legend.reduce((values, { id }) => {
+            const count = histogram[id] || 0
+            // const area = sqMetersToSqKm(count * (scale * scale))
             const percent = (count / sum) * 100
 
-            values[key] = { count, area, percent }
+            // values[key] = { count, area, percent }
+            values[id] = percent
 
             return values
         }, {})
