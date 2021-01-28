@@ -174,9 +174,6 @@ class EarthEngine extends Layer {
             // Image collection
             eeCollection = this._ee.ImageCollection(datasetId) // eslint-disable-line
 
-            // console.log('COLLECTION', filter)
-            // eeCollection.getInfo(info => console.log('info', info))
-
             eeCollection = this.applyFilter(eeCollection)
 
             if (mosaic) {
