@@ -35,7 +35,7 @@ class EarthEngine extends Layer {
             ...backwardCompability(options),
         })
 
-        this._legend = options.legend || this.createLegend()
+        this.legend = options.legend || this.createLegend()
     }
 
     addFeatures() {
@@ -54,7 +54,7 @@ class EarthEngine extends Layer {
     async getSource() {
         const id = this.getId()
 
-        this._ee = await getEarthEngineApi()
+        this.ee = await getEarthEngineApi()
 
         await this.setAuthToken()
 
@@ -62,17 +62,13 @@ class EarthEngine extends Layer {
 
         const image = this.createImage()
 
-        // console.log('Image created')
+        this.eeMap = await this.visualize(image)
 
-        this._eeMap = await this.visualize(image)
-
-        // console.log('visualize')
-
-        if (this._eeMap) {
+        if (this.eeMap) {
             this.setSource(id, {
                 type: 'raster',
                 tileSize: 256,
-                tiles: [this._eeMap.urlFormat],
+                tiles: [this.eeMap.urlFormat],
             })
 
             this.addLayer({
@@ -92,25 +88,28 @@ class EarthEngine extends Layer {
     // Configures client-side authentication of EE API calls by providing a OAuth2 token to use.
     setAuthToken = () =>
         new Promise((resolve, reject) => {
+            const { data, initialize } = this.ee
             const { accessToken, tokenType } = this.options
 
             if (accessToken) {
-                accessToken.then(token => {
-                    const { access_token, client_id, expires_in } = token
+                accessToken
+                    .then(token => {
+                        const { access_token, client_id, expires_in } = token
 
-                    this._ee.data.setAuthToken(
-                        client_id,
-                        tokenType,
-                        access_token,
-                        expires_in
-                    )
+                        data.setAuthToken(
+                            client_id,
+                            tokenType,
+                            access_token,
+                            expires_in
+                        )
 
-                    this._ee.data.setAuthTokenRefresher(
-                        this.refreshAccessToken.bind(this)
-                    )
+                        data.setAuthTokenRefresher(
+                            this.refreshAccessToken.bind(this)
+                        )
 
-                    this._ee.initialize(null, null, resolve)
-                })
+                        initialize(null, null, resolve)
+                    })
+                    .catch(reject)
             }
         })
 
@@ -143,10 +142,11 @@ class EarthEngine extends Layer {
     }
 
     createFeatureCollection() {
+        const { FeatureCollection } = this.ee
         const features = this.getFeatures()
 
         if (features.length) {
-            this._featureCollection = this._ee.FeatureCollection(
+            this.featureCollection = FeatureCollection(
                 features.map(f => ({
                     ...f,
                     id: f.properties.id, // EE requries id to be string, Mapbox integer
@@ -157,6 +157,7 @@ class EarthEngine extends Layer {
 
     // Create EE tile layer from params (override for each layer type)
     createImage() {
+        const { Image, ImageCollection, Reducer } = this.ee
         const {
             datasetId,
             band,
@@ -172,25 +173,23 @@ class EarthEngine extends Layer {
 
         if (filter) {
             // Image collection
-            eeCollection = this._ee.ImageCollection(datasetId) // eslint-disable-line
-
+            eeCollection = ImageCollection(datasetId)
             eeCollection = this.applyFilter(eeCollection)
 
             if (mosaic) {
                 this.eeCollection = eeCollection
                 eeImage = eeCollection.mosaic()
-            } else if (reducer) {
-                eeImage = eeCollection.reduce(ee.Reducer[reducer]())
+            } else if (reducer && Reducer[reducer]) {
+                eeImage = eeCollection.reduce(Reducer[reducer]())
             } else {
-                eeImage = this._ee.Image(eeCollection.first()) // eslint-disable-line
+                eeImage = Image(eeCollection.first())
             }
         } else {
             // Single image
-            eeImage = this._ee.Image(datasetId) // eslint-disable-line
+            eeImage = Image(datasetId)
         }
 
         if (band) {
-            // console.log('band', `${band}${reducer ? `_${reducer}` : ''}`)
             eeImage = eeImage.select(`${band}${reducer ? `_${reducer}` : ''}`)
         }
 
@@ -198,16 +197,6 @@ class EarthEngine extends Layer {
             // Mask out 0-values
             eeImage = eeImage.updateMask(eeImage.gt(0))
         }
-
-        // eeImage.projection().getInfo(console.log)
-        /*
-        eeImage
-            .projection()
-            .nominalScale()
-            .getInfo(scale => {
-                console.log('nominalScale', scale)
-            })
-        */
 
         // Run methods on image
         eeImage = this.runMethods(eeImage)
@@ -217,13 +206,8 @@ class EarthEngine extends Layer {
         // Image is ready for aggregations
         this.fire('image')
 
-        // eeImage.getInfo(console.log)
-
-        // console.log('legend', legend)
-
-        // Classify image
+        // Classify image if no legend is provided
         if (!legend) {
-            // Don't classify if legend is provided
             eeImage = this.classifyImage(eeImage)
         }
 
@@ -268,14 +252,13 @@ class EarthEngine extends Layer {
 
     applyFilter(collection, filterOpt) {
         const filter = filterOpt || this.options.filter
-
-        // console.log('filter', filter)
+        const { Filter } = this.ee
 
         if (filter) {
             filter.forEach(item => {
                 collection = collection.filter(
-                    this._ee.Filter[item.type].apply(this, item.arguments)
-                ) // eslint-disable-line
+                    Filter[item.type].apply(this, item.arguments)
+                )
             })
         }
 
@@ -284,14 +267,13 @@ class EarthEngine extends Layer {
 
     // Run methods on image
     runMethods(image) {
-        const methods = this.options.methods
+        const { methods } = this.options
         let eeImage = image
 
         if (methods) {
             Object.keys(methods).forEach(method => {
                 if (eeImage[method]) {
-                    // Make sure method exist
-                    eeImage = eeImage[method].apply(eeImage, methods[method]) // eslint-disable-line
+                    eeImage = eeImage[method].apply(eeImage, methods[method])
                 }
             })
         }
@@ -301,7 +283,7 @@ class EarthEngine extends Layer {
 
     // Classify image according to legend
     classifyImage(eeImage) {
-        const legend = this._legend
+        const legend = this.legend
         let zones
 
         for (let i = 0, item; i < legend.length - 1; i++) {
@@ -320,8 +302,8 @@ class EarthEngine extends Layer {
     visualize(eeImage) {
         const { legend, params } = this.options
 
-        if (this._featureCollection) {
-            eeImage = eeImage.clipToCollection(this._featureCollection)
+        if (this.featureCollection) {
+            eeImage = eeImage.clipToCollection(this.featureCollection)
         }
 
         return new Promise(resolve =>
@@ -331,7 +313,7 @@ class EarthEngine extends Layer {
                         ? params
                         : {
                               min: 0,
-                              max: this._legend.length - 1,
+                              max: this.legend.length - 1,
                               palette: params.palette,
                           }
                 )
@@ -341,22 +323,20 @@ class EarthEngine extends Layer {
 
     // Returns value at location in a callback
     getValue(latlng, callback) {
-        const point = this._ee.Geometry.Point(latlng.lng, latlng.lat) // eslint-disable-line
+        const { Geometry, Reducer } = this.ee
+        const point = Geometry.Point(latlng.lng, latlng.lat)
         const options = this.options
         let dictionary
 
         if (options.mosaic) {
             dictionary = this.eeImage.reduceRegion(
-                this._ee.Reducer.mean(),
+                Reducer.mean(),
                 point,
                 1,
                 'EPSG:4326' // TODO
-            ) // eslint-disable-line
+            )
         } else {
-            dictionary = this.eeImage.reduceRegion(
-                this._ee.Reducer.mean(),
-                point
-            ) // eslint-disable-line
+            dictionary = this.eeImage.reduceRegion(Reducer.mean(), point)
         }
 
         dictionary.getInfo(valueObj => {
@@ -403,12 +383,12 @@ class EarthEngine extends Layer {
         new Promise(async (resolve, reject) => {
             const { aggregationType, classes, legend } = this.options
             const image = await this.getImage()
-            const collection = this._featureCollection
-            const ee = this._ee
+            const collection = this.featureCollection
+            const { Reducer } = this.ee
 
             if (classes && legend) {
                 const scale = await getScale(image)
-                const reducer = ee.Reducer.frequencyHistogram()
+                const reducer = Reducer.frequencyHistogram()
 
                 getInfo(
                     image
