@@ -116,7 +116,8 @@ class EarthEngine extends Layer {
 
     // Get OAuth2 token needed to create and load Google Earth Engine layers
     getAuthToken(callback) {
-        const accessToken = this.options.accessToken
+        const { accessToken } = this.options
+
         if (accessToken) {
             if (accessToken instanceof Function) {
                 // Callback function returning auth obect
@@ -156,7 +157,7 @@ class EarthEngine extends Layer {
         }
     }
 
-    // Create EE tile layer from params (override for each layer type)
+    // Create EE tile layer from params
     createImage() {
         const { Image, ImageCollection, Reducer } = this.ee
         const {
@@ -215,6 +216,7 @@ class EarthEngine extends Layer {
         return eeImage
     }
 
+    // TODO: Needed?
     createLegend() {
         const { params } = this.options
         const min = params.min
