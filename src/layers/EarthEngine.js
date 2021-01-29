@@ -6,6 +6,7 @@ import {
     getScale,
     combineReducers,
     getHistogramStatistics,
+    getFeatureCollectionProperties,
 } from '../utils/earthengine'
 import { featureCollection } from '../utils/geometry'
 import { polygonLayer, outlineLayer } from '../utils/layers'
@@ -384,11 +385,11 @@ class EarthEngine extends Layer {
             const { aggregationType, classes, legend } = this.options
             const image = await this.getImage()
             const collection = this.featureCollection
-            const { Reducer } = this.ee
+            const ee = this.ee
 
             if (classes && legend) {
                 const scale = await getScale(image)
-                const reducer = Reducer.frequencyHistogram()
+                const reducer = ee.Reducer.frequencyHistogram()
 
                 getInfo(
                     image
@@ -416,21 +417,11 @@ class EarthEngine extends Layer {
                     })
                     .select(aggregationType, null, false) // Only return values
 
-                aggFeatures.getInfo((data, error) => {
-                    if (error) {
-                        reject(error)
-                    } else {
-                        resolve(
-                            data.features.reduce(
-                                (obj, f) => ({
-                                    ...obj,
-                                    [f.id]: f.properties,
-                                }),
-                                {}
-                            )
-                        )
-                    }
-                })
+                aggFeatures.getInfo((data, error) =>
+                    error
+                        ? reject(error)
+                        : resolve(getFeatureCollectionProperties(data))
+                )
             }
         })
 

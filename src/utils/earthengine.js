@@ -60,3 +60,12 @@ export const getHistogramStatistics = (data, scale, legend) =>
 
         return obj
     }, {})
+
+export const getFeatureCollectionProperties = data =>
+    data.features.reduce(
+        (obj, f) => ({
+            ...obj,
+            [f.id]: f.properties,
+        }),
+        {}
+    )
