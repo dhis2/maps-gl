@@ -42,12 +42,7 @@ export const combineReducers = ee => types =>
 
 export const getScale = image => getInfo(image.projection().nominalScale())
 
-export const getHistogramStatistics = ({
-    data,
-    scale,
-    aggregationType,
-    legend,
-}) =>
+export const getHistogramStatistics = ({ data, scale, valueType, legend }) =>
     data.features.reduce((obj, { id, properties }) => {
         const { histogram } = properties
         const sum = Object.values(histogram).reduce((a, b) => a + b, 0)
@@ -57,7 +52,7 @@ export const getHistogramStatistics = ({
             const sqMeters = count * (scale * scale)
             let value
 
-            switch (aggregationType) {
+            switch (valueType) {
                 case 'hectares':
                     value = Math.round(squareMetersToHectares(sqMeters))
                     break

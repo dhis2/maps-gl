@@ -392,6 +392,9 @@ class EarthEngine extends Layer {
             if (classes && legend) {
                 const scale = await getScale(image)
                 const reducer = ee.Reducer.frequencyHistogram()
+                const valueType = Array.isArray(aggregationType)
+                    ? aggregationType[0]
+                    : null
 
                 getInfo(
                     image
@@ -402,7 +405,7 @@ class EarthEngine extends Layer {
                         getHistogramStatistics({
                             data,
                             scale,
-                            aggregationType,
+                            valueType,
                             legend,
                         })
                     )
@@ -415,6 +418,7 @@ class EarthEngine extends Layer {
                 const { crs, crsTransform } = await getCrs(ee)(
                     this.eeCollection || image
                 ) // Only needed for mosaics
+
                 const reducer = combineReducers(ee)(aggregationType)
 
                 const aggFeatures = image
