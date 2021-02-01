@@ -398,7 +398,14 @@ class EarthEngine extends Layer {
                         .reduceRegions(collection, reducer, scale)
                         .select(['histogram'], null, false)
                 ).then(data =>
-                    resolve(getHistogramStatistics(data, scale, legend))
+                    resolve(
+                        getHistogramStatistics({
+                            data,
+                            scale,
+                            aggregationType,
+                            legend,
+                        })
+                    )
                 )
             } else if (
                 collection &&

@@ -1,4 +1,4 @@
-import { sqMetersToSqKm } from './numbers'
+import { squareMetersToHectares, squareMetersToAcres } from './numbers'
 
 // Makes getInfo a promise
 export const getInfo = instance =>
@@ -42,18 +42,33 @@ export const combineReducers = ee => types =>
 
 export const getScale = image => getInfo(image.projection().nominalScale())
 
-export const getHistogramStatistics = (data, scale, legend) =>
+export const getHistogramStatistics = ({
+    data,
+    scale,
+    aggregationType,
+    legend,
+}) =>
     data.features.reduce((obj, { id, properties }) => {
         const { histogram } = properties
         const sum = Object.values(histogram).reduce((a, b) => a + b, 0)
 
         obj[id] = legend.reduce((values, { id }) => {
             const count = histogram[id] || 0
-            // const area = sqMetersToSqKm(count * (scale * scale))
-            const percent = (count / sum) * 100
+            const sqMeters = count * (scale * scale)
+            let value
 
-            // values[key] = { count, area, percent }
-            values[id] = percent
+            switch (aggregationType) {
+                case 'hectares':
+                    value = Math.round(squareMetersToHectares(sqMeters))
+                    break
+                case 'acres':
+                    value = Math.round(squareMetersToAcres(sqMeters))
+                    break
+                default:
+                    value = (count / sum) * 100 // percentage
+            }
+
+            values[id] = value
 
             return values
         }, {})
