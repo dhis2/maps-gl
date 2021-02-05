@@ -7,6 +7,7 @@ import {
     combineReducers,
     getHistogramStatistics,
     getFeatureCollectionProperties,
+    getPrecision,
 } from '../utils/earthengine'
 import { featureCollection } from '../utils/geometry'
 import { polygonLayer, outlineLayer } from '../utils/layers'
@@ -344,14 +345,20 @@ class EarthEngine extends Layer {
 
         dictionary.getInfo(valueObj => {
             const band = options.band || Object.keys(valueObj)[0]
+            const { min, max } = options.params
+            const precision = getPrecision([min, max])
+            const valueFormat = numberPrecision(precision)
             let value = valueObj[band]
 
             if (options.legend && options.legend[value]) {
                 value = options.legend[value].name
-            } else if (options.value) {
+            } /* else if (options.value) {
                 // Needs calculation
                 value = options.value(value)
             }
+            */
+
+            console.log('value', value, precision, valueFormat(value))
 
             callback(value)
         })
