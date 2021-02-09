@@ -17,14 +17,17 @@ export const getCrs = ee => image =>
         const instance =
             image instanceof ee.ImageCollection ? image.first() : image
 
-        instance.projection().getInfo((data, error) => {
-            if (error) {
-                reject(error)
-            } else {
-                const { crs, transform: crsTransform } = data
-                resolve({ crs, crsTransform })
-            }
-        })
+        instance
+            .select(0) // First band
+            .projection()
+            .getInfo((data, error) => {
+                if (error) {
+                    reject(error)
+                } else {
+                    const { crs, transform: crsTransform } = data
+                    resolve({ crs, crsTransform })
+                }
+            })
     })
 
 // https://developers.google.com/earth-engine/guides/reducers_intro

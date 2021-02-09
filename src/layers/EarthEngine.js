@@ -177,7 +177,15 @@ class EarthEngine extends Layer {
         if (filter) {
             // Image collection
             eeCollection = ImageCollection(datasetId)
+
+            if (band) {
+                eeCollection.select(band)
+            }
+
             eeCollection = this.applyFilter(eeCollection)
+
+            // console.log('band', band)
+            // eeCollection.getInfo(console.log)
 
             if (mosaic) {
                 this.eeCollection = eeCollection
@@ -190,10 +198,21 @@ class EarthEngine extends Layer {
         } else {
             // Single image
             eeImage = Image(datasetId)
+
+            if (band) {
+                eeImage.select(band)
+            }
         }
 
         if (band) {
-            eeImage = eeImage.select(`${band}${reducer ? `_${reducer}` : ''}`)
+            if (Array.isArray(band)) {
+                eeImage = eeImage.select(band)
+                eeImage = eeImage.reduce(Reducer.sum())
+            } else {
+                eeImage = eeImage.select(
+                    `${band}${reducer ? `_${reducer}` : ''}`
+                )
+            }
         }
 
         if (mask) {
