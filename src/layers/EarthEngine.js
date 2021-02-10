@@ -161,15 +161,7 @@ class EarthEngine extends Layer {
     // Create EE tile layer from params
     createImage() {
         const { Image, ImageCollection, Reducer } = this.ee
-        const {
-            datasetId,
-            band,
-            filter,
-            reducer,
-            mosaic,
-            mask,
-            legend,
-        } = this.options
+        const { datasetId, band, filter, mosaic, mask, legend } = this.options
 
         let eeCollection
         let eeImage
@@ -184,14 +176,9 @@ class EarthEngine extends Layer {
 
             eeCollection = this.applyFilter(eeCollection)
 
-            // console.log('band', band)
-            // eeCollection.getInfo(console.log)
-
             if (mosaic) {
                 this.eeCollection = eeCollection
                 eeImage = eeCollection.mosaic()
-            } else if (reducer && Reducer[reducer]) {
-                eeImage = eeCollection.reduce(Reducer[reducer]())
             } else {
                 eeImage = Image(eeCollection.first())
             }
@@ -209,9 +196,7 @@ class EarthEngine extends Layer {
                 eeImage = eeImage.select(band)
                 eeImage = eeImage.reduce(Reducer.sum())
             } else {
-                eeImage = eeImage.select(
-                    `${band}${reducer ? `_${reducer}` : ''}`
-                )
+                eeImage = eeImage.select(band)
             }
         }
 
