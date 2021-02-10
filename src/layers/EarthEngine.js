@@ -17,6 +17,7 @@ const defaultOptions = {
         'https://earthengine.googleapis.com/map/{mapid}/{z}/{x}/{y}?token={token}',
     tokenType: 'Bearer',
     aggregation: 'none',
+    bandReducer: 'sum',
     popup: '{name}: {value} {unit}',
 }
 
@@ -160,43 +161,18 @@ class EarthEngine extends Layer {
 
     // Create EE tile layer from params
     createImage() {
+        const { datasetId, band, filter, mask, legend } = this.options
         const { Image, ImageCollection, Reducer } = this.ee
-        const { datasetId, band, filter, mosaic, mask, legend } = this.options
 
-        let eeCollection
-        let eeImage
-
-        if (filter) {
-            // Image collection
-            eeCollection = ImageCollection(datasetId)
-
-            if (band) {
-                eeCollection.select(band)
-            }
-
-            eeCollection = this.applyFilter(eeCollection)
-
-            if (mosaic) {
-                this.eeCollection = eeCollection
-                eeImage = eeCollection.mosaic()
-            } else {
-                eeImage = Image(eeCollection.first())
-            }
-        } else {
-            // Single image
-            eeImage = Image(datasetId)
-
-            if (band) {
-                eeImage.select(band)
-            }
-        }
+        let eeImage = filter
+            ? this.applyFilter(ImageCollection(datasetId))
+            : Image(datasetId)
 
         if (band) {
+            eeImage = eeImage.select(band)
+
             if (Array.isArray(band)) {
-                eeImage = eeImage.select(band)
                 eeImage = eeImage.reduce(Reducer.sum())
-            } else {
-                eeImage = eeImage.select(band)
             }
         }
 
@@ -258,19 +234,26 @@ class EarthEngine extends Layer {
         })
     }
 
-    applyFilter(collection, filterOpt) {
-        const filter = filterOpt || this.options.filter
-        const { Filter } = this.ee
+    // Apply array of filters for image collection, returns image
+    applyFilter(collection) {
+        const { filter, mosaic } = this.options
+        const { Filter, Image } = this.ee
 
         if (filter) {
-            filter.forEach(item => {
+            filter.forEach(f => {
                 collection = collection.filter(
-                    Filter[item.type].apply(this, item.arguments)
+                    Filter[f.type].apply(this, f.arguments)
                 )
             })
         }
 
-        return collection
+        if (mosaic) {
+            // Composite all images inn a collection (e.g. per country)
+            return collection.mosaic()
+        }
+
+        // There should only be one image after applying the filters
+        return Image(collection.first())
     }
 
     // Run methods on image
@@ -426,10 +409,7 @@ class EarthEngine extends Layer {
                 aggregationType &&
                 aggregationType.length
             ) {
-                const { crs, crsTransform } = await getCrs(ee)(
-                    this.eeCollection || image
-                ) // Only needed for mosaics
-
+                const { crs, crsTransform } = await getCrs(image)
                 const reducer = combineReducers(ee)(aggregationType)
 
                 const aggFeatures = image

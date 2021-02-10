@@ -12,12 +12,9 @@ export const getInfo = instance =>
         })
     )
 
-export const getCrs = ee => image =>
+export const getCrs = image =>
     new Promise(async (resolve, reject) => {
-        const instance =
-            image instanceof ee.ImageCollection ? image.first() : image
-
-        instance
+        image
             .select(0) // First band
             .projection()
             .getInfo((data, error) => {
