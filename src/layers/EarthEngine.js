@@ -7,10 +7,10 @@ import {
     combineReducers,
     getHistogramStatistics,
     getFeatureCollectionProperties,
-    getPrecision,
 } from '../utils/earthengine'
 import { featureCollection } from '../utils/geometry'
 import { polygonLayer, outlineLayer } from '../utils/layers'
+import { setPrecision } from '../utils/numbers'
 
 const defaultOptions = {
     url:
@@ -312,52 +312,31 @@ class EarthEngine extends Layer {
         )
     }
 
-    // Returns value at location in a callback
-    getValue(latlng, callback) {
+    // Returns value at at position
+    getValue = async latlng => {
+        const { band, legend } = this.options
+        const { lng, lat } = latlng
         const { Geometry, Reducer } = this.ee
-        const point = Geometry.Point(latlng.lng, latlng.lat)
-        const options = this.options
-        let dictionary
+        const point = Geometry.Point(lng, lat)
 
-        if (options.mosaic) {
-            dictionary = this.eeImage.reduceRegion(
-                Reducer.mean(),
-                point,
-                1,
-                'EPSG:4326' // TODO
-            )
-        } else {
-            dictionary = this.eeImage.reduceRegion(Reducer.mean(), point)
-        }
+        return getInfo(
+            this.eeImage.reduceRegion(Reducer.mean(), point, 1)
+        ).then(data => {
+            const value = data[band] || Object.values(data)[0]
+            const item =
+                Array.isArray(legend) && legend.find(i => i.id === value)
 
-        dictionary.getInfo(valueObj => {
-            const band = options.band || Object.keys(valueObj)[0]
-            const { min, max } = options.params
-            const precision = getPrecision([min, max])
-            const valueFormat = numberPrecision(precision)
-            let value = valueObj[band]
-
-            if (options.legend && options.legend[value]) {
-                value = options.legend[value].name
-            } /* else if (options.value) {
-                // Needs calculation
-                value = options.value(value)
-            }
-            */
-
-            console.log('value', value, precision, valueFormat(value))
-
-            callback(value)
+            return item ? item.name : value
         })
     }
 
     // TODO: Move popup handling to the maps app
-    showValue = latlng => {
-        this.getValue(latlng, value => {
+    showValue = latlng =>
+        this.getValue(latlng).then(value => {
             const { lng, lat } = latlng
             const options = {
+                value: setPrecision(value),
                 ...this.options,
-                value,
             }
 
             const content = options.popup.replace(
@@ -367,7 +346,6 @@ class EarthEngine extends Layer {
 
             this._map.openPopup(document.createTextNode(content), [lng, lat])
         })
-    }
 
     getImage = () =>
         new Promise(resolve =>
@@ -376,58 +354,49 @@ class EarthEngine extends Layer {
                 : this.once('image', () => resolve(this.eeImage))
         )
 
-    aggregate = () =>
-        new Promise(async (resolve, reject) => {
-            const { aggregationType, classes, legend } = this.options
-            const image = await this.getImage()
-            const collection = this.featureCollection
-            const ee = this.ee
+    aggregate = async () => {
+        const { aggregationType, classes, legend } = this.options
+        const image = await this.getImage()
+        const collection = this.featureCollection
+        const ee = this.ee
 
-            if (classes && legend) {
-                const scale = await getScale(image)
-                const reducer = ee.Reducer.frequencyHistogram()
-                const valueType = Array.isArray(aggregationType)
-                    ? aggregationType[0]
-                    : null
+        if (classes && legend) {
+            const scale = await getScale(image)
+            const reducer = ee.Reducer.frequencyHistogram()
+            const valueType = Array.isArray(aggregationType)
+                ? aggregationType[0]
+                : null
 
-                getInfo(
-                    image
-                        .reduceRegions(collection, reducer, scale)
-                        .select(['histogram'], null, false)
-                ).then(data =>
-                    resolve(
-                        getHistogramStatistics({
-                            data,
-                            scale,
-                            valueType,
-                            legend,
-                        })
-                    )
-                )
-            } else if (
-                collection &&
-                aggregationType &&
-                aggregationType.length
-            ) {
-                const { crs, crsTransform } = await getCrs(image)
-                const reducer = combineReducers(ee)(aggregationType)
+            return getInfo(
+                image
+                    .reduceRegions(collection, reducer, scale)
+                    .select(['histogram'], null, false)
+            ).then(data =>
+                getHistogramStatistics({
+                    data,
+                    scale,
+                    valueType,
+                    legend,
+                })
+            )
+        } else if (collection && aggregationType && aggregationType.length) {
+            const { crs, transform: crsTransform } = await getCrs(image)
+            const reducer = combineReducers(ee)(aggregationType)
 
-                const aggFeatures = image
-                    .reduceRegions({
-                        collection,
-                        reducer,
-                        crs,
-                        crsTransform,
-                    })
-                    .select(aggregationType, null, false) // Only return values
+            const aggFeatures = image
+                .reduceRegions({
+                    collection,
+                    reducer,
+                    crs,
+                    crsTransform,
+                })
+                .select(aggregationType, null, false) // Only return values
 
-                aggFeatures.getInfo((data, error) =>
-                    error
-                        ? reject(error)
-                        : resolve(getFeatureCollectionProperties(data))
-                )
-            }
-        })
+            return getInfo(aggFeatures).then(data =>
+                getFeatureCollectionProperties(data)
+            )
+        }
+    }
 
     setOpacity(opacity) {
         super.setOpacity(opacity)

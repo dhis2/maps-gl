@@ -13,19 +13,11 @@ export const getInfo = instance =>
     )
 
 export const getCrs = image =>
-    new Promise(async (resolve, reject) => {
+    getInfo(
         image
             .select(0) // First band
             .projection()
-            .getInfo((data, error) => {
-                if (error) {
-                    reject(error)
-                } else {
-                    const { crs, transform: crsTransform } = data
-                    resolve({ crs, crsTransform })
-                }
-            })
-    })
+    )
 
 // https://developers.google.com/earth-engine/guides/reducers_intro
 export const combineReducers = ee => types =>
@@ -79,38 +71,3 @@ export const getFeatureCollectionProperties = data =>
         }),
         {}
     )
-
-// TODO: Possible to simplify? - move to app?
-export const getPrecision = (values = []) => {
-    if (values.length) {
-        const sortedValues = [...values].sort((a, b) => a - b)
-        const minValue = sortedValues[0]
-        const maxValue = sortedValues[sortedValues.length - 1]
-        const gapValue = maxValue - minValue
-        const absMax = Math.abs(maxValue)
-
-        if (absMax >= 10000) {
-            return 0
-        }
-
-        if (absMax >= 1000) {
-            return gapValue > 10 ? 0 : 1
-        }
-
-        if (absMax >= 100) {
-            return gapValue > 1 ? 1 : 2
-        }
-
-        if (absMax >= 10) {
-            return gapValue > 0.1 ? 2 : 3
-        }
-
-        if (absMax >= 1) {
-            return gapValue > 0.01 ? 3 : 4
-        }
-
-        return gapValue > 0.001 ? 4 : 5
-    }
-
-    return 0
-}
