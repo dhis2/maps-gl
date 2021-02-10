@@ -335,8 +335,8 @@ class EarthEngine extends Layer {
         this.getValue(latlng).then(value => {
             const { lng, lat } = latlng
             const options = {
-                value: setPrecision(value),
                 ...this.options,
+                value: typeof value === 'number' ? setPrecision(value) : value,
             }
 
             const content = options.popup.replace(
