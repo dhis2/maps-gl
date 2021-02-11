@@ -21,6 +21,7 @@ const defaultOptions = {
     popup: '{name}: {value} {unit}',
 }
 
+// Support DHIS2 Maps 2.34 and above
 const backwardCompability = options => {
     const opts = { ...options }
 
@@ -41,19 +42,6 @@ class EarthEngine extends Layer {
         this.legend = options.legend || this.createLegend()
     }
 
-    addFeatures() {
-        const id = this.getId()
-        const source = `${id}-features`
-
-        this.setSource(source, {
-            type: 'geojson',
-            data: featureCollection(this.getFeatures()),
-        })
-
-        this.addLayer(polygonLayer({ id, source: source, opacity: 0.9 }), true)
-        this.addLayer(outlineLayer({ id, source: source }))
-    }
-
     async getSource() {
         const id = this.getId()
 
@@ -63,7 +51,7 @@ class EarthEngine extends Layer {
 
         this.createFeatureCollection()
 
-        const image = this.createImage()
+        const image = await this.createImage()
 
         this.eeMap = await this.visualize(image)
 
@@ -83,7 +71,7 @@ class EarthEngine extends Layer {
 
         this.addFeatures()
 
-        this.onLoad() // TODO: Call after render or aggregation is done
+        this.onLoad()
 
         return this._source
     }
@@ -145,6 +133,21 @@ class EarthEngine extends Layer {
         })
     }
 
+    // Add layers to show org units above image layer
+    addFeatures() {
+        const id = this.getId()
+        const source = `${id}-features`
+
+        this.setSource(source, {
+            type: 'geojson',
+            data: featureCollection(this.getFeatures()),
+        })
+
+        this.addLayer(polygonLayer({ id, source: source, opacity: 0.9 }), true)
+        this.addLayer(outlineLayer({ id, source: source }))
+    }
+
+    // Create feature collection for org unit aggregations
     createFeatureCollection() {
         const { FeatureCollection } = this.ee
         const features = this.getFeatures()
@@ -160,22 +163,13 @@ class EarthEngine extends Layer {
     }
 
     // Create EE tile layer from params
-    createImage() {
-        const {
-            datasetId,
-            band,
-            bandReducer,
-            filter,
-            mask,
-            legend,
-        } = this.options
+    createImage = async () => {
+        const { datasetId, band, bandReducer, mask, legend } = this.options
 
-        const { Image, ImageCollection, Reducer } = this.ee
+        const { Reducer } = this.ee
 
         // Apply filter (e.g. period)
-        let eeImage = filter
-            ? this.applyFilter(ImageCollection(datasetId))
-            : Image(datasetId)
+        let eeImage = await this.applyFilter(datasetId)
 
         // Select band(s)
         if (band) {
@@ -195,7 +189,7 @@ class EarthEngine extends Layer {
         // Run methods on image
         eeImage = this.runMethods(eeImage)
 
-        this.eeImage = eeImage // Used for aggregations
+        this.eeImage = eeImage
 
         // Image is ready for aggregations
         this.fire('imageready', { type: 'imageready', image: eeImage })
@@ -241,18 +235,28 @@ class EarthEngine extends Layer {
         })
     }
 
-    // Apply array of filters for image collection, returns image
-    applyFilter(collection) {
+    // Apply array of filters returns image
+    applyFilter = async datasetId => {
         const { filter, mosaic } = this.options
-        const { Filter, Image } = this.ee
+        const { Filter, Image, ImageCollection } = this.ee
 
-        if (filter) {
-            filter.forEach(f => {
-                collection = collection.filter(
-                    Filter[f.type].apply(this, f.arguments)
-                )
-            })
+        if (!filter) {
+            const image = Image(datasetId)
+            this.scale = await getScale(image)
+            return image
         }
+
+        let collection = ImageCollection(datasetId)
+
+        // Scale is lost when creating a mosaic below
+        // https://developers.google.com/earth-engine/guides/projections
+        this.scale = await getScale(collection.first())
+
+        filter.forEach(f => {
+            collection = collection.filter(
+                Filter[f.type].apply(this, f.arguments)
+            )
+        })
 
         if (mosaic) {
             // Composite all images inn a collection (e.g. per country)
@@ -300,6 +304,7 @@ class EarthEngine extends Layer {
     visualize(eeImage) {
         const { legend, params } = this.options
 
+        // Clip image to org unit features
         if (this.featureCollection) {
             eeImage = eeImage.clipToCollection(this.featureCollection)
         }
@@ -330,6 +335,8 @@ class EarthEngine extends Layer {
             this.eeImage.reduceRegion(Reducer.mean(), point, 1)
         ).then(data => {
             const value = data[band] || Object.values(data)[0]
+
+            // Used for landcover
             const item =
                 Array.isArray(legend) && legend.find(i => i.id === value)
 
@@ -354,6 +361,7 @@ class EarthEngine extends Layer {
             this._map.openPopup(document.createTextNode(content), [lng, lat])
         })
 
+    // Returns ee image when ready
     getImage = () =>
         new Promise(resolve =>
             this.eeImage
@@ -361,14 +369,18 @@ class EarthEngine extends Layer {
                 : this.once('imageready', evt => resolve(evt.image))
         )
 
+    // Perform aggregations to org unit features
     aggregate = async () => {
         const { aggregationType, classes, legend } = this.options
         const image = await this.getImage()
         const collection = this.featureCollection
+        const scale = this.scale
         const { Reducer } = this.ee
 
+        console.log('aggregate', scale)
+
         if (classes && legend) {
-            const scale = await getScale(image)
+            // Used for landcover
             const reducer = Reducer.frequencyHistogram()
             const valueType = Array.isArray(aggregationType)
                 ? aggregationType[0]
@@ -386,34 +398,30 @@ class EarthEngine extends Layer {
                     legend,
                 })
             )
-        } else if (collection && aggregationType && aggregationType.length) {
-            const { crs, transform: crsTransform } = await getCrs(image)
+        } else if (Array.isArray(aggregationType) && aggregationType.length) {
             const reducer = combineReducers(ee)(aggregationType)
 
             const aggFeatures = image
                 .reduceRegions({
                     collection,
                     reducer,
-                    crs,
-                    crsTransform,
+                    scale,
                 })
-                .select(aggregationType, null, false) // Only return values
+                .select(aggregationType, null, false)
 
-            return getInfo(aggFeatures).then(data =>
-                getFeatureCollectionProperties(data)
-            )
+            return getInfo(aggFeatures).then(getFeatureCollectionProperties)
         }
     }
 
     setOpacity(opacity) {
         super.setOpacity(opacity)
 
-        // Clickable polygon layer should always be transparent
         const id = this.getId()
         const layerId = `${id}-polygon`
         const mapgl = this.getMapGL()
 
         if (mapgl.getLayer(layerId)) {
+            // Clickable polygon layer should always be transparent
             mapgl.setPaintProperty(layerId, 'fill-opacity', 0)
         }
     }
