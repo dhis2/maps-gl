@@ -2,7 +2,6 @@ import Layer from './Layer'
 import getEarthEngineApi from '../utils/eeapi'
 import {
     getInfo,
-    getCrs,
     getScale,
     combineReducers,
     getHistogramStatistics,
@@ -38,8 +37,6 @@ class EarthEngine extends Layer {
             ...defaultOptions,
             ...backwardCompability(options),
         })
-
-        this.legend = options.legend || this.createLegend()
     }
 
     async getSource() {
@@ -164,27 +161,16 @@ class EarthEngine extends Layer {
 
     // Create EE tile layer from params
     createImage = async () => {
-        const { datasetId, band, bandReducer, mask, legend } = this.options
-
-        const { Reducer } = this.ee
+        const { datasetId } = this.options
 
         // Apply filter (e.g. period)
         let eeImage = await this.applyFilter(datasetId)
 
-        // Select band(s)
-        if (band) {
-            eeImage = eeImage.select(band)
-
-            if (Array.isArray(band) && bandReducer && Reducer[bandReducer]) {
-                // Combine multiple bands (e.g. age groups)
-                eeImage = eeImage.reduce(Reducer[bandReducer]())
-            }
-        }
+        // Select band (e.g. age group)
+        eeImage = this.selectBand(eeImage)
 
         // Mask out 0-values
-        if (mask) {
-            eeImage = eeImage.updateMask(eeImage.gt(0))
-        }
+        eeImage = this.maskImage(eeImage)
 
         // Run methods on image
         eeImage = this.runMethods(eeImage)
@@ -194,45 +180,8 @@ class EarthEngine extends Layer {
         // Image is ready for aggregations
         this.fire('imageready', { type: 'imageready', image: eeImage })
 
-        // Classify image if no legend is provided
-        return legend ? eeImage : this.classifyImage(eeImage)
-    }
-
-    // TODO: Needed?
-    createLegend() {
-        const { params } = this.options
-        const min = params.min
-        const max = params.max
-        const palette = params.palette.split(',')
-        const step = (params.max - min) / (palette.length - (min > 0 ? 2 : 1))
-
-        let from = min
-        let to = Math.round(min + step)
-
-        return palette.map((color, index) => {
-            const item = { color }
-
-            if (index === 0 && min > 0) {
-                // Less than min
-                item.from = 0
-                item.to = min
-                item.name = '< ' + item.to
-                to = min
-            } else if (from < max) {
-                item.from = from
-                item.to = to
-                item.name = item.from + ' - ' + item.to
-            } else {
-                // Higher than max
-                item.from = from
-                item.name = '> ' + item.from
-            }
-
-            from = to
-            to = Math.round(min + step * (index + (min > 0 ? 1 : 2)))
-
-            return item
-        })
+        // Classify image
+        return this.classifyImage(eeImage)
     }
 
     // Apply array of filters returns image
@@ -267,10 +216,26 @@ class EarthEngine extends Layer {
         return Image(collection.first())
     }
 
+    // Select band(s)
+    selectBand(eeImage) {
+        const { band, bandReducer } = this.options
+        const { Reducer } = this.ee
+
+        if (band) {
+            eeImage = eeImage.select(band)
+
+            if (Array.isArray(band) && bandReducer && Reducer[bandReducer]) {
+                // Combine multiple bands (e.g. age groups)
+                eeImage = eeImage.reduce(Reducer[bandReducer]())
+            }
+        }
+
+        return eeImage
+    }
+
     // Run methods on image
-    runMethods(image) {
+    runMethods(eeImage) {
         const { methods } = this.options
-        let eeImage = image
 
         if (methods) {
             Object.keys(methods).forEach(method => {
@@ -283,12 +248,27 @@ class EarthEngine extends Layer {
         return eeImage
     }
 
+    // Mask out 0-values
+    maskImage(eeImage) {
+        return this.options.mask ? eeImage.updateMask(eeImage.gt(0)) : eeImage
+    }
+
     // Classify image according to legend
     classifyImage(eeImage) {
-        const legend = this.legend
+        const { classes, params } = this.options
         let zones
 
-        for (let i = 0, item; i < legend.length - 1; i++) {
+        if (classes) {
+            // Image has classes (e.g. landcover)
+            return eeImage
+        }
+
+        const legend = this.getClasses()
+        const min = 0
+        const max = legend.length - 1
+        const { palette } = params
+
+        for (let i = min, item; i < max; i++) {
             item = legend[i]
             if (!zones) {
                 zones = eeImage.gt(item.to)
@@ -297,12 +277,47 @@ class EarthEngine extends Layer {
             }
         }
 
+        // Visualisation params
+        this.params = { min, max, palette }
+
         return zones
+    }
+
+    // TODO: Remove if we include from/to in app legend
+    getClasses() {
+        const { min, max, palette } = this.options.params
+        const colors = palette.split(',')
+        const step = (max - min) / (colors.length - (min > 0 ? 2 : 1))
+
+        let from = min
+        let to = Math.round(min + step)
+
+        return colors.map((color, index) => {
+            const item = { color }
+
+            if (index === 0 && min > 0) {
+                // Less than min
+                item.from = 0
+                item.to = min
+                to = min
+            } else if (from < max) {
+                item.from = from
+                item.to = to
+            } else {
+                // Higher than max
+                item.from = from
+            }
+
+            from = to
+            to = Math.round(min + step * (index + (min > 0 ? 1 : 2)))
+
+            return item
+        })
     }
 
     // Visualize image (turn into RGB)
     visualize(eeImage) {
-        const { legend, params } = this.options
+        const { params } = this.options
 
         // Clip image to org unit features
         if (this.featureCollection) {
@@ -310,17 +325,7 @@ class EarthEngine extends Layer {
         }
 
         return new Promise(resolve =>
-            eeImage
-                .visualize(
-                    legend
-                        ? params
-                        : {
-                              min: 0,
-                              max: this.legend.length - 1,
-                              palette: params.palette,
-                          }
-                )
-                .getMap(null, resolve)
+            eeImage.visualize(this.params || params).getMap(null, resolve)
         )
     }
 
@@ -376,8 +381,6 @@ class EarthEngine extends Layer {
         const collection = this.featureCollection
         const scale = this.scale
         const { Reducer } = this.ee
-
-        console.log('aggregate', scale)
 
         if (classes && legend) {
             // Used for landcover

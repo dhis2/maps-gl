@@ -12,13 +12,6 @@ export const getInfo = instance =>
         })
     )
 
-export const getCrs = image =>
-    getInfo(
-        image
-            .select(0) // First band
-            .projection()
-    )
-
 // https://developers.google.com/earth-engine/guides/reducers_intro
 export const combineReducers = ee => types =>
     types.reduce(
