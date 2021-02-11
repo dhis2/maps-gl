@@ -255,7 +255,7 @@ class EarthEngine extends Layer {
 
     // Classify image according to legend
     classifyImage(eeImage) {
-        const { classes, params } = this.options
+        const { classes, legend, params } = this.options
         let zones
 
         if (classes) {
@@ -263,7 +263,6 @@ class EarthEngine extends Layer {
             return eeImage
         }
 
-        const legend = this.getClasses()
         const min = 0
         const max = legend.length - 1
         const { palette } = params
@@ -281,38 +280,6 @@ class EarthEngine extends Layer {
         this.params = { min, max, palette }
 
         return zones
-    }
-
-    // TODO: Remove if we include from/to in app legend
-    getClasses() {
-        const { min, max, palette } = this.options.params
-        const colors = palette.split(',')
-        const step = (max - min) / (colors.length - (min > 0 ? 2 : 1))
-
-        let from = min
-        let to = Math.round(min + step)
-
-        return colors.map((color, index) => {
-            const item = { color }
-
-            if (index === 0 && min > 0) {
-                // Less than min
-                item.from = 0
-                item.to = min
-                to = min
-            } else if (from < max) {
-                item.from = from
-                item.to = to
-            } else {
-                // Higher than max
-                item.from = from
-            }
-
-            from = to
-            to = Math.round(min + step * (index + (min > 0 ? 1 : 2)))
-
-            return item
-        })
     }
 
     // Visualize image (turn into RGB)
