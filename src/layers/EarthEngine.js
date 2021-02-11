@@ -161,40 +161,47 @@ class EarthEngine extends Layer {
 
     // Create EE tile layer from params
     createImage() {
-        const { datasetId, band, filter, mask, legend } = this.options
+        const {
+            datasetId,
+            band,
+            bandReducer,
+            filter,
+            mask,
+            legend,
+        } = this.options
+
         const { Image, ImageCollection, Reducer } = this.ee
 
+        // Apply filter (e.g. period)
         let eeImage = filter
             ? this.applyFilter(ImageCollection(datasetId))
             : Image(datasetId)
 
+        // Select band(s)
         if (band) {
             eeImage = eeImage.select(band)
 
-            if (Array.isArray(band)) {
-                eeImage = eeImage.reduce(Reducer.sum())
+            if (Array.isArray(band) && bandReducer && Reducer[bandReducer]) {
+                // Combine multiple bands (e.g. age groups)
+                eeImage = eeImage.reduce(Reducer[bandReducer]())
             }
         }
 
+        // Mask out 0-values
         if (mask) {
-            // Mask out 0-values
             eeImage = eeImage.updateMask(eeImage.gt(0))
         }
 
         // Run methods on image
         eeImage = this.runMethods(eeImage)
 
-        this.eeImage = eeImage
+        this.eeImage = eeImage // Used for aggregations
 
         // Image is ready for aggregations
-        this.fire('image')
+        this.fire('imageready', { type: 'imageready', image: eeImage })
 
         // Classify image if no legend is provided
-        if (!legend) {
-            eeImage = this.classifyImage(eeImage)
-        }
-
-        return eeImage
+        return legend ? eeImage : this.classifyImage(eeImage)
     }
 
     // TODO: Needed?
@@ -315,8 +322,8 @@ class EarthEngine extends Layer {
     // Returns value at at position
     getValue = async latlng => {
         const { band, legend } = this.options
-        const { lng, lat } = latlng
         const { Geometry, Reducer } = this.ee
+        const { lng, lat } = latlng
         const point = Geometry.Point(lng, lat)
 
         return getInfo(
@@ -351,18 +358,18 @@ class EarthEngine extends Layer {
         new Promise(resolve =>
             this.eeImage
                 ? resolve(this.eeImage)
-                : this.once('image', () => resolve(this.eeImage))
+                : this.once('imageready', evt => resolve(evt.image))
         )
 
     aggregate = async () => {
         const { aggregationType, classes, legend } = this.options
         const image = await this.getImage()
         const collection = this.featureCollection
-        const ee = this.ee
+        const { Reducer } = this.ee
 
         if (classes && legend) {
             const scale = await getScale(image)
-            const reducer = ee.Reducer.frequencyHistogram()
+            const reducer = Reducer.frequencyHistogram()
             const valueType = Array.isArray(aggregationType)
                 ? aggregationType[0]
                 : null
