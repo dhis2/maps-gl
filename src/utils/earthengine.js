@@ -28,7 +28,7 @@ export const combineReducers = ee => types =>
 // Returns the linear scale in meters of the units of this projection
 export const getScale = image => getInfo(image.projection().nominalScale())
 
-// Return histogram data (e.g. landcover) in percentage, hectares or acres
+// Returns histogram data (e.g. landcover) in percentage, hectares or acres
 export const getHistogramStatistics = ({ data, scale, valueType, legend }) =>
     data.features.reduce((obj, { id, properties }) => {
         const { histogram } = properties

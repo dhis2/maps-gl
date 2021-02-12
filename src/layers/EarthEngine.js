@@ -11,11 +11,8 @@ import { featureCollection } from '../utils/geometry'
 import { polygonLayer, outlineLayer } from '../utils/layers'
 import { setPrecision } from '../utils/numbers'
 
-const defaultOptions = {
-    url:
-        'https://earthengine.googleapis.com/map/{mapid}/{z}/{x}/{y}?token={token}',
+export const defaultOptions = {
     tokenType: 'Bearer',
-    aggregation: 'none',
     bandReducer: 'sum',
     popup: '{name}: {value} {unit}',
 }
@@ -39,7 +36,14 @@ class EarthEngine extends Layer {
         })
     }
 
-    async getSource() {
+    async addTo(map) {
+        await this.createSource()
+        this.createLayers()
+        super.addTo(map)
+        this.onLoad()
+    }
+
+    async createSource() {
         const id = this.getId()
 
         this.ee = await getEarthEngineApi()
@@ -58,22 +62,29 @@ class EarthEngine extends Layer {
             tiles: [urlFormat],
         })
 
+        this.setSource(`${id}-features`, {
+            type: 'geojson',
+            data: featureCollection(this.getFeatures()),
+        })
+    }
+
+    createLayers() {
+        const id = this.getId()
+        const source = `${id}-features`
+
         this.addLayer({
             id: `${id}-raster`,
             type: 'raster',
             source: id,
         })
 
-        this.addFeatures()
-
-        this.onLoad()
-
-        return this._source
+        this.addLayer(polygonLayer({ id, source, opacity: 0.9 }), true)
+        this.addLayer(outlineLayer({ id, source }))
     }
 
     // Configures client-side authentication of EE API calls by providing a OAuth2 token to use.
-    setAuthToken = () =>
-        new Promise((resolve, reject) => {
+    setAuthToken() {
+        return new Promise((resolve, reject) => {
             const { data, initialize } = this.ee
             const { accessToken, tokenType } = this.options
 
@@ -98,6 +109,7 @@ class EarthEngine extends Layer {
                     .catch(reject)
             }
         })
+    }
 
     // Get OAuth2 token needed to create and load Google Earth Engine layers
     getAuthToken(callback) {
@@ -128,20 +140,6 @@ class EarthEngine extends Layer {
         })
     }
 
-    // Add layers to show org units above image layer
-    addFeatures() {
-        const id = this.getId()
-        const source = `${id}-features`
-
-        this.setSource(source, {
-            type: 'geojson',
-            data: featureCollection(this.getFeatures()),
-        })
-
-        this.addLayer(polygonLayer({ id, source: source, opacity: 0.9 }), true)
-        this.addLayer(outlineLayer({ id, source: source }))
-    }
-
     // Create feature collection for org unit aggregations
     createFeatureCollection() {
         const { FeatureCollection } = this.ee
@@ -158,7 +156,7 @@ class EarthEngine extends Layer {
     }
 
     // Create EE tile layer from params
-    createImage = async () => {
+    async createImage() {
         const { datasetId } = this.options
 
         // Apply filter (e.g. period)
