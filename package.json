@@ -44,11 +44,11 @@
     "@babel/runtime": "^7.3.4",
     "@dhis2/cli-style": "^2.2.2",
     "@types/jest": "^26.0.7",
-    "babel-jest": "^25.1.0",
+    "babel-jest": "^26.6.3",
     "concurrently": "^5.1.0",
     "husky": "^4.2.2",
     "identity-obj-proxy": "^3.0.0",
-    "jest": "^25.1.0",
+    "jest": "^26.6",
     "rimraf": "^3.0.2"
   },
   "scripts": {
