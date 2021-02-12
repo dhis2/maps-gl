@@ -50,21 +50,19 @@ class EarthEngine extends Layer {
 
         const image = await this.createImage()
 
-        this.eeMap = await this.visualize(image)
+        const { urlFormat } = await this.visualize(image)
 
-        if (this.eeMap) {
-            this.setSource(id, {
-                type: 'raster',
-                tileSize: 256,
-                tiles: [this.eeMap.urlFormat],
-            })
+        this.setSource(id, {
+            type: 'raster',
+            tileSize: 256,
+            tiles: [urlFormat],
+        })
 
-            this.addLayer({
-                id: `${id}-raster`,
-                type: 'raster',
-                source: id,
-            })
-        }
+        this.addLayer({
+            id: `${id}-raster`,
+            type: 'raster',
+            source: id,
+        })
 
         this.addFeatures()
 

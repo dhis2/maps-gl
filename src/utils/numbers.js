@@ -1,6 +1,3 @@
-export const twoDecimals = value =>
-    (Math.round(value * 100) / 100).toLocaleString()
-
 // Rounds a number to d decimals
 export const numberPrecision = d => {
     if (d === undefined) {
@@ -13,6 +10,7 @@ export const numberPrecision = d => {
 // Returns number of decimals based on the value
 export const getPrecision = v => (v < 1 ? 3 : v < 10 ? 2 : v < 100 ? 1 : 0)
 
+// Sets number of decimals based on the value
 export const setPrecision = value =>
     numberPrecision(getPrecision(Math.abs(value)))(value)
 
