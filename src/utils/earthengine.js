@@ -1,5 +1,9 @@
 import { squareMetersToHectares, squareMetersToAcres } from './numbers'
 
+export const classAggregation = ['percentage', 'hectares', 'acres']
+
+export const hasClasses = type => classAggregation.includes(type)
+
 // Makes getInfo a promise
 export const getInfo = instance =>
     new Promise((resolve, reject) =>
@@ -26,7 +30,13 @@ export const combineReducers = ee => types =>
     )
 
 // Returns the linear scale in meters of the units of this projection
-export const getScale = image => getInfo(image.projection().nominalScale())
+export const getScale = image =>
+    getInfo(
+        image
+            .select(0)
+            .projection()
+            .nominalScale()
+    )
 
 // Returns histogram data (e.g. landcover) in percentage, hectares or acres
 export const getHistogramStatistics = ({ data, scale, valueType, legend }) =>

@@ -3,6 +3,7 @@ import getEarthEngineApi from '../utils/eeapi'
 import {
     getInfo,
     getScale,
+    hasClasses,
     combineReducers,
     getHistogramStatistics,
     getFeatureCollectionProperties,
@@ -17,22 +18,11 @@ export const defaultOptions = {
     popup: '{name}: {value} {unit}',
 }
 
-// Support DHIS2 Maps 2.34 and above
-const backwardCompability = options => {
-    const opts = { ...options }
-
-    if (opts.aggregation === 'mosaic') {
-        opts.mosaic = true
-    }
-
-    return opts
-}
-
 class EarthEngine extends Layer {
     constructor(options) {
         super({
             ...defaultOptions,
-            ...backwardCompability(options),
+            ...options,
         })
     }
 
@@ -251,7 +241,8 @@ class EarthEngine extends Layer {
 
     // Classify image according to legend
     classifyImage(eeImage) {
-        const { classes, legend, params } = this.options
+        const { aggregationType, legend, params } = this.options
+        const classes = hasClasses(aggregationType)
         let zones
 
         if (classes) {
@@ -339,7 +330,8 @@ class EarthEngine extends Layer {
 
     // Perform aggregations to org unit features
     aggregate = async () => {
-        const { aggregationType, classes, legend } = this.options
+        const { aggregationType, legend } = this.options
+        const classes = hasClasses(aggregationType)
         const image = await this.getImage()
         const collection = this.featureCollection
         const scale = this.scale
