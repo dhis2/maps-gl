@@ -27,20 +27,23 @@ class EarthEngine extends Layer {
     }
 
     async addTo(map) {
+        await this.init()
         await this.createSource()
         this.createLayers()
         super.addTo(map)
         this.onLoad()
     }
 
+    // EE initialise
+    async init() {
+        this.ee = await getEarthEngineApi()
+        await this.setAuthToken()
+    }
+
     async createSource() {
         const id = this.getId()
 
-        this.ee = await getEarthEngineApi()
-
-        await this.setAuthToken()
-
-        this.createFeatureCollection()
+        this.featureCollection = this.getFeatureCollection()
 
         const image = await this.createImage()
 
@@ -90,9 +93,7 @@ class EarthEngine extends Layer {
                             expires_in
                         )
 
-                        data.setAuthTokenRefresher(
-                            this.refreshAccessToken.bind(this)
-                        )
+                        data.setAuthTokenRefresher(this.refreshAccessToken)
 
                         initialize(null, null, resolve)
                     })
@@ -102,47 +103,50 @@ class EarthEngine extends Layer {
     }
 
     // Get OAuth2 token needed to create and load Google Earth Engine layers
-    getAuthToken(callback) {
-        const { accessToken } = this.options
+    getAuthToken() {
+        return new Promise((resolve, reject) => {
+            const { accessToken } = this.options
 
-        if (accessToken) {
-            if (accessToken instanceof Function) {
-                // Callback function returning auth obect
-                accessToken(callback)
-            } else {
-                // Auth token as object
-                callback(accessToken)
+            if (accessToken) {
+                if (accessToken instanceof Function) {
+                    // Callback function returning auth obect
+                    accessToken(resolve)
+                } else {
+                    // Auth token as object
+                    resolve(accessToken)
+                }
             }
-        }
+
+            reject(new Error('No access token in layer options.'))
+        })
     }
 
     // Refresh OAuth2 token when expired
-    refreshAccessToken(authArgs, callback) {
+    refreshAccessToken = async (authArgs, callback) => {
         const { tokenType } = this.options
+        const token = await this.getAuthToken()
 
-        this.getAuthToken(token => {
-            callback({
-                token_type: tokenType,
-                access_token: token.access_token,
-                state: authArgs.scope,
-                expires_in: token.expires_in,
-            })
+        callback({
+            token_type: tokenType,
+            access_token: token.access_token,
+            state: authArgs.scope,
+            expires_in: token.expires_in,
         })
     }
 
     // Create feature collection for org unit aggregations
-    createFeatureCollection() {
+    getFeatureCollection() {
         const { FeatureCollection } = this.ee
         const features = this.getFeatures()
 
-        if (features.length) {
-            this.featureCollection = FeatureCollection(
-                features.map(f => ({
-                    ...f,
-                    id: f.properties.id, // EE requries id to be string, Mapbox integer
-                }))
-            )
-        }
+        return features.length
+            ? FeatureCollection(
+                  features.map(f => ({
+                      ...f,
+                      id: f.properties.id, // EE requries id to be string, Mapbox integer
+                  }))
+              )
+            : null
     }
 
     // Create EE tile layer from params
@@ -241,8 +245,8 @@ class EarthEngine extends Layer {
 
     // Classify image according to legend
     classifyImage(eeImage) {
-        const { aggregationType, legend, params } = this.options
-        const classes = hasClasses(aggregationType)
+        const { legend = [], params } = this.options
+        const classes = legend.every(l => l.from === undefined)
         let zones
 
         if (classes) {
@@ -329,8 +333,8 @@ class EarthEngine extends Layer {
         )
 
     // Perform aggregations to org unit features
-    aggregate = async () => {
-        const { aggregationType, legend } = this.options
+    aggregate = async aggregationType => {
+        const { legend } = this.options
         const classes = hasClasses(aggregationType)
         const image = await this.getImage()
         const collection = this.featureCollection
@@ -340,9 +344,6 @@ class EarthEngine extends Layer {
         if (classes && legend) {
             // Used for landcover
             const reducer = Reducer.frequencyHistogram()
-            const valueType = Array.isArray(aggregationType)
-                ? aggregationType[0]
-                : null
 
             return getInfo(
                 image
@@ -352,7 +353,7 @@ class EarthEngine extends Layer {
                 getHistogramStatistics({
                     data,
                     scale,
-                    valueType,
+                    aggregationType,
                     legend,
                 })
             )

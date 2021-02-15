@@ -39,7 +39,12 @@ export const getScale = image =>
     )
 
 // Returns histogram data (e.g. landcover) in percentage, hectares or acres
-export const getHistogramStatistics = ({ data, scale, valueType, legend }) =>
+export const getHistogramStatistics = ({
+    data,
+    scale,
+    aggregationType,
+    legend,
+}) =>
     data.features.reduce((obj, { id, properties }) => {
         const { histogram } = properties
         const sum = Object.values(histogram).reduce((a, b) => a + b, 0)
@@ -49,7 +54,7 @@ export const getHistogramStatistics = ({ data, scale, valueType, legend }) =>
             const sqMeters = count * (scale * scale)
             let value
 
-            switch (valueType) {
+            switch (aggregationType) {
                 case 'hectares':
                     value = Math.round(squareMetersToHectares(sqMeters))
                     break
