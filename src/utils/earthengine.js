@@ -1,6 +1,6 @@
 import { squareMetersToHectares, squareMetersToAcres } from './numbers'
 
-export const classAggregation = ['percentage', 'hectares', 'acres']
+const classAggregation = ['percentage', 'hectares', 'acres']
 
 export const hasClasses = type => classAggregation.includes(type)
 
@@ -16,6 +16,7 @@ export const getInfo = instance =>
         })
     )
 
+// Combine multiple aggregation types/reducers
 // https://developers.google.com/earth-engine/guides/reducers_intro
 export const combineReducers = ee => types =>
     types.reduce(

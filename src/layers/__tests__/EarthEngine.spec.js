@@ -62,11 +62,13 @@ jest.mock('../../utils/eeapi', () => ({
     default: async () => eeMock,
 }))
 
-const accessToken = Promise.resolve({
+const token = {
     access_token: 'abc',
     client_id: '123',
     expires_in: 1000,
-})
+}
+
+const accessToken = Promise.resolve(token)
 
 const onLoad = jest.fn()
 
@@ -141,17 +143,12 @@ describe('EarthEngine', () => {
         expect(layer.getMap()).toBe(mockMap)
         expect(layer.getMapGL()).toBe(mockMapGL)
         expect(layer.ee).toBe(eeMock)
+        await expect(layer.init()).resolves.toEqual(undefined)
+        await expect(layer.getAuthToken()).resolves.toEqual(token)
+        // await expect(layer.refreshAccessToken()).resolves.toEqual(token)
     })
 
-    it('Should set auth token', async () => {
-        const layer = new EarthEngine(options)
-
-        layer.setAuthToken().then(console.log)
-
-        expect(true).toBe(true)
-    })
-
-    it('Should create a raster and source', async () => {
+    it('Should create a raster source', async () => {
         const layer = new EarthEngine(options)
         await layer.addTo(mockMap)
         const id = layer.getId()
@@ -197,6 +194,17 @@ describe('EarthEngine', () => {
         await layer.addTo(mockMap)
 
         expect(onLoad.mock.calls.length).toBe(numCalls + 1)
+    })
+
+    it('Should fire imageready event', async () => {
+        const layer = new EarthEngine(options)
+        await layer.init()
+        const onImageReady = jest.fn()
+        layer.on('imageready', onImageReady)
+        const image = await layer.createImage()
+
+        expect(image).not.toBe(undefined)
+        expect(onImageReady.mock.calls.length).toBe(1)
     })
 
     it('Should use string ids for ee features', async () => {
