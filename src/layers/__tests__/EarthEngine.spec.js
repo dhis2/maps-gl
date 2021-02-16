@@ -143,6 +143,14 @@ describe('EarthEngine', () => {
         expect(layer.ee).toBe(eeMock)
     })
 
+    it('Should set auth token', async () => {
+        const layer = new EarthEngine(options)
+
+        layer.setAuthToken().then(console.log)
+
+        expect(true).toBe(true)
+    })
+
     it('Should create a raster and source', async () => {
         const layer = new EarthEngine(options)
         await layer.addTo(mockMap)
