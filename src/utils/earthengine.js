@@ -39,6 +39,16 @@ export const getScale = image =>
             .nominalScale()
     )
 
+// Returns visualisation params from legend
+export const getParamsFromLegend = legend => {
+    const keys = legend.map(l => l.id)
+    const min = Math.min(...keys)
+    const max = Math.max(...keys)
+    const palette = legend.map(l => l.color).join(',')
+
+    return { min, max, palette }
+}
+
 // Returns histogram data (e.g. landcover) in percentage, hectares or acres
 export const getHistogramStatistics = ({
     data,

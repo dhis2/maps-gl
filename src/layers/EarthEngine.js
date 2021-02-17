@@ -5,6 +5,7 @@ import {
     getScale,
     hasClasses,
     combineReducers,
+    getParamsFromLegend,
     getHistogramStatistics,
     getFeatureCollectionProperties,
 } from '../utils/earthengine'
@@ -246,11 +247,11 @@ class EarthEngine extends Layer {
     // Classify image according to legend
     classifyImage(eeImage) {
         const { legend = [], params } = this.options
-        const classes = legend.every(l => l.from === undefined)
         let zones
 
-        if (classes) {
+        if (!params) {
             // Image has classes (e.g. landcover)
+            this.params = getParamsFromLegend(legend)
             return eeImage
         }
 
