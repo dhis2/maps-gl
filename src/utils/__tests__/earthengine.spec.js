@@ -1,6 +1,6 @@
 import { hasClasses, getHistogramStatistics } from '../earthengine'
 
-const scale = 1000 // 463.3127165275
+const scale = 1000
 
 const legend = [
     {

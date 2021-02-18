@@ -144,7 +144,7 @@ class EarthEngine extends Layer {
             ? FeatureCollection(
                   features.map(f => ({
                       ...f,
-                      id: f.properties.id, // EE requries id to be string, Mapbox integer
+                      id: f.properties.id, // EE requires id to be string, Mapbox integer
                   }))
               )
             : null
