@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/dhis2/maps-gl/compare/v1.3.6...v1.4.0) (2021-02-19)
+
+
+### Features
+
+* aggregate values to features (DHIS2-9530) ([#234](https://github.com/dhis2/maps-gl/issues/234)) ([0b236c3](https://github.com/dhis2/maps-gl/commit/0b236c336f2969a90e779d0b87c1ddcb110276d6))
+
 ## [1.3.6](https://github.com/dhis2/maps-gl/compare/v1.3.5...v1.3.6) (2021-01-19)
 
 
