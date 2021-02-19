@@ -261,6 +261,7 @@ class EarthEngine extends Layer {
 
         for (let i = min, item; i < max; i++) {
             item = legend[i]
+
             if (!zones) {
                 zones = eeImage.gt(item.to)
             } else {
@@ -289,7 +290,7 @@ class EarthEngine extends Layer {
     }
 
     // Returns value at at position
-    getValue = async latlng => {
+    getValue = latlng => {
         const { band, legend } = this.options
         const { Geometry, Reducer } = this.ee
         const { lng, lat } = latlng
