@@ -1,17 +1,5 @@
-window.URL.createObjectURL = jest.fn() // Not supported by jsdom
-
 import Layer from '../Layer'
-// import { addImages } from '../../utils/images'
 jest.mock('../../utils/images')
-
-const mockMapGL = {
-    addLayer: jest.fn(),
-    addSource: jest.fn(),
-    getLayer: jest.fn(),
-}
-const mockMap = {
-    getMapGL: () => mockMapGL,
-}
 
 describe('Layer', () => {
     beforeEach(() => {
@@ -31,8 +19,6 @@ describe('Layer', () => {
         expect(layer.getMap()).toBe(mockMap)
         expect(layer.getMapGL()).toBe(mockMapGL)
         mockMapGL.getLayer.mockReturnValueOnce(true)
-        // expect(layer.isOnMap()).toBe(true)
-        // expect(mockMapGL.getLayer).toHaveBeenCalledWith(layer._id)
     })
     it('Should add a non-interactive layer', () => {
         const layer = new Layer()

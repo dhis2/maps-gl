@@ -242,6 +242,14 @@ class Layer extends Evented {
     // Override if needed in subclass
     onRemove() {}
 
+    onLoad() {
+        this.fire('load')
+
+        if (this.options.onLoad) {
+            this.options.onLoad()
+        }
+    }
+
     // "Normalise" event before passing back to app
     onClick = evt => this.fire('click', evt)
 
