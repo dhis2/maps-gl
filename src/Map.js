@@ -302,12 +302,6 @@ export class MapGL extends Evented {
         return this._layers.find(layer => layer.hasLayerId(id))
     }
 
-    getLayerFromSource(source) {
-        return this._layers.find(layer =>
-            Object.keys(layer.getSource()).includes(source)
-        )
-    }
-
     getLayerAtIndex(index) {
         return this._layers[index]
     }
