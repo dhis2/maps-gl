@@ -186,6 +186,7 @@ class Layer extends Evented {
         return this._features
     }
 
+    // Returns a feature from a string or numeric id
     getFeature(id) {
         if (typeof id === 'string') {
             return this._features.find(f => f.properties.id === id)
@@ -244,19 +245,18 @@ class Layer extends Evented {
         return mapgl.getZoom() === mapgl.getMaxZoom()
     }
 
+    // Highlight a layer feature
     highlight(id) {
-        const map = this.getMap()
+        const feature = id ? this.getFeature(id) : null
 
-        if (id) {
-            const feature = this.getFeature(id)
-
-            map.setHoverState({
-                id: feature.id,
-                source: this.getId(),
-            })
-        } else {
-            map.setHoverState()
-        }
+        this.getMap().setHoverState(
+            feature
+                ? {
+                      id: feature.id,
+                      source: this.getId(),
+                  }
+                : null
+        )
     }
 
     // Override if needed in subclass

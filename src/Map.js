@@ -237,6 +237,7 @@ export class MapGL extends Evented {
         this.getMapGL().getCanvas().style.cursor = feature ? 'pointer' : ''
     }
 
+    // Set hover state for source feature
     setHoverState(feature) {
         let featureSourceId
 
@@ -245,27 +246,31 @@ export class MapGL extends Evented {
             featureSourceId = `${id}-${source}`
         }
 
+        // Only set hover state when feature is changed
         if (featureSourceId !== this._hoverId) {
-            const mapgl = this.getMapGL()
-            let layer
-
+            // Clear state for existing hover feature
             if (this._hoverState) {
-                const { source } = this._hoverState
-                if (mapgl.getSource(source)) {
-                    mapgl.setFeatureState(this._hoverState, { hover: false })
-                }
-                layer = this.getLayerFromSource(source)
+                this.setFeatureState(this._hoverState, { hover: false })
                 this._hoverState = null
             }
 
+            // Set new feature hover state
             if (feature) {
-                const { id, source } = feature
-                this._hoverState = { id, source }
-                mapgl.setFeatureState(this._hoverState, { hover: true })
-                layer = this.getLayerFromSource(source)
+                this._hoverState = feature
+                this.setFeatureState(feature, { hover: true })
             }
 
             this._hoverId = featureSourceId
+        }
+    }
+
+    // Helper function to set feature state for source
+    setFeatureState(feature = {}, state = {}) {
+        const mapgl = this.getMapGL()
+        const { source } = feature
+
+        if (source && mapgl.getSource(source)) {
+            mapgl.setFeatureState(feature, state)
         }
     }
 
