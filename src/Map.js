@@ -232,9 +232,9 @@ export class MapGL extends Evented {
             this.hideLabel()
         }
 
-        this.getMapGL().getCanvas().style.cursor = feature ? 'pointer' : ''
-
         this.setHoverState(feature)
+
+        this.getMapGL().getCanvas().style.cursor = feature ? 'pointer' : ''
     }
 
     setHoverState(feature) {
@@ -247,11 +247,14 @@ export class MapGL extends Evented {
 
         if (featureSourceId !== this._hoverId) {
             const mapgl = this.getMapGL()
+            let layer
 
             if (this._hoverState) {
-                if (mapgl.getSource(this._hoverState.source)) {
+                const { source } = this._hoverState
+                if (mapgl.getSource(source)) {
                     mapgl.setFeatureState(this._hoverState, { hover: false })
                 }
+                layer = this.getLayerFromSource(source)
                 this._hoverState = null
             }
 
@@ -259,10 +262,11 @@ export class MapGL extends Evented {
                 const { id, source } = feature
                 this._hoverState = { id, source }
                 mapgl.setFeatureState(this._hoverState, { hover: true })
+                layer = this.getLayerFromSource(source)
             }
-        }
 
-        this._hoverId = featureSourceId
+            this._hoverId = featureSourceId
+        }
     }
 
     onMouseOut = () => this.hideLabel()
@@ -291,6 +295,12 @@ export class MapGL extends Evented {
 
     getLayerFromId(id) {
         return this._layers.find(layer => layer.hasLayerId(id))
+    }
+
+    getLayerFromSource(source) {
+        return this._layers.find(layer =>
+            Object.keys(layer.getSource()).includes(source)
+        )
     }
 
     getLayerAtIndex(index) {
