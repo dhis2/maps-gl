@@ -158,7 +158,7 @@ class EarthEngine extends Layer {
         }
     }
 
-    // Create buffer polygon around point feature
+    // Transform point feature to buffer polygon
     createBuffer(feature) {
         const { buffer } = this.options
 
