@@ -145,17 +145,12 @@ class EarthEngine extends Layer {
     }
 
     setFeatures(data = []) {
-        const points = data.filter(isPoint)
+        this.setSource(`${this.getId()}-points`, {
+            type: 'geojson',
+            data: featureCollection(data.filter(isPoint)),
+        })
 
-        if (points.length) {
-            this.setSource(`${this.getId()}-points`, {
-                type: 'geojson',
-                data: featureCollection(points),
-            })
-            super.setFeatures(data.map(this.createBuffer.bind(this)))
-        } else {
-            super.setFeatures(data)
-        }
+        super.setFeatures(data.map(this.createBuffer.bind(this)))
     }
 
     // Transform point feature to buffer polygon

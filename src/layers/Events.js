@@ -20,7 +20,10 @@ class Events extends Layer {
             this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
         }
 
-        this.addLayer(pointLayer({ id, color, radius, strokeColor: eventStrokeColor }), true)
+        this.addLayer(
+            pointLayer({ id, color, radius, strokeColor: eventStrokeColor }),
+            true
+        )
         this.addLayer(polygonLayer({ id, color }), true)
         this.addLayer(outlineLayer({ id, color: eventStrokeColor }))
     }
