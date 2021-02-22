@@ -174,6 +174,10 @@ class Layer extends Evented {
         return this.getLayers().some(layer => layer.id === id)
     }
 
+    hasSourceId(id) {
+        return !!this._source[id]
+    }
+
     moveToTop() {
         const mapgl = this.getMapGL()
 

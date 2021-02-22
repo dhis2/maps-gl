@@ -9,8 +9,9 @@ import {
     getHistogramStatistics,
     getFeatureCollectionProperties,
 } from '../utils/earthengine'
-import { featureCollection } from '../utils/geometry'
-import { polygonLayer, outlineLayer } from '../utils/layers'
+import { isPoint, featureCollection } from '../utils/geometry'
+import { getBufferGeometry } from '../utils/buffers'
+import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
 import { setPrecision } from '../utils/numbers'
 
 export const defaultOptions = {
@@ -50,13 +51,13 @@ class EarthEngine extends Layer {
 
         const { urlFormat } = await this.visualize(image)
 
-        this.setSource(id, {
+        this.setSource(`${id}-raster`, {
             type: 'raster',
             tileSize: 256,
             tiles: [urlFormat],
         })
 
-        this.setSource(`${id}-features`, {
+        this.setSource(id, {
             type: 'geojson',
             data: featureCollection(this.getFeatures()),
         })
@@ -64,16 +65,24 @@ class EarthEngine extends Layer {
 
     createLayers() {
         const id = this.getId()
-        const source = `${id}-features`
+        const source = id
 
         this.addLayer({
             id: `${id}-raster`,
             type: 'raster',
-            source: id,
+            source: `${id}-raster`,
         })
 
         this.addLayer(polygonLayer({ id, source, opacity: 0.9 }), true)
         this.addLayer(outlineLayer({ id, source }))
+        this.addLayer(
+            pointLayer({
+                id,
+                source: `${id}-points`,
+                radius: 4,
+                color: '#333',
+            })
+        )
     }
 
     // Configures client-side authentication of EE API calls by providing a OAuth2 token to use.
@@ -133,6 +142,32 @@ class EarthEngine extends Layer {
             state: authArgs.scope,
             expires_in: token.expires_in,
         })
+    }
+
+    setFeatures(data = []) {
+        const points = data.filter(isPoint)
+
+        if (points.length) {
+            this.setSource(`${this.getId()}-points`, {
+                type: 'geojson',
+                data: featureCollection(points),
+            })
+            super.setFeatures(data.map(this.createBuffer.bind(this)))
+        } else {
+            super.setFeatures(data)
+        }
+    }
+
+    // Create buffer polygon around point feature
+    createBuffer(feature) {
+        const { buffer } = this.options
+
+        return buffer && feature.geometry.type === 'Point'
+            ? {
+                  ...feature,
+                  geometry: getBufferGeometry(feature, buffer / 1000),
+              }
+            : feature
     }
 
     // Create feature collection for org unit aggregations

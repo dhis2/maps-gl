@@ -8,16 +8,22 @@ const defaults = {
     width: 1,
 }
 
-const getBufferGeometry = ({ geometry }, buffer) => 
-    (geometry.type === 'Point' ? circle(geometry, buffer) : polygonBuffer(geometry, buffer)).geometry
+// Buffer in km
+export const getBufferGeometry = ({ geometry }, buffer) =>
+    (geometry.type === 'Point'
+        ? circle(geometry, buffer)
+        : polygonBuffer(geometry, buffer)
+    ).geometry
 
 // Buffer in km
 export const bufferSource = (features, buffer) => ({
     type: 'geojson',
-    data: featureCollection(features.map(feature => ({
-        ...feature,
-        geometry: getBufferGeometry(feature, buffer)
-    }))),
+    data: featureCollection(
+        features.map(feature => ({
+            ...feature,
+            geometry: getBufferGeometry(feature, buffer),
+        }))
+    ),
 })
 
 // Layer with buffer features
@@ -37,6 +43,6 @@ export const bufferOutlineLayer = ({ id, color, width }) => ({
     source: `${id}-buffer`,
     paint: {
         'line-color': colorExpr(color || defaults.color),
-        'line-width': width || defaults.width,
+        'line-width': width || defaults.width,
     },
 })
