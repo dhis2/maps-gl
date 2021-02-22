@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/dhis2/maps-gl/compare/v1.4.0...v1.5.0) (2021-02-22)
+
+
+### Features
+
+* new layer highlight method to set feature state (DHIS2-10546) ([#259](https://github.com/dhis2/maps-gl/issues/259)) ([407733d](https://github.com/dhis2/maps-gl/commit/407733d538578b2aa71d90646a9f059a799d1bb5))
+
 # [1.4.0](https://github.com/dhis2/maps-gl/compare/v1.3.6...v1.4.0) (2021-02-19)
 
 
