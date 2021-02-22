@@ -1,11 +1,16 @@
 global.mockMapGL = {
+    on: jest.fn(),
     addLayer: jest.fn(),
     addSource: jest.fn(),
+    addControl: jest.fn(),
     getLayer: jest.fn(),
+    getSource: jest.fn(),
+    setFeatureState: jest.fn(),
 }
 
 global.mockMap = {
     getMapGL: () => mockMapGL,
+    setHoverState: jest.fn(),
 }
 
 // https://stackoverflow.com/questions/57943736/how-to-fix-window-url-createobjecturl-is-not-a-function-when-testing-mapbox-gl
