@@ -99,6 +99,17 @@ const data = [
             coordinates: [],
         },
     },
+    {
+        type: 'Feature',
+        properties: {
+            id: 'DiszpKrYNg8',
+            name: 'Ngelehun CHC',
+        },
+        geometry: {
+            type: 'Point',
+            coordinates: [-11, 8],
+        },
+    },
 ]
 
 const datasetId = 'WorldPop/GP/100m/pop_age_sex'
@@ -118,6 +129,8 @@ const legend = [
     { color: '#993404', from: 1500 },
 ]
 
+const buffer = 1000
+
 const options = {
     accessToken,
     datasetId,
@@ -125,6 +138,7 @@ const options = {
     data,
     params,
     legend,
+    buffer,
     onLoad,
 }
 
@@ -145,14 +159,13 @@ describe('EarthEngine', () => {
         expect(layer.ee).toBe(eeMock)
         await expect(layer.init()).resolves.toEqual(undefined)
         await expect(layer.getAuthToken()).resolves.toEqual(token)
-        // await expect(layer.refreshAccessToken()).resolves.toEqual(token)
     })
 
     it('Should create a raster source', async () => {
         const layer = new EarthEngine(options)
         await layer.addTo(mockMap)
         const id = layer.getId()
-        const source = layer.getSource()[id]
+        const source = layer.getSource()[`${id}-raster`]
 
         expect(source).not.toBeUndefined()
         expect(source.type).toBe('raster')
@@ -163,7 +176,7 @@ describe('EarthEngine', () => {
         const layer = new EarthEngine(options)
         await layer.addTo(mockMap)
         const id = layer.getId()
-        const source = layer.getSource()[`${id}-features`]
+        const source = layer.getSource()[id]
 
         expect(source).not.toBeUndefined()
         expect(source.type).toBe('geojson')
@@ -174,18 +187,21 @@ describe('EarthEngine', () => {
         await layer.addTo(mockMap)
         const id = layer.getId()
         const layers = layer.getLayers()
-        const [layer1, layer2, layer3] = layers
+        const [layer1, layer2, layer3, layer4] = layers
 
-        expect(layers.length).toBe(3)
+        expect(layers.length).toBe(4)
         expect(layer1.type).toBe('raster')
         expect(layer1.id).toBe(`${id}-raster`)
-        expect(layer1.source).toBe(id)
+        expect(layer1.source).toBe(`${id}-raster`)
         expect(layer2.type).toBe('fill')
         expect(layer2.id).toBe(`${id}-polygon`)
-        expect(layer2.source).toBe(`${id}-features`)
+        expect(layer2.source).toBe(id)
         expect(layer3.type).toBe('line')
         expect(layer3.id).toBe(`${id}-outline`)
-        expect(layer3.source).toBe(`${id}-features`)
+        expect(layer3.source).toBe(id)
+        expect(layer4.type).toBe('circle')
+        expect(layer4.id).toBe(`${id}-point`)
+        expect(layer4.source).toBe(`${id}-points`)
     })
 
     it('Should call onLoad option when loaded', async () => {
@@ -216,5 +232,12 @@ describe('EarthEngine', () => {
         expect(before.every(f => typeof f.id === 'number')).toBe(true)
         expect(after.every(f => typeof f.id === 'string')).toBe(true)
         expect(after.every(f => f.id === f.properties.id)).toBe(true)
+    })
+
+    it('Should convert point feature to buffer polygon', async () => {
+        const layer = new EarthEngine(options)
+        const features = layer.getFeatures()
+
+        expect(features.some(f => f.geometry.type === 'Point')).toBe(false)
     })
 })
