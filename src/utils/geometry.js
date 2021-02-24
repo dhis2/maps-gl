@@ -1,5 +1,7 @@
 import { LngLatBounds } from 'mapbox-gl'
 
+export const isPoint = feature => feature.geometry.type === 'Point'
+
 export const getBoundsFromLayers = (layers = []) => {
     const bounds = layers.reduce((b, l) => {
         if (l.getBounds) {
