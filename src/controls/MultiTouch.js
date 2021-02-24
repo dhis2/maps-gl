@@ -60,7 +60,7 @@ class MultiTouch {
 
     onAdd(map) {
         this.map = map
-        this.container = document.createElement('div')
+        this._container = document.createElement('div')
 
         const container = map.getContainer()
 
@@ -71,7 +71,7 @@ class MultiTouch {
             map.dragPan.disable()
         }
 
-        return this.container
+        return this._container
     }
 
     onRemove() {

@@ -381,7 +381,7 @@ export class MapGL extends Evented {
     toggleMultiTouch(isEnabled) {
         const mapgl = this.getMapGL()
 
-        if (this._multiTouch) {
+        if (!this._multiTouch) {
             this._multiTouch = new MultiTouch()
         }
 
