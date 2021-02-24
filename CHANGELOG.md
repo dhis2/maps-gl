@@ -1,3 +1,24 @@
+# [1.6.0](https://github.com/dhis2/maps-gl/compare/v1.5.0...v1.6.0) (2021-02-24)
+
+
+### Features
+
+* circle buffer aggregations for EE layers (DHIS2-10549) ([#262](https://github.com/dhis2/maps-gl/issues/262)) ([1fe68f0](https://github.com/dhis2/maps-gl/commit/1fe68f0ec146cf7cddaa14feab60c1bdb0a55140))
+
+# [1.5.0](https://github.com/dhis2/maps-gl/compare/v1.4.0...v1.5.0) (2021-02-22)
+
+
+### Features
+
+* new layer highlight method to set feature state (DHIS2-10546) ([#259](https://github.com/dhis2/maps-gl/issues/259)) ([407733d](https://github.com/dhis2/maps-gl/commit/407733d538578b2aa71d90646a9f059a799d1bb5))
+
+# [1.4.0](https://github.com/dhis2/maps-gl/compare/v1.3.6...v1.4.0) (2021-02-19)
+
+
+### Features
+
+* aggregate values to features (DHIS2-9530) ([#234](https://github.com/dhis2/maps-gl/issues/234)) ([0b236c3](https://github.com/dhis2/maps-gl/commit/0b236c336f2969a90e779d0b87c1ddcb110276d6))
+
 ## [1.3.6](https://github.com/dhis2/maps-gl/compare/v1.3.5...v1.3.6) (2021-01-19)
 
 

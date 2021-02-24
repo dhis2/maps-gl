@@ -217,15 +217,8 @@ export class MapGL extends Evented {
 
     onMouseMove = evt => {
         const feature = this.getEventFeature(evt)
-        let featureId
-        let sourceId
-        let featureSourceId
 
         if (feature) {
-            featureId = feature.id
-            sourceId = feature.source
-            featureSourceId = `${featureId}-${sourceId}`
-
             const layer = this.getLayerFromId(feature.layer.id)
 
             if (layer) {
@@ -235,29 +228,46 @@ export class MapGL extends Evented {
             this.hideLabel()
         }
 
+        this.setHoverState(feature)
+
+        this.getMapGL().getCanvas().style.cursor = feature ? 'pointer' : ''
+    }
+
+    // Set hover state for source feature
+    setHoverState(feature) {
+        let featureSourceId
+
+        if (feature) {
+            const { id, source } = feature
+            featureSourceId = `${id}-${source}`
+        }
+
+        // Only set hover state when feature is changed
         if (featureSourceId !== this._hoverId) {
-            const mapgl = this.getMapGL()
-
-            mapgl.getCanvas().style.cursor = feature ? 'pointer' : ''
-
+            // Clear state for existing hover feature
             if (this._hoverState) {
-                if (mapgl.getSource(this._hoverState.source)) {
-                    mapgl.setFeatureState(this._hoverState, { hover: false })
-                }
+                this.setFeatureState(this._hoverState, { hover: false })
                 this._hoverState = null
             }
 
+            // Set new feature hover state
             if (feature) {
-                this._hoverState = {
-                    source: sourceId,
-                    id: featureId,
-                }
-
-                mapgl.setFeatureState(this._hoverState, { hover: true })
+                this._hoverState = feature
+                this.setFeatureState(feature, { hover: true })
             }
-        }
 
-        this._hoverId = featureSourceId
+            this._hoverId = featureSourceId
+        }
+    }
+
+    // Helper function to set feature state for source
+    setFeatureState(feature = {}, state = {}) {
+        const mapgl = this.getMapGL()
+        const { source } = feature
+
+        if (source && mapgl.getSource(source)) {
+            mapgl.setFeatureState(feature, state)
+        }
     }
 
     onMouseOut = () => this.hideLabel()

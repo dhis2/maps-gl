@@ -186,6 +186,15 @@ class Layer extends Evented {
         return this._features
     }
 
+    // Returns a feature from a string or numeric id
+    getFeature(id) {
+        if (typeof id === 'string') {
+            return this._features.find(f => f.properties.id === id)
+        }
+
+        return this._features.find(f => f.id === id)
+    }
+
     // Adds integer id for each feature (required by Feature State)
     setFeatures(data = []) {
         this._features = data.map((f, i) => ({ ...f, id: i + 1 }))
@@ -236,11 +245,33 @@ class Layer extends Evented {
         return mapgl.getZoom() === mapgl.getMaxZoom()
     }
 
+    // Highlight a layer feature
+    highlight(id) {
+        const feature = id ? this.getFeature(id) : null
+
+        this.getMap().setHoverState(
+            feature
+                ? {
+                      id: feature.id,
+                      source: this.getId(),
+                  }
+                : null
+        )
+    }
+
     // Override if needed in subclass
     onAdd() {}
 
     // Override if needed in subclass
     onRemove() {}
+
+    onLoad() {
+        this.fire('load')
+
+        if (this.options.onLoad) {
+            this.options.onLoad()
+        }
+    }
 
     // "Normalise" event before passing back to app
     onClick = evt => this.fire('click', evt)
