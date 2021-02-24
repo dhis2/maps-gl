@@ -30,8 +30,7 @@ class Fullscreen extends FullscreenControl {
 
     _onClickFullscreen() {
         this._eventMap.fire('fullscreenchange', {
-            scrollZoom: this._isFullscreen(),
-            fitBounds: !this._isFullscreen(),
+            isFullscreen: !this._isFullscreen(),
         })
 
         super._onClickFullscreen()
