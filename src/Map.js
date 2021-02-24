@@ -390,7 +390,7 @@ export class MapGL extends Evented {
         if (isEnabled && !hasControl) {
             mapgl.addControl(this._multiTouch)
         } else if (!isEnabled && hasControl) {
-            mapgl.addControl(this._multiTouch)
+            mapgl.removeControl(this._multiTouch)
         }
     }
 
