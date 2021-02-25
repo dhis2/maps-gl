@@ -9,7 +9,7 @@ class Fullscreen extends FullscreenControl {
     }
 
     addTo(map) {
-        this._eventMap = map;
+        this._eventMap = map
         this._map = map.getMapGL()
 
         this._map.addControl(this)
@@ -29,7 +29,9 @@ class Fullscreen extends FullscreenControl {
     }
 
     _onClickFullscreen() {
-        this._eventMap.fire('fullscreenchange', { isFullscreen: !this._isFullscreen() });
+        this._eventMap.fire('fullscreenchange', {
+            isFullscreen: !this._isFullscreen(),
+        })
 
         super._onClickFullscreen()
     }

@@ -1,10 +1,10 @@
 import { Evented, Map } from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import MultiTouch from 'mapbox-gl-multitouch'
 import Layer from './layers/Layer'
 import layerTypes from './layers/layerTypes'
 import controlTypes from './controls/controlTypes'
 import controlsLocale from './controls/controlsLocale'
+import MultiTouch from './controls/MultiTouch'
 import { transformRequest } from './utils/images'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
@@ -69,10 +69,6 @@ export class MapGL extends Evented {
         if (options.attributionControl !== false) {
             this.addControl({ type: 'attribution' })
         }
-
-        // Added to allow dashboards to be scrolled on touch devices
-        // Map can be panned with two fingers instead of one
-        mapgl.addControl(new MultiTouch())
     }
 
     fitBounds(bounds) {
@@ -378,6 +374,24 @@ export class MapGL extends Evented {
 
     toggleScrollZoom(isEnabled) {
         this.getMapGL().scrollZoom[isEnabled ? 'enable' : 'disable']()
+    }
+
+    // Added to allow dashboards to be scrolled on touch devices
+    // Map can be panned with two fingers instead of one
+    toggleMultiTouch(isEnabled) {
+        const mapgl = this.getMapGL()
+
+        if (!this._multiTouch) {
+            this._multiTouch = new MultiTouch()
+        }
+
+        const hasControl = mapgl.hasControl(this._multiTouch)
+
+        if (isEnabled && !hasControl) {
+            mapgl.addControl(this._multiTouch)
+        } else if (!isEnabled && hasControl) {
+            mapgl.removeControl(this._multiTouch)
+        }
     }
 
     // Only called within the API

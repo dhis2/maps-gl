@@ -28,7 +28,6 @@
     "fetch-jsonp": "^1.1.3",
     "lodash.throttle": "^4.1.1",
     "mapbox-gl": "^1.13.1",
-    "mapbox-gl-multitouch": "^1.0.3",
     "mapboxgl-spiderifier": "^1.0.9",
     "polylabel": "^1.1.0",
     "suggestions": "^1.7.1",

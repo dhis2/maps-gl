@@ -4685,11 +4685,6 @@ map-visit@^1.0.0:
   dependencies:
     object-visit "^1.0.0"
 
-mapbox-gl-multitouch@^1.0.3:
-  version "1.0.3"
-  resolved "https://registry.yarnpkg.com/mapbox-gl-multitouch/-/mapbox-gl-multitouch-1.0.3.tgz#db8bbe86a15d8398e3315d97305c9edde3f0f0d7"
-  integrity sha512-lpTFL2Sp7hK867mkMOZe2DvdS5eEHxWfMc7aSWCRDMgSq9IjPubsiix3FPs+IqcbkYmR+IUrzvH9RWBOXVs2cg==
-
 mapbox-gl@^1.13.1:
   version "1.13.1"
   resolved "https://registry.yarnpkg.com/mapbox-gl/-/mapbox-gl-1.13.1.tgz#322efe75ab4c764fc4c776da1506aad58d5a5b9d"
