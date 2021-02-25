@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/dhis2/maps-gl/compare/v1.6.0...v1.7.0) (2021-02-25)
+
+
+### Features
+
+* improve multitouch handling (DHIS2-10413) ([#276](https://github.com/dhis2/maps-gl/issues/276)) ([e2b82cc](https://github.com/dhis2/maps-gl/commit/e2b82cc5249d4bcd040173bbad7f8151a6515fd8))
+
 # [1.6.0](https://github.com/dhis2/maps-gl/compare/v1.5.0...v1.6.0) (2021-02-24)
 
 
