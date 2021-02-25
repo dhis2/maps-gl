@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/dhis2/maps-gl/compare/v1.7.0...v1.7.1) (2021-02-25)
+
+
+### Bug Fixes
+
+* remove focus border for popup x ([4920c2f](https://github.com/dhis2/maps-gl/commit/4920c2f2ef7f73c1051dc4ab89f4f6f7f7fa420b))
+
 # [1.7.0](https://github.com/dhis2/maps-gl/compare/v1.6.0...v1.7.0) (2021-02-25)
 
 
