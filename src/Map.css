@@ -13,7 +13,7 @@
     z-index: 20;
 }
 
-.dhis2-map-popup .mapboxgl-popup-close-button:focus {
+.mapboxgl-popup-close-button:focus {
     outline: none;
 }
 
@@ -37,4 +37,8 @@
     vertical-align: top;
     font-weight: bold;
     padding-right: 5px;
+}
+
+.mapboxgl-popup-close-button:focus {
+    outline: none;
 }
