@@ -1,3 +1,10 @@
+## [1.7.2](https://github.com/dhis2/maps-gl/compare/v1.7.1...v1.7.2) (2021-03-02)
+
+
+### Bug Fixes
+
+* only add vector layers if needed (DHIS2-10604) ([#283](https://github.com/dhis2/maps-gl/issues/283)) ([737548c](https://github.com/dhis2/maps-gl/commit/737548ce8be72d82e01aab92adb040d26e1f6c37))
+
 ## [1.7.1](https://github.com/dhis2/maps-gl/compare/v1.7.0...v1.7.1) (2021-02-25)
 
 
