@@ -73,7 +73,7 @@
 .dhis2-map-ctrl-measure-center {
     color: #212934; /* grey900 */
     padding-right: 20px;
-    background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAYAAABWdVznAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAOxAAADsQBlSsOGwAAAOhJREFUKJGVkTFug0AQRd+sgBOkyT1MvxVdipQpbDcBrsExAq4iipQWpbvt1xeJlBNgsZPCYK1sJ1GmfX//PM3CP0cAXqrjQwqVqmbG4N7b3AFsa29DwIrIeILuo1t9GYAUKqD4pbiYMyQAqpoBrt/lTZyaN7l16RsguzwwBreENq/HZ0TfEFEVrfs2H2Iu17s3pf/E8CSTmCDs+93qMebm9gyiMomZJNyyRWlbe7s4q2itInvBgFJe8wQgBOxc4Po2H4Ahbo15craQESjWpW9++AeLcrgonaBLzw3ZPW+UQxrG9i77a74B+z5bQloZOFAAAAAASUVORK5CYII=);
+    background-image: url("data:image/svg+xml;utf8,<svg width='16' height='16' viewBox='0 0 16 16' xmlns='http://www.w3.org/2000/svg'><path d='m3 10v3h3v1h-3c-.55228475 0-1-.4477153-1-1v-3zm11 0v3c0 .5522847-.4477153 1-1 1h-3v-1h3v-3zm-4-5c.5522847 0 1 .44771525 1 1v4c0 .5522847-.4477153 1-1 1h-4c-.55228475 0-1-.4477153-1-1v-4c0-.55228475.44771525-1 1-1zm0 1h-4v4h4zm3-4c.5522847 0 1 .44771525 1 1v3h-1v-3h-3v-1zm-7 0v1h-3v3h-1v-3c0-.55228475.44771525-1 1-1z' fill='%23212934'/></svg>");
 }
 
 .dhis2-map-ctrl-measure-delete {
