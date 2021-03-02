@@ -57,10 +57,12 @@ class EarthEngine extends Layer {
             tiles: [urlFormat],
         })
 
-        this.setSource(id, {
-            type: 'geojson',
-            data: featureCollection(this.getFeatures()),
-        })
+        if (this.options.data) {
+            this.setSource(id, {
+                type: 'geojson',
+                data: featureCollection(this.getFeatures()),
+            })
+        }
     }
 
     createLayers() {
@@ -73,16 +75,18 @@ class EarthEngine extends Layer {
             source: `${id}-raster`,
         })
 
-        this.addLayer(polygonLayer({ id, source, opacity: 0.9 }), true)
-        this.addLayer(outlineLayer({ id, source }))
-        this.addLayer(
-            pointLayer({
-                id,
-                source: `${id}-points`,
-                radius: 4,
-                color: '#333',
-            })
-        )
+        if (this.options.data) {
+            this.addLayer(polygonLayer({ id, source, opacity: 0.9 }), true)
+            this.addLayer(outlineLayer({ id, source }))
+            this.addLayer(
+                pointLayer({
+                    id,
+                    source: `${id}-points`,
+                    radius: 4,
+                    color: '#333',
+                })
+            )
+        }
     }
 
     // Configures client-side authentication of EE API calls by providing a OAuth2 token to use.
