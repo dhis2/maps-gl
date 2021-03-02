@@ -204,6 +204,13 @@ describe('EarthEngine', () => {
         expect(layer4.source).toBe(`${id}-points`)
     })
 
+    it('Should not create geojson layers if feature data is missing', async () => {
+        const layer = new EarthEngine({ ...options, data: null })
+        await layer.addTo(mockMap)
+
+        expect(layer.getLayers().length).toBe(1)
+    })
+
     it('Should call onLoad option when loaded', async () => {
         const layer = new EarthEngine(options)
         const numCalls = onLoad.mock.calls.length
