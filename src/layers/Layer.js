@@ -248,15 +248,18 @@ class Layer extends Evented {
     // Highlight a layer feature
     highlight(id) {
         const feature = id ? this.getFeature(id) : null
+        const map = this.getMap()
 
-        this.getMap().setHoverState(
-            feature
-                ? {
-                      id: feature.id,
-                      source: this.getId(),
-                  }
-                : null
-        )
+        if (map) {
+            map.setHoverState(
+                feature
+                    ? {
+                          id: feature.id,
+                          source: this.getId(),
+                      }
+                    : null
+            )
+        }
     }
 
     // Override if needed in subclass
