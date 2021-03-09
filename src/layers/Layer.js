@@ -260,6 +260,9 @@ class Layer extends Evented {
     }
 
     // Override if needed in subclass
+    filter() {}
+
+    // Override if needed in subclass
     onAdd() {}
 
     // Override if needed in subclass

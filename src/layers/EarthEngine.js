@@ -44,12 +44,16 @@ class EarthEngine extends Layer {
 
     async createSource() {
         const id = this.getId()
+        const features = this.getFeatures()
 
-        this.featureCollection = this.getFeatureCollection()
+        this.featureCollection = this.getFeatureCollection(features)
 
-        const image = await this.createImage()
+        this.image = await this.createImage()
 
-        const { urlFormat } = await this.visualize(image)
+        const { urlFormat } = await this.visualize(
+            this.image,
+            this.featureCollection
+        )
 
         this.setSource(`${id}-raster`, {
             type: 'raster',
@@ -60,7 +64,7 @@ class EarthEngine extends Layer {
         if (this.options.data) {
             this.setSource(id, {
                 type: 'geojson',
-                data: featureCollection(this.getFeatures()),
+                data: featureCollection(features),
             })
         }
     }
@@ -170,9 +174,8 @@ class EarthEngine extends Layer {
     }
 
     // Create feature collection for org unit aggregations
-    getFeatureCollection() {
+    getFeatureCollection(features) {
         const { FeatureCollection } = this.ee
-        const features = this.getFeatures()
 
         return features.length
             ? FeatureCollection(
@@ -310,12 +313,12 @@ class EarthEngine extends Layer {
     }
 
     // Visualize image (turn into RGB)
-    visualize(eeImage) {
+    visualize(eeImage, featureCollection) {
         const { params } = this.options
 
         // Clip image to org unit features
-        if (this.featureCollection) {
-            eeImage = eeImage.clipToCollection(this.featureCollection)
+        if (featureCollection) {
+            eeImage = eeImage.clipToCollection(featureCollection)
         }
 
         return new Promise(resolve =>
@@ -419,6 +422,20 @@ class EarthEngine extends Layer {
             // Clickable polygon layer should always be transparent
             mapgl.setPaintProperty(layerId, 'fill-opacity', 0)
         }
+    }
+
+    // Filter the org units features shown
+    filter(ids) {
+        const source = this.getMapGL().getSource(this.getId())
+        const features = this.getFeatures()
+
+        source.setData(
+            featureCollection(
+                Array.isArray(ids)
+                    ? features.filter(f => ids.includes(f.properties.id))
+                    : features
+            )
+        )
     }
 }
 
