@@ -1,3 +1,15 @@
+# [1.8.0](https://github.com/dhis2/maps-gl/compare/v1.7.2...v1.8.0) (2021-03-09)
+
+
+### Bug Fixes
+
+* only set feature hover state if layer is still on map ([bb91920](https://github.com/dhis2/maps-gl/commit/bb9192072ea44c825b8fef8a45ec7e4be50d0acc))
+
+
+### Features
+
+* filter the org units shown for ee layers ([fa391a4](https://github.com/dhis2/maps-gl/commit/fa391a4ae44c0fb6150a6143bec59016efa86d45))
+
 ## [1.7.2](https://github.com/dhis2/maps-gl/compare/v1.7.1...v1.7.2) (2021-03-02)
 
 
