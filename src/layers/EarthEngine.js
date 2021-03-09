@@ -420,6 +420,24 @@ class EarthEngine extends Layer {
             mapgl.setPaintProperty(layerId, 'fill-opacity', 0)
         }
     }
+
+    // Returns filtered features based on string ids
+    getFilteredFeatures(ids) {
+        const features = this.getFeatures()
+
+        return Array.isArray(ids)
+            ? features.filter(f => ids.includes(f.properties.id))
+            : features
+    }
+
+    // Filter the org units features shown
+    filter(ids) {
+        const source = this.getSource()[this.getId()]
+
+        if (source) {
+            source.setData(featureCollection(getFilteredFeatures(ids)))
+        }
+    }
 }
 
 export default EarthEngine
