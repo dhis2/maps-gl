@@ -44,16 +44,12 @@ class EarthEngine extends Layer {
 
     async createSource() {
         const id = this.getId()
-        const features = this.getFeatures()
 
-        this.featureCollection = this.getFeatureCollection(features)
+        this.featureCollection = this.getFeatureCollection()
 
-        this.image = await this.createImage()
+        const image = await this.createImage()
 
-        const { urlFormat } = await this.visualize(
-            this.image,
-            this.featureCollection
-        )
+        const { urlFormat } = await this.visualize(image)
 
         this.setSource(`${id}-raster`, {
             type: 'raster',
@@ -64,7 +60,7 @@ class EarthEngine extends Layer {
         if (this.options.data) {
             this.setSource(id, {
                 type: 'geojson',
-                data: featureCollection(features),
+                data: featureCollection(this.getFeatures()),
             })
         }
     }
@@ -174,8 +170,9 @@ class EarthEngine extends Layer {
     }
 
     // Create feature collection for org unit aggregations
-    getFeatureCollection(features) {
+    getFeatureCollection() {
         const { FeatureCollection } = this.ee
+        const features = this.getFeatures()
 
         return features.length
             ? FeatureCollection(
@@ -313,12 +310,12 @@ class EarthEngine extends Layer {
     }
 
     // Visualize image (turn into RGB)
-    visualize(eeImage, featureCollection) {
+    visualize(eeImage) {
         const { params } = this.options
 
         // Clip image to org unit features
-        if (featureCollection) {
-            eeImage = eeImage.clipToCollection(featureCollection)
+        if (this.featureCollection) {
+            eeImage = eeImage.clipToCollection(this.featureCollection)
         }
 
         return new Promise(resolve =>
