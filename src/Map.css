@@ -42,3 +42,11 @@
 .mapboxgl-popup-close-button:focus {
     outline: none;
 }
+
+.mapboxgl-ctrl-attrib.mapboxgl-compact {
+    min-height: 24px;
+}
+
+.mapboxgl-ctrl-attrib-button:focus {
+    box-shadow: none;
+}
