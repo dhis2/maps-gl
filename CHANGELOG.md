@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/dhis2/maps-gl/compare/v1.8.0...v1.8.1) (2021-03-10)
+
+
+### Bug Fixes
+
+* typo ([38666ea](https://github.com/dhis2/maps-gl/commit/38666ea1900eeadbceb8ed19d2e2b8c9d1257357))
+
 # [1.8.0](https://github.com/dhis2/maps-gl/compare/v1.7.2...v1.8.0) (2021-03-09)
 
 
