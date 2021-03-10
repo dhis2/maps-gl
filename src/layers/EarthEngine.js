@@ -432,7 +432,7 @@ class EarthEngine extends Layer {
 
     // Filter the org units features shown
     filter(ids) {
-        const source = this.getSource()[this.getId()]
+        const source = this.getMapGL().getSource(this.getId())
 
         if (source) {
             source.setData(featureCollection(this.getFilteredFeatures(ids)))
