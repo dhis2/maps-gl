@@ -1,3 +1,10 @@
+## [1.8.3](https://github.com/dhis2/maps-gl/compare/v1.8.2...v1.8.3) (2021-03-10)
+
+
+### Bug Fixes
+
+* compact attribution style ([#296](https://github.com/dhis2/maps-gl/issues/296)) ([0ffd952](https://github.com/dhis2/maps-gl/commit/0ffd9529aeb558ba8e8f6cb3ff5923e927f5ed52))
+
 ## [1.8.2](https://github.com/dhis2/maps-gl/compare/v1.8.1...v1.8.2) (2021-03-10)
 
 
