@@ -435,7 +435,7 @@ class EarthEngine extends Layer {
         const source = this.getSource()[this.getId()]
 
         if (source) {
-            source.setData(featureCollection(getFilteredFeatures(ids)))
+            source.setData(featureCollection(this.getFilteredFeatures(ids)))
         }
     }
 }
