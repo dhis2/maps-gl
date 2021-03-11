@@ -1,3 +1,10 @@
+## [1.8.4](https://github.com/dhis2/maps-gl/compare/v1.8.3...v1.8.4) (2021-03-11)
+
+
+### Bug Fixes
+
+* don't set opacity before layer is added to map ([#298](https://github.com/dhis2/maps-gl/issues/298)) ([a05e04a](https://github.com/dhis2/maps-gl/commit/a05e04ad0420df3e8346b6f17c5026f40c621a9a))
+
 ## [1.8.3](https://github.com/dhis2/maps-gl/compare/v1.8.2...v1.8.3) (2021-03-10)
 
 
