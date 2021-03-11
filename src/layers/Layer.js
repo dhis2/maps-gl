@@ -227,7 +227,11 @@ class Layer extends Evented {
     }
 
     setOpacity(opacity) {
-        setLayersOpacity(this.getMapGL(), this.getId(), opacity)
+        const mapgl = this.getMapGL()
+
+        if (mapgl) {
+            setLayersOpacity(mapgl, this.getId(), opacity)
+        }
     }
 
     getBounds() {

@@ -415,7 +415,7 @@ class EarthEngine extends Layer {
         const layerId = `${id}-polygon`
         const mapgl = this.getMapGL()
 
-        if (mapgl.getLayer(layerId)) {
+        if (mapgl && mapgl.getLayer(layerId)) {
             // Clickable polygon layer should always be transparent
             mapgl.setPaintProperty(layerId, 'fill-opacity', 0)
         }
