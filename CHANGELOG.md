@@ -1,3 +1,10 @@
+## [1.8.5](https://github.com/dhis2/maps-gl/compare/v1.8.4...v1.8.5) (2021-03-21)
+
+
+### Bug Fixes
+
+* icon label opacity ([#299](https://github.com/dhis2/maps-gl/issues/299)) ([4e81ebc](https://github.com/dhis2/maps-gl/commit/4e81ebc1d0a5a97a99dc0e436ef4b689de10f1e4))
+
 ## [1.8.4](https://github.com/dhis2/maps-gl/compare/v1.8.3...v1.8.4) (2021-03-11)
 
 
