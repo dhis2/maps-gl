@@ -33,7 +33,7 @@ class Markers extends Layer {
         }
 
         const config = {
-            id,
+            id: `${id}-icon`,
             type: 'symbol',
             source: id,
             layout: {
@@ -47,14 +47,6 @@ class Markers extends Layer {
             label ? addTextProperties(config, label, labelStyle) : config,
             true
         )
-    }
-
-    setOpacity(opacity) {
-        super.setOpacity(opacity)
-
-        if (this.isOnMap()) {
-            this.getMapGL().setPaintProperty(this.getId(), 'icon-opacity', opacity)
-        }
     }
 }
 
