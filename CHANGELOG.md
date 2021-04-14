@@ -1,3 +1,10 @@
+## [1.8.6](https://github.com/dhis2/maps-gl/compare/v1.8.5...v1.8.6) (2021-04-14)
+
+
+### Bug Fixes
+
+* wait until source is loaded for all tiles ([#314](https://github.com/dhis2/maps-gl/issues/314)) ([1c410a7](https://github.com/dhis2/maps-gl/commit/1c410a7ffbd5e7080511dd7bbab8ec4c5205590f))
+
 ## [1.8.5](https://github.com/dhis2/maps-gl/compare/v1.8.4...v1.8.5) (2021-03-21)
 
 
