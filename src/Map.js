@@ -37,7 +37,7 @@ export class MapGL extends Evented {
                 glyphs:
                     'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf', // TODO: Host ourseleves
             },
-            maxZoom: 10,
+            maxZoom: 18,
             preserveDrawingBuffer: true, // TODO: requred for map download, but reduced performance
             attributionControl: false,
             locale: controlsLocale,
