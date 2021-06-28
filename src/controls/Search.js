@@ -1,4 +1,4 @@
-import { Popup } from 'mapbox-gl'
+import { Popup } from 'maplibre-gl'
 import Typeahead from 'suggestions'
 import './Search.css'
 
