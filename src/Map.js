@@ -1,10 +1,10 @@
-import { Map } from 'mapbox-gl'
+import { Evented, Map } from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { Evented } from 'mapbox-gl'
 import Layer from './layers/Layer'
 import layerTypes from './layers/layerTypes'
 import controlTypes from './controls/controlTypes'
 import controlsLocale from './controls/controlsLocale'
+import MultiTouch from './controls/MultiTouch'
 import { transformRequest } from './utils/images'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
@@ -200,6 +200,8 @@ export class MapGL extends Evented {
                 layer.onClick(eventObj)
             }
         }
+
+        this.fire('click', eventObj)
     }
 
     onContextMenu = evt => {
@@ -215,15 +217,8 @@ export class MapGL extends Evented {
 
     onMouseMove = evt => {
         const feature = this.getEventFeature(evt)
-        let featureId
-        let sourceId
-        let featureSourceId
 
         if (feature) {
-            featureId = feature.id
-            sourceId = feature.source
-            featureSourceId = `${featureId}-${sourceId}`
-
             const layer = this.getLayerFromId(feature.layer.id)
 
             if (layer) {
@@ -233,29 +228,46 @@ export class MapGL extends Evented {
             this.hideLabel()
         }
 
+        this.setHoverState(feature)
+
+        this.getMapGL().getCanvas().style.cursor = feature ? 'pointer' : ''
+    }
+
+    // Set hover state for source feature
+    setHoverState(feature) {
+        let featureSourceId
+
+        if (feature) {
+            const { id, source } = feature
+            featureSourceId = `${id}-${source}`
+        }
+
+        // Only set hover state when feature is changed
         if (featureSourceId !== this._hoverId) {
-            const mapgl = this.getMapGL()
-
-            mapgl.getCanvas().style.cursor = feature ? 'pointer' : ''
-
+            // Clear state for existing hover feature
             if (this._hoverState) {
-                if (mapgl.getSource(this._hoverState.source)) {
-                    mapgl.setFeatureState(this._hoverState, { hover: false })
-                }
+                this.setFeatureState(this._hoverState, { hover: false })
                 this._hoverState = null
             }
 
+            // Set new feature hover state
             if (feature) {
-                this._hoverState = {
-                    source: sourceId,
-                    id: featureId,
-                }
-
-                mapgl.setFeatureState(this._hoverState, { hover: true })
+                this._hoverState = feature
+                this.setFeatureState(feature, { hover: true })
             }
-        }
 
-        this._hoverId = featureSourceId
+            this._hoverId = featureSourceId
+        }
+    }
+
+    // Helper function to set feature state for source
+    setFeatureState(feature = {}, state = {}) {
+        const mapgl = this.getMapGL()
+        const { source } = feature
+
+        if (source && mapgl.getSource(source)) {
+            mapgl.setFeatureState(feature, state)
+        }
     }
 
     onMouseOut = () => this.hideLabel()
@@ -362,6 +374,24 @@ export class MapGL extends Evented {
 
     toggleScrollZoom(isEnabled) {
         this.getMapGL().scrollZoom[isEnabled ? 'enable' : 'disable']()
+    }
+
+    // Added to allow dashboards to be scrolled on touch devices
+    // Map can be panned with two fingers instead of one
+    toggleMultiTouch(isEnabled) {
+        const mapgl = this.getMapGL()
+
+        if (!this._multiTouch) {
+            this._multiTouch = new MultiTouch()
+        }
+
+        const hasControl = mapgl.hasControl(this._multiTouch)
+
+        if (isEnabled && !hasControl) {
+            mapgl.addControl(this._multiTouch)
+        } else if (!isEnabled && hasControl) {
+            mapgl.removeControl(this._multiTouch)
+        }
     }
 
     // Only called within the API

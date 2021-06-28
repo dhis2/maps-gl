@@ -9,6 +9,14 @@
     right: 10px;
 }
 
+.dhis2-map-popup {
+    z-index: 20;
+}
+
+.mapboxgl-popup-close-button:focus {
+    outline: none;
+}
+
 .dhis2-map-popup .mapboxgl-popup-content {
     box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4);
 }
@@ -29,4 +37,16 @@
     vertical-align: top;
     font-weight: bold;
     padding-right: 5px;
+}
+
+.mapboxgl-popup-close-button:focus {
+    outline: none;
+}
+
+.mapboxgl-ctrl-attrib.mapboxgl-compact {
+    min-height: 24px;
+}
+
+.mapboxgl-ctrl-attrib-button:focus {
+    box-shadow: none;
 }

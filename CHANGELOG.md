@@ -1,3 +1,114 @@
+## [1.8.6](https://github.com/dhis2/maps-gl/compare/v1.8.5...v1.8.6) (2021-04-14)
+
+
+### Bug Fixes
+
+* wait until source is loaded for all tiles ([#314](https://github.com/dhis2/maps-gl/issues/314)) ([1c410a7](https://github.com/dhis2/maps-gl/commit/1c410a7ffbd5e7080511dd7bbab8ec4c5205590f))
+
+## [1.8.5](https://github.com/dhis2/maps-gl/compare/v1.8.4...v1.8.5) (2021-03-21)
+
+
+### Bug Fixes
+
+* icon label opacity ([#299](https://github.com/dhis2/maps-gl/issues/299)) ([4e81ebc](https://github.com/dhis2/maps-gl/commit/4e81ebc1d0a5a97a99dc0e436ef4b689de10f1e4))
+
+## [1.8.4](https://github.com/dhis2/maps-gl/compare/v1.8.3...v1.8.4) (2021-03-11)
+
+
+### Bug Fixes
+
+* don't set opacity before layer is added to map ([#298](https://github.com/dhis2/maps-gl/issues/298)) ([a05e04a](https://github.com/dhis2/maps-gl/commit/a05e04ad0420df3e8346b6f17c5026f40c621a9a))
+
+## [1.8.3](https://github.com/dhis2/maps-gl/compare/v1.8.2...v1.8.3) (2021-03-10)
+
+
+### Bug Fixes
+
+* compact attribution style ([#296](https://github.com/dhis2/maps-gl/issues/296)) ([0ffd952](https://github.com/dhis2/maps-gl/commit/0ffd9529aeb558ba8e8f6cb3ff5923e927f5ed52))
+
+## [1.8.2](https://github.com/dhis2/maps-gl/compare/v1.8.1...v1.8.2) (2021-03-10)
+
+
+### Bug Fixes
+
+* ee source feature layer ([#297](https://github.com/dhis2/maps-gl/issues/297)) ([d473d13](https://github.com/dhis2/maps-gl/commit/d473d13b9a8e60b6036fc2bc7cb351cd2df51520))
+
+## [1.8.1](https://github.com/dhis2/maps-gl/compare/v1.8.0...v1.8.1) (2021-03-10)
+
+
+### Bug Fixes
+
+* typo ([38666ea](https://github.com/dhis2/maps-gl/commit/38666ea1900eeadbceb8ed19d2e2b8c9d1257357))
+
+# [1.8.0](https://github.com/dhis2/maps-gl/compare/v1.7.2...v1.8.0) (2021-03-09)
+
+
+### Bug Fixes
+
+* only set feature hover state if layer is still on map ([bb91920](https://github.com/dhis2/maps-gl/commit/bb9192072ea44c825b8fef8a45ec7e4be50d0acc))
+
+
+### Features
+
+* filter the org units shown for ee layers ([fa391a4](https://github.com/dhis2/maps-gl/commit/fa391a4ae44c0fb6150a6143bec59016efa86d45))
+
+## [1.7.2](https://github.com/dhis2/maps-gl/compare/v1.7.1...v1.7.2) (2021-03-02)
+
+
+### Bug Fixes
+
+* only add vector layers if needed (DHIS2-10604) ([#283](https://github.com/dhis2/maps-gl/issues/283)) ([737548c](https://github.com/dhis2/maps-gl/commit/737548ce8be72d82e01aab92adb040d26e1f6c37))
+
+## [1.7.1](https://github.com/dhis2/maps-gl/compare/v1.7.0...v1.7.1) (2021-02-25)
+
+
+### Bug Fixes
+
+* remove focus border for popup x ([4920c2f](https://github.com/dhis2/maps-gl/commit/4920c2f2ef7f73c1051dc4ab89f4f6f7f7fa420b))
+
+# [1.7.0](https://github.com/dhis2/maps-gl/compare/v1.6.0...v1.7.0) (2021-02-25)
+
+
+### Features
+
+* improve multitouch handling (DHIS2-10413) ([#276](https://github.com/dhis2/maps-gl/issues/276)) ([e2b82cc](https://github.com/dhis2/maps-gl/commit/e2b82cc5249d4bcd040173bbad7f8151a6515fd8))
+
+# [1.6.0](https://github.com/dhis2/maps-gl/compare/v1.5.0...v1.6.0) (2021-02-24)
+
+
+### Features
+
+* circle buffer aggregations for EE layers (DHIS2-10549) ([#262](https://github.com/dhis2/maps-gl/issues/262)) ([1fe68f0](https://github.com/dhis2/maps-gl/commit/1fe68f0ec146cf7cddaa14feab60c1bdb0a55140))
+
+# [1.5.0](https://github.com/dhis2/maps-gl/compare/v1.4.0...v1.5.0) (2021-02-22)
+
+
+### Features
+
+* new layer highlight method to set feature state (DHIS2-10546) ([#259](https://github.com/dhis2/maps-gl/issues/259)) ([407733d](https://github.com/dhis2/maps-gl/commit/407733d538578b2aa71d90646a9f059a799d1bb5))
+
+# [1.4.0](https://github.com/dhis2/maps-gl/compare/v1.3.6...v1.4.0) (2021-02-19)
+
+
+### Features
+
+* aggregate values to features (DHIS2-9530) ([#234](https://github.com/dhis2/maps-gl/issues/234)) ([0b236c3](https://github.com/dhis2/maps-gl/commit/0b236c336f2969a90e779d0b87c1ddcb110276d6))
+
+## [1.3.6](https://github.com/dhis2/maps-gl/compare/v1.3.5...v1.3.6) (2021-01-19)
+
+
+### Bug Fixes
+
+* failing test in previous merge ([#239](https://github.com/dhis2/maps-gl/issues/239)) ([1e55526](https://github.com/dhis2/maps-gl/commit/1e555266c71faac2a89d2ff1b6f7cb4bbbb9b73f))
+* multitouch for map panning (DHIS2-10252) ([7cfbeaf](https://github.com/dhis2/maps-gl/commit/7cfbeaff17b9c283ebb7c681e6d70db6eee88fa3))
+
+## [1.3.5](https://github.com/dhis2/maps-gl/compare/v1.3.4...v1.3.5) (2020-12-02)
+
+
+### Bug Fixes
+
+* pass map click event back to app ([#215](https://github.com/dhis2/maps-gl/issues/215)) ([2cda62f](https://github.com/dhis2/maps-gl/commit/2cda62ffd32ba403620aa46f45ea4acb52e08ad0))
+
 ## [1.3.4](https://github.com/dhis2/maps-gl/compare/v1.3.3...v1.3.4) (2020-11-11)
 
 

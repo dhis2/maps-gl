@@ -4,14 +4,22 @@ export const textColor = '#FFFFFF'
 
 export const radius = 6
 
-export const noDataColor ='#CCCCCC'
+export const noDataColor = '#CCCCCC'
 
 export const strokeColor = '#333333'
 export const strokeWidth = 1
-export const hoverStrokeWidth = 3
+export const hoverStrokeWidth = 4
 
-export const eventStrokeColor = '#FFFFFF'
+export const eventStrokeColor = '#333333'
 
 export default {
-    textFont, textSize, textColor, radius, noDataColor, strokeColor, strokeWidth, hoverStrokeWidth, eventStrokeColor
+    textFont,
+    textSize,
+    textColor,
+    radius,
+    noDataColor,
+    strokeColor,
+    strokeWidth,
+    hoverStrokeWidth,
+    eventStrokeColor,
 }

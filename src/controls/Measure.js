@@ -2,7 +2,7 @@ import turfLength from '@turf/length'
 import turfArea from '@turf/area'
 import bbox from '@turf/bbox'
 import { createElement } from '../utils/dom'
-import { twoDecimals, kmToMiles } from '../utils/numbers'
+import { numberPrecision, kmToMiles } from '../utils/numbers'
 import { featureCollection } from '../utils/geometry'
 import './Measure.css'
 
@@ -12,6 +12,7 @@ class MeasureControl {
     constructor() {
         this._isActive = false
         this._type = 'measure'
+        this._numFormat = numberPrecision(2)
     }
 
     addTo(map) {
@@ -178,7 +179,7 @@ class MeasureControl {
 
     _startMeasure = () => {
         const mapgl = this._map.getMapGL()
-        const locale = this.locale;
+        const locale = this.locale
 
         this._button.classList.add('active')
 
@@ -235,7 +236,8 @@ class MeasureControl {
         const mapgl = this._map.getMapGL()
         const geojson = this._geojson
         const points = geojson.features.filter(f => f.geometry.type === 'Point')
-        const locale = this.locale;
+        const locale = this.locale
+        const numFormat = this._numFormat
 
         if (points.length < 2) {
             return this._endMeasure()
@@ -258,9 +260,9 @@ class MeasureControl {
 
             const perimeterText = `${locale(
                 'MeasureControl.Perimeter'
-            )}: ${twoDecimals(length)} ${locale(
+            )}: ${numFormat(length)} ${locale(
                 'MeasureControl.Kilometers'
-            )} (${twoDecimals(miles)} ${locale('MeasureControl.Miles')})`
+            )} (${numFormat(miles)} ${locale('MeasureControl.Miles')})`
 
             this._distanceEl.textContent = perimeterText
         }
@@ -323,7 +325,8 @@ class MeasureControl {
     _onMapClick = evt => {
         const mapgl = this._map.getMapGL()
         const geojson = this._geojson
-        const locale = this.locale;
+        const locale = this.locale
+        const numFormat = this._numFormat
         let points = geojson.features.filter(f => f.geometry.type === 'Point')
 
         const clikedFeature = mapgl.queryRenderedFeatures(evt.point, {
@@ -368,9 +371,9 @@ class MeasureControl {
 
             const distanceText = `${locale(
                 'MeasureControl.Distance'
-            )}: ${twoDecimals(length)} ${locale(
+            )}: ${numFormat(length)} ${locale(
                 'MeasureControl.Kilometers'
-            )} (${twoDecimals(miles)} ${locale('MeasureControl.Miles')})`
+            )} (${numFormat(miles)} ${locale('MeasureControl.Miles')})`
 
             this._distanceText.innerText = ''
             this._distanceEl = createElement(
@@ -395,15 +398,11 @@ class MeasureControl {
             const hectares = area / 10000
             const acres = hectares * 2.47105381
 
-            const areaText = `${locale(
-                'MeasureControl.Area'
-            )}: ${twoDecimals(hectares)} ${locale(
-                'MeasureControl.Hectares'
-            )} (${twoDecimals(
+            const areaText = `${locale('MeasureControl.Area')}: ${numFormat(
+                hectares
+            )} ${locale('MeasureControl.Hectares')} (${numFormat(
                 acres
-            )} ${locale(
-                'MeasureControl.Acres'
-            )})`
+            )} ${locale('MeasureControl.Acres')})`
 
             createElement(
                 'div',
