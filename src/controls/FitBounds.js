@@ -22,7 +22,7 @@ class FitBoundsControl {
         const label = mapgl._getUIString('FitBoundsControl.ZoomToContent')
         const container = document.createElement('div')
 
-        container.className = 'mapboxgl-ctrl mapboxgl-ctrl-group'
+        container.className = 'maplibregl-ctrl maplibregl-ctrl-group'
 
         const button = document.createElement('div')
 

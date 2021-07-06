@@ -65,7 +65,7 @@ class DonutCluster extends Cluster {
         const { feature } = evt
 
         if (!feature.properties.cluster) {
-            // Hack until Mapbox GL JS support string ids
+            // Hack until MapLibre GL JS support string ids
             // https://github.com/mapbox/mapbox-gl-js/issues/2716
             if (
                 typeof feature.id === 'number' &&

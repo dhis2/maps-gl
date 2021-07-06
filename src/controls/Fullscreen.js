@@ -1,4 +1,4 @@
-import { FullscreenControl } from 'mapbox-gl'
+import { FullscreenControl } from 'maplibre-gl'
 
 // Extended to include map name and legend in fullscreen for dashboard maps
 class Fullscreen extends FullscreenControl {

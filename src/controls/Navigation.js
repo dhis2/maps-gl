@@ -1,14 +1,14 @@
-import { NavigationControl } from 'mapbox-gl'
+import { NavigationControl } from 'maplibre-gl'
 
 const defaultOptions = {
-    visualizePitch: true
+    visualizePitch: true,
 }
 
-// Extended to reset pitch 
+// Extended to reset pitch
 class Navigation extends NavigationControl {
     constructor(options = {}) {
-        super({...defaultOptions, ...options})
+        super({ ...defaultOptions, ...options })
     }
 }
 
-export default  Navigation
+export default Navigation
