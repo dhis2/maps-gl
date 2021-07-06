@@ -1,3 +1,15 @@
+# [2.0.0](https://github.com/dhis2/maps-gl/compare/v1.8.7...v2.0.0) (2021-07-06)
+
+
+### Features
+
+* switch from Mapbox GL JS to MapLibre GL JS (DHIS2-11406) ([#374](https://github.com/dhis2/maps-gl/issues/374)) ([3cf2081](https://github.com/dhis2/maps-gl/commit/3cf20818d498c200083ea1d6e7aec4d59ed4999f))
+
+
+### BREAKING CHANGES
+
+* New "maplibregl-" class names.
+
 ## [1.8.7](https://github.com/dhis2/maps-gl/compare/v1.8.6...v1.8.7) (2021-07-06)
 
 
