@@ -3,7 +3,7 @@ import './spiderifier.css'
 
 /*
  * This file is based on https://github.com/bewithjonam/maplibregl-spiderifier (MIT License)
- * It was adapted to support maplibre-gl-ls
+ * It was adapted to support maplibre-gl
  *
  * MIT License
  *
