@@ -1,4 +1,4 @@
-import { Popup } from 'mapbox-gl'
+import { Popup } from 'maplibre-gl'
 import './Label.css'
 
 const defaultOptions = {
@@ -9,7 +9,7 @@ const defaultOptions = {
     className: 'dhis2-map-label',
 }
 
-// Extends Mapbox GL Popup to create a label used for hover/tooltip
+// Extends MapLibre GL Popup to create a label used for hover/tooltip
 // Extends https://github.com/mapbox/mapbox-gl-js/blob/master/src/ui/popup.js
 class Label extends Popup {
     constructor(options) {

@@ -83,8 +83,8 @@
     font-size: 12px;
 }
 
-.mapboxgl-ctrl-bottom-left .dhis2-map-ctrl-search ul,
-.mapboxgl-ctrl-bottom-right .dhis2-map-ctrl-search ul {
+.maplibregl-ctrl-bottom-left .dhis2-map-ctrl-search ul,
+.maplibregl-ctrl-bottom-right .dhis2-map-ctrl-search ul {
     top: auto;
     bottom: 100%;
 }

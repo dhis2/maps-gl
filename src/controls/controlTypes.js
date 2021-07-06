@@ -1,4 +1,4 @@
-import { AttributionControl, ScaleControl } from 'mapbox-gl'
+import { AttributionControl, ScaleControl } from 'maplibre-gl'
 import Navigation from './Navigation'
 import Search from './Search'
 import Measure from './Measure'

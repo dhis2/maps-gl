@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid'
 import bbox from '@turf/bbox'
-import { Evented } from 'mapbox-gl'
+import { Evented } from 'maplibre-gl'
 import { addImages } from '../utils/images'
 import { featureCollection } from '../utils/geometry'
 import { bufferSource } from '../utils/buffers'

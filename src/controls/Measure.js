@@ -27,7 +27,7 @@ class MeasureControl {
     onAdd() {
         this._container = createElement(
             'div',
-            'mapboxgl-ctrl mapboxgl-ctrl-group'
+            'maplibregl-ctrl maplibregl-ctrl-group'
         )
         this._setupUI()
 
@@ -47,7 +47,7 @@ class MeasureControl {
 
         this._button = createElement(
             'button',
-            'mapboxgl-ctrl-icon dhis2-map-ctrl-measure',
+            'maplibregl-ctrl-icon dhis2-map-ctrl-measure',
             '',
             this._container
         )
