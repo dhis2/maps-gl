@@ -2,7 +2,7 @@ import { Marker } from 'maplibre-gl'
 import './spiderifier.css'
 
 /*
- * This file is based on https://github.com/bewithjonam/mapboxgl-spiderifier (MIT License)
+ * This file is based on https://github.com/bewithjonam/maplibregl-spiderifier (MIT License)
  * It was adapted to support maplibre-gl-ls
  *
  * MIT License

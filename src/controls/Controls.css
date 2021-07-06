@@ -1,36 +1,36 @@
-.dhis2-map .mapboxgl-ctrl-scale {
+.dhis2-map .maplibregl-ctrl-scale {
     margin-bottom: 5px;
 }
 
-.dhis2-map .mapboxgl-ctrl-attrib.mapboxgl-compact {
+.dhis2-map .maplibregl-ctrl-attrib.maplibregl-compact {
     margin-bottom: 3px;
     margin-right: 3px;
 }
 
-.dhis2-map-split-view .mapboxgl-ctrl-group {
+.dhis2-map-split-view .maplibregl-ctrl-group {
     box-shadow: none;
 }
 
-.dhis2-map-split-view .mapboxgl-ctrl-zoom-in,
-.dhis2-map-split-view .mapboxgl-ctrl-zoom-out,
-.dhis2-map-split-view .mapboxgl-ctrl-compass,
-.dhis2-map-split-view .mapboxgl-ctrl-fullscreen,
-.dhis2-map-split-view .mapboxgl-ctrl-shrink {
+.dhis2-map-split-view .maplibregl-ctrl-zoom-in,
+.dhis2-map-split-view .maplibregl-ctrl-zoom-out,
+.dhis2-map-split-view .maplibregl-ctrl-compass,
+.dhis2-map-split-view .maplibregl-ctrl-fullscreen,
+.dhis2-map-split-view .maplibregl-ctrl-shrink {
     position: absolute;
     right: 0;
     background: #fff;
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
-.dhis2-map-split-view .mapboxgl-ctrl-zoom-in:not(:disabled):hover,
-.dhis2-map-split-view .mapboxgl-ctrl-zoom-out:not(:disabled):hover,
-.dhis2-map-split-view .mapboxgl-ctrl-compass:not(:disabled):hover,
-.dhis2-map-split-view .mapboxgl-ctrl-fullscreen:not(:disabled):hover,
-.dhis2-map-split-view .mapboxgl-ctrl-shrink:not(:disabled):hover {
+.dhis2-map-split-view .maplibregl-ctrl-zoom-in:not(:disabled):hover,
+.dhis2-map-split-view .maplibregl-ctrl-zoom-out:not(:disabled):hover,
+.dhis2-map-split-view .maplibregl-ctrl-compass:not(:disabled):hover,
+.dhis2-map-split-view .maplibregl-ctrl-fullscreen:not(:disabled):hover,
+.dhis2-map-split-view .maplibregl-ctrl-shrink:not(:disabled):hover {
     background-color: #f3f3f3;
 }
 
-.dhis2-map-split-view .mapboxgl-ctrl-zoom-in {
+.dhis2-map-split-view .maplibregl-ctrl-zoom-in {
     top: 0;
     background: #fff;
     border-top-left-radius: 3px;
@@ -38,26 +38,26 @@
     z-index: 1002;
 }
 
-.dhis2-map-split-view .mapboxgl-ctrl-zoom-out {
+.dhis2-map-split-view .maplibregl-ctrl-zoom-out {
     top: 29px;
     z-index: 1001;
 }
 
-.dhis2-map-split-view .mapboxgl-ctrl-compass {
+.dhis2-map-split-view .maplibregl-ctrl-compass {
     top: 58px;
     border-bottom-left-radius: 3px;
     border-bottom-right-radius: 3px;
     z-index: 1000;
 }
 
-.dhis2-map-split-view .mapboxgl-ctrl-fullscreen,
-.dhis2-map-split-view .mapboxgl-ctrl-shrink {
+.dhis2-map-split-view .maplibregl-ctrl-fullscreen,
+.dhis2-map-split-view .maplibregl-ctrl-shrink {
     top: 98px;
     border-radius: 3px;
 }
 
-.dhis2-map-plugin .dhis2-map-split-view .mapboxgl-ctrl-fullscreen,
-.dhis2-map-plugin .dhis2-map-split-view .mapboxgl-ctrl-shrink {
+.dhis2-map-plugin .dhis2-map-split-view .maplibregl-ctrl-fullscreen,
+.dhis2-map-plugin .dhis2-map-split-view .maplibregl-ctrl-shrink {
     top: 69px;
 }
 
@@ -74,7 +74,7 @@
     right: 10px;
 }
 
-.dhis2-map-split-view .mapboxgl-ctrl-attrib {
+.dhis2-map-split-view .maplibregl-ctrl-attrib {
     position: absolute;
     right: 1px;
     bottom: 1px;
@@ -82,20 +82,20 @@
     margin: 0;
 }
 
-.dhis2-map-split-view .mapboxgl-ctrl-attrib.mapboxgl-compact:hover {
+.dhis2-map-split-view .maplibregl-ctrl-attrib.maplibregl-compact:hover {
     height: 24px;
     padding-top: 4px;
 }
 
 .dhis2-map-split-view
-    .mapboxgl-ctrl-attrib.mapboxgl-compact:hover
-    .mapboxgl-ctrl-attrib-inner {
+    .maplibregl-ctrl-attrib.maplibregl-compact:hover
+    .maplibregl-ctrl-attrib-inner {
     position: relative;
     right: 0;
     padding: 2px 8px;
 }
 
-.dhis2-map-split-view .mapboxgl-ctrl-attrib.mapboxgl-compact:after {
+.dhis2-map-split-view .maplibregl-ctrl-attrib.maplibregl-compact:after {
     right: 0;
     bottom: 0;
 }
@@ -104,22 +104,22 @@
     display: none;
 }
 
-.dhis2-map-download .mapboxgl-ctrl-zoom-in,
-.dhis2-map-download .mapboxgl-ctrl-zoom-out,
-.dhis2-map-download .mapboxgl-ctrl-compass,
-.dhis2-map-download .mapboxgl-ctrl-fullscreen {
+.dhis2-map-download .maplibregl-ctrl-zoom-in,
+.dhis2-map-download .maplibregl-ctrl-zoom-out,
+.dhis2-map-download .maplibregl-ctrl-compass,
+.dhis2-map-download .maplibregl-ctrl-fullscreen {
     display: none;
 }
 
-.dhis2-map-download .mapboxgl-ctrl-attrib {
+.dhis2-map-download .maplibregl-ctrl-attrib {
     white-space: nowrap;
 }
 
-.dhis2-map-plugin .mapboxgl-ctrl-compass {
+.dhis2-map-plugin .maplibregl-ctrl-compass {
     display: none;
 }
 
-.dhis2-map-plugin .mapboxgl-ctrl-zoom-out {
+.dhis2-map-plugin .maplibregl-ctrl-zoom-out {
     border-bottom-left-radius: 3px;
     border-bottom-right-radius: 3px;
 }
