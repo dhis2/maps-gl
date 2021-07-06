@@ -1,6 +1,6 @@
 import Map from '../Map'
 
-jest.mock('maplibre-gl', () => ({
+jest.mock('mapbox-gl', () => ({
     Map: () => mockMapGL,
     Evented: () => {},
     Marker: () => {},

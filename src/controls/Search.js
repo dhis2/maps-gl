@@ -1,4 +1,4 @@
-import { Popup } from 'maplibre-gl'
+import { Popup } from 'mapbox-gl'
 import Typeahead from 'suggestions'
 import './Search.css'
 
@@ -49,7 +49,7 @@ class SearchControl {
         const label = map._getUIString('SearchControl.SearchForPlace')
 
         const el = (this._container = document.createElement('div'))
-        el.className = 'maplibregl-ctrl dhis2-map-ctrl-search'
+        el.className = 'mapboxgl-ctrl dhis2-map-ctrl-search'
 
         const icon = document.createElement('span')
         icon.className = 'geocoder-icon geocoder-icon-search'

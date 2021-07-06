@@ -1,4 +1,4 @@
-import { Popup as PopupGL } from 'maplibre-gl'
+import { Popup as PopupGL } from 'mapbox-gl'
 
 const defaultOptions = {
     maxWidth: 'auto',

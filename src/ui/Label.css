@@ -1,8 +1,8 @@
-.dhis2-map-label .maplibregl-popup-tip {
+.dhis2-map-label .mapboxgl-popup-tip {
     display: none;
 }
 
-.dhis2-map-label .maplibregl-popup-content {
+.dhis2-map-label .mapboxgl-popup-content {
     padding: 2px 5px;
     box-shadow: 0px 1px 3px 0px rgba(0, 0, 0, 0.2),
         0px 1px 1px 0px rgba(0, 0, 0, 0.14),

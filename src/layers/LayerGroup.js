@@ -1,4 +1,4 @@
-import { Evented } from 'maplibre-gl'
+import { Evented } from 'mapbox-gl'
 import { getBoundsFromLayers } from '../utils/geometry'
 
 class LayerGroup extends Evented {
