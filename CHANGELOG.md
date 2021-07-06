@@ -1,3 +1,10 @@
+## [1.8.7](https://github.com/dhis2/maps-gl/compare/v1.8.6...v1.8.7) (2021-07-06)
+
+
+### Reverts
+
+* Revert "BREAKING CHANGE: switch from Mapbox GL JS to MapLibre GL JS (DHIS2-11406) (#367)" (#373) ([5576591](https://github.com/dhis2/maps-gl/commit/55765915413841bd841a92e17cff28e613566ed6)), closes [#367](https://github.com/dhis2/maps-gl/issues/367) [#373](https://github.com/dhis2/maps-gl/issues/373)
+
 ## [1.8.6](https://github.com/dhis2/maps-gl/compare/v1.8.5...v1.8.6) (2021-04-14)
 
 
