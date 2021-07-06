@@ -1,4 +1,4 @@
-import { LngLatBounds } from 'maplibre-gl'
+import { LngLatBounds } from 'mapbox-gl'
 
 export const isPoint = feature => feature.geometry.type === 'Point'
 

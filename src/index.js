@@ -5,7 +5,7 @@ import getEarthEngineApi from './utils/eeapi'
 import { getLabelPosition } from './utils/labels'
 
 /**
- *  Wrapper around MapLibre GL JS for DHIS2 Maps
+ *  Wrapper around Mapbox GL JS for DHIS2 Maps
  */
 
 export const layerTypes = Object.keys(supportedLayers)

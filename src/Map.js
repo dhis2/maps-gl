@@ -1,5 +1,5 @@
-import { Evented, Map } from 'maplibre-gl'
-import 'maplibre-gl/dist/maplibre-gl.css'
+import { Evented, Map } from 'mapbox-gl'
+import 'mapbox-gl/dist/mapbox-gl.css'
 import Layer from './layers/Layer'
 import layerTypes from './layers/layerTypes'
 import controlTypes from './controls/controlTypes'
