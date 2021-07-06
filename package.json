@@ -40,7 +40,7 @@
     "@babel/plugin-transform-runtime": "^7.3.4",
     "@babel/preset-env": "^7.12.17",
     "@babel/runtime": "^7.3.4",
-    "@dhis2/cli-style": "^2.2.2",
+    "@dhis2/cli-style": "^9.0.1",
     "@types/jest": "^26.0.20",
     "babel-jest": "^26.6.3",
     "concurrently": "^5.1.0",
