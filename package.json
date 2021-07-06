@@ -1,7 +1,7 @@
 {
   "name": "@dhis2/maps-gl",
-  "version": "1.8.6",
-  "description": "A WebGL rendering engine for DHIS2 maps based on MapLibre GL JS.",
+  "version": "1.8.7",
+  "description": "A WebGL rendering engine for DHIS2 maps based on Mapbox GL JS.",
   "publishConfig": {
     "access": "public"
   },
