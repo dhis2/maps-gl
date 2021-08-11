@@ -1,4 +1,4 @@
-import { Marker } from 'mapbox-gl'
+import { Marker } from 'maplibre-gl'
 
 // Creates a donut marker component
 class DonutMarker extends Marker {

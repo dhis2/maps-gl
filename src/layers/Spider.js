@@ -1,6 +1,5 @@
-import { Point } from 'mapbox-gl'
-import MapboxglSpiderifier from 'mapboxgl-spiderifier'
-import 'mapboxgl-spiderifier/index.css'
+import { Point } from 'maplibre-gl'
+import spiderifier from '../utils/spiderifier'
 import { eventStrokeColor as strokeColor, strokeWidth } from '../utils/style'
 
 const Spider = function(map, options) {
@@ -69,14 +68,14 @@ const Spider = function(map, options) {
     const onClick = (evt, leg) => {
         evt.stopPropagation()
 
-        const { feature, mapboxMarker, param } = leg
+        const { feature, marker, param } = leg
         const { angle, legLength } = param
         const length = legLength + options.radius
         const offset = new Point(
             length * Math.cos(angle),
             length * Math.sin(angle)
         )
-        const point = map.project(mapboxMarker.getLngLat()).add(offset)
+        const point = map.project(marker.getLngLat()).add(offset)
         const { lng, lat } = map.unproject(point)
 
         options.onClick({
@@ -87,7 +86,7 @@ const Spider = function(map, options) {
         })
     }
 
-    spider = new MapboxglSpiderifier(map, {
+    spider = spiderifier(map, {
         animate: true,
         animationSpeed: 200,
         customPin: true,
