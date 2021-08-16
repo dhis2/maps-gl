@@ -25,6 +25,8 @@ class GeoJson extends Layer {
             this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
         }
 
+        console.log('color', color)
+
         this.addLayer(polygonLayer({ id, color }), true)
         this.addLayer(outlineLayer({ id, color, width }))
         this.addLayer(lineLayer({ id, color, width }), true)
