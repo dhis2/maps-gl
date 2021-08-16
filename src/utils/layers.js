@@ -1,25 +1,18 @@
+import { isPoint, isPolygon, isLine, isCluster } from './filters'
 import {
-    isPoint,
-    isPolygon,
-    isLine,
-    isCluster,
-    isHover,
-} from '../utils/filters'
-import { colorExpr, radiusExpr, clusterRadiusExpr } from './expressions'
+    colorExpr,
+    widthExpr,
+    radiusExpr,
+    clusterRadiusExpr,
+} from './expressions'
 import defaults from './style'
-
-const getStrokeWidth = (width = 0) => [
-    'case',
-    isHover,
-    width + defaults.hoverStrokeWidth,
-    width + defaults.strokeWidth,
-]
 
 // Layer with point features
 export const pointLayer = ({
     id,
     color,
     strokeColor,
+    width,
     radius,
     source,
     filter,
@@ -30,7 +23,7 @@ export const pointLayer = ({
     paint: {
         'circle-color': colorExpr(color || defaults.noDataColor),
         'circle-radius': radiusExpr(radius || defaults.radius),
-        'circle-stroke-width': getStrokeWidth(),
+        'circle-stroke-width': widthExpr(width),
         'circle-stroke-color': strokeColor || defaults.strokeColor,
     },
     filter: filter || isPoint,
@@ -43,7 +36,7 @@ export const lineLayer = ({ id, color, width, source, filter }) => ({
     source: source || id,
     paint: {
         'line-color': color,
-        'line-width': getStrokeWidth(width),
+        'line-width': widthExpr(width),
     },
     filter: filter || isLine,
 })
@@ -61,13 +54,13 @@ export const polygonLayer = ({ id, color, source, filter }) => ({
 
 // Polygon outline and hover state
 // https://github.com/mapbox/mapbox-gl-js/issues/3018
-export const outlineLayer = ({ id, color, source, filter }) => ({
+export const outlineLayer = ({ id, color, width, source, filter }) => ({
     id: `${id}-outline`,
     type: 'line',
     source: source || id,
     paint: {
         'line-color': color || defaults.strokeColor,
-        'line-width': getStrokeWidth(),
+        'line-width': widthExpr(width),
     },
     filter: filter || isPolygon,
 })
