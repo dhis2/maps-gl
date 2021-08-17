@@ -35,7 +35,7 @@ export const lineLayer = ({ id, color, width, source, filter }) => ({
     type: 'line',
     source: source || id,
     paint: {
-        'line-color': color || defaults.strokeColor,
+        'line-color': color,
         'line-width': widthExpr(width),
     },
     filter: filter || isLine,
