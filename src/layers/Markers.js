@@ -11,18 +11,6 @@ class Markers extends Layer {
         this.createLayer()
     }
 
-    setImages() {
-        const features = this.getFeatures()
-        const images = {}
-
-        features.forEach(f => {
-            images[f.properties.icon.iconUrl] = f.properties.icon.iconSize
-            f.properties.iconUrl = f.properties.icon.iconUrl
-        })
-
-        this._images = Object.keys(images)
-    }
-
     createLayer() {
         const id = this.getId()
         const { buffer, bufferStyle, label, labelStyle } = this.options

@@ -1,4 +1,10 @@
-import { isPoint, isPolygon, isLine, isCluster } from './filters'
+import {
+    isPointNoSymbol,
+    isPolygon,
+    isLine,
+    isCluster,
+    isSymbol,
+} from './filters'
 import {
     colorExpr,
     widthExpr,
@@ -26,7 +32,7 @@ export const pointLayer = ({
         'circle-stroke-width': widthExpr(width),
         'circle-stroke-color': strokeColor || defaults.strokeColor,
     },
-    filter: filter || isPoint,
+    filter: filter || isPointNoSymbol,
 })
 
 // Layer with line features
@@ -63,6 +69,18 @@ export const outlineLayer = ({ id, color, width, source, filter }) => ({
         'line-width': widthExpr(width),
     },
     filter: filter || isPolygon,
+})
+
+export const symbolLayer = ({ id, source, filter }) => ({
+    id: `${id}-symbol`,
+    type: 'symbol',
+    source: source || id,
+    layout: {
+        'icon-image': ['get', 'iconUrl'],
+        'icon-size': 1,
+        'icon-allow-overlap': true,
+    },
+    filter: filter || isSymbol,
 })
 
 // Layer with cluster (circles)
