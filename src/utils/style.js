@@ -8,7 +8,7 @@ export const noDataColor = '#CCCCCC'
 
 export const strokeColor = '#333333'
 export const strokeWidth = 1
-export const hoverStrokeWidth = 4
+export const hoverStrokeMultiplier = 3
 
 export const eventStrokeColor = '#333333'
 
@@ -20,6 +20,6 @@ export default {
     noDataColor,
     strokeColor,
     strokeWidth,
-    hoverStrokeWidth,
+    hoverStrokeMultiplier,
     eventStrokeColor,
 }
