@@ -36,30 +36,6 @@ export const labelSource = (features, { fontSize }, isBoundary) => ({
     ),
 })
 
-// Add label properties to layer config
-export const addTextProperties = (config, label, style) => {
-    const { fontSize, fontStyle, fontWeight, color } = style
-    const font = `${fontStyle || 'normal'}-${fontWeight || 'normal'}`
-    const size = fontSize ? parseInt(fontSize, 10) : 12
-
-    return {
-        ...config,
-        layout: {
-            ...config.layout,
-            'text-field': label || '{name}',
-            'text-font': [fonts[font]],
-            'text-size': size,
-            'text-optional': true,
-            'text-anchor': 'top',
-        },
-        paint: {
-            ...config.paint,
-            'text-color': color || '#333',
-            'text-translate': [0, 10],
-        },
-    }
-}
-
 export const labelLayer = ({
     id,
     label,

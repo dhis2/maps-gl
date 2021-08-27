@@ -209,7 +209,13 @@ class Layer extends Evented {
     }
 
     setImages(images) {
-        this._images = images
+        this._images = images || [
+            ...new Set(
+                this.getFeatures()
+                    .filter(f => f.properties.iconUrl)
+                    .map(f => f.properties.iconUrl)
+            ),
+        ]
     }
 
     setIndex(index = 0) {

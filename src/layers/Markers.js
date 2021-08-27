@@ -1,6 +1,7 @@
 import Layer from './Layer'
+import { symbolLayer } from '../utils/layers'
 import { bufferLayer, bufferOutlineLayer } from '../utils/buffers'
-import { addTextProperties } from '../utils/labels'
+import { labelLayer } from '../utils/labels'
 
 class Markers extends Layer {
     constructor(options) {
@@ -9,18 +10,6 @@ class Markers extends Layer {
         this.setImages()
         this.createSource()
         this.createLayer()
-    }
-
-    setImages() {
-        const features = this.getFeatures()
-        const images = {}
-
-        features.forEach(f => {
-            images[f.properties.icon.iconUrl] = f.properties.icon.iconSize
-            f.properties.iconUrl = f.properties.icon.iconUrl
-        })
-
-        this._images = Object.keys(images)
     }
 
     createLayer() {
@@ -32,21 +21,11 @@ class Markers extends Layer {
             this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
         }
 
-        const config = {
-            id: `${id}-icon`,
-            type: 'symbol',
-            source: id,
-            layout: {
-                'icon-image': ['get', 'iconUrl'],
-                'icon-size': 1,
-                'icon-allow-overlap': true,
-            },
-        }
+        this.addLayer(symbolLayer({ id }), true)
 
-        this.addLayer(
-            label ? addTextProperties(config, label, labelStyle) : config,
-            true
-        )
+        if (label) {
+            this.addLayer(labelLayer({ id, label, ...labelStyle }))
+        }
     }
 }
 
