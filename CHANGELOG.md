@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/dhis2/maps-gl/compare/v2.0.0...v2.0.1) (2021-08-27)
+
+
+### Bug Fixes
+
+* upgraded expressions and marker layer refactor ([#389](https://github.com/dhis2/maps-gl/issues/389)) ([2a0b660](https://github.com/dhis2/maps-gl/commit/2a0b66012934ff23cbe2630a984312cce901e8e7))
+
 # [2.0.0](https://github.com/dhis2/maps-gl/compare/v1.8.7...v2.0.0) (2021-07-06)
 
 
