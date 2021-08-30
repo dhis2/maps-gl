@@ -1,3 +1,10 @@
+# [2.1.0](https://github.com/dhis2/maps-gl/compare/v2.0.1...v2.1.0) (2021-08-30)
+
+
+### Features
+
+* enhanced GeoJSON layer (DHIS2-11071) ([#388](https://github.com/dhis2/maps-gl/issues/388)) ([0eec01a](https://github.com/dhis2/maps-gl/commit/0eec01abc3606291389f3a54a13c9dbd610b03be))
+
 ## [2.0.1](https://github.com/dhis2/maps-gl/compare/v2.0.0...v2.0.1) (2021-08-27)
 
 
