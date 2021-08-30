@@ -4,7 +4,7 @@ import {
     isLine,
     isCluster,
     isSymbol,
-} from '../utils/filters'
+} from './filters'
 import {
     colorExpr,
     widthExpr,
