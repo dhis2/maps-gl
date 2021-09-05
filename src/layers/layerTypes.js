@@ -10,6 +10,7 @@ import EarthEngine from './EarthEngine'
 import BingLayer from './BingLayer'
 import GeoJson from './GeoJson'
 import LayerGroup from './LayerGroup'
+import Flow from './Flow'
 
 export default {
     tileLayer: TileLayer, // basemap / external layer
@@ -25,4 +26,5 @@ export default {
     bingLayer: BingLayer, // bing layer basemap
     geoJson: GeoJson, // tracked entity layer
     group: LayerGroup, // tracked entity layer
+    flow: Flow,
 }
