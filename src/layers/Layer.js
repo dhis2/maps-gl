@@ -40,7 +40,11 @@ class Layer extends Evented {
         }
 
         Object.keys(source).forEach(id => mapgl.addSource(id, source[id]))
-        layers.forEach(layer => mapgl.addLayer(layer))
+        layers.forEach(layer => {
+            console.log('addLayer', typeof layer, layer)
+
+            mapgl.addLayer(layer)
+        })
 
         if (opacity) {
             this.setOpacity(opacity)
