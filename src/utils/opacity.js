@@ -7,7 +7,7 @@ const properties = {
     buffer: ['fill-opacity'],
     'buffer-outline': ['line-opacity'],
     label: ['text-opacity'],
-    icon: ['icon-opacity', 'text-opacity'],
+    symbol: ['icon-opacity', 'text-opacity'],
     cluster: ['circle-opacity', 'circle-stroke-opacity'],
     count: ['text-opacity'],
 }
