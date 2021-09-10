@@ -1,3 +1,10 @@
+## [2.1.1](https://github.com/dhis2/maps-gl/compare/v2.1.0...v2.1.1) (2021-09-10)
+
+
+### Bug Fixes
+
+* symbol opacity ([#395](https://github.com/dhis2/maps-gl/issues/395)) ([d09d249](https://github.com/dhis2/maps-gl/commit/d09d249a1cd45a9d664a8f0d8a1a257fce10a81e))
+
 # [2.1.0](https://github.com/dhis2/maps-gl/compare/v2.0.1...v2.1.0) (2021-08-30)
 
 
