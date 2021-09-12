@@ -341,11 +341,16 @@ export class MapGL extends Evented {
             this._popup = new Popup()
         }
 
+        // Remove previous attached onClose event before setting new content
+        this._popup.clear()
+
         this._popup
             .setLngLat(lnglat)
             .setDOMContent(content)
-            .onClose(onClose)
             .addTo(this)
+
+        // (Re)set onClose event
+        this._popup.onClose(onClose)
     }
 
     closePopup() {

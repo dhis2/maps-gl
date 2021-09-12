@@ -22,8 +22,18 @@ class Popup extends PopupGL {
         }
     }
 
+    // Remove onClose event if it exists
+    clear() {
+        if (this._onCloseFunc) {
+            this.off('close', this._onCloseFunc)
+            this._onCloseFunc = null
+        }
+        return this
+    }
+
     onClose(onClose) {
         if (typeof onClose === 'function') {
+            this._onCloseFunc = onClose
             this.on('close', onClose)
         }
         return this
