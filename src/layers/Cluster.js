@@ -87,7 +87,7 @@ class Cluster extends Layer {
         this.addLayer(
             outlineLayer({
                 id,
-                color: eventStrokeColor,
+                color: strokeColor,
                 source: `${id}-polygons`,
             })
         )

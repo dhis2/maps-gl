@@ -28,7 +28,7 @@ class Events extends Layer {
 
         this.addLayer(pointLayer({ id, color, radius, strokeColor }), true)
         this.addLayer(polygonLayer({ id, color }), true)
-        this.addLayer(outlineLayer({ id, color: eventStrokeColor }))
+        this.addLayer(outlineLayer({ id, color: strokeColor }))
     }
 }
 
