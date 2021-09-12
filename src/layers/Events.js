@@ -13,17 +13,20 @@ class Events extends Layer {
 
     createLayers() {
         const id = this.getId()
-        const { fillColor: color, radius, buffer, bufferStyle } = this.options
+        const {
+            fillColor: color,
+            strokeColor = eventStrokeColor,
+            radius,
+            buffer,
+            bufferStyle,
+        } = this.options
 
         if (buffer) {
             this.addLayer(bufferLayer({ id, ...bufferStyle }))
             this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
         }
 
-        this.addLayer(
-            pointLayer({ id, color, radius, strokeColor: eventStrokeColor }),
-            true
-        )
+        this.addLayer(pointLayer({ id, color, radius, strokeColor }), true)
         this.addLayer(polygonLayer({ id, color }), true)
         this.addLayer(outlineLayer({ id, color: eventStrokeColor }))
     }

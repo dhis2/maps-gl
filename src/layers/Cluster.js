@@ -17,7 +17,7 @@ class Cluster extends Layer {
     setFeatures(data = []) {
         super.setFeatures(data) // Assigns id to each feature
 
-        this._hasPolygons = data.some(f => f.geometry.type === 'Polygon');
+        this._hasPolygons = data.some(f => f.geometry.type === 'Polygon')
 
         if (this._hasPolygons) {
             this._polygons = {}
@@ -34,7 +34,7 @@ class Cluster extends Layer {
                         properties: {
                             ...f.properties,
                             isPolygon: true,
-                        }
+                        },
                     }
                 }
 
@@ -55,20 +55,42 @@ class Cluster extends Layer {
 
         this.setSource(`${id}-polygons`, {
             type: 'geojson',
-            data: featureCollection()
+            data: featureCollection(),
         })
     }
 
     createLayers() {
         const id = this.getId()
-        const { fillColor: color, radius } = this.options
+        const {
+            fillColor: color,
+            strokeColor = eventStrokeColor,
+            radius,
+        } = this.options
 
         // Non-clustered points
-        this.addLayer(pointLayer({ id, color, strokeColor: eventStrokeColor, radius, filter: isClusterPoint }), true)
+        this.addLayer(
+            pointLayer({
+                id,
+                color,
+                strokeColor,
+                radius,
+                filter: isClusterPoint,
+            }),
+            true
+        )
 
         // Non-clustered polygons
-        this.addLayer(polygonLayer({ id, color, source: `${id}-polygons` }), true)
-        this.addLayer(outlineLayer({ id, color: eventStrokeColor, source: `${id}-polygons` }))
+        this.addLayer(
+            polygonLayer({ id, color, source: `${id}-polygons` }),
+            true
+        )
+        this.addLayer(
+            outlineLayer({
+                id,
+                color: eventStrokeColor,
+                source: `${id}-polygons`,
+            })
+        )
     }
 
     setOpacity(opacity) {
@@ -152,26 +174,31 @@ class Cluster extends Layer {
 
     updatePolygons = () => {
         // Returns polygons visible on the map (within the map view and not clustered)
-        const polygons = this.getSourceFeatures().filter(f => f.properties.isPolygon)
+        const polygons = this.getSourceFeatures().filter(
+            f => f.properties.isPolygon
+        )
         let polygonIds = []
 
         if (polygons.length) {
             // Using set as features might be returned multipe times due to tiling
-            polygonIds = [...new Set(polygons.map(f => f.id))].sort()      
-        }   
+            polygonIds = [...new Set(polygons.map(f => f.id))].sort()
+        }
 
         // Only update source if there is a change
-        if (polygonIds.length !== this._polygonsOnMap.length || polygonIds.some((id, index) => id !== this._polygonsOnMap[index])) {
+        if (
+            polygonIds.length !== this._polygonsOnMap.length ||
+            polygonIds.some((id, index) => id !== this._polygonsOnMap[index])
+        ) {
             this._polygonsOnMap = polygonIds
 
             const features = polygonIds.map(id => this._polygons[id])
             const source = this.getMapGL().getSource(`${this.getId()}-polygons`)
-    
+
             source.setData(featureCollection(features))
-        } 
+        }
     }
 
-    // Returns source features 
+    // Returns source features
     getSourceFeatures() {
         return this.getMapGL().querySourceFeatures(this.getId())
     }

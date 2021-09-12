@@ -1,7 +1,7 @@
 import Cluster from './Cluster'
 import { featureCollection } from '../utils/geometry'
 import { clusterLayer, clusterCountLayer } from '../utils/layers'
-import { eventStrokeColor as strokeColor } from '../utils/style'
+import { eventStrokeColor } from '../utils/style'
 
 class ClientCluster extends Cluster {
     createSource() {
@@ -13,7 +13,10 @@ class ClientCluster extends Cluster {
 
     createLayers() {
         const id = this.getId()
-        const { fillColor: color } = this.options
+        const {
+            fillColor: color,
+            strokeColor = eventStrokeColor,
+        } = this.options
 
         super.createLayers()
 
