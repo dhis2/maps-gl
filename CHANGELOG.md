@@ -1,3 +1,10 @@
+## [2.1.2](https://github.com/dhis2/maps-gl/compare/v2.1.1...v2.1.2) (2021-09-13)
+
+
+### Bug Fixes
+
+* always open popup with single click ([#398](https://github.com/dhis2/maps-gl/issues/398)) ([bd2b9ac](https://github.com/dhis2/maps-gl/commit/bd2b9ac5cef33f2004236005090c1d160cf7372b))
+
 ## [2.1.1](https://github.com/dhis2/maps-gl/compare/v2.1.0...v2.1.1) (2021-09-10)
 
 
