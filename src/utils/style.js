@@ -11,7 +11,7 @@ export const strokeWidth = 1
 export const hoverStrokeMultiplier = 3
 
 export const eventStrokeColor = '#333333'
-export const clusterCountColor = '#333333'
+export const clusterCountColor = '#000000'
 
 export default {
     textFont,
