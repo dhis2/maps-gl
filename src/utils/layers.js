@@ -98,7 +98,7 @@ export const clusterLayer = ({ id, color, strokeColor }) => ({
 })
 
 //  Layer with cluster counts (text)
-export const clusterCountLayer = ({ id }) => ({
+export const clusterCountLayer = ({ id, color }) => ({
     id: `${id}-count`,
     type: 'symbol',
     source: id,
@@ -109,6 +109,6 @@ export const clusterCountLayer = ({ id }) => ({
         'text-size': defaults.textSize,
     },
     paint: {
-        'text-color': defaults.textColor,
+        'text-color': color || defaults.textColor,
     },
 })
