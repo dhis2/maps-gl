@@ -84,7 +84,7 @@ export const symbolLayer = ({ id, source, filter }) => ({
 })
 
 // Layer with cluster (circles)
-export const clusterLayer = ({ id, color }) => ({
+export const clusterLayer = ({ id, color, strokeColor }) => ({
     id: `${id}-cluster`,
     type: 'circle',
     source: id,
@@ -92,13 +92,13 @@ export const clusterLayer = ({ id, color }) => ({
     paint: {
         'circle-color': color,
         'circle-radius': clusterRadiusExpr,
+        'circle-stroke-color': strokeColor,
         'circle-stroke-width': defaults.strokeWidth,
-        'circle-stroke-color': defaults.eventStrokeColor,
     },
 })
 
 //  Layer with cluster counts (text)
-export const clusterCountLayer = ({ id }) => ({
+export const clusterCountLayer = ({ id, color }) => ({
     id: `${id}-count`,
     type: 'symbol',
     source: id,
@@ -109,6 +109,6 @@ export const clusterCountLayer = ({ id }) => ({
         'text-size': defaults.textSize,
     },
     paint: {
-        'text-color': defaults.textColor,
+        'text-color': color || defaults.textColor,
     },
 })

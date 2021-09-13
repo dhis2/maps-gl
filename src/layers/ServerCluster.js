@@ -10,7 +10,7 @@ import {
 } from '../utils/layers'
 import { isClusterPoint } from '../utils/filters'
 import { featureCollection } from '../utils/geometry'
-import { eventStrokeColor as strokeColor } from '../utils/style'
+import { eventStrokeColor, clusterCountColor } from '../utils/style'
 import { earthRadius } from '../utils/geo'
 
 class ServerCluster extends Cluster {
@@ -45,7 +45,12 @@ class ServerCluster extends Cluster {
 
     createLayers() {
         const id = this.getId()
-        const { fillColor: color, radius } = this.options
+        const {
+            fillColor: color,
+            strokeColor = eventStrokeColor,
+            countColor = clusterCountColor,
+            radius,
+        } = this.options
 
         // Non-clustered points
         this.addLayer(
@@ -65,7 +70,7 @@ class ServerCluster extends Cluster {
 
         // Clusters
         this.addLayer(clusterLayer({ id, color, strokeColor }), true)
-        this.addLayer(clusterCountLayer({ id }))
+        this.addLayer(clusterCountLayer({ id, color: countColor }))
     }
 
     getTileId(tile) {
