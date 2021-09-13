@@ -1,3 +1,10 @@
+## [2.1.3](https://github.com/dhis2/maps-gl/compare/v2.1.2...v2.1.3) (2021-09-13)
+
+
+### Bug Fixes
+
+* event stroke and count color ([#399](https://github.com/dhis2/maps-gl/issues/399)) ([3bd1e1d](https://github.com/dhis2/maps-gl/commit/3bd1e1dd7a765eaeb296974801799b36d8819215))
+
 ## [2.1.2](https://github.com/dhis2/maps-gl/compare/v2.1.1...v2.1.2) (2021-09-13)
 
 
