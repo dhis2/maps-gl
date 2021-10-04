@@ -1,3 +1,10 @@
+## [2.1.4](https://github.com/dhis2/maps-gl/compare/v2.1.3...v2.1.4) (2021-10-04)
+
+
+### Bug Fixes
+
+* update donut clusters on source data ([#403](https://github.com/dhis2/maps-gl/issues/403)) ([17ea982](https://github.com/dhis2/maps-gl/commit/17ea98290319d98bedc712cef01c5998776dd615))
+
 ## [2.1.3](https://github.com/dhis2/maps-gl/compare/v2.1.2...v2.1.3) (2021-09-13)
 
 
