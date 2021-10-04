@@ -51,12 +51,7 @@ class DonutCluster extends Cluster {
     }
 
     onSourceData = evt => {
-        if (
-            evt.sourceId === this.getId() &&
-            evt.isSourceLoaded &&
-            this.getSourceFeatures().length
-        ) {
-            this.getMapGL().off('sourcedata', this.onSourceData)
+        if (evt.sourceId === this.getId() && this.getSourceFeatures().length) {
             this.updateClusters()
         }
     }
