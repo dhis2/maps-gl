@@ -6,6 +6,7 @@ import controlTypes from './controls/controlTypes'
 import controlsLocale from './controls/controlsLocale'
 import MultiTouch from './controls/MultiTouch'
 import { transformRequest } from './utils/images'
+import { mapStyle } from './utils/style'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
 import Popup from './ui/Popup'
@@ -30,13 +31,7 @@ export class MapGL extends Evented {
 
         const mapgl = new Map({
             container: el,
-            style: {
-                version: 8,
-                sources: {},
-                layers: [],
-                glyphs:
-                    'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf', // TODO: Host ourseleves
-            },
+            style: mapStyle,
             maxZoom: 18,
             preserveDrawingBuffer: true, // TODO: requred for map download, but reduced performance
             attributionControl: false,
@@ -112,6 +107,30 @@ export class MapGL extends Evented {
         }
 
         this.orderLayers()
+    }
+
+    async addOverlays() {
+        for (let i = 1; i < this._layers.length; i++) {
+            const layer = this._layers[i]
+            if (!layer.isOnMap()) {
+                await layer.addTo(this)
+                layer.setVisibility(layer.isVisible())
+                layer.addEventListeners()
+            }
+        }
+    }
+
+    sortLayers() {
+        this._layers.sort((a, b) => a.getIndex() - b.getIndex())
+    }
+
+    removeOverlayEvents() {
+        this.sortLayers()
+        for (let i = 1; i < this._layers.length; i++) {
+            const layer = this._layers[i]
+
+            layer.removeEventListeners()
+        }
     }
 
     removeLayer(layer) {
@@ -323,17 +342,25 @@ export class MapGL extends Evented {
     }
 
     orderLayers() {
-        this._layers.sort((a, b) => a.getIndex() - b.getIndex())
+        this.sortLayers()
 
         for (let i = 1; i < this._layers.length; i++) {
             const layer = this._layers[i]
 
             if (layer.isOnMap()) {
-                layer.moveToTop()
+                layer.moveToTop(this._beforeId)
             }
         }
 
         this.fire('layersort')
+    }
+
+    setBeforeLayerId(beforeId) {
+        this._beforeId = beforeId
+    }
+
+    getBeforeLayerId() {
+        return this._beforeId
     }
 
     openPopup(content, lnglat, onClose) {

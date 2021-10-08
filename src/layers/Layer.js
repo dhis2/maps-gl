@@ -26,7 +26,7 @@ class Layer extends Evented {
     }
 
     async addTo(map) {
-        const { opacity, onClick, onRightClick } = this.options
+        const { opacity } = this.options
 
         this._map = map
 
@@ -40,12 +40,19 @@ class Layer extends Evented {
         }
 
         Object.keys(source).forEach(id => mapgl.addSource(id, source[id]))
-        layers.forEach(layer => mapgl.addLayer(layer))
+        layers.forEach(layer => mapgl.addLayer(layer, map.getBeforeLayerId()))
 
         if (opacity) {
             this.setOpacity(opacity)
         }
 
+        this.addEventListeners()
+
+        this.onAdd()
+    }
+
+    addEventListeners() {
+        const { onClick, onRightClick } = this.options
         if (onClick) {
             this.on('click', onClick)
         }
@@ -53,21 +60,10 @@ class Layer extends Evented {
         if (onRightClick) {
             this.on('contextmenu', onRightClick)
         }
-
-        this.onAdd()
     }
 
-    removeFrom(map) {
-        const mapgl = map.getMapGL()
-        const source = this.getSource()
-        const layers = this.getLayers()
+    removeEventListeners() {
         const { onClick, onRightClick } = this.options
-
-        this.onRemove()
-
-        layers.forEach(layer => mapgl.removeLayer(layer.id))
-        Object.keys(source).forEach(id => mapgl.removeSource(id))
-
         if (onClick) {
             this.off('click', onClick)
         }
@@ -75,6 +71,19 @@ class Layer extends Evented {
         if (onRightClick) {
             this.off('contextmenu', onRightClick)
         }
+    }
+
+    removeFrom(map) {
+        const mapgl = map.getMapGL()
+        const source = this.getSource()
+        const layers = this.getLayers()
+
+        this.onRemove()
+
+        layers.forEach(layer => mapgl.removeLayer(layer.id))
+        Object.keys(source).forEach(id => mapgl.removeSource(id))
+
+        this.removeEventListeners()
 
         this._map = null
     }
@@ -174,11 +183,11 @@ class Layer extends Evented {
         return this.getLayers().some(layer => layer.id === id)
     }
 
-    moveToTop() {
+    moveToTop(beforeId) {
         const mapgl = this.getMapGL()
 
         this.getLayers().forEach(layer => {
-            mapgl.moveLayer(layer.id)
+            mapgl.moveLayer(layer.id, beforeId)
         })
     }
 
