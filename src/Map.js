@@ -13,6 +13,10 @@ import Popup from './ui/Popup'
 import Label from './ui/Label'
 import './Map.css'
 
+// const BASEMAP_POSITION = 0
+// position in the layer stack where deepest overlay is found
+const DEEPEST_OVERLAY_POSITION = 1
+
 export class MapGL extends Evented {
     // Returns true if the layer type is supported
     static hasLayerSupport(type) {
@@ -110,7 +114,7 @@ export class MapGL extends Evented {
     }
 
     async addOverlays() {
-        for (let i = 1; i < this._layers.length; i++) {
+        for (let i = DEEPEST_OVERLAY_POSITION; i < this._layers.length; i++) {
             const layer = this._layers[i]
             if (!layer.isOnMap()) {
                 await layer.addTo(this)
@@ -125,8 +129,12 @@ export class MapGL extends Evented {
     }
 
     removeOverlayEvents() {
+        if (this._layers.length <= 1) {
+            return
+        }
         this.sortLayers()
-        for (let i = 1; i < this._layers.length; i++) {
+
+        for (let i = DEEPEST_OVERLAY_POSITION; i < this._layers.length; i++) {
             const layer = this._layers[i]
 
             layer.removeEventListeners()
@@ -344,11 +352,11 @@ export class MapGL extends Evented {
     orderLayers() {
         this.sortLayers()
 
-        for (let i = 1; i < this._layers.length; i++) {
+        for (let i = DEEPEST_OVERLAY_POSITION; i < this._layers.length; i++) {
             const layer = this._layers[i]
 
             if (layer.isOnMap()) {
-                layer.moveToTop(this._beforeId)
+                layer.move(this._beforeId)
             }
         }
 

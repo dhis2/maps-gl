@@ -183,7 +183,7 @@ class Layer extends Evented {
         return this.getLayers().some(layer => layer.id === id)
     }
 
-    moveToTop(beforeId) {
+    move(beforeId) {
         const mapgl = this.getMapGL()
 
         this.getLayers().forEach(layer => {

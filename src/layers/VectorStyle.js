@@ -18,6 +18,11 @@ class VectorStyle extends Evented {
         mapgl.once('idle', this.onAdd)
     }
 
+    onAdd = () => {
+        this._isOnMap = true
+        this._map.addOverlays()
+    }
+
     removeFrom(map) {
         const mapgl = map.getMapGL()
 
@@ -26,11 +31,6 @@ class VectorStyle extends Evented {
         mapgl.setStyle(mapStyle)
 
         this._isOnMap = false
-    }
-
-    onAdd = () => {
-        this._isOnMap = true
-        this._map.addOverlays()
     }
 
     setIndex(index = 0) {
@@ -46,7 +46,6 @@ class VectorStyle extends Evented {
     }
 
     hasLayerId(id) {
-        console.log('id', id)
         return false
     }
 
