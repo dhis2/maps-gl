@@ -233,7 +233,7 @@ class Layer extends Evented {
         const map = this.getMap()
 
         if (map) {
-            map.orderLayers()
+            map.orderOverlays()
         }
     }
 

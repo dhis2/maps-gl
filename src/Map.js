@@ -110,7 +110,7 @@ export class MapGL extends Evented {
             }
         }
 
-        this.orderLayers()
+        this.orderOverlays()
     }
 
     async addOverlays() {
@@ -349,7 +349,7 @@ export class MapGL extends Evented {
         return document.createElement('div') // TODO
     }
 
-    orderLayers() {
+    orderOverlays() {
         this.sortLayers()
 
         for (let i = DEEPEST_OVERLAY_POSITION; i < this._layers.length; i++) {
