@@ -14,10 +14,6 @@ import { getBufferGeometry } from '../utils/buffers'
 import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
 import { setPrecision } from '../utils/numbers'
 
-// https://developers.google.com/earth-engine/guides/debugging
-// https://developers.google.com/earth-engine/guides/client_server
-// https://gis.stackexchange.com/questions/385120/google-earth-engine-goes-unresponsive-during-large-extraction
-
 export const defaultOptions = {
     tokenType: 'Bearer',
     bandReducer: 'sum',
@@ -408,31 +404,7 @@ class EarthEngine extends Layer {
                 })
                 .select(aggregationType, null, false)
 
-            aggFeatures.flatten()
-
-            /*    
-            var serverList = ee.List.sequence(0, 7)
-
-            serverList = serverList.map(function(n) {
-                return ee.Number(n).add(1)
-            })
-
-            print(serverList)
-
-            getInfo(serverList).then(console.log)
-
-            console.log('aggFeatures', aggFeatures)
-            */
-
-            // return getInfo(aggFeatures).then(getFeatureCollectionProperties)
-
-            console.log('print', print)
-
-            console.log('aggFeatures', aggFeatures)
-
-            getInfo(aggFeatures).then(console.log)
-
-            return {}
+            return getInfo(aggFeatures).then(getFeatureCollectionProperties)
         }
     }
 
