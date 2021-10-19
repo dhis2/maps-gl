@@ -8,35 +8,28 @@ class VectorStyle extends Evented {
         this._isOnMap = false
     }
 
-    async addTo(map) {
+    addTo(map) {
         this._map = map
         map.setBeforeLayerId(this.options.beforeId)
-        map.removeOverlayEvents()
+        map.setStyle(this.options.url)
+        map.waitForStyleLoaded().then(this.onAdd)
+    }
 
-        const mapgl = map.getMapGL()
-
-        // mapgl.setStyle(this.options.url, false)
-        await this._map.setStyle(this.options.url)
-
+    onAdd = () => {
         this._isOnMap = true
-        this._map.addOverlays()
+        this._map.addLayers()
     }
 
-    async removeFrom(map) {
-        const mapgl = map.getMapGL()
-
+    removeFrom(map) {
         map.setBeforeLayerId(undefined)
-        map.removeOverlayEvents()
-
-        await this._map.setStyle(mapStyle)
-
-        // mapgl.setStyle(mapStyle, false)
-        // mapgl.once('idle', this.onRemove)
-        this._isOnMap = false
-        this._map.addOverlays()
+        map.setStyle(mapStyle)
+        map.waitForStyleLoaded().then(this.onRemove)
     }
 
-    onRemove = () => {}
+    onRemove = () => {
+        this._isOnMap = false
+        this._map.addLayers()
+    }
 
     setIndex(index = 0) {
         this.options.index = index

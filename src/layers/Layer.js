@@ -39,13 +39,12 @@ class Layer extends Evented {
             await addImages(mapgl, images)
         }
 
-        await this._map.waitForStyleLoaded()
-
         Object.keys(source).forEach(id => {
             mapgl.addSource(id, source[id])
         })
 
         const beforeId = map.getBeforeLayerId()
+
         layers.forEach(layer => {
             mapgl.addLayer(layer, beforeId)
         })
@@ -149,7 +148,6 @@ class Layer extends Evented {
     // Returns true if one of the layers are added to the map
     isOnMap() {
         const mapgl = this.getMapGL()
-
         return Boolean(mapgl && this._layers.find(l => mapgl.getLayer(l.id)))
     }
 

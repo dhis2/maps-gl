@@ -97,10 +97,12 @@ export class MapGL extends Evented {
     }
 
     async addLayer(layer) {
-        // console.log('addLayer', layer)
         this._layers.push(layer)
 
-        if (!layer.isOnMap()) {
+        if (
+            (layer instanceof layerTypes.vectorStyle || this.isStyleLoaded()) &&
+            !layer.isOnMap()
+        ) {
             await layer.addTo(this)
 
             this.fire('layeradd', this._layers)
@@ -113,8 +115,8 @@ export class MapGL extends Evented {
 
         this.orderOverlays()
     }
+
     async removeLayer(layer) {
-        // console.log('removeLayer', layer)
         if (this._mapgl && layer.isOnMap()) {
             await layer.removeFrom(this)
         }
@@ -125,22 +127,24 @@ export class MapGL extends Evented {
     }
 
     setStyle(style) {
-        this._mapgl.setStyle(style, false)
-
-        return this.waitForStyleLoaded()
+        this.removeOverlays()
+        this._mapgl.setStyle(style, { diff: false })
+        this._isStyleLoaded = false
     }
 
-    waitForStyleLoaded() {
-        if (this._mapgl.isStyleLoaded()) {
-            return
-        }
-        return new Promise(resolve => {
-            this._mapgl.once('idle', () => {
-                console.log('idle now')
-                resolve()
-            })
-        })
-    }
+    // Extra check added as mapgl.isStyleLoaded() returns true if style is set to URL
+    isStyleLoaded = () =>
+        this._mapgl.isStyleLoaded() && this._isStyleLoaded !== false
+
+    waitForStyleLoaded = () =>
+        new Promise(resolve =>
+            this.isStyleLoaded()
+                ? resolve
+                : this._mapgl.once('idle', () => {
+                      this._isStyleLoaded = true
+                      resolve()
+                  })
+        )
 
     orderOverlays() {
         this.sortLayers()
@@ -156,32 +160,52 @@ export class MapGL extends Evented {
         this.fire('layersort')
     }
 
-    async addOverlays() {
-        for (let i = DEEPEST_OVERLAY_POSITION; i < this._layers.length; i++) {
-            const layer = this._layers[i]
+    async addLayers() {
+        this.sortLayers()
+
+        const layers = this._layers.filter(
+            l => !(l instanceof layerTypes.vectorStyle)
+        )
+
+        for (let i = 0; i < layers.length; i++) {
+            const layer = layers[i]
+
             if (!layer.isOnMap()) {
                 await layer.addTo(this)
                 layer.setVisibility(layer.isVisible())
-                layer.addEventListeners()
+                // layer.addEventListeners()
+            }
+        }
+    }
+
+    removeLayers() {
+        const layers = this._layers.filter(
+            l => !(l instanceof layerTypes.vectorStyle)
+        )
+
+        for (let i = 0; i < layers.length; i++) {
+            const layer = layers[i]
+
+            if (layer.isOnMap()) {
+                layer.removeFrom(this)
+            }
+        }
+    }
+
+    removeOverlays() {
+        this.sortLayers()
+
+        for (let i = DEEPEST_OVERLAY_POSITION; i < this._layers.length; i++) {
+            const layer = this._layers[i]
+
+            if (layer.isOnMap()) {
+                layer.removeFrom(this)
             }
         }
     }
 
     sortLayers() {
         this._layers.sort((a, b) => a.getIndex() - b.getIndex())
-    }
-
-    removeOverlayEvents() {
-        if (this._layers.length <= 1) {
-            return
-        }
-        this.sortLayers()
-
-        for (let i = DEEPEST_OVERLAY_POSITION; i < this._layers.length; i++) {
-            const layer = this._layers[i]
-
-            layer.removeEventListeners()
-        }
     }
 
     remove() {
