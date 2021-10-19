@@ -11,8 +11,9 @@ class VectorStyle extends Evented {
     addTo(map) {
         this._map = map
         map.setBeforeLayerId(this.options.beforeId)
-        const mapgl = map.getMapGL()
         map.removeOverlayEvents()
+
+        const mapgl = map.getMapGL()
 
         mapgl.setStyle(this.options.url)
         mapgl.once('idle', this.onAdd)

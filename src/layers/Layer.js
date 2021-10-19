@@ -185,10 +185,13 @@ class Layer extends Evented {
 
     move(beforeId) {
         const mapgl = this.getMapGL()
+        const beforeId = this._map.getBeforeLayerId()
 
-        this.getLayers().forEach(layer => {
-            mapgl.moveLayer(layer.id, beforeId)
-        })
+        if (!beforeId || this._map.beforeIdIsInMap()) {
+            this.getLayers().forEach(layer => {
+                mapgl.moveLayer(layer.id, beforeId)
+            })
+        }
     }
 
     getFeatures() {

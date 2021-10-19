@@ -113,6 +113,20 @@ export class MapGL extends Evented {
         this.orderOverlays()
     }
 
+    orderOverlays() {
+        this.sortLayers()
+
+        for (let i = DEEPEST_OVERLAY_POSITION; i < this._layers.length; i++) {
+            const layer = this._layers[i]
+
+            if (layer.isOnMap()) {
+                layer.move(this._beforeId)
+            }
+        }
+
+        this.fire('layersort')
+    }
+
     async addOverlays() {
         for (let i = DEEPEST_OVERLAY_POSITION; i < this._layers.length; i++) {
             const layer = this._layers[i]
@@ -349,26 +363,21 @@ export class MapGL extends Evented {
         return document.createElement('div') // TODO
     }
 
-    orderOverlays() {
-        this.sortLayers()
-
-        for (let i = DEEPEST_OVERLAY_POSITION; i < this._layers.length; i++) {
-            const layer = this._layers[i]
-
-            if (layer.isOnMap()) {
-                layer.move(this._beforeId)
-            }
-        }
-
-        this.fire('layersort')
-    }
-
     setBeforeLayerId(beforeId) {
         this._beforeId = beforeId
     }
 
     getBeforeLayerId() {
         return this._beforeId
+    }
+
+    beforeIdIsInMap() {
+        return (
+            this._beforeId &&
+            this.getMapGL()
+                .getStyle()
+                .layers.find(layer => layer.id === this._beforeId)
+        )
     }
 
     openPopup(content, lnglat, onClose) {
