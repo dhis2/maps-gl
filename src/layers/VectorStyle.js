@@ -28,10 +28,15 @@ class VectorStyle extends Evented {
         const mapgl = map.getMapGL()
 
         map.setBeforeLayerId(undefined)
+        map.removeOverlayEvents()
 
         mapgl.setStyle(mapStyle)
+        mapgl.once('idle', this.onRemove)
+    }
 
+    onRemove = () => {
         this._isOnMap = false
+        this._map.addOverlays()
     }
 
     setIndex(index = 0) {
