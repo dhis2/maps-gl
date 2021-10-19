@@ -97,6 +97,7 @@ export class MapGL extends Evented {
     }
 
     async addLayer(layer) {
+        // console.log('addLayer', layer)
         this._layers.push(layer)
 
         if (!layer.isOnMap()) {
@@ -111,6 +112,34 @@ export class MapGL extends Evented {
         }
 
         this.orderOverlays()
+    }
+    async removeLayer(layer) {
+        // console.log('removeLayer', layer)
+        if (this._mapgl && layer.isOnMap()) {
+            await layer.removeFrom(this)
+        }
+
+        this._layers = this._layers.filter(l => l !== layer)
+
+        this.fire('layerremove', this._layers)
+    }
+
+    setStyle(style) {
+        this._mapgl.setStyle(style, false)
+
+        return this.waitForStyleLoaded()
+    }
+
+    waitForStyleLoaded() {
+        if (this._mapgl.isStyleLoaded()) {
+            return
+        }
+        return new Promise(resolve => {
+            this._mapgl.once('idle', () => {
+                console.log('idle now')
+                resolve()
+            })
+        })
     }
 
     orderOverlays() {
@@ -153,16 +182,6 @@ export class MapGL extends Evented {
 
             layer.removeEventListeners()
         }
-    }
-
-    removeLayer(layer) {
-        if (this._mapgl && layer.isOnMap()) {
-            layer.removeFrom(this)
-        }
-
-        this._layers = this._layers.filter(l => l !== layer)
-
-        this.fire('layerremove', this._layers)
     }
 
     remove() {

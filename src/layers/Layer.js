@@ -32,15 +32,23 @@ class Layer extends Evented {
 
         const mapgl = map.getMapGL()
         const images = this.getImages()
-        const source = await this.getSource()
+        const source = this.getSource()
         const layers = this.getLayers()
 
         if (images) {
             await addImages(mapgl, images)
         }
 
-        Object.keys(source).forEach(id => mapgl.addSource(id, source[id]))
-        layers.forEach(layer => mapgl.addLayer(layer, map.getBeforeLayerId()))
+        await this._map.waitForStyleLoaded()
+
+        Object.keys(source).forEach(id => {
+            mapgl.addSource(id, source[id])
+        })
+
+        const beforeId = map.getBeforeLayerId()
+        layers.forEach(layer => {
+            mapgl.addLayer(layer, beforeId)
+        })
 
         if (opacity) {
             this.setOpacity(opacity)
