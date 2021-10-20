@@ -1,5 +1,6 @@
 import { Evented } from 'maplibre-gl'
 import { mapStyle } from '../utils/style'
+import { BASEMAP_POSITION } from './utils/layers'
 
 class VectorStyle extends Evented {
     constructor(options = {}) {
@@ -38,7 +39,7 @@ class VectorStyle extends Evented {
         })
     }
 
-    setIndex(index = 0) {
+    setIndex(index = BASEMAP_POSITION) {
         this.options.index = index
     }
 
@@ -59,7 +60,7 @@ class VectorStyle extends Evented {
     }
 
     getIndex() {
-        return 0
+        return BASEMAP_POSITION
     }
 }
 
