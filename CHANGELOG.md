@@ -1,3 +1,11 @@
+## [2.1.5](https://github.com/dhis2/maps-gl/compare/v2.1.4...v2.1.5) (2021-10-20)
+
+
+### Bug Fixes
+
+* failing test after switching to evaluate ([#408](https://github.com/dhis2/maps-gl/issues/408)) ([3d18fa1](https://github.com/dhis2/maps-gl/commit/3d18fa1d165801c2c60e3b30c9aced1e3065eac4))
+* use evaluate instead of getInfo for earth engine layers ([#406](https://github.com/dhis2/maps-gl/issues/406)) ([79f36c9](https://github.com/dhis2/maps-gl/commit/79f36c934c77fa6d2bda28f19085f27c4b420e87))
+
 ## [2.1.4](https://github.com/dhis2/maps-gl/compare/v2.1.3...v2.1.4) (2021-10-04)
 
 
