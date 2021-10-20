@@ -135,17 +135,6 @@ export class MapGL extends Evented {
         this.fire('layersort')
     }
 
-    async addOverlays() {
-        for (let i = OVERLAY_START_POSITION; i < this._layers.length; i++) {
-            const layer = this._layers[i]
-            if (!layer.isOnMap()) {
-                await layer.addTo(this)
-                layer.setVisibility(layer.isVisible())
-                layer.addEventListeners()
-            }
-        }
-    }
-
     sortLayers() {
         this._layers.sort((a, b) => a.getIndex() - b.getIndex())
     }
