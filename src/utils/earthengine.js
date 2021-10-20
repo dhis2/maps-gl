@@ -4,10 +4,10 @@ const classAggregation = ['percentage', 'hectares', 'acres']
 
 export const hasClasses = type => classAggregation.includes(type)
 
-// Makes getInfo a promise
+// Makes evaluate a promise
 export const getInfo = instance =>
     new Promise((resolve, reject) =>
-        instance.getInfo((data, error) => {
+        instance.evaluate((data, error) => {
             if (error) {
                 reject(error)
             } else {
