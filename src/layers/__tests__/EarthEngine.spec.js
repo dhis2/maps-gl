@@ -23,7 +23,7 @@ const eeMock = {
                 },
             }
         },
-        getInfo: cb => cb({}),
+        evaluate: cb => cb({}),
         clipToCollection() {
             return this
         },
