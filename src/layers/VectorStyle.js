@@ -1,5 +1,6 @@
 import { Evented } from 'maplibre-gl'
 import { mapStyle } from '../utils/style'
+import { BASEMAP_POSITION, OVERLAY_START_POSITION } from '../utils/layers'
 
 class VectorStyle extends Evented {
     constructor(options = {}) {
@@ -11,42 +12,61 @@ class VectorStyle extends Evented {
     async addTo(map) {
         this._map = map
         map.setBeforeLayerId(this.options.beforeId)
-        map.removeOverlayEvents()
-
-        const mapgl = map.getMapGL()
+        this.removeOverlayEvents()
 
         await this.setStyle(this.options.url)
 
         this._isOnMap = true
-        this._map.addOverlays()
+        this.addOverlays()
     }
 
     async removeFrom(map) {
-        const mapgl = map.getMapGL()
-
         map.setBeforeLayerId(undefined)
-        map.removeOverlayEvents()
+        this.removeOverlayEvents()
 
         await this.setStyle(mapStyle)
 
         this._isOnMap = false
-        this._map.addOverlays()
+        this.addOverlays()
     }
 
     setStyle(style) {
         return new Promise(resolve => {
-            const mapgl = this._map.getMapGL()
-            mapgl.once('idle', () => {
-                resolve()
-            })
-
-            mapgl.setStyle(style, false)
+            this._map
+                .getMapGL()
+                .once('idle', resolve)
+                .setStyle(style, false)
         })
     }
 
-    onRemove = () => {}
+    async addOverlays() {
+        const layers = this._map.getLayers()
 
-    setIndex(index = 0) {
+        for (let i = OVERLAY_START_POSITION; i < layers.length; i++) {
+            const layer = layers[i]
+            if (!layer.isOnMap()) {
+                await layer.addTo(this._map)
+                layer.setVisibility(layer.isVisible())
+                layer.addEventListeners()
+            }
+        }
+    }
+
+    removeOverlayEvents() {
+        this._map.sortLayers()
+
+        const layers = this._map.getLayers()
+
+        if (layers.length <= 1) {
+            return
+        }
+
+        for (let i = OVERLAY_START_POSITION; i < layers.length; i++) {
+            layers[i].removeEventListeners()
+        }
+    }
+
+    setIndex(index = BASEMAP_POSITION) {
         this.options.index = index
     }
 
@@ -67,7 +87,7 @@ class VectorStyle extends Evented {
     }
 
     getIndex() {
-        return 0
+        return BASEMAP_POSITION
     }
 }
 

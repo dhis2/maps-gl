@@ -9,13 +9,10 @@ import { transformRequest } from './utils/images'
 import { mapStyle } from './utils/style'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
+import { OVERLAY_START_POSITION } from './utils/layers'
 import Popup from './ui/Popup'
 import Label from './ui/Label'
 import './Map.css'
-
-// const BASEMAP_POSITION = 0
-// position in the layer stack where deepest overlay is found
-const DEEPEST_OVERLAY_POSITION = 1
 
 export class MapGL extends Evented {
     // Returns true if the layer type is supported
@@ -125,44 +122,21 @@ export class MapGL extends Evented {
 
     orderOverlays() {
         this.sortLayers()
+        const beforeId = this.getBeforeLayerId()
 
-        for (let i = DEEPEST_OVERLAY_POSITION; i < this._layers.length; i++) {
+        for (let i = OVERLAY_START_POSITION; i < this._layers.length; i++) {
             const layer = this._layers[i]
 
             if (layer.isOnMap()) {
-                layer.move(this._beforeId)
+                layer.move(beforeId)
             }
         }
 
         this.fire('layersort')
     }
 
-    async addOverlays() {
-        for (let i = DEEPEST_OVERLAY_POSITION; i < this._layers.length; i++) {
-            const layer = this._layers[i]
-            if (!layer.isOnMap()) {
-                await layer.addTo(this)
-                layer.setVisibility(layer.isVisible())
-                layer.addEventListeners()
-            }
-        }
-    }
-
     sortLayers() {
         this._layers.sort((a, b) => a.getIndex() - b.getIndex())
-    }
-
-    removeOverlayEvents() {
-        if (this._layers.length <= 1) {
-            return
-        }
-        this.sortLayers()
-
-        for (let i = DEEPEST_OVERLAY_POSITION; i < this._layers.length; i++) {
-            const layer = this._layers[i]
-
-            layer.removeEventListeners()
-        }
     }
 
     remove() {
@@ -363,21 +337,19 @@ export class MapGL extends Evented {
         return document.createElement('div') // TODO
     }
 
+    // Set before layer id for vector style basemap for labels on top
     setBeforeLayerId(beforeId) {
         this._beforeId = beforeId
     }
 
+    // Returns before layer id if exists among layers
     getBeforeLayerId() {
-        return this._beforeId
-    }
-
-    beforeIdIsInMap() {
-        return (
-            this._beforeId &&
+        return this._beforeId &&
             this.getMapGL()
                 .getStyle()
                 .layers.find(layer => layer.id === this._beforeId)
-        )
+            ? this._beforeId
+            : undefined
     }
 
     openPopup(content, lnglat, onClose) {
