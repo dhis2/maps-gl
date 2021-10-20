@@ -12,7 +12,7 @@ class VectorStyle extends Evented {
     async addTo(map) {
         this._map = map
         map.setBeforeLayerId(this.options.beforeId)
-        map.removeOverlayEvents()
+        this.removeOverlayEvents()
 
         await this.setStyle(this.options.url)
 
@@ -22,7 +22,7 @@ class VectorStyle extends Evented {
 
     async removeFrom(map) {
         map.setBeforeLayerId(undefined)
-        map.removeOverlayEvents()
+        this.removeOverlayEvents()
 
         await this.setStyle(mapStyle)
 
@@ -49,6 +49,20 @@ class VectorStyle extends Evented {
                 layer.setVisibility(layer.isVisible())
                 layer.addEventListeners()
             }
+        }
+    }
+
+    removeOverlayEvents() {
+        this._map.sortLayers()
+
+        const layers = this._map.getLayers()
+
+        if (layers.length <= 1) {
+            return
+        }
+
+        for (let i = OVERLAY_START_POSITION; i < layers.length; i++) {
+            layers[i].removeEventListeners()
         }
     }
 

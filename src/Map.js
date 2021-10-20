@@ -139,19 +139,6 @@ export class MapGL extends Evented {
         this._layers.sort((a, b) => a.getIndex() - b.getIndex())
     }
 
-    removeOverlayEvents() {
-        if (this._layers.length <= 1) {
-            return
-        }
-        this.sortLayers()
-
-        for (let i = OVERLAY_START_POSITION; i < this._layers.length; i++) {
-            const layer = this._layers[i]
-
-            layer.removeEventListeners()
-        }
-    }
-
     remove() {
         const mapgl = this._mapgl
 
