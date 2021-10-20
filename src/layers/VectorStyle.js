@@ -15,8 +15,7 @@ class VectorStyle extends Evented {
 
         const mapgl = map.getMapGL()
 
-        // mapgl.setStyle(this.options.url, false)
-        await this._map.setStyle(this.options.url)
+        await this.setStyle(this.options.url)
 
         this._isOnMap = true
         this._map.addOverlays()
@@ -28,12 +27,21 @@ class VectorStyle extends Evented {
         map.setBeforeLayerId(undefined)
         map.removeOverlayEvents()
 
-        await this._map.setStyle(mapStyle)
+        await this.setStyle(mapStyle)
 
-        // mapgl.setStyle(mapStyle, false)
-        // mapgl.once('idle', this.onRemove)
         this._isOnMap = false
         this._map.addOverlays()
+    }
+
+    setStyle(style) {
+        return new Promise(resolve => {
+            const mapgl = this._map.getMapGL()
+            mapgl.once('idle', () => {
+                resolve()
+            })
+
+            mapgl.setStyle(style, false)
+        })
     }
 
     onRemove = () => {}

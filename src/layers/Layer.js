@@ -39,8 +39,6 @@ class Layer extends Evented {
             await addImages(mapgl, images)
         }
 
-        await this._map.waitForStyleLoaded()
-
         Object.keys(source).forEach(id => {
             mapgl.addSource(id, source[id])
         })
