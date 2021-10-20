@@ -178,6 +178,20 @@ export class MapGL extends Evented {
         }
     }
 
+    removeLayers() {
+        const layers = this._layers.filter(
+            l => !(l instanceof layerTypes.vectorStyle)
+        )
+
+        for (let i = 0; i < layers.length; i++) {
+            const layer = layers[i]
+
+            if (layer.isOnMap()) {
+                layer.removeFrom(this)
+            }
+        }
+    }
+
     removeOverlays() {
         this.sortLayers()
 
