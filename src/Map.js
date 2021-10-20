@@ -112,6 +112,7 @@ export class MapGL extends Evented {
 
         this.orderOverlays()
     }
+
     async removeLayer(layer) {
         if (this._mapgl && layer.isOnMap()) {
             await layer.removeFrom(this)
