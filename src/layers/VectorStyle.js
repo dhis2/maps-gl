@@ -14,8 +14,8 @@ class VectorStyle extends Evented {
     // After the style is changed and ready, we add the overlays back again
     async toggleVectorStyle(isOnMap, style, beforeId) {
         await this.removeOverlays()
-        await this.setStyle(style)
         this._map.setBeforeLayerId(beforeId)
+        await this.setStyle(style)
         this._isOnMap = isOnMap
         await this.addOverlays()
     }
