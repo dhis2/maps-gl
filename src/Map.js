@@ -135,6 +135,7 @@ export class MapGL extends Evented {
 
         this.fire('layersort')
     }
+
     remove() {
         const mapgl = this._mapgl
 
