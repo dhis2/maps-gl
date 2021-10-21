@@ -66,7 +66,6 @@ class VectorStyle extends Evented {
         this.forEachOverlay(async layer => {
             if (layer.isOnMap()) {
                 await layer.removeFrom(this._map)
-                layer.setVisibility(layer.isVisible())
             }
         })
     }
