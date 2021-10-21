@@ -34,18 +34,22 @@ class Layer extends Evented {
         const images = this.getImages()
         const source = this.getSource()
         const layers = this.getLayers()
+        const beforeId = map.getBeforeLayerId()
 
         if (images) {
             await addImages(mapgl, images)
         }
 
         Object.keys(source).forEach(id => {
-            mapgl.addSource(id, source[id])
+            if (!mapgl.getSource(id)) {
+                mapgl.addSource(id, source[id])
+            }
         })
 
-        const beforeId = map.getBeforeLayerId()
         layers.forEach(layer => {
-            mapgl.addLayer(layer, beforeId)
+            if (!mapgl.getLayer(layer.id)) {
+                mapgl.addLayer(layer, beforeId)
+            }
         })
 
         if (opacity) {
@@ -71,8 +75,16 @@ class Layer extends Evented {
 
         this.onRemove()
 
-        layers.forEach(layer => mapgl.removeLayer(layer.id))
-        Object.keys(source).forEach(id => mapgl.removeSource(id))
+        layers.forEach(layer => {
+            if (!mapgl.getLayer(layer.id)) {
+                mapgl.removeLayer(layer.id)
+            }
+        })
+        Object.keys(source).forEach(id => {
+            if (!mapgl.getSource(id)) {
+                mapgl.removeSource(id)
+            }
+        })
 
         if (onClick) {
             this.off('click', onClick)
