@@ -51,7 +51,7 @@ class VectorStyle extends Evented {
         }
     }
 
-    // Add each overlay to the map after map style is changed
+    // Add each overlay to the map after style is changed
     async addOverlays() {
         this.forEachOverlay(async layer => {
             if (!layer.isOnMap()) {
