@@ -1,5 +1,6 @@
 import { Evented } from 'maplibre-gl'
 import { getBoundsFromLayers } from '../utils/geometry'
+import { BASEMAP_POSITION } from '../utils/layers'
 
 class LayerGroup extends Evented {
     constructor(options) {
@@ -46,7 +47,7 @@ class LayerGroup extends Evented {
         return this._layers.some(layer => layer.isInteractive())
     }
 
-    setIndex(index = 0) {
+    setIndex(index = BASEMAP_POSITION) {
         this.options.index = index
         this._layers.forEach(layer => layer.setIndex(index))
     }

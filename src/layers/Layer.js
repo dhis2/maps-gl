@@ -6,6 +6,7 @@ import { featureCollection } from '../utils/geometry'
 import { bufferSource } from '../utils/buffers'
 import { labelSource } from '../utils/labels'
 import { setLayersOpacity } from '../utils/opacity'
+import { BASEMAP_POSITION } from '../utils/layers'
 
 class Layer extends Evented {
     constructor(options = {}) {
@@ -26,7 +27,7 @@ class Layer extends Evented {
     }
 
     async addTo(map) {
-        const { opacity } = this.options
+        const { opacity, onClick, onRightClick } = this.options
 
         this._map = map
 
@@ -52,7 +53,13 @@ class Layer extends Evented {
             this.setOpacity(opacity)
         }
 
-        this.addEventListeners()
+        if (onClick) {
+            this.on('click', onClick)
+        }
+
+        if (onRightClick) {
+            this.on('contextmenu', onRightClick)
+        }
 
         this.onAdd()
     }
@@ -83,6 +90,7 @@ class Layer extends Evented {
         const mapgl = map.getMapGL()
         const source = this.getSource()
         const layers = this.getLayers()
+        const { onClick, onRightClick } = this.options
 
         this.onRemove()
 
@@ -90,6 +98,14 @@ class Layer extends Evented {
         Object.keys(source).forEach(id => mapgl.removeSource(id))
 
         this.removeEventListeners()
+
+        if (onClick) {
+            this.off('click', onClick)
+        }
+
+        if (onRightClick) {
+            this.off('contextmenu', onRightClick)
+        }
 
         this._map = null
     }
@@ -234,7 +250,7 @@ class Layer extends Evented {
         ]
     }
 
-    setIndex(index = 0) {
+    setIndex(index = BASEMAP_POSITION) {
         this.options.index = index
 
         const map = this.getMap()
@@ -245,7 +261,7 @@ class Layer extends Evented {
     }
 
     getIndex() {
-        return this.options.index || 0
+        return this.options.index || BASEMAP_POSITION
     }
 
     setOpacity(opacity) {

@@ -9,27 +9,30 @@ class VectorStyle extends Evented {
         this._isOnMap = false
     }
 
+    // Changing vector style will also delete all overlays on the map
+    // Before we change the style we remove all overlays for a proper cleanup
+    // After the style is changed and ready, we add the overlays back again
+    async toggleVectorStyle(isOnMap, style, beforeId) {
+        await this.removeOverlays()
+        await this.setStyle(style)
+        this._map.setBeforeLayerId(beforeId)
+        this._isOnMap = isOnMap
+        await this.addOverlays()
+    }
+
+    // Add vector style to map
     async addTo(map) {
         this._map = map
-        map.setBeforeLayerId(this.options.beforeId)
-        this.removeOverlayEvents()
-
-        await this.setStyle(this.options.url)
-
-        this._isOnMap = true
-        this.addOverlays()
+        const { url, beforeId } = this.options
+        await this.toggleVectorStyle(true, url, beforeId)
     }
 
-    async removeFrom(map) {
-        map.setBeforeLayerId(undefined)
-        this.removeOverlayEvents()
-
-        await this.setStyle(mapStyle)
-
-        this._isOnMap = false
-        this.addOverlays()
+    // Remove vector style from map, reset to default map style
+    async removeFrom() {
+        await this.toggleVectorStyle(false, mapStyle)
     }
 
+    // Set map style, resolves promise when map is ready for other layers
     setStyle(style) {
         return new Promise(resolve => {
             this._map
@@ -39,55 +42,63 @@ class VectorStyle extends Evented {
         })
     }
 
-    async addOverlays() {
+    // Call handler for each overlay
+    forEachOverlay(handler) {
+        this._map.sortLayers() // Makes sure basemap is first layer
         const layers = this._map.getLayers()
-
         for (let i = OVERLAY_START_POSITION; i < layers.length; i++) {
-            const layer = layers[i]
+            handler(layers[i])
+        }
+    }
+
+    // Add each overlay to the map after map style is changed
+    async addOverlays() {
+        this.forEachOverlay(async layer => {
             if (!layer.isOnMap()) {
                 await layer.addTo(this._map)
                 layer.setVisibility(layer.isVisible())
-                layer.addEventListeners()
             }
-        }
+        })
     }
 
-    removeOverlayEvents() {
-        this._map.sortLayers()
-
-        const layers = this._map.getLayers()
-
-        if (layers.length <= 1) {
-            return
-        }
-
-        for (let i = OVERLAY_START_POSITION; i < layers.length; i++) {
-            layers[i].removeEventListeners()
-        }
+    // Remove each overlay from the map before style is changed
+    async removeOverlays() {
+        this.forEachOverlay(async layer => {
+            if (layer.isOnMap()) {
+                await layer.removeFrom(this._map)
+                layer.setVisibility(layer.isVisible())
+            }
+        })
     }
 
+    // Vector style is only supported as basemap
     setIndex(index = BASEMAP_POSITION) {
         this.options.index = index
     }
 
+    // No opacity support for vector style
     setOpacity() {
         return
     }
 
+    // Vector style basemap is not interactive
     isInteractive() {
         return false
     }
 
-    hasLayerId(id) {
+    // Vector style basemap has its own ids from the source
+    hasLayerId() {
         return false
     }
 
+    // Returns true if the vector style is fully added to the map
     isOnMap() {
         return this._isOnMap
     }
 
+    // Should always return 0
     getIndex() {
-        return BASEMAP_POSITION
+        return this.options.index || BASEMAP_POSITION
     }
 }
 
