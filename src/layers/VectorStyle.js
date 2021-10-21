@@ -1,6 +1,6 @@
 import { Evented } from 'maplibre-gl'
 import { mapStyle } from '../utils/style'
-import { BASEMAP_POSITION, OVERLAY_START_POSITION } from '../utils/layers'
+import { BASEMAP_POSITION } from '../utils/layers'
 
 class VectorStyle extends Evented {
     constructor(options = {}) {
@@ -13,11 +13,11 @@ class VectorStyle extends Evented {
     // Before we change the style we remove all overlays for a proper cleanup
     // After the style is changed and ready, we add the overlays back again
     async toggleVectorStyle(isOnMap, style, beforeId) {
-        await this.removeOverlays()
+        await this.removeOtherLayers()
         this._map.setBeforeLayerId(beforeId)
         await this.setStyle(style)
         this._isOnMap = isOnMap
-        await this.addOverlays()
+        await this.addOtherLayers()
     }
 
     // Add vector style to map
@@ -42,17 +42,16 @@ class VectorStyle extends Evented {
         })
     }
 
-    // Run handler for each overlay
-    runHandlerOnOverlays(handler) {
-        const layers = this._map.getLayers()
-        for (let i = OVERLAY_START_POSITION; i < layers.length; i++) {
-            handler(layers[i])
-        }
+    // Returns all layers that are not vector style
+    getOtherLayers() {
+        return this._map
+            .getLayers()
+            .filter(layer => !(layer instanceof VectorStyle))
     }
 
-    // Add each overlay to the map after style is changed
-    async addOverlays() {
-        this.runHandlerOnOverlays(async layer => {
+    // Add other layers to the map after style is changed
+    async addOtherLayers() {
+        this.getOtherLayers().forEach(async layer => {
             if (!layer.isOnMap()) {
                 await layer.addTo(this._map)
                 layer.setVisibility(layer.isVisible())
@@ -60,9 +59,9 @@ class VectorStyle extends Evented {
         })
     }
 
-    // Remove each overlay from the map before style is changed
-    async removeOverlays() {
-        this.runHandlerOnOverlays(async layer => {
+    // Remove other layers from the map before style is changed
+    async removeOtherLayers() {
+        this.getOtherLayers().forEach(async layer => {
             if (layer.isOnMap()) {
                 await layer.removeFrom(this._map)
             }
