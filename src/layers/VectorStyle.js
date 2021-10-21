@@ -43,7 +43,7 @@ class VectorStyle extends Evented {
             this._map
                 .getMapGL()
                 .once('idle', resolve)
-                .setStyle(style, false)
+                .setStyle(style, { diff: false })
         })
     }
 
