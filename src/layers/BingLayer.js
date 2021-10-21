@@ -43,6 +43,9 @@ class BingLayer extends Layer {
 
         await super.addTo(map)
 
+        // Make sure overlays are on top
+        map.orderOverlays()
+
         this.getMapGL().on('moveend', this.updateAttribution)
 
         this.updateAttribution()
