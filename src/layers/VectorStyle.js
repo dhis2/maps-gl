@@ -42,9 +42,8 @@ class VectorStyle extends Evented {
         })
     }
 
-    // Call handler for each overlay
-    forEachOverlay(handler) {
-        this._map.sortLayers() // Makes sure basemap is first layer
+    // Run handler for each overlay
+    runHandlerOnOverlays(handler) {
         const layers = this._map.getLayers()
         for (let i = OVERLAY_START_POSITION; i < layers.length; i++) {
             handler(layers[i])
@@ -53,7 +52,7 @@ class VectorStyle extends Evented {
 
     // Add each overlay to the map after style is changed
     async addOverlays() {
-        this.forEachOverlay(async layer => {
+        this.runHandlerOnOverlays(async layer => {
             if (!layer.isOnMap()) {
                 await layer.addTo(this._map)
                 layer.setVisibility(layer.isVisible())
@@ -63,7 +62,7 @@ class VectorStyle extends Evented {
 
     // Remove each overlay from the map before style is changed
     async removeOverlays() {
-        this.forEachOverlay(async layer => {
+        this.runHandlerOnOverlays(async layer => {
             if (layer.isOnMap()) {
                 await layer.removeFrom(this._map)
             }
