@@ -26,7 +26,7 @@ class Layer extends Evented {
     }
 
     async addTo(map) {
-        const { opacity } = this.options
+        const { opacity, onClick, onRightClick } = this.options
 
         this._map = map
 
@@ -52,13 +52,6 @@ class Layer extends Evented {
             this.setOpacity(opacity)
         }
 
-        this.addEventListeners()
-
-        this.onAdd()
-    }
-
-    addEventListeners() {
-        const { onClick, onRightClick } = this.options
         if (onClick) {
             this.on('click', onClick)
         }
@@ -66,10 +59,21 @@ class Layer extends Evented {
         if (onRightClick) {
             this.on('contextmenu', onRightClick)
         }
+
+        this.onAdd()
     }
 
-    removeEventListeners() {
+    removeFrom(map) {
+        const mapgl = map.getMapGL()
+        const source = this.getSource()
+        const layers = this.getLayers()
         const { onClick, onRightClick } = this.options
+
+        this.onRemove()
+
+        layers.forEach(layer => mapgl.removeLayer(layer.id))
+        Object.keys(source).forEach(id => mapgl.removeSource(id))
+
         if (onClick) {
             this.off('click', onClick)
         }
@@ -77,19 +81,6 @@ class Layer extends Evented {
         if (onRightClick) {
             this.off('contextmenu', onRightClick)
         }
-    }
-
-    removeFrom(map) {
-        const mapgl = map.getMapGL()
-        const source = this.getSource()
-        const layers = this.getLayers()
-
-        this.onRemove()
-
-        layers.forEach(layer => mapgl.removeLayer(layer.id))
-        Object.keys(source).forEach(id => mapgl.removeSource(id))
-
-        this.removeEventListeners()
 
         this._map = null
     }
