@@ -70,7 +70,6 @@ class VectorStyle extends Evented {
         })
     }
 
-    // Vector style is only supported as basemap
     setIndex(index = BASEMAP_POSITION) {
         this.options.index = index
     }
@@ -95,9 +94,9 @@ class VectorStyle extends Evented {
         return this._isOnMap
     }
 
-    // Should always return 0
+    // Vector style is only supported as basemap
     getIndex() {
-        return this.options.index || BASEMAP_POSITION
+        return BASEMAP_POSITION
     }
 }
 
