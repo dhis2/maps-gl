@@ -15,7 +15,12 @@ class VectorStyle extends Evented {
     async toggleVectorStyle(isOnMap, style, beforeId) {
         await this.removeOtherLayers()
         this._map.setBeforeLayerId(beforeId)
-        await this.setStyle(style)
+
+        // (Re)set map style if user is not switching to a new one
+        if (isOnMap || !this.mapHasVectorStyle()) {
+            await this.setStyle(style)
+        }
+
         this._isOnMap = isOnMap
         await this.addOtherLayers()
     }
@@ -66,6 +71,10 @@ class VectorStyle extends Evented {
                 await layer.removeFrom(this._map)
             }
         })
+    }
+
+    mapHasVectorStyle() {
+        return this._map.getLayers().some(layer => layer instanceof VectorStyle)
     }
 
     setIndex(index = BASEMAP_POSITION) {
