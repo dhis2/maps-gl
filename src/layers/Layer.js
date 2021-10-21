@@ -6,7 +6,6 @@ import { featureCollection } from '../utils/geometry'
 import { bufferSource } from '../utils/buffers'
 import { labelSource } from '../utils/labels'
 import { setLayersOpacity } from '../utils/opacity'
-import { BASEMAP_POSITION } from '../utils/layers'
 
 class Layer extends Evented {
     constructor(options = {}) {
@@ -62,28 +61,6 @@ class Layer extends Evented {
         }
 
         this.onAdd()
-    }
-
-    addEventListeners() {
-        const { onClick, onRightClick } = this.options
-        if (onClick) {
-            this.on('click', onClick)
-        }
-
-        if (onRightClick) {
-            this.on('contextmenu', onRightClick)
-        }
-    }
-
-    removeEventListeners() {
-        const { onClick, onRightClick } = this.options
-        if (onClick) {
-            this.off('click', onClick)
-        }
-
-        if (onRightClick) {
-            this.off('contextmenu', onRightClick)
-        }
     }
 
     removeFrom(map) {
@@ -250,7 +227,7 @@ class Layer extends Evented {
         ]
     }
 
-    setIndex(index = BASEMAP_POSITION) {
+    setIndex(index = 0) {
         this.options.index = index
 
         const map = this.getMap()
@@ -261,7 +238,7 @@ class Layer extends Evented {
     }
 
     getIndex() {
-        return this.options.index || BASEMAP_POSITION
+        return this.options.index || 0
     }
 
     setOpacity(opacity) {

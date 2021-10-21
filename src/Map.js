@@ -120,6 +120,7 @@ export class MapGL extends Evented {
         this.fire('layerremove', this._layers)
     }
 
+    // Reorder overlays on the map
     orderOverlays() {
         this.sortLayers()
         const beforeId = this.getBeforeLayerId()
@@ -135,6 +136,7 @@ export class MapGL extends Evented {
         this.fire('layersort')
     }
 
+    // Sort layers after order index
     sortLayers() {
         this._layers.sort((a, b) => a.getIndex() - b.getIndex())
     }
