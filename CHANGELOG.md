@@ -1,3 +1,10 @@
+# [2.2.0](https://github.com/dhis2/maps-gl/compare/v2.1.5...v2.2.0) (2021-10-22)
+
+
+### Features
+
+* add vector tiles support ([#405](https://github.com/dhis2/maps-gl/issues/405)) ([c9039a4](https://github.com/dhis2/maps-gl/commit/c9039a46b259cfea7403cf68c374808400a45798))
+
 ## [2.1.5](https://github.com/dhis2/maps-gl/compare/v2.1.4...v2.1.5) (2021-10-20)
 
 
