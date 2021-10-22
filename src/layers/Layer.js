@@ -32,15 +32,25 @@ class Layer extends Evented {
 
         const mapgl = map.getMapGL()
         const images = this.getImages()
-        const source = await this.getSource()
+        const source = this.getSource()
         const layers = this.getLayers()
+        const beforeId = map.getBeforeLayerId()
 
         if (images) {
             await addImages(mapgl, images)
         }
 
-        Object.keys(source).forEach(id => mapgl.addSource(id, source[id]))
-        layers.forEach(layer => mapgl.addLayer(layer))
+        Object.keys(source).forEach(id => {
+            if (!mapgl.getSource(id)) {
+                mapgl.addSource(id, source[id])
+            }
+        })
+
+        layers.forEach(layer => {
+            if (!mapgl.getLayer(layer.id)) {
+                mapgl.addLayer(layer, beforeId)
+            }
+        })
 
         if (opacity) {
             this.setOpacity(opacity)
@@ -65,8 +75,16 @@ class Layer extends Evented {
 
         this.onRemove()
 
-        layers.forEach(layer => mapgl.removeLayer(layer.id))
-        Object.keys(source).forEach(id => mapgl.removeSource(id))
+        layers.forEach(layer => {
+            if (!mapgl.getLayer(layer.id)) {
+                mapgl.removeLayer(layer.id)
+            }
+        })
+        Object.keys(source).forEach(id => {
+            if (!mapgl.getSource(id)) {
+                mapgl.removeSource(id)
+            }
+        })
 
         if (onClick) {
             this.off('click', onClick)
@@ -174,11 +192,12 @@ class Layer extends Evented {
         return this.getLayers().some(layer => layer.id === id)
     }
 
-    moveToTop() {
+    move() {
         const mapgl = this.getMapGL()
+        const beforeId = this._map.getBeforeLayerId()
 
         this.getLayers().forEach(layer => {
-            mapgl.moveLayer(layer.id)
+            mapgl.moveLayer(layer.id, beforeId)
         })
     }
 
@@ -224,7 +243,7 @@ class Layer extends Evented {
         const map = this.getMap()
 
         if (map) {
-            map.orderLayers()
+            map.orderOverlays()
         }
     }
 

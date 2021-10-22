@@ -13,6 +13,9 @@ import {
 } from './expressions'
 import defaults from './style'
 
+export const BASEMAP_POSITION = 0
+export const OVERLAY_START_POSITION = 1
+
 // Layer with point features
 export const pointLayer = ({
     id,

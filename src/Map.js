@@ -6,8 +6,10 @@ import controlTypes from './controls/controlTypes'
 import controlsLocale from './controls/controlsLocale'
 import MultiTouch from './controls/MultiTouch'
 import { transformRequest } from './utils/images'
+import { mapStyle } from './utils/style'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
+import { OVERLAY_START_POSITION } from './utils/layers'
 import Popup from './ui/Popup'
 import Label from './ui/Label'
 import './Map.css'
@@ -30,13 +32,7 @@ export class MapGL extends Evented {
 
         const mapgl = new Map({
             container: el,
-            style: {
-                version: 8,
-                sources: {},
-                layers: [],
-                glyphs:
-                    'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf', // TODO: Host ourseleves
-            },
+            style: mapStyle,
             maxZoom: 18,
             preserveDrawingBuffer: true, // TODO: requred for map download, but reduced performance
             attributionControl: false,
@@ -111,17 +107,33 @@ export class MapGL extends Evented {
             }
         }
 
-        this.orderLayers()
+        this.orderOverlays()
     }
 
-    removeLayer(layer) {
+    async removeLayer(layer) {
         if (this._mapgl && layer.isOnMap()) {
-            layer.removeFrom(this)
+            await layer.removeFrom(this)
         }
 
         this._layers = this._layers.filter(l => l !== layer)
 
         this.fire('layerremove', this._layers)
+    }
+
+    // Reorder overlays on the map
+    orderOverlays() {
+        const layers = this.getLayers()
+        const beforeId = this.getBeforeLayerId()
+
+        for (let i = OVERLAY_START_POSITION; i < layers.length; i++) {
+            const layer = layers[i]
+
+            if (layer.isOnMap()) {
+                layer.move(beforeId)
+            }
+        }
+
+        this.fire('layersort')
     }
 
     remove() {
@@ -303,6 +315,7 @@ export class MapGL extends Evented {
     }
 
     getLayers() {
+        this._layers.sort((a, b) => a.getIndex() - b.getIndex())
         return this._layers
     }
 
@@ -322,18 +335,19 @@ export class MapGL extends Evented {
         return document.createElement('div') // TODO
     }
 
-    orderLayers() {
-        this._layers.sort((a, b) => a.getIndex() - b.getIndex())
+    // Set before layer id for vector style basemap for labels on top
+    setBeforeLayerId(beforeId) {
+        this._beforeId = beforeId
+    }
 
-        for (let i = 1; i < this._layers.length; i++) {
-            const layer = this._layers[i]
-
-            if (layer.isOnMap()) {
-                layer.moveToTop()
-            }
-        }
-
-        this.fire('layersort')
+    // Returns before layer id if exists among layers
+    getBeforeLayerId() {
+        return this._beforeId &&
+            this.getMapGL()
+                .getStyle()
+                .layers.find(layer => layer.id === this._beforeId)
+            ? this._beforeId
+            : undefined
     }
 
     openPopup(content, lnglat, onClose) {
