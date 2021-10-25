@@ -41,13 +41,13 @@ class Layer extends Evented {
         }
 
         Object.keys(source).forEach(id => {
-            if (!mapgl.getSource(id)) {
+            if (!map._styleIsLoading && !mapgl.getSource(id)) {
                 mapgl.addSource(id, source[id])
             }
         })
 
         layers.forEach(layer => {
-            if (!mapgl.getLayer(layer.id)) {
+            if (!map._styleIsLoading && !mapgl.getLayer(layer.id)) {
                 mapgl.addLayer(layer, beforeId)
             }
         })
