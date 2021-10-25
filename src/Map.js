@@ -96,7 +96,7 @@ export class MapGL extends Evented {
     async addLayer(layer) {
         this._layers.push(layer)
 
-        if (!layer.isOnMap() && !this._styleIsLoading) {
+        if (!layer.isOnMap()) {
             await layer.addTo(this)
 
             this.fire('layeradd', this._layers)
@@ -348,6 +348,10 @@ export class MapGL extends Evented {
                 .layers.find(layer => layer.id === this._beforeId)
             ? this._beforeId
             : undefined
+    }
+
+    styleIsLoaded() {
+        return !this._styleIsLoading
     }
 
     openPopup(content, lnglat, onClose) {
