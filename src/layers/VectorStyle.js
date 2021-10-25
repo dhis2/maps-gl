@@ -18,7 +18,9 @@ class VectorStyle extends Evented {
 
         // (Re)set map style if user is not switching to a new one
         if (isOnMap || !this.mapHasVectorStyle()) {
+            this._map._styleIsLoading = true
             await this.setStyle(style)
+            this._map._styleIsLoading = false
         }
 
         this._isOnMap = isOnMap

@@ -96,7 +96,7 @@ export class MapGL extends Evented {
     async addLayer(layer) {
         this._layers.push(layer)
 
-        if (!layer.isOnMap()) {
+        if (!layer.isOnMap() && !this._styleIsLoading) {
             await layer.addTo(this)
 
             this.fire('layeradd', this._layers)
