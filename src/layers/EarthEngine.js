@@ -29,17 +29,30 @@ class EarthEngine extends Layer {
     }
 
     async addTo(map) {
+        // console.time('add to map')
+        // console.timeLog('add to map')
+
         await this.init()
+        // console.log('addTo createSource')
         await this.createSource()
+        // console.log('addTo createLayers')
         this.createLayers()
+        // console.log('addTo map')
         super.addTo(map)
+        // console.log('addTo onLoad')
         this.onLoad()
+
+        // console.timeEnd('add to map')
     }
 
     // EE initialise
     async init() {
+        // console.log('######### getEarthEngineApi ########')
+
         this.ee = await getEarthEngineApi()
+        // console.log('init setAuthToken START', Date.now())
         await this.setAuthToken()
+        // console.log('init setAuthToken DONE', Date.now())
     }
 
     async createSource() {
@@ -47,15 +60,20 @@ class EarthEngine extends Layer {
 
         this.featureCollection = this.getFeatureCollection()
 
+        // console.log('createImage START')
         const image = await this.createImage()
-
+        // console.log('createImage DONE')
         const { urlFormat } = await this.visualize(image)
+        // console.log('eeImage.visualize DONE')
+
+        // console.log('D')
 
         this.setSource(`${id}-raster`, {
             type: 'raster',
             tileSize: 256,
             tiles: [urlFormat],
         })
+        // console.log('E')
 
         if (this.options.data) {
             this.setSource(id, {
@@ -63,6 +81,7 @@ class EarthEngine extends Layer {
                 data: featureCollection(this.getFeatures()),
             })
         }
+        // console.log('F')
     }
 
     createLayers() {
@@ -109,7 +128,17 @@ class EarthEngine extends Layer {
 
                         data.setAuthTokenRefresher(this.refreshAccessToken)
 
-                        initialize(null, null, resolve)
+                        // initialize(null, null, resolve) // Browser lock
+
+                        initialize(
+                            null,
+                            null,
+                            () => {
+                                // console.log('success')
+                                resolve()
+                            },
+                            () => console.log('failure')
+                        )
                     })
                     .catch(reject)
             }
@@ -139,6 +168,8 @@ class EarthEngine extends Layer {
     refreshAccessToken = async (authArgs, callback) => {
         const { tokenType } = this.options
         const token = await this.getAuthToken()
+
+        // console.log('refreshAccessToken')
 
         callback({
             token_type: tokenType,
@@ -315,11 +346,14 @@ class EarthEngine extends Layer {
 
         // Clip image to org unit features
         if (this.featureCollection) {
+            // console.log('clipToCollection')
             eeImage = eeImage.clipToCollection(this.featureCollection)
         }
 
-        return new Promise(resolve =>
-            eeImage.visualize(this.params || params).getMap(null, resolve)
+        // console.log('eeImage.visualize START')
+        return new Promise(
+            resolve =>
+                eeImage.visualize(this.params || params).getMap(null, resolve) // Browser lock
         )
     }
 
@@ -373,6 +407,7 @@ class EarthEngine extends Layer {
         const { legend } = this.options
         const classes = hasClasses(aggregationType)
         const image = await this.getImage()
+
         const collection = this.featureCollection
         const scale = this.scale
         const { Reducer } = this.ee
@@ -404,7 +439,16 @@ class EarthEngine extends Layer {
                 })
                 .select(aggregationType, null, false)
 
-            return getInfo(aggFeatures).then(getFeatureCollectionProperties)
+            console.log('EVALUATE')
+            console.time('EE agg')
+
+            // return getInfo(aggFeatures).then(getFeatureCollectionProperties)
+
+            return getInfo(aggFeatures).then(data => {
+                console.timeEnd('EE agg')
+
+                return getFeatureCollectionProperties(data)
+            })
         }
     }
 
