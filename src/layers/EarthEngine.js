@@ -45,11 +45,7 @@ class EarthEngine extends Layer {
     async createSource() {
         const id = this.getId()
 
-        this.featureCollection = this.getFeatureCollection()
-
-        const image = await this.createImage()
-
-        const { urlFormat } = await this.visualize(image)
+        const { urlFormat } = await this.visualize()
 
         this.setSource(`${id}-raster`, {
             type: 'raster',
@@ -310,18 +306,27 @@ class EarthEngine extends Layer {
     }
 
     // Visualize image (turn into RGB)
-    visualize(eeImage) {
-        const { params } = this.options
+    visualize = () =>
+        this._visualize ||
+        new Promise(resolve => {
+            const { params } = this.options
 
-        // Clip image to org unit features
-        if (this.featureCollection) {
-            eeImage = eeImage.clipToCollection(this.featureCollection)
-        }
+            this.featureCollection = this.getFeatureCollection()
 
-        return new Promise(resolve =>
-            eeImage.visualize(this.params || params).getMap(null, resolve)
-        )
-    }
+            this.createImage().then(eeImage => {
+                // Clip image to org unit features
+                if (this.featureCollection) {
+                    eeImage = eeImage.clipToCollection(this.featureCollection)
+                }
+
+                eeImage
+                    .visualize(this.params || params)
+                    .getMap(null, response => {
+                        this._visualize = response
+                        resolve(response)
+                    })
+            })
+        })
 
     // Returns value at at position
     getValue = latlng => {

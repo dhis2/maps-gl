@@ -130,8 +130,10 @@ class BingLayer extends Layer {
     updateAttribution = () => {
         const source = this.getMapGL().getSource(this.getId())
 
-        source.attribution = this.getAttribution()
-        this.getMap()._updateAttributions()
+        if (source) {
+            source.attribution = this.getAttribution()
+            this.getMap()._updateAttributions()
+        }
     }
 }
 
