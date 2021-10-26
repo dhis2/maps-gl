@@ -95,12 +95,16 @@ class EarthEngine extends Layer {
                 accessToken
                     .then(token => {
                         const { access_token, client_id, expires_in } = token
+                        const updateAuthLibrary = false
 
                         data.setAuthToken(
                             client_id,
                             tokenType,
                             access_token,
-                            expires_in
+                            expires_in,
+                            null,
+                            null,
+                            updateAuthLibrary
                         )
 
                         data.setAuthTokenRefresher(this.refreshAccessToken)
