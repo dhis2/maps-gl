@@ -1,39 +1,129 @@
 import registerPromiseWorker from 'promise-worker/register'
-import all, { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
+import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
+import { getScale } from './earthengine'
 
 const AUTH_TOKEN_SET = 'AUTH_TOKEN_SET'
+const FEATURE_COLLECTION_SET = 'FEATURE_COLLECTION_SET'
+const IMAGE_CREATE = 'IMAGE_CREATE'
 
-self.document = {
-    createElement: {},
-}
-
-console.log('goog', self.goog, all)
+let eeImage
+let eeFeatureCollection
+let eeScale
 
 const setAuthToken = ({ client_id, tokenType, access_token, expires_in }) =>
     new Promise((resolve, reject) => {
-        console.log('ee', ee)
+        const extraScopes = null
+        const callback = null
+        const updateAuthLibrary = false
 
         ee.data.setAuthToken(
             client_id,
             tokenType,
             access_token,
-            expires_in
-            // undefined,
-            // a => console.log('callback', a),
-            // false
+            expires_in,
+            extraScopes,
+            callback,
+            updateAuthLibrary
         )
 
-        ee.initialize(
-            null,
-            null,
-            () => {
-                console.log('success')
-                // resolve()
-            },
-            error => console.log('failure', error)
-        )
+        // TODO
+        // ee.data.setAuthTokenRefresher(this.refreshAccessToken)
 
-        resolve('hello')
+        ee.initialize(null, null, resolve, reject)
+    })
+
+const setFeatureCollection = features => {
+    eeFeatureCollection = ee.FeatureCollection(
+        features.map(f => ({
+            ...f,
+            id: f.properties.id, // EE requires id to be string, MapLibre integer
+        }))
+    )
+}
+
+const createImage = ({
+    datasetId,
+    filter,
+    mosaic,
+    band,
+    bandReducer,
+    mask,
+    methods,
+    legend = [],
+    params,
+}) =>
+    new Promise(async resolve => {
+        if (!filter) {
+            eeImage = ee.Image(datasetId)
+            eeScale = await getScale(eeImage)
+        } else {
+            let collection = ee.ImageCollection(datasetId)
+
+            eeScale = await getScale(collection.first())
+
+            filter.forEach(f => {
+                collection = collection.filter(
+                    ee.Filter[f.type].apply(this, f.arguments)
+                )
+            })
+
+            eeImage = mosaic
+                ? collection.mosaic() // Composite all images inn a collection (e.g. per country)
+                : ee.Image(collection.first()) // There should only be one image after applying the filters
+        }
+
+        if (band) {
+            eeImage = eeImage.select(band)
+
+            if (Array.isArray(band) && bandReducer && ee.Reducer[bandReducer]) {
+                // Combine multiple bands (e.g. age groups)
+                eeImage = eeImage.reduce(ee.Reducer[bandReducer]())
+            }
+        }
+
+        if (mask) {
+            eeImage = eeImage.updateMask(eeImage.gt(0))
+        }
+
+        if (methods) {
+            Object.keys(methods).forEach(method => {
+                if (eeImage[method]) {
+                    eeImage = eeImage[method].apply(eeImage, methods[method])
+                }
+            })
+        }
+
+        // Classify image
+        let zones
+
+        /*
+        if (!params) {
+            // Image has classes (e.g. landcover)
+            this.params = getParamsFromLegend(legend)
+            return eeImage
+        }
+        */
+
+        const min = 0
+        const max = legend.length - 1
+
+        for (let i = min, item; i < max; i++) {
+            item = legend[i]
+
+            if (!zones) {
+                zones = eeImage.gt(item.to)
+            } else {
+                zones = zones.add(eeImage.gt(item.to))
+            }
+        }
+
+        if (eeFeatureCollection) {
+            eeImage = eeImage.clipToCollection(eeFeatureCollection)
+        }
+
+        eeImage.visualize(params).getMap(null, response => {
+            resolve(response.urlFormat)
+        })
     })
 
 registerPromiseWorker((message = {}) => {
@@ -41,21 +131,15 @@ registerPromiseWorker((message = {}) => {
 
     switch (type) {
         case AUTH_TOKEN_SET:
-            // return 'AUTH_TOKEN_SET'
             return setAuthToken(payload)
+
+        case FEATURE_COLLECTION_SET:
+            return setFeatureCollection(payload)
+
+        case IMAGE_CREATE:
+            return createImage(payload)
 
         default:
             return 'unkown message'
     }
 })
-
-/*
-onmessage = function(e) {
-    console.log('Message received from main script', e)
-}
-
-setTimeout(() => {
-    console.log('Posting message to main script')
-    postMessage({ msg: 'Hi!' })
-}, 5000)
-*/

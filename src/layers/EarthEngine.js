@@ -1,6 +1,6 @@
 import PromiseWorker from 'promise-worker'
 import Layer from './Layer'
-import getEarthEngineApi from '../utils/eeapi'
+// import getEarthEngineApi from '../utils/eeapi'
 import {
     getInfo,
     getScale,
@@ -30,20 +30,13 @@ class EarthEngine extends Layer {
     }
 
     async addTo(map) {
-        // console.time('add to map')
-        // console.timeLog('add to map')
-
         await this.init()
-        // console.log('addTo createSource')
+        console.log('INITED')
+        await this.setFeatureCollection()
         await this.createSource()
-        // console.log('addTo createLayers')
         this.createLayers()
-        // console.log('addTo map')
         super.addTo(map)
-        // console.log('addTo onLoad')
         this.onLoad()
-
-        // console.timeEnd('add to map')
     }
 
     onWorkerMessage(msg) {
@@ -53,57 +46,55 @@ class EarthEngine extends Layer {
     // EE initialise
     async init() {
         this.createWorker()
-        // console.log('######### getEarthEngineApi ########')
-
-        /*
-        this.worker = new Worker('../utils/eeworker.js')
-
-        console.log('web worker', this.worker)
-
-        this.worker.postMessage('Hello worker')
-
-        this.worker.onmessage = function(event) {
-            console.log('onmessage', event)
-        }
-        */
-
-        this.ee = await getEarthEngineApi()
-        // console.log('init setAuthToken START', Date.now())
         await this.setAuthToken()
-        // console.log('init setAuthToken DONE', Date.now())
     }
 
     createWorker() {
         this.worker = new PromiseWorker(
             new Worker(new URL('../utils/eeworker.js', import.meta.url))
         )
+    }
 
-        /*
-        this.worker
-            .postMessage({
-                type: 'AUTH_TOKEN_SET',
-                payload: 'payload',
+    async setFeatureCollection() {
+        const features = this.getFeatures()
+
+        if (features.length) {
+            await this.worker.postMessage({
+                type: 'FEATURE_COLLECTION_SET',
+                payload: features,
             })
-            .then(function(response) {
-                console.log('response', response)
-                // handle response
-            })
-            .catch(function(error) {
-                // handle error
-            })
-        */
-
-        // console.log('web worker', this.worker)
-
-        // this.worker.onmessage = this.onWorkerMessage
-
-        // this.worker.postMessage('Hello worker')
+        }
     }
 
     async createSource() {
         const id = this.getId()
 
-        const { urlFormat } = await this.visualize()
+        const {
+            datasetId,
+            filter,
+            mosaic,
+            band,
+            bandReducer,
+            mask,
+            methods,
+            legend,
+            params,
+        } = this.options
+
+        const urlFormat = await this.worker.postMessage({
+            type: 'IMAGE_CREATE',
+            payload: {
+                datasetId,
+                filter,
+                mosaic,
+                band,
+                bandReducer,
+                mask,
+                methods,
+                legend,
+                params,
+            },
+        })
 
         this.setSource(`${id}-raster`, {
             type: 'raster',
@@ -144,6 +135,7 @@ class EarthEngine extends Layer {
     }
 
     // Configures client-side authentication of EE API calls by providing a OAuth2 token to use.
+    /*
     setAuthToken() {
         return new Promise((resolve, reject) => {
             const { data, initialize } = this.ee
@@ -165,13 +157,11 @@ class EarthEngine extends Layer {
                                     tokenType,
                                 },
                             })
-                            .then(response => {
-                                console.log('response', response)
+                            .then(() => {
+                                console.log('Auth token set!')
                                 // handle response
                             })
-                            .catch(error => {
-                                // handle error
-                            })
+                            .catch(console.error)
 
                         data.setAuthToken(
                             client_id,
@@ -200,6 +190,23 @@ class EarthEngine extends Layer {
                     .catch(reject)
             }
         })
+    }
+    */
+
+    setAuthToken = async () => {
+        const { accessToken, tokenType } = this.options
+
+        if (accessToken) {
+            const token = await accessToken
+
+            return this.worker.postMessage({
+                type: 'AUTH_TOKEN_SET',
+                payload: {
+                    ...token,
+                    tokenType,
+                },
+            })
+        }
     }
 
     // Get OAuth2 token needed to create and load Google Earth Engine layers
