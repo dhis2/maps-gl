@@ -1,3 +1,4 @@
+import PromiseWorker from 'promise-worker'
 import Layer from './Layer'
 import getEarthEngineApi from '../utils/eeapi'
 import {
@@ -45,14 +46,58 @@ class EarthEngine extends Layer {
         // console.timeEnd('add to map')
     }
 
+    onWorkerMessage(msg) {
+        console.log('onWorkerMessage', msg)
+    }
+
     // EE initialise
     async init() {
+        this.createWorker()
         // console.log('######### getEarthEngineApi ########')
+
+        /*
+        this.worker = new Worker('../utils/eeworker.js')
+
+        console.log('web worker', this.worker)
+
+        this.worker.postMessage('Hello worker')
+
+        this.worker.onmessage = function(event) {
+            console.log('onmessage', event)
+        }
+        */
 
         this.ee = await getEarthEngineApi()
         // console.log('init setAuthToken START', Date.now())
         await this.setAuthToken()
         // console.log('init setAuthToken DONE', Date.now())
+    }
+
+    createWorker() {
+        this.worker = new PromiseWorker(
+            new Worker(new URL('../utils/eeworker.js', import.meta.url))
+        )
+
+        /*
+        this.worker
+            .postMessage({
+                type: 'AUTH_TOKEN_SET',
+                payload: 'payload',
+            })
+            .then(function(response) {
+                console.log('response', response)
+                // handle response
+            })
+            .catch(function(error) {
+                // handle error
+            })
+        */
+
+        // console.log('web worker', this.worker)
+
+        // this.worker.onmessage = this.onWorkerMessage
+
+        // this.worker.postMessage('Hello worker')
     }
 
     async createSource() {
@@ -119,11 +164,30 @@ class EarthEngine extends Layer {
                     .then(token => {
                         const { access_token, client_id, expires_in } = token
 
+                        this.worker
+                            .postMessage({
+                                type: 'AUTH_TOKEN_SET',
+                                payload: {
+                                    ...token,
+                                    tokenType,
+                                },
+                            })
+                            .then(response => {
+                                console.log('response', response)
+                                // handle response
+                            })
+                            .catch(error => {
+                                // handle error
+                            })
+
                         data.setAuthToken(
                             client_id,
                             tokenType,
                             access_token,
-                            expires_in
+                            expires_in,
+                            undefined,
+                            undefined,
+                            false
                         )
 
                         data.setAuthTokenRefresher(this.refreshAccessToken)
