@@ -41,13 +41,13 @@ class Layer extends Evented {
         }
 
         Object.keys(source).forEach(id => {
-            if (!mapgl.getSource(id)) {
+            if (map.styleIsLoaded() && !mapgl.getSource(id)) {
                 mapgl.addSource(id, source[id])
             }
         })
 
         layers.forEach(layer => {
-            if (!mapgl.getLayer(layer.id)) {
+            if (map.styleIsLoaded() && !mapgl.getLayer(layer.id)) {
                 mapgl.addLayer(layer, beforeId)
             }
         })
@@ -76,12 +76,13 @@ class Layer extends Evented {
         this.onRemove()
 
         layers.forEach(layer => {
-            if (!mapgl.getLayer(layer.id)) {
+            if (mapgl.getLayer(layer.id)) {
                 mapgl.removeLayer(layer.id)
             }
         })
+
         Object.keys(source).forEach(id => {
-            if (!mapgl.getSource(id)) {
+            if (mapgl.getSource(id)) {
                 mapgl.removeSource(id)
             }
         })
@@ -149,9 +150,13 @@ class Layer extends Evented {
 
     // Returns true if one of the layers are added to the map
     isOnMap() {
+        const map = this.getMap()
         const mapgl = this.getMapGL()
-
-        return Boolean(mapgl && this._layers.find(l => mapgl.getLayer(l.id)))
+        return Boolean(
+            map &&
+                map.styleIsLoaded() &&
+                this._layers.find(l => mapgl.getLayer(l.id))
+        )
     }
 
     isVisible() {

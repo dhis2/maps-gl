@@ -113,11 +113,11 @@ export class MapGL extends Evented {
     }
 
     async removeLayer(layer) {
+        this._layers = this._layers.filter(l => l !== layer)
+
         if (this._mapgl && layer.isOnMap()) {
             await layer.removeFrom(this)
         }
-
-        this._layers = this._layers.filter(l => l !== layer)
 
         this.fire('layerremove', this._layers)
     }
@@ -350,6 +350,10 @@ export class MapGL extends Evented {
                 .layers.find(layer => layer.id === this._beforeId)
             ? this._beforeId
             : undefined
+    }
+
+    styleIsLoaded() {
+        return !this._styleIsLoading
     }
 
     openPopup(content, lnglat, onClose) {

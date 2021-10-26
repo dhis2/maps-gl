@@ -163,6 +163,9 @@ class EarthEngine extends Layer {
                 accessToken
                     .then(token => {
                         const { access_token, client_id, expires_in } = token
+                        const extraScopes = null
+                        const callback = null
+                        const updateAuthLibrary = false
 
                         this.worker
                             .postMessage({
@@ -185,9 +188,9 @@ class EarthEngine extends Layer {
                             tokenType,
                             access_token,
                             expires_in,
-                            undefined,
-                            undefined,
-                            false
+                            extraScopes,
+                            callback,
+                            updateAuthLibrary
                         )
 
                         data.setAuthTokenRefresher(this.refreshAccessToken)
@@ -405,9 +408,12 @@ class EarthEngine extends Layer {
     }
 
     // Visualize image (turn into RGB)
-    visualize(eeImage) {
-        const { params } = this.options
+    visualize = () =>
+        this._visualize ||
+        new Promise(resolve => {
+            const { params } = this.options
 
+<<<<<<< HEAD
         // Clip image to org unit features
         if (this.featureCollection) {
             // console.log('clipToCollection')
@@ -420,6 +426,24 @@ class EarthEngine extends Layer {
                 eeImage.visualize(this.params || params).getMap(null, resolve) // Browser lock
         )
     }
+=======
+            this.featureCollection = this.getFeatureCollection()
+
+            this.createImage().then(eeImage => {
+                // Clip image to org unit features
+                if (this.featureCollection) {
+                    eeImage = eeImage.clipToCollection(this.featureCollection)
+                }
+
+                eeImage
+                    .visualize(this.params || params)
+                    .getMap(null, response => {
+                        this._visualize = response
+                        resolve(response)
+                    })
+            })
+        })
+>>>>>>> master
 
     // Returns value at at position
     getValue = latlng => {

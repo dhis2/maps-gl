@@ -1,3 +1,17 @@
+## [2.2.2](https://github.com/dhis2/maps-gl/compare/v2.2.1...v2.2.2) (2021-10-26)
+
+
+### Bug Fixes
+
+* don't update auth library for earth engine api ([#414](https://github.com/dhis2/maps-gl/issues/414)) ([9b090d9](https://github.com/dhis2/maps-gl/commit/9b090d911a586fadde6762097dc04dd879903dbb))
+
+## [2.2.1](https://github.com/dhis2/maps-gl/compare/v2.2.0...v2.2.1) (2021-10-26)
+
+
+### Bug Fixes
+
+* don't add layer if map style is loading ([#412](https://github.com/dhis2/maps-gl/issues/412)) ([089ca54](https://github.com/dhis2/maps-gl/commit/089ca5408597bcc625a5e2ef64ea2a3432a1e67f))
+
 # [2.2.0](https://github.com/dhis2/maps-gl/compare/v2.1.5...v2.2.0) (2021-10-22)
 
 
