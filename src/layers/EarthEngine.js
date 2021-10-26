@@ -103,22 +103,13 @@ class EarthEngine extends Layer {
     async createSource() {
         const id = this.getId()
 
-        this.featureCollection = this.getFeatureCollection()
-
-        // console.log('createImage START')
-        const image = await this.createImage()
-        // console.log('createImage DONE')
-        const { urlFormat } = await this.visualize(image)
-        // console.log('eeImage.visualize DONE')
-
-        // console.log('D')
+        const { urlFormat } = await this.visualize()
 
         this.setSource(`${id}-raster`, {
             type: 'raster',
             tileSize: 256,
             tiles: [urlFormat],
         })
-        // console.log('E')
 
         if (this.options.data) {
             this.setSource(id, {
@@ -126,7 +117,6 @@ class EarthEngine extends Layer {
                 data: featureCollection(this.getFeatures()),
             })
         }
-        // console.log('F')
     }
 
     createLayers() {
@@ -413,20 +403,6 @@ class EarthEngine extends Layer {
         new Promise(resolve => {
             const { params } = this.options
 
-<<<<<<< HEAD
-        // Clip image to org unit features
-        if (this.featureCollection) {
-            // console.log('clipToCollection')
-            eeImage = eeImage.clipToCollection(this.featureCollection)
-        }
-
-        // console.log('eeImage.visualize START')
-        return new Promise(
-            resolve =>
-                eeImage.visualize(this.params || params).getMap(null, resolve) // Browser lock
-        )
-    }
-=======
             this.featureCollection = this.getFeatureCollection()
 
             this.createImage().then(eeImage => {
@@ -443,7 +419,6 @@ class EarthEngine extends Layer {
                     })
             })
         })
->>>>>>> master
 
     // Returns value at at position
     getValue = latlng => {
