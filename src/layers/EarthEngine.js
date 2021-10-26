@@ -95,6 +95,8 @@ class EarthEngine extends Layer {
                 accessToken
                     .then(token => {
                         const { access_token, client_id, expires_in } = token
+                        const extraScopes = null
+                        const callback = null
                         const updateAuthLibrary = false
 
                         data.setAuthToken(
@@ -102,8 +104,8 @@ class EarthEngine extends Layer {
                             tokenType,
                             access_token,
                             expires_in,
-                            null,
-                            null,
+                            extraScopes,
+                            callback,
                             updateAuthLibrary
                         )
 
