@@ -411,7 +411,6 @@ class EarthEngine extends Layer {
         const { legend } = this.options
         const classes = hasClasses(aggregationType)
         const image = await this.getImage()
-
         const collection = this.featureCollection
         const scale = this.scale
         const { Reducer } = this.ee

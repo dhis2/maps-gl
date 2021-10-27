@@ -100,18 +100,9 @@ const createImage = ({
         }
 
         // Classify image
-        let zones
-
-        /*
-        if (!params) {
-            // Image has classes (e.g. landcover)
-            this.params = getParamsFromLegend(legend)
-            return eeImage
-        }
-        */
-
         const min = 0
         const max = legend.length - 1
+        let zones
 
         for (let i = min, item; i < max; i++) {
             item = legend[i]

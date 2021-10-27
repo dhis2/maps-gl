@@ -60,7 +60,7 @@ class VectorStyle extends Evented {
     async addOtherLayers() {
         this.getOtherLayers().forEach(async layer => {
             if (!layer.isOnMap()) {
-                // await layer.addTo(this._map)
+                await layer.addTo(this._map)
                 layer.setVisibility(layer.isVisible())
             }
         })
