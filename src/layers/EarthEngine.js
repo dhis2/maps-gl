@@ -31,7 +31,7 @@ class EarthEngine extends Layer {
 
     async addTo(map) {
         await this.init()
-        await this.setFeatureCollection()
+        // await this.setFeatureCollection()
         await this.createSource()
         this.createLayers()
         super.addTo(map)
