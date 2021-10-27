@@ -1,5 +1,5 @@
 // import PromiseWorker from 'promise-worker'
-import { wrap } from 'comlink'
+import { wrap, proxy } from 'comlink'
 import Layer from './Layer'
 import {
     getInfo,
@@ -31,7 +31,7 @@ class EarthEngine extends Layer {
 
     async addTo(map) {
         await this.init()
-        // await this.setFeatureCollection()
+        await this.setFeatureCollection()
         await this.createSource()
         this.createLayers()
         super.addTo(map)
@@ -129,36 +129,20 @@ class EarthEngine extends Layer {
         if (accessToken) {
             const token = await accessToken
 
-            await this.worker.setAuthToken({
-                ...token,
-                tokenType,
-            })
+            await this.worker.setAuthToken(
+                {
+                    ...token,
+                    tokenType,
+                },
+                proxy(this.refreshAuthToken)
+            )
         }
     }
 
-    // Get OAuth2 token needed to create and load Google Earth Engine layers
-    getAuthToken() {
-        return new Promise((resolve, reject) => {
-            const { accessToken } = this.options
-
-            if (accessToken) {
-                if (accessToken instanceof Function) {
-                    // Callback function returning auth obect
-                    accessToken(resolve)
-                } else {
-                    // Auth token as object
-                    resolve(accessToken)
-                }
-            }
-
-            reject(new Error('No access token in layer options.'))
-        })
-    }
-
-    // Refresh OAuth2 token when expired
-    refreshAccessToken = async (authArgs, callback) => {
+    // Refresh OAuth2 token when expired (called from worker)
+    refreshAuthToken = async (authArgs, callback) => {
         const { tokenType } = this.options
-        const token = await this.getAuthToken()
+        const token = await accessToken
 
         callback({
             token_type: tokenType,
@@ -398,6 +382,7 @@ class EarthEngine extends Layer {
         )
 
     // Perform aggregations to org unit features
+    /*
     aggregate = async aggregationType => {
         const { legend } = this.options
         const classes = hasClasses(aggregationType)
@@ -435,6 +420,13 @@ class EarthEngine extends Layer {
 
             return getInfo(aggFeatures).then(getFeatureCollectionProperties)
         }
+    }
+    */
+
+    aggregate = async aggregationType => {
+        await this.worker.getAggregations(aggregationType)
+
+        console.log('aggregate', aggregationType)
     }
 
     setOpacity(opacity) {
