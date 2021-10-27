@@ -54,8 +54,6 @@ const getTileUrl = ({
     params,
 }) =>
     new Promise(async resolve => {
-        console.log('progress')
-
         if (!filter) {
             eeImage = ee.Image(datasetId)
             eeScale = await getScale(eeImage)
