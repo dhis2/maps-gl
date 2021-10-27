@@ -1,4 +1,4 @@
-import { squareMetersToHectares, squareMetersToAcres } from './numbers'
+import { squareMetersToHectares, squareMetersToAcres } from '../utils/numbers'
 
 const classAggregation = ['percentage', 'hectares', 'acres']
 

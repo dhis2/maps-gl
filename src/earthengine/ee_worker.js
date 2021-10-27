@@ -1,14 +1,20 @@
 import registerPromiseWorker from 'promise-worker/register'
-import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
-import { getScale } from './earthengine'
-
-const AUTH_TOKEN_SET = 'AUTH_TOKEN_SET'
-const FEATURE_COLLECTION_SET = 'FEATURE_COLLECTION_SET'
-const IMAGE_CREATE = 'IMAGE_CREATE'
+// import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
+import { ee } from './ee_api_js'
+import { getScale } from './ee_utils'
+import * as types from './ee_worker_message_types'
 
 let eeImage
 let eeFeatureCollection
 let eeScale
+
+// Why we need to "hack" the '@google/earthengine bundle:
+// https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
+// https://github.com/google/closure-library/issues/903
+// https://github.com/google/blockly/issues/1901#issuecomment-396741501
+
+// Use Comlink instead of promise-worker?
+// https://github.com/GoogleChromeLabs/comlink
 
 const setAuthToken = ({ client_id, tokenType, access_token, expires_in }) =>
     new Promise((resolve, reject) => {
@@ -130,16 +136,16 @@ registerPromiseWorker((message = {}) => {
     const { type, payload } = message
 
     switch (type) {
-        case AUTH_TOKEN_SET:
+        case types.AUTH_TOKEN_SET:
             return setAuthToken(payload)
 
-        case FEATURE_COLLECTION_SET:
+        case types.FEATURE_COLLECTION_SET:
             return setFeatureCollection(payload)
 
-        case IMAGE_CREATE:
+        case types.IMAGE_CREATE:
             return createImage(payload)
 
         default:
-            return 'unkown message'
+            return 'Unkown message'
     }
 })

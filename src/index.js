@@ -1,7 +1,7 @@
 import Map from './Map'
 import supportedLayers from './layers/layerTypes'
 import supportedControls from './controls/controlTypes'
-import getEarthEngineApi from './utils/eeapi'
+import getEarthEngineApi from './earthengine/ee_api_loader'
 import { getLabelPosition } from './utils/labels'
 
 /**

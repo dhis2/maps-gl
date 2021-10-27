@@ -1,6 +1,5 @@
 import PromiseWorker from 'promise-worker'
 import Layer from './Layer'
-// import getEarthEngineApi from '../utils/eeapi'
 import {
     getInfo,
     getScale,
@@ -9,11 +8,12 @@ import {
     getParamsFromLegend,
     getHistogramStatistics,
     getFeatureCollectionProperties,
-} from '../utils/earthengine'
+} from '../earthengine/ee_utils'
 import { isPoint, featureCollection } from '../utils/geometry'
 import { getBufferGeometry } from '../utils/buffers'
 import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
 import { setPrecision } from '../utils/numbers'
+import * as types from '../earthengine/ee_worker_message_types'
 
 export const defaultOptions = {
     tokenType: 'Bearer',
@@ -31,16 +31,11 @@ class EarthEngine extends Layer {
 
     async addTo(map) {
         await this.init()
-        console.log('INITED')
         await this.setFeatureCollection()
         await this.createSource()
         this.createLayers()
         super.addTo(map)
         this.onLoad()
-    }
-
-    onWorkerMessage(msg) {
-        console.log('onWorkerMessage', msg)
     }
 
     // EE initialise
@@ -51,7 +46,7 @@ class EarthEngine extends Layer {
 
     createWorker() {
         this.worker = new PromiseWorker(
-            new Worker(new URL('../utils/eeworker.js', import.meta.url))
+            new Worker(new URL('../earthengine/ee_worker.js', import.meta.url))
         )
     }
 
@@ -60,7 +55,7 @@ class EarthEngine extends Layer {
 
         if (features.length) {
             await this.worker.postMessage({
-                type: 'FEATURE_COLLECTION_SET',
+                type: types.FEATURE_COLLECTION_SET,
                 payload: features,
             })
         }
@@ -82,7 +77,7 @@ class EarthEngine extends Layer {
         } = this.options
 
         const urlFormat = await this.worker.postMessage({
-            type: 'IMAGE_CREATE',
+            type: types.IMAGE_CREATE,
             payload: {
                 datasetId,
                 filter,
@@ -134,65 +129,6 @@ class EarthEngine extends Layer {
         }
     }
 
-    // Configures client-side authentication of EE API calls by providing a OAuth2 token to use.
-    /*
-    setAuthToken() {
-        return new Promise((resolve, reject) => {
-            const { data, initialize } = this.ee
-            const { accessToken, tokenType } = this.options
-
-            if (accessToken) {
-                accessToken
-                    .then(token => {
-                        const { access_token, client_id, expires_in } = token
-                        const extraScopes = null
-                        const callback = null
-                        const updateAuthLibrary = false
-
-                        this.worker
-                            .postMessage({
-                                type: 'AUTH_TOKEN_SET',
-                                payload: {
-                                    ...token,
-                                    tokenType,
-                                },
-                            })
-                            .then(() => {
-                                console.log('Auth token set!')
-                                // handle response
-                            })
-                            .catch(console.error)
-
-                        data.setAuthToken(
-                            client_id,
-                            tokenType,
-                            access_token,
-                            expires_in,
-                            extraScopes,
-                            callback,
-                            updateAuthLibrary
-                        )
-
-                        data.setAuthTokenRefresher(this.refreshAccessToken)
-
-                        // initialize(null, null, resolve) // Browser lock
-
-                        initialize(
-                            null,
-                            null,
-                            () => {
-                                // console.log('success')
-                                resolve()
-                            },
-                            () => console.log('failure')
-                        )
-                    })
-                    .catch(reject)
-            }
-        })
-    }
-    */
-
     setAuthToken = async () => {
         const { accessToken, tokenType } = this.options
 
@@ -200,7 +136,7 @@ class EarthEngine extends Layer {
             const token = await accessToken
 
             return this.worker.postMessage({
-                type: 'AUTH_TOKEN_SET',
+                type: types.AUTH_TOKEN_SET,
                 payload: {
                     ...token,
                     tokenType,
@@ -232,8 +168,6 @@ class EarthEngine extends Layer {
     refreshAccessToken = async (authArgs, callback) => {
         const { tokenType } = this.options
         const token = await this.getAuthToken()
-
-        // console.log('refreshAccessToken')
 
         callback({
             token_type: tokenType,
@@ -509,16 +443,7 @@ class EarthEngine extends Layer {
                 })
                 .select(aggregationType, null, false)
 
-            console.log('EVALUATE')
-            console.time('EE agg')
-
-            // return getInfo(aggFeatures).then(getFeatureCollectionProperties)
-
-            return getInfo(aggFeatures).then(data => {
-                console.timeEnd('EE agg')
-
-                return getFeatureCollectionProperties(data)
-            })
+            return getInfo(aggFeatures).then(getFeatureCollectionProperties)
         }
     }
 
