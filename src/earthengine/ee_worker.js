@@ -1,20 +1,16 @@
-import registerPromiseWorker from 'promise-worker/register'
-// import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
+import { expose } from 'comlink'
 import { ee } from './ee_api_js'
+// import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
 import { getScale } from './ee_utils'
-import * as types from './ee_worker_message_types'
-
-let eeImage
-let eeFeatureCollection
-let eeScale
 
 // Why we need to "hack" the '@google/earthengine bundle:
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
 // https://github.com/google/closure-library/issues/903
 // https://github.com/google/blockly/issues/1901#issuecomment-396741501
 
-// Use Comlink instead of promise-worker?
-// https://github.com/GoogleChromeLabs/comlink
+let eeImage
+let eeScale
+let eeFeatureCollection
 
 const setAuthToken = ({ client_id, tokenType, access_token, expires_in }) =>
     new Promise((resolve, reject) => {
@@ -32,8 +28,7 @@ const setAuthToken = ({ client_id, tokenType, access_token, expires_in }) =>
             updateAuthLibrary
         )
 
-        // TODO
-        // ee.data.setAuthTokenRefresher(this.refreshAccessToken)
+        // ee.data.setAuthTokenRefresher(refreshAccessToken)
 
         ee.initialize(null, null, resolve, reject)
     })
@@ -47,7 +42,7 @@ const setFeatureCollection = features => {
     )
 }
 
-const createImage = ({
+const getTileUrl = ({
     datasetId,
     filter,
     mosaic,
@@ -59,6 +54,8 @@ const createImage = ({
     params,
 }) =>
     new Promise(async resolve => {
+        console.log('progress')
+
         if (!filter) {
             eeImage = ee.Image(datasetId)
             eeScale = await getScale(eeImage)
@@ -123,20 +120,8 @@ const createImage = ({
         })
     })
 
-registerPromiseWorker((message = {}) => {
-    const { type, payload } = message
-
-    switch (type) {
-        case types.AUTH_TOKEN_SET:
-            return setAuthToken(payload)
-
-        case types.FEATURE_COLLECTION_SET:
-            return setFeatureCollection(payload)
-
-        case types.IMAGE_CREATE:
-            return createImage(payload)
-
-        default:
-            return 'Unkown message'
-    }
+expose({
+    setAuthToken,
+    setFeatureCollection,
+    getTileUrl,
 })

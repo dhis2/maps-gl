@@ -1,4 +1,5 @@
-import PromiseWorker from 'promise-worker'
+// import PromiseWorker from 'promise-worker'
+import { wrap } from 'comlink'
 import Layer from './Layer'
 import {
     getInfo,
@@ -13,7 +14,6 @@ import { isPoint, featureCollection } from '../utils/geometry'
 import { getBufferGeometry } from '../utils/buffers'
 import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
 import { setPrecision } from '../utils/numbers'
-import * as types from '../earthengine/ee_worker_message_types'
 
 export const defaultOptions = {
     tokenType: 'Bearer',
@@ -45,7 +45,7 @@ class EarthEngine extends Layer {
     }
 
     createWorker() {
-        this.worker = new PromiseWorker(
+        this.worker = wrap(
             new Worker(new URL('../earthengine/ee_worker.js', import.meta.url))
         )
     }
@@ -54,10 +54,7 @@ class EarthEngine extends Layer {
         const features = this.getFeatures()
 
         if (features.length) {
-            await this.worker.postMessage({
-                type: types.FEATURE_COLLECTION_SET,
-                payload: features,
-            })
+            await this.worker.setFeatureCollection(features)
         }
     }
 
@@ -76,19 +73,16 @@ class EarthEngine extends Layer {
             params,
         } = this.options
 
-        const urlFormat = await this.worker.postMessage({
-            type: types.IMAGE_CREATE,
-            payload: {
-                datasetId,
-                filter,
-                mosaic,
-                band,
-                bandReducer,
-                mask,
-                methods,
-                legend,
-                params,
-            },
+        const urlFormat = await this.worker.getTileUrl({
+            datasetId,
+            filter,
+            mosaic,
+            band,
+            bandReducer,
+            mask,
+            methods,
+            legend,
+            params,
         })
 
         this.setSource(`${id}-raster`, {
@@ -135,12 +129,9 @@ class EarthEngine extends Layer {
         if (accessToken) {
             const token = await accessToken
 
-            return this.worker.postMessage({
-                type: types.AUTH_TOKEN_SET,
-                payload: {
-                    ...token,
-                    tokenType,
-                },
+            await this.worker.setAuthToken({
+                ...token,
+                tokenType,
             })
         }
     }
