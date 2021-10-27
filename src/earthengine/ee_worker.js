@@ -47,15 +47,17 @@ const setFeatureCollection = features => {
     )
 }
 
-const getImage = ({
-    datasetId,
-    filter,
-    mosaic,
-    band,
-    bandReducer,
-    mask,
-    methods,
-}) => {
+const getImage = options => {
+    const {
+        datasetId,
+        filter,
+        mosaic,
+        band,
+        bandReducer,
+        mask,
+        methods,
+    } = options
+
     let eeImage
 
     if (!filter) {
@@ -132,35 +134,17 @@ const classifyImage = (eeImage, { legend = [], params }) => {
     return zones
 }
 
-const getTileUrl = ({
-    datasetId,
-    filter,
-    mosaic,
-    band,
-    bandReducer,
-    mask,
-    methods,
-    legend,
-    params,
-}) =>
+const getTileUrl = options =>
     new Promise(async resolve => {
-        let eeImage = getImage({
-            datasetId,
-            filter,
-            mosaic,
-            band,
-            bandReducer,
-            mask,
-            methods,
-        })
+        let eeImage = getImage(options)
 
-        eeImage = classifyImage(eeImage, { legend, params })
+        eeImage = classifyImage(eeImage, options)
 
         if (eeFeatureCollection) {
             eeImage = eeImage.clipToCollection(eeFeatureCollection)
         }
 
-        eeImage.visualize(params).getMap(null, response => {
+        eeImage.visualize(options.params).getMap(null, response => {
             resolve(response.urlFormat)
         })
     })
