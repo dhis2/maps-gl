@@ -1,3 +1,10 @@
+## [2.2.3](https://github.com/dhis2/maps-gl/compare/v2.2.2...v2.2.3) (2021-10-29)
+
+
+### Bug Fixes
+
+* only reference ee scale on the server ([#416](https://github.com/dhis2/maps-gl/issues/416)) ([570b0f6](https://github.com/dhis2/maps-gl/commit/570b0f6e5e63b3e7110a880b460daa40b9c0e565))
+
 ## [2.2.2](https://github.com/dhis2/maps-gl/compare/v2.2.1...v2.2.2) (2021-10-26)
 
 
