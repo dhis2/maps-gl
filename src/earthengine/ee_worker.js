@@ -8,8 +8,6 @@ import { ee } from './ee_api_js'
 // https://github.com/google/closure-library/issues/903
 // https://github.com/google/blockly/issues/1901#issuecomment-396741501
 
-let eeImage
-let eeScale
 let eeFeatureCollection
 
 const setAuthToken = (
@@ -59,14 +57,15 @@ const getImage = options => {
     } = options
 
     let eeImage
+    let eeScale
 
     if (!filter) {
         eeImage = ee.Image(datasetId)
-        // eeScale = await getScale(eeImage)
+        eeScale = await getScale(eeImage)
     } else {
         let collection = ee.ImageCollection(datasetId)
 
-        // eeScale = await getScale(collection.first())
+        eeScale = await getScale(collection.first())
 
         filter.forEach(f => {
             collection = collection.filter(
@@ -149,7 +148,13 @@ const getTileUrl = options =>
         })
     })
 
-const getAggregations = () => {
+// Need to be able to get aggregations in "isolation" for import/export app
+// https://code.earthengine.google.com/980cb8f260423cc536092a76d6d2db51
+const getAggregations = options => {
+    let eeImage = getImage(options) // TODO: use cache wait for promise to fullfill?
+
+    // Scale needs to be retrieved before mosaic - return in promise above?
+
     console.log('getAggregations')
 }
 
