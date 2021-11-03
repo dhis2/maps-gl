@@ -8,159 +8,155 @@ import { getScale } from './ee_utils'
 // https://github.com/google/closure-library/issues/903
 // https://github.com/google/blockly/issues/1901#issuecomment-396741501
 
-let eeFeatureCollection
+class EarthEngineWorker {
+    constructor() {}
 
-const setAuthToken = (
-    { client_id, tokenType, access_token, expires_in },
-    refreshAuthToken
-) =>
-    new Promise((resolve, reject) => {
-        const extraScopes = null
-        const callback = null
-        const updateAuthLibrary = false
+    // TODO: Check if token is already set
+    setAuthToken(token, refreshAuthToken) {
+        const { client_id, tokenType, access_token, expires_in } = token
 
-        ee.data.setAuthToken(
-            client_id,
-            tokenType,
-            access_token,
-            expires_in,
-            extraScopes,
-            callback,
-            updateAuthLibrary
-        )
+        return new Promise((resolve, reject) => {
+            const extraScopes = null
+            const callback = null
+            const updateAuthLibrary = false
 
-        ee.data.setAuthTokenRefresher((authArgs, callback) =>
-            refreshAuthToken(authArgs, proxy(callback))
-        )
-
-        ee.initialize(null, null, resolve, reject)
-    })
-
-const setFeatureCollection = features => {
-    eeFeatureCollection = ee.FeatureCollection(
-        features.map(f => ({
-            ...f,
-            id: f.properties.id, // EE requires id to be string, MapLibre integer
-        }))
-    )
-}
-
-const getImage = options => {
-    const {
-        datasetId,
-        filter,
-        mosaic,
-        band,
-        bandReducer,
-        mask,
-        methods,
-    } = options
-
-    let eeImage
-    let eeScale
-
-    if (!filter) {
-        eeImage = ee.Image(datasetId)
-        eeScale = getScale(eeImage)
-    } else {
-        let collection = ee.ImageCollection(datasetId)
-
-        eeScale = getScale(collection.first())
-
-        filter.forEach(f => {
-            collection = collection.filter(
-                ee.Filter[f.type].apply(this, f.arguments)
+            ee.data.setAuthToken(
+                client_id,
+                tokenType,
+                access_token,
+                expires_in,
+                extraScopes,
+                callback,
+                updateAuthLibrary
             )
-        })
 
-        eeImage = mosaic
-            ? collection.mosaic() // Composite all images inn a collection (e.g. per country)
-            : ee.Image(collection.first()) // There should only be one image after applying the filters
+            ee.data.setAuthTokenRefresher((authArgs, callback) =>
+                refreshAuthToken(authArgs, proxy(callback))
+            )
+
+            ee.initialize(null, null, resolve, reject)
+        })
     }
 
-    if (band) {
-        eeImage = eeImage.select(band)
+    setFeatureCollection(features) {
+        this.eeFeatureCollection = ee.FeatureCollection(
+            features.map(f => ({
+                ...f,
+                id: f.properties.id, // EE requires id to be string, MapLibre integer
+            }))
+        )
+    }
 
-        if (Array.isArray(band) && bandReducer && ee.Reducer[bandReducer]) {
-            // Combine multiple bands (e.g. age groups)
-            eeImage = eeImage.reduce(ee.Reducer[bandReducer]())
+    getImage(options) {
+        const {
+            datasetId,
+            filter,
+            mosaic,
+            band,
+            bandReducer,
+            mask,
+            methods,
+        } = options
+
+        let eeImage
+
+        if (!filter) {
+            eeImage = ee.Image(datasetId)
+            this.eeScale = getScale(eeImage)
+        } else {
+            let collection = ee.ImageCollection(datasetId)
+
+            this.eeScale = getScale(collection.first())
+
+            filter.forEach(f => {
+                collection = collection.filter(
+                    ee.Filter[f.type].apply(this, f.arguments)
+                )
+            })
+
+            eeImage = mosaic
+                ? collection.mosaic() // Composite all images inn a collection (e.g. per country)
+                : ee.Image(collection.first()) // There should only be one image after applying the filters
         }
-    }
 
-    if (mask) {
-        eeImage = eeImage.updateMask(eeImage.gt(0))
-    }
+        if (band) {
+            eeImage = eeImage.select(band)
 
-    if (methods) {
-        Object.keys(methods).forEach(method => {
-            if (eeImage[method]) {
-                eeImage = eeImage[method].apply(eeImage, methods[method])
+            if (Array.isArray(band) && bandReducer && ee.Reducer[bandReducer]) {
+                // Combine multiple bands (e.g. age groups)
+                eeImage = eeImage.reduce(ee.Reducer[bandReducer]())
             }
-        })
-    }
+        }
 
-    return eeImage
-}
+        if (mask) {
+            eeImage = eeImage.updateMask(eeImage.gt(0))
+        }
 
-const classifyImage = (eeImage, { legend = [], params }) => {
-    let zones
+        if (methods) {
+            Object.keys(methods).forEach(method => {
+                if (eeImage[method]) {
+                    eeImage = eeImage[method].apply(eeImage, methods[method])
+                }
+            })
+        }
 
-    /*
-    if (!params) {
-        // Image has classes (e.g. landcover)
-        this.params = getParamsFromLegend(legend)
         return eeImage
     }
-    */
 
-    const min = 0
-    const max = legend.length - 1
-    // const { palette } = params
+    classifyImage(eeImage, { legend = [], params }) {
+        let zones
 
-    for (let i = min, item; i < max; i++) {
-        item = legend[i]
-
-        if (!zones) {
-            zones = eeImage.gt(item.to)
-        } else {
-            zones = zones.add(eeImage.gt(item.to))
+        /*
+        if (!params) {
+            // Image has classes (e.g. landcover)
+            this.params = getParamsFromLegend(legend)
+            return eeImage
         }
+        */
+
+        const min = 0
+        const max = legend.length - 1
+        // const { palette } = params
+
+        for (let i = min, item; i < max; i++) {
+            item = legend[i]
+
+            if (!zones) {
+                zones = eeImage.gt(item.to)
+            } else {
+                zones = zones.add(eeImage.gt(item.to))
+            }
+        }
+
+        // Visualisation params
+        // this.params = { min, max, palette }
+
+        return zones
     }
 
-    // Visualisation params
-    // this.params = { min, max, palette }
+    getTileUrl(options) {
+        return new Promise(async resolve => {
+            let eeImage = this.getImage(options)
 
-    return zones
-}
+            eeImage = this.classifyImage(eeImage, options)
 
-const getTileUrl = options =>
-    new Promise(async resolve => {
-        let eeImage = getImage(options)
+            if (this.eeFeatureCollection) {
+                eeImage = eeImage.clipToCollection(this.eeFeatureCollection)
+            }
 
-        eeImage = classifyImage(eeImage, options)
-
-        if (eeFeatureCollection) {
-            eeImage = eeImage.clipToCollection(eeFeatureCollection)
-        }
-
-        eeImage.visualize(options.params).getMap(null, response => {
-            resolve(response.urlFormat)
+            eeImage.visualize(options.params).getMap(null, response => {
+                resolve(response.urlFormat)
+            })
         })
-    })
+    }
 
-// Need to be able to get aggregations in "isolation" for import/export app
-// https://code.earthengine.google.com/980cb8f260423cc536092a76d6d2db51
-const getAggregations = options => {
-    let eeImage = getImage(options) // TODO: use cache wait for promise to fullfill?
-
-    // Scale needs to be retrieved before mosaic - return in promise above?
-
-    // console.log('getAggregations')
+    // Need to be able to get aggregations in "isolation" for import/export app
+    // https://code.earthengine.google.com/980cb8f260423cc536092a76d6d2db51
+    getAggregations(options) {
+        // let eeImage = getImage(options) // TODO: use cache wait for promise to fullfill?
+        // Scale needs to be retrieved before mosaic - return in promise above?
+        // console.log('getAggregations')
+    }
 }
 
-expose({
-    setAuthToken,
-    setFeatureCollection,
-    getTileUrl,
-    getAggregations,
-})
+expose(EarthEngineWorker)

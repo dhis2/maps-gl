@@ -40,14 +40,15 @@ class EarthEngine extends Layer {
 
     // EE initialise
     async init() {
-        this.createWorker()
+        await this.createWorker()
         await this.setAuthToken()
     }
 
-    createWorker() {
-        this.worker = wrap(
+    async createWorker() {
+        const EarthEngineWorker = wrap(
             new Worker(new URL('../earthengine/ee_worker.js', import.meta.url))
         )
+        this.worker = await new EarthEngineWorker()
     }
 
     async setFeatureCollection() {
