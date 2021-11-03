@@ -1,7 +1,7 @@
 import { expose, proxy } from 'comlink'
 import ee from './ee_api_js_worker' // https://github.com/google/earthengine-api/pull/173
 // import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
-import { getScale } from './ee_utils'
+import { getInfo, getScale } from './ee_utils'
 
 // Why we need to "hack" the '@google/earthengine bundle:
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
@@ -14,7 +14,12 @@ class EarthEngineWorker {
     // Set EE API auth token if not already set
     setAuthToken(token, refreshAuthToken) {
         if (token && !ee.data.getAuthToken()) {
-            const { client_id, tokenType, access_token, expires_in } = token
+            const {
+                client_id,
+                tokenType = 'Bearer',
+                access_token,
+                expires_in,
+            } = token
             const extraScopes = null
             const callback = null
             const updateAuthLibrary = false
@@ -155,6 +160,19 @@ class EarthEngineWorker {
                 resolve(response.urlFormat)
             })
         })
+    }
+
+    getPeriods(eeId) {
+        const imageCollection = ee
+            .ImageCollection(eeId)
+            .distinct('system:time_start')
+            .sort('system:time_start', false)
+
+        const featureCollection = ee
+            .FeatureCollection(imageCollection)
+            .select(['system:time_start', 'system:time_end'], null, false)
+
+        return getInfo(featureCollection)
     }
 
     // Need to be able to get aggregations in "isolation" for import/export app
