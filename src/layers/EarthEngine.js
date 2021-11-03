@@ -1,5 +1,4 @@
-// import PromiseWorker from 'promise-worker'
-import { wrap, proxy } from 'comlink'
+import { proxy } from 'comlink'
 import Layer from './Layer'
 import {
     getInfo,
@@ -10,6 +9,7 @@ import {
     getHistogramStatistics,
     getFeatureCollectionProperties,
 } from '../earthengine/ee_utils'
+import getEarthEngineWorker from '../earthengine/ee_worker_loader'
 import { isPoint, featureCollection } from '../utils/geometry'
 import { getBufferGeometry } from '../utils/buffers'
 import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
@@ -40,16 +40,22 @@ class EarthEngine extends Layer {
 
     // EE initialise
     async init() {
-        await this.createWorker()
+        console.time('createWorkerInstance')
+        await this.createWorkerInstance()
+        console.timeEnd('createWorkerInstance')
+        console.time('setAuthToken')
         await this.setAuthToken()
+        console.timeEnd('setAuthToken')
+        console.time('initialize')
         await this.worker.initialize()
+        console.timeEnd('initialize')
     }
 
-    async createWorker() {
-        const EarthEngineWorker = wrap(
-            new Worker(new URL('../earthengine/ee_worker.js', import.meta.url))
-        )
-        this.worker = await new EarthEngineWorker()
+    async createWorkerInstance() {
+        if (!this.worker) {
+            const EarthEngineWorker = getEarthEngineWorker()
+            this.worker = await new EarthEngineWorker()
+        }
     }
 
     async setFeatureCollection() {
