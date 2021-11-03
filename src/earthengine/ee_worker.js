@@ -1,7 +1,15 @@
 import { expose, proxy } from 'comlink'
 import ee from './ee_api_js_worker' // https://github.com/google/earthengine-api/pull/173
 // import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
-import { getInfo, getScale } from './ee_utils'
+import {
+    getInfo,
+    getScale,
+    hasClasses,
+    combineReducers,
+    getParamsFromLegend,
+    getHistogramStatistics,
+    getFeatureCollectionProperties,
+} from './ee_utils'
 
 // Why we need to "hack" the '@google/earthengine bundle:
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
@@ -188,10 +196,43 @@ class EarthEngineWorker {
 
     // Need to be able to get aggregations in "isolation" for import/export app
     // https://code.earthengine.google.com/980cb8f260423cc536092a76d6d2db51
-    getAggregations() {
-        // let eeImage = getImage(options) // TODO: use cache wait for promise to fullfill?
-        // Scale needs to be retrieved before mosaic - return in promise above?
-        // console.log('getAggregations')
+    async getAggregations() {
+        const { aggregationType, legend } = this.options
+        const classes =
+            !Array.isArray(aggregationType) && hasClasses(aggregationType)
+        const image = this.eeImage
+        const collection = this.eeFeatureCollection
+        const scale = this.eeScale
+
+        if (classes && legend) {
+            // Used for landcover
+            const reducer = ee.Reducer.frequencyHistogram()
+
+            return getInfo(
+                image
+                    .reduceRegions(collection, reducer, scale)
+                    .select(['histogram'], null, false)
+            ).then(data =>
+                getHistogramStatistics({
+                    data,
+                    scale,
+                    aggregationType,
+                    legend,
+                })
+            )
+        } else if (Array.isArray(aggregationType) && aggregationType.length) {
+            const reducer = combineReducers(ee)(aggregationType)
+
+            const aggFeatures = image
+                .reduceRegions({
+                    collection,
+                    reducer,
+                    scale,
+                })
+                .select(aggregationType, null, false)
+
+            return getInfo(aggFeatures).then(getFeatureCollectionProperties)
+        }
     }
 }
 

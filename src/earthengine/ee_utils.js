@@ -40,16 +40,16 @@ export const getInfo = instance =>
 
 // Combine multiple aggregation types/reducers
 // https://developers.google.com/earth-engine/guides/reducers_intro
-export const combineReducers = ee => types =>
-    types.reduce(
-        (r, t, i) =>
-            i === 0
-                ? r[t]()
-                : r.combine({
-                      reducer2: ee.Reducer[t](),
-                      sharedInputs: true,
-                  }),
-        ee.Reducer
+// ee.Reducer is not available, using ee.call
+// https://github.com/google/earthengine-api/blob/6445cae4c371a8244f70ae08c01a6da05dbc4c7d/demos/cloud-functions/function.js
+export const combineReducers = ee => ([type, ...combine]) =>
+    combine.reduce(
+        (r, t) =>
+            r.combine({
+                reducer2: ee.call(`Reducer.${t}`),
+                sharedInputs: true,
+            }),
+        ee.call(`Reducer.${type}`)
     )
 
 // Returns the linear scale in meters of the units of this projection

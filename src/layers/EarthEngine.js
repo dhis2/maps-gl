@@ -1,15 +1,6 @@
 import { proxy } from 'comlink'
 import Layer from './Layer'
-import {
-    getInfo,
-    getScale,
-    hasClasses,
-    combineReducers,
-    getParamsFromLegend,
-    getHistogramStatistics,
-    getFeatureCollectionProperties,
-    getWorkerOptions,
-} from '../earthengine/ee_utils'
+import { getInfo, getWorkerOptions } from '../earthengine/ee_utils'
 import getEarthEngineWorker from '../earthengine/ee_worker_loader'
 import { isPoint, featureCollection } from '../utils/geometry'
 import { getBufferGeometry } from '../utils/buffers'
@@ -37,13 +28,14 @@ class EarthEngine extends Layer {
         this.createLayers()
         super.addTo(map)
         this.onLoad()
+
+        const test = await this.worker.getAggregations()
+        console.log('test', test)
     }
 
     // EE initialise
     async init() {
         await this.createWorkerInstance()
-        console.time('setAuthToken')
-        console.timeEnd('setAuthToken')
         await this.worker.initialize()
         await this.worker.setOptions(getWorkerOptions(this.options))
     }
