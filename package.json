@@ -18,6 +18,7 @@
   ],
   "license": "BSD-3-Clause",
   "dependencies": {
+    "@dhis2/maps-gl": "^2.2.3",
     "@mapbox/sphericalmercator": "^1.1.0",
     "@turf/area": "^6.3.0",
     "@turf/bbox": "^6.3.0",

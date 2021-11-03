@@ -1025,6 +1025,25 @@
     prettier "^1.15.3"
     yargs "^13.1.0"
 
+"@dhis2/maps-gl@^2.2.3":
+  version "2.2.3"
+  resolved "https://registry.yarnpkg.com/@dhis2/maps-gl/-/maps-gl-2.2.3.tgz#f785e8474d8285bf3afb4dbf7a1d90c05946958d"
+  integrity sha512-Pa1dD6FJtYXQ6qGp5a0K+CQG65gKmwU1s7BpNkAWUKEYU0qMotxDC3MPhBdu+i0CLFpfeJE2KRQ+1BlQIqYmZQ==
+  dependencies:
+    "@mapbox/sphericalmercator" "^1.1.0"
+    "@turf/area" "^6.3.0"
+    "@turf/bbox" "^6.3.0"
+    "@turf/buffer" "^6.3.0"
+    "@turf/center-of-mass" "^6.3.0"
+    "@turf/circle" "^6.3.0"
+    "@turf/length" "^6.3.0"
+    fetch-jsonp "^1.1.3"
+    lodash.throttle "^4.1.1"
+    maplibre-gl "^1.15.2"
+    polylabel "^1.1.0"
+    suggestions "^1.7.1"
+    uuid "^8.3.2"
+
 "@istanbuljs/load-nyc-config@^1.0.0":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@istanbuljs/load-nyc-config/-/load-nyc-config-1.1.0.tgz#fd3db1d59ecf7cf121e80650bb86712f9b55eced"
