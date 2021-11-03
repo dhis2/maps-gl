@@ -42,6 +42,7 @@ class EarthEngine extends Layer {
     async init() {
         await this.createWorker()
         await this.setAuthToken()
+        await this.worker.initialize()
     }
 
     async createWorker() {

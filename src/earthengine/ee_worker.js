@@ -11,11 +11,10 @@ import { getScale } from './ee_utils'
 class EarthEngineWorker {
     constructor() {}
 
-    // TODO: Check if token is already set
+    // Set EE API auth token if not already set
     setAuthToken(token, refreshAuthToken) {
-        const { client_id, tokenType, access_token, expires_in } = token
-
-        return new Promise((resolve, reject) => {
+        if (token && !ee.data.getAuthToken()) {
+            const { client_id, tokenType, access_token, expires_in } = token
             const extraScopes = null
             const callback = null
             const updateAuthLibrary = false
@@ -29,11 +28,19 @@ class EarthEngineWorker {
                 callback,
                 updateAuthLibrary
             )
+        }
 
+        if (refreshAuthToken) {
             ee.data.setAuthTokenRefresher((authArgs, callback) =>
                 refreshAuthToken(authArgs, proxy(callback))
             )
+        }
+    }
 
+    // Initialise EE API
+    // https://developers.google.com/earth-engine/apidocs/ee-initialize
+    initialize() {
+        return new Promise((resolve, reject) => {
             ee.initialize(null, null, resolve, reject)
         })
     }
