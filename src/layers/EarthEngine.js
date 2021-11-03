@@ -29,7 +29,7 @@ class EarthEngine extends Layer {
         super.addTo(map)
         this.onLoad()
 
-        const test = await this.worker.getAggregations()
+        const test = await this.worker.getAggregations('eIQbndfxQMb')
         console.log('test', test)
     }
 
@@ -208,52 +208,7 @@ class EarthEngine extends Layer {
         )
 
     // Perform aggregations to org unit features
-    /*
     aggregate = async aggregationType => {
-        const { legend } = this.options
-        const classes = hasClasses(aggregationType)
-        const image = await this.getImage()
-        const collection = this.featureCollection
-        const scale = this.scale
-        const { Reducer } = this.ee
-
-        if (classes && legend) {
-            // Used for landcover
-            const reducer = Reducer.frequencyHistogram()
-
-            return getInfo(
-                image
-                    .reduceRegions(collection, reducer, scale)
-                    .select(['histogram'], null, false)
-            ).then(data =>
-                getHistogramStatistics({
-                    data,
-                    scale,
-                    aggregationType,
-                    legend,
-                })
-            )
-        } else if (Array.isArray(aggregationType) && aggregationType.length) {
-            const reducer = combineReducers(ee)(aggregationType)
-
-            const aggFeatures = image
-                .reduceRegions({
-                    collection,
-                    reducer,
-                    scale,
-                })
-                .select(aggregationType, null, false)
-
-            return getInfo(aggFeatures).then(getFeatureCollectionProperties)
-        }
-    }
-    */
-
-    aggregate = async aggregationType => {
-        // await this.worker.getAggregations(aggregationType)
-
-        // console.log('aggregate', aggregationType)
-
         return {}
     }
 

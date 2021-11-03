@@ -196,12 +196,14 @@ class EarthEngineWorker {
 
     // Need to be able to get aggregations in "isolation" for import/export app
     // https://code.earthengine.google.com/980cb8f260423cc536092a76d6d2db51
-    async getAggregations() {
+    async getAggregations(id) {
         const { aggregationType, legend } = this.options
         const classes =
             !Array.isArray(aggregationType) && hasClasses(aggregationType)
         const image = this.eeImage
-        const collection = this.eeFeatureCollection
+        const collection = id
+            ? this.eeFeatureCollection.filter(ee.Filter.eq('id', id))
+            : this.eeFeatureCollection
         const scale = this.eeScale
 
         if (classes && legend) {
