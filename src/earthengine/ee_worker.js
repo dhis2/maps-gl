@@ -1,5 +1,5 @@
 import { expose, proxy } from 'comlink'
-import { ee } from './ee_api_js'
+import ee from './ee_api_js_worker' // https://github.com/google/earthengine-api/pull/173
 // import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
 import { getScale } from './ee_utils'
 
