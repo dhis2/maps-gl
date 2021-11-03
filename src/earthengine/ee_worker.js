@@ -208,7 +208,7 @@ class EarthEngineWorker {
 
         if (classes && legend) {
             // Used for landcover
-            const reducer = ee.Reducer.frequencyHistogram()
+            const reducer = ee.call(`Reducer.frequencyHistogram`)
 
             return getInfo(
                 image
