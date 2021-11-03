@@ -8,6 +8,7 @@ import {
     getParamsFromLegend,
     getHistogramStatistics,
     getFeatureCollectionProperties,
+    getWorkerOptions,
 } from '../earthengine/ee_utils'
 import getEarthEngineWorker from '../earthengine/ee_worker_loader'
 import { isPoint, featureCollection } from '../utils/geometry'
@@ -40,15 +41,11 @@ class EarthEngine extends Layer {
 
     // EE initialise
     async init() {
-        console.time('createWorkerInstance')
         await this.createWorkerInstance()
-        console.timeEnd('createWorkerInstance')
         console.time('setAuthToken')
-        await this.setAuthToken()
         console.timeEnd('setAuthToken')
-        console.time('initialize')
         await this.worker.initialize()
-        console.timeEnd('initialize')
+        await this.worker.setOptions(getWorkerOptions(this.options))
     }
 
     async createWorkerInstance() {
@@ -68,30 +65,7 @@ class EarthEngine extends Layer {
 
     async createSource() {
         const id = this.getId()
-
-        const {
-            datasetId,
-            filter,
-            mosaic,
-            band,
-            bandReducer,
-            mask,
-            methods,
-            legend,
-            params,
-        } = this.options
-
-        const urlFormat = await this.worker.getTileUrl({
-            datasetId,
-            filter,
-            mosaic,
-            band,
-            bandReducer,
-            mask,
-            methods,
-            legend,
-            params,
-        })
+        const urlFormat = await this.worker.getTileUrl()
 
         this.setSource(`${id}-raster`, {
             type: 'raster',
@@ -195,154 +169,6 @@ class EarthEngine extends Layer {
               )
             : null
     }
-
-    // Create EE tile layer from params
-    async createImage() {
-        const { datasetId } = this.options
-
-        // Apply filter (e.g. period)
-        let eeImage = await this.applyFilter(datasetId)
-
-        // Select band (e.g. age group)
-        eeImage = this.selectBand(eeImage)
-
-        // Mask out 0-values
-        eeImage = this.maskImage(eeImage)
-
-        // Run methods on image
-        eeImage = this.runMethods(eeImage)
-
-        this.eeImage = eeImage
-
-        // Image is ready for aggregations
-        this.fire('imageready', { type: 'imageready', image: eeImage })
-
-        // Classify image
-        return this.classifyImage(eeImage)
-    }
-
-    // Apply array of filters returns image
-    applyFilter = async datasetId => {
-        const { filter, mosaic } = this.options
-        const { Filter, Image, ImageCollection } = this.ee
-
-        if (!filter) {
-            const image = Image(datasetId)
-            this.scale = getScale(image)
-            return image
-        }
-
-        let collection = ImageCollection(datasetId)
-
-        // Scale is lost when creating a mosaic below
-        // https://developers.google.com/earth-engine/guides/projections
-        this.scale = getScale(collection.first())
-
-        filter.forEach(f => {
-            collection = collection.filter(
-                Filter[f.type].apply(this, f.arguments)
-            )
-        })
-
-        if (mosaic) {
-            // Composite all images inn a collection (e.g. per country)
-            return collection.mosaic()
-        }
-
-        // There should only be one image after applying the filters
-        return Image(collection.first())
-    }
-
-    // Select band(s)
-    selectBand(eeImage) {
-        const { band, bandReducer } = this.options
-        const { Reducer } = this.ee
-
-        if (band) {
-            eeImage = eeImage.select(band)
-
-            if (Array.isArray(band) && bandReducer && Reducer[bandReducer]) {
-                // Combine multiple bands (e.g. age groups)
-                eeImage = eeImage.reduce(Reducer[bandReducer]())
-            }
-        }
-
-        return eeImage
-    }
-
-    // Run methods on image
-    runMethods(eeImage) {
-        const { methods } = this.options
-
-        if (methods) {
-            Object.keys(methods).forEach(method => {
-                if (eeImage[method]) {
-                    eeImage = eeImage[method].apply(eeImage, methods[method])
-                }
-            })
-        }
-
-        return eeImage
-    }
-
-    // Mask out 0-values
-    maskImage(eeImage) {
-        return this.options.mask ? eeImage.updateMask(eeImage.gt(0)) : eeImage
-    }
-
-    // Classify image according to legend
-    classifyImage(eeImage) {
-        const { legend = [], params } = this.options
-        let zones
-
-        if (!params) {
-            // Image has classes (e.g. landcover)
-            this.params = getParamsFromLegend(legend)
-            return eeImage
-        }
-
-        const min = 0
-        const max = legend.length - 1
-        const { palette } = params
-
-        for (let i = min, item; i < max; i++) {
-            item = legend[i]
-
-            if (!zones) {
-                zones = eeImage.gt(item.to)
-            } else {
-                zones = zones.add(eeImage.gt(item.to))
-            }
-        }
-
-        // Visualisation params
-        this.params = { min, max, palette }
-
-        return zones
-    }
-
-    // Visualize image (turn into RGB)
-    visualize = () =>
-        this._visualize ||
-        new Promise(resolve => {
-            const { params } = this.options
-
-            this.featureCollection = this.getFeatureCollection()
-
-            this.createImage().then(eeImage => {
-                // Clip image to org unit features
-                if (this.featureCollection) {
-                    eeImage = eeImage.clipToCollection(this.featureCollection)
-                }
-
-                eeImage
-                    .visualize(this.params || params)
-                    .getMap(null, response => {
-                        this._visualize = response
-                        resolve(response)
-                    })
-            })
-        })
 
     // Returns value at at position
     getValue = latlng => {

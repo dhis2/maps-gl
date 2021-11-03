@@ -42,6 +42,10 @@ class EarthEngineWorker {
         }
     }
 
+    setOptions(options = {}) {
+        this.options = options
+    }
+
     // Initialise EE API
     // https://developers.google.com/earth-engine/apidocs/ee-initialize
     initialize() {
@@ -59,7 +63,7 @@ class EarthEngineWorker {
         )
     }
 
-    getImage(options) {
+    getImage() {
         const {
             datasetId,
             filter,
@@ -68,7 +72,7 @@ class EarthEngineWorker {
             bandReducer,
             mask,
             methods,
-        } = options
+        } = this.options
 
         let eeImage
 
@@ -78,8 +82,11 @@ class EarthEngineWorker {
         } else {
             let collection = ee.ImageCollection(datasetId)
 
+            // Scale is lost when creating a mosaic below
+            // https://developers.google.com/earth-engine/guides/projections
             this.eeScale = getScale(collection.first())
 
+            // Apply array of filters (e.g. period)
             filter.forEach(f => {
                 collection = collection.filter(
                     ee.Filter[f.type].apply(this, f.arguments)
@@ -91,6 +98,7 @@ class EarthEngineWorker {
                 : ee.Image(collection.first()) // There should only be one image after applying the filters
         }
 
+        // // Select band (e.g. age group)
         if (band) {
             eeImage = eeImage.select(band)
 
@@ -100,10 +108,12 @@ class EarthEngineWorker {
             }
         }
 
+        // Mask out 0-values
         if (mask) {
             eeImage = eeImage.updateMask(eeImage.gt(0))
         }
 
+        // Run methods on image
         if (methods) {
             Object.keys(methods).forEach(method => {
                 if (eeImage[method]) {
@@ -115,20 +125,21 @@ class EarthEngineWorker {
         return eeImage
     }
 
-    classifyImage(eeImage, { legend = [], params }) {
+    // Classify image according to legend
+    classifyImage(eeImage) {
+        const { legend = [], params } = this.options
+
         let zones
 
-        /*
         if (!params) {
             // Image has classes (e.g. landcover)
             this.params = getParamsFromLegend(legend)
             return eeImage
         }
-        */
 
         const min = 0
         const max = legend.length - 1
-        // const { palette } = params
+        const { palette } = params
 
         for (let i = min, item; i < max; i++) {
             item = legend[i]
@@ -141,24 +152,24 @@ class EarthEngineWorker {
         }
 
         // Visualisation params
-        // this.params = { min, max, palette }
+        this.params = { min, max, palette }
 
         return zones
     }
 
-    getTileUrl(options) {
+    getTileUrl() {
         return new Promise(async resolve => {
-            let eeImage = this.getImage(options)
+            this.eeImage = this.getImage()
 
-            eeImage = this.classifyImage(eeImage, options)
+            let eeImage = this.classifyImage(this.eeImage)
 
             if (this.eeFeatureCollection) {
                 eeImage = eeImage.clipToCollection(this.eeFeatureCollection)
             }
 
-            eeImage.visualize(options.params).getMap(null, response => {
-                resolve(response.urlFormat)
-            })
+            eeImage
+                .visualize(this.params || this.options.params)
+                .getMap(null, response => resolve(response.urlFormat))
         })
     }
 
@@ -177,7 +188,7 @@ class EarthEngineWorker {
 
     // Need to be able to get aggregations in "isolation" for import/export app
     // https://code.earthengine.google.com/980cb8f260423cc536092a76d6d2db51
-    getAggregations(options) {
+    getAggregations() {
         // let eeImage = getImage(options) // TODO: use cache wait for promise to fullfill?
         // Scale needs to be retrieved before mosaic - return in promise above?
         // console.log('getAggregations')

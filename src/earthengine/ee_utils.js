@@ -4,6 +4,28 @@ const classAggregation = ['percentage', 'hectares', 'acres']
 
 export const hasClasses = type => classAggregation.includes(type)
 
+const workerOptions = [
+    'aggregationType',
+    'band',
+    'bandReducer',
+    'data',
+    'datasetId',
+    'filter',
+    'legend',
+    'mask',
+    'methods',
+    'mosaic',
+    'params',
+]
+
+export const getWorkerOptions = options =>
+    Object.keys(options)
+        .filter(option => workerOptions.includes(option))
+        .reduce((obj, key) => {
+            obj[key] = options[key]
+            return obj
+        }, {})
+
 // Makes evaluate a promise
 export const getInfo = instance =>
     new Promise((resolve, reject) =>
