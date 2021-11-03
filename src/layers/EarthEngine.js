@@ -424,9 +424,11 @@ class EarthEngine extends Layer {
     */
 
     aggregate = async aggregationType => {
-        await this.worker.getAggregations(aggregationType)
+        // await this.worker.getAggregations(aggregationType)
 
-        console.log('aggregate', aggregationType)
+        // console.log('aggregate', aggregationType)
+
+        return {}
     }
 
     setOpacity(opacity) {

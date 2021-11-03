@@ -1,7 +1,7 @@
 import { expose, proxy } from 'comlink'
 import { ee } from './ee_api_js'
 // import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
-// import { getScale } from './ee_utils'
+import { getScale } from './ee_utils'
 
 // Why we need to "hack" the '@google/earthengine bundle:
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
@@ -61,11 +61,11 @@ const getImage = options => {
 
     if (!filter) {
         eeImage = ee.Image(datasetId)
-        eeScale = await getScale(eeImage)
+        eeScale = getScale(eeImage)
     } else {
         let collection = ee.ImageCollection(datasetId)
 
-        eeScale = await getScale(collection.first())
+        eeScale = getScale(collection.first())
 
         filter.forEach(f => {
             collection = collection.filter(
@@ -155,7 +155,7 @@ const getAggregations = options => {
 
     // Scale needs to be retrieved before mosaic - return in promise above?
 
-    console.log('getAggregations')
+    // console.log('getAggregations')
 }
 
 expose({
