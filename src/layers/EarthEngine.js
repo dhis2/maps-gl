@@ -218,7 +218,7 @@ class EarthEngine extends Layer {
 
         if (!filter) {
             const image = Image(datasetId)
-            this.scale = await getScale(image)
+            this.scale = getScale(image)
             return image
         }
 
@@ -226,7 +226,7 @@ class EarthEngine extends Layer {
 
         // Scale is lost when creating a mosaic below
         // https://developers.google.com/earth-engine/guides/projections
-        this.scale = await getScale(collection.first())
+        this.scale = getScale(collection.first())
 
         filter.forEach(f => {
             collection = collection.filter(
