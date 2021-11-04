@@ -80,7 +80,6 @@ class EarthEngineWorker {
     getImage() {
         if (this.eeImage) {
             return this.eeImage
-            console.log('Already created')
         }
 
         const {
@@ -196,6 +195,15 @@ class EarthEngineWorker {
         })
     }
 
+    async getValue(lnglat) {
+        const { lng, lat } = lnglat
+        const eeImage = await this.getImage()
+        const point = ee.Geometry.Point(lng, lat)
+        const reducer = ee.call(`Reducer.mean`)
+
+        return getInfo(eeImage.reduceRegion(reducer, point, 1))
+    }
+
     getPeriods(eeId) {
         const imageCollection = ee
             .ImageCollection(eeId)
@@ -216,13 +224,13 @@ class EarthEngineWorker {
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
             singleAggregation && hasClasses(aggregationType) && legend
-        const image = this.eeImage || (await this.getImage())
+        const image = await this.getImage()
         const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
         const scale = this.eeScale
 
         if (useHistogram) {
             // Used for landcover
-            const reducer = ee.call(`Reducer.frequencyHistogram`)
+            const reducer = ee.call('Reducer.frequencyHistogram')
             return getInfo(
                 image
                     .reduceRegions(collection, reducer, scale)

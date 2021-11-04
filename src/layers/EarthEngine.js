@@ -1,6 +1,6 @@
 import { proxy } from 'comlink'
 import Layer from './Layer'
-import { getInfo, getWorkerOptions } from '../earthengine/ee_utils'
+import { getWorkerOptions } from '../earthengine/ee_utils'
 import getEarthEngineWorker from '../earthengine/ee_worker_loader'
 import { isPoint, featureCollection } from '../utils/geometry'
 import { getBufferGeometry } from '../utils/buffers'
@@ -156,23 +156,15 @@ class EarthEngine extends Layer {
     }
 
     // Returns value at at position
-    getValue = latlng => {
+    getValue = async lnglat => {
         const { band, legend } = this.options
-        const { Geometry, Reducer } = this.ee
-        const { lng, lat } = latlng
-        const point = Geometry.Point(lng, lat)
+        const data = await this.worker.getValue(lnglat)
+        const value = data[band] || Object.values(data)[0]
 
-        return getInfo(
-            this.eeImage.reduceRegion(Reducer.mean(), point, 1)
-        ).then(data => {
-            const value = data[band] || Object.values(data)[0]
+        // Used for landcover
+        const item = Array.isArray(legend) && legend.find(i => i.id === value)
 
-            // Used for landcover
-            const item =
-                Array.isArray(legend) && legend.find(i => i.id === value)
-
-            return item ? item.name : value
-        })
+        return item ? item.name : value
     }
 
     // TODO: Move popup handling to the maps app
@@ -183,7 +175,6 @@ class EarthEngine extends Layer {
                 ...this.options,
                 value: typeof value === 'number' ? setPrecision(value) : value,
             }
-
             const content = options.popup.replace(
                 /\{ *([\w_-]+) *\}/g,
                 (str, key) => options[key]
