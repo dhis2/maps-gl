@@ -22,36 +22,28 @@ class EarthEngine extends Layer {
     }
 
     async addTo(map) {
-        await this.init()
-        await this.setFeatureCollection()
+        await this.createWorkerInstance()
         await this.createSource()
         this.createLayers()
         super.addTo(map)
         this.onLoad()
 
-        const test = await this.worker.getAggregations('eIQbndfxQMb')
+        // console.time('agg')
+        const test = await this.worker.getAggregations()
+        // console.timeEnd('agg')
         console.log('test', test)
-    }
-
-    // EE initialise
-    async init() {
-        await this.createWorkerInstance()
-        await this.worker.initialize()
-        await this.worker.setOptions(getWorkerOptions(this.options))
     }
 
     async createWorkerInstance() {
         if (!this.worker) {
             const EarthEngineWorker = getEarthEngineWorker()
-            this.worker = await new EarthEngineWorker()
-        }
-    }
 
-    async setFeatureCollection() {
-        const features = this.getFeatures()
+            this.worker = await new EarthEngineWorker(
+                getWorkerOptions(this.options)
+            )
 
-        if (features.length) {
-            await this.worker.setFeatureCollection(features)
+            const token = await this.options.accessToken
+            await this.worker.initialize(token, proxy(this.refreshAuthToken))
         }
     }
 
@@ -115,7 +107,7 @@ class EarthEngine extends Layer {
 
     // Refresh OAuth2 token when expired (called from worker)
     refreshAuthToken = async (authArgs, callback) => {
-        const { tokenType } = this.options
+        const { accessToken, tokenType } = this.options
         const token = await accessToken
 
         callback({

@@ -17,7 +17,19 @@ import {
 // https://github.com/google/blockly/issues/1901#issuecomment-396741501
 
 class EarthEngineWorker {
-    constructor() {}
+    constructor(options = {}) {
+        this.options = options
+    }
+
+    // Initialise EE API
+    // https://developers.google.com/earth-engine/apidocs/ee-initialize
+    initialize(token, refreshAuthToken) {
+        this.setAuthToken(token, refreshAuthToken)
+
+        return new Promise((resolve, reject) => {
+            ee.initialize(null, null, resolve, reject)
+        })
+    }
 
     // Set EE API auth token if not already set
     setAuthToken(token, refreshAuthToken) {
@@ -50,25 +62,19 @@ class EarthEngineWorker {
         }
     }
 
-    setOptions(options = {}) {
-        this.options = options
-    }
+    getFeatureCollection() {
+        const { data } = this.options
 
-    // Initialise EE API
-    // https://developers.google.com/earth-engine/apidocs/ee-initialize
-    initialize() {
-        return new Promise((resolve, reject) => {
-            ee.initialize(null, null, resolve, reject)
-        })
-    }
+        if (Array.isArray(data) && !this.eeFeatureCollection) {
+            this.eeFeatureCollection = ee.FeatureCollection(
+                data.map(f => ({
+                    ...f,
+                    id: f.properties.id, // EE requires id to be string, MapLibre integer
+                }))
+            )
+        }
 
-    setFeatureCollection(features) {
-        this.eeFeatureCollection = ee.FeatureCollection(
-            features.map(f => ({
-                ...f,
-                id: f.properties.id, // EE requires id to be string, MapLibre integer
-            }))
-        )
+        return this.eeFeatureCollection
     }
 
     getImage() {
@@ -166,17 +172,19 @@ class EarthEngineWorker {
     }
 
     getTileUrl() {
+        const { data, params } = this.options
+
         return new Promise(async resolve => {
             this.eeImage = this.getImage()
 
             let eeImage = this.classifyImage(this.eeImage)
 
-            if (this.eeFeatureCollection) {
-                eeImage = eeImage.clipToCollection(this.eeFeatureCollection)
+            if (data) {
+                eeImage = eeImage.clipToCollection(this.getFeatureCollection())
             }
 
             eeImage
-                .visualize(this.params || this.options.params)
+                .visualize(this.params || params)
                 .getMap(null, response => resolve(response.urlFormat))
         })
     }
@@ -196,20 +204,18 @@ class EarthEngineWorker {
 
     // Need to be able to get aggregations in "isolation" for import/export app
     // https://code.earthengine.google.com/980cb8f260423cc536092a76d6d2db51
-    async getAggregations(id) {
+    async getAggregations() {
         const { aggregationType, legend } = this.options
-        const classes =
-            !Array.isArray(aggregationType) && hasClasses(aggregationType)
-        const image = this.eeImage
-        const collection = id
-            ? this.eeFeatureCollection.filter(ee.Filter.eq('id', id))
-            : this.eeFeatureCollection
+        const singleAggregation = !Array.isArray(aggregationType)
+        const useHistogram =
+            singleAggregation && hasClasses(aggregationType) && legend
+        const image = this.eeImage || (await this.getImage())
+        const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
         const scale = this.eeScale
 
-        if (classes && legend) {
+        if (useHistogram) {
             // Used for landcover
             const reducer = ee.call(`Reducer.frequencyHistogram`)
-
             return getInfo(
                 image
                     .reduceRegions(collection, reducer, scale)
@@ -222,7 +228,7 @@ class EarthEngineWorker {
                     legend,
                 })
             )
-        } else if (Array.isArray(aggregationType) && aggregationType.length) {
+        } else if (!singleAggregation && aggregationType.length) {
             const reducer = combineReducers(ee)(aggregationType)
 
             const aggFeatures = image
