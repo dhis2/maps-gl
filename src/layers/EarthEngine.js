@@ -23,15 +23,14 @@ class EarthEngine extends Layer {
 
     async addTo(map) {
         await this.createWorkerInstance()
+
+        const test = await this.worker.getAggregations()
+        console.log('test', test)
+
         await this.createSource()
         this.createLayers()
         super.addTo(map)
         this.onLoad()
-
-        // console.time('agg')
-        const test = await this.worker.getAggregations()
-        // console.timeEnd('agg')
-        console.log('test', test)
     }
 
     async createWorkerInstance() {
