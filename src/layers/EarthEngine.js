@@ -24,13 +24,16 @@ class EarthEngine extends Layer {
     async addTo(map) {
         await this.createWorkerInstance()
 
-        const test = await this.worker.getAggregations()
-        console.log('test', test)
+        this.worker.getTileUrl().then(tileUrl => {
+            this.createSource(tileUrl)
+            this.createLayers()
+            super.addTo(map)
+            this.onLoad()
+        })
 
-        await this.createSource()
-        this.createLayers()
-        super.addTo(map)
-        this.onLoad()
+        if (this.options.preload) {
+            this.getAggregations()
+        }
     }
 
     async createWorkerInstance() {
@@ -46,14 +49,13 @@ class EarthEngine extends Layer {
         }
     }
 
-    async createSource() {
+    async createSource(tileUrl) {
         const id = this.getId()
-        const urlFormat = await this.worker.getTileUrl()
 
         this.setSource(`${id}-raster`, {
             type: 'raster',
             tileSize: 256,
-            tiles: [urlFormat],
+            tiles: [tileUrl],
         })
 
         if (this.options.data) {
@@ -198,9 +200,11 @@ class EarthEngine extends Layer {
                 : this.once('imageready', evt => resolve(evt.image))
         )
 
-    // Perform aggregations to org unit features
-    aggregate = async aggregationType => {
-        return {}
+    getAggregations = () => {
+        if (!this._aggregationsPromise) {
+            this._aggregationsPromise = this.worker.getAggregations()
+        }
+        return this._aggregationsPromise
     }
 
     setOpacity(opacity) {

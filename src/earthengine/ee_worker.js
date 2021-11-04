@@ -78,6 +78,11 @@ class EarthEngineWorker {
     }
 
     getImage() {
+        if (this.eeImage) {
+            return this.eeImage
+            console.log('Already created')
+        }
+
         const {
             datasetId,
             filter,
@@ -135,6 +140,8 @@ class EarthEngineWorker {
                 }
             })
         }
+
+        this.eeImage = eeImage
 
         return eeImage
     }
