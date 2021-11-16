@@ -1,4 +1,4 @@
-import { expose, proxy } from 'comlink'
+import { expose } from 'comlink'
 import ee from './ee_api_js_worker' // https://github.com/google/earthengine-api/pull/173
 // import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
 import {
@@ -23,23 +23,21 @@ class EarthEngineWorker {
 
     // Initialise EE API
     // https://developers.google.com/earth-engine/apidocs/ee-initialize
-    initialize(token, refreshAuthToken) {
-        this.setAuthToken(token, refreshAuthToken)
-
-        return new Promise((resolve, reject) => {
+    initialize() {
+        return new Promise(async (resolve, reject) =>
             ee.initialize(null, null, resolve, reject)
-        })
+        )
     }
 
     // Set EE API auth token if not already set
-    setAuthToken(token, refreshAuthToken) {
-        if (token && !ee.data.getAuthToken()) {
+    static async setAuthToken(getAuthToken) {
+        if (!ee.data.getAuthToken()) {
             const {
                 client_id,
                 tokenType = 'Bearer',
                 access_token,
                 expires_in,
-            } = token
+            } = await getAuthToken()
             const extraScopes = null
             const callback = null
             const updateAuthLibrary = false
@@ -53,11 +51,12 @@ class EarthEngineWorker {
                 callback,
                 updateAuthLibrary
             )
-        }
 
-        if (refreshAuthToken) {
-            ee.data.setAuthTokenRefresher((authArgs, callback) =>
-                refreshAuthToken(authArgs, proxy(callback))
+            ee.data.setAuthTokenRefresher(async (authArgs, callback) =>
+                callback({
+                    ...(await getAuthToken()),
+                    state: authArgs.scope,
+                })
             )
         }
     }

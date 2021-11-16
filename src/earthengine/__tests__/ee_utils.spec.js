@@ -1,4 +1,4 @@
-import { hasClasses, getHistogramStatistics } from '../earthengine'
+import { hasClasses, getHistogramStatistics } from '../ee_utils'
 
 const scale = 1000
 

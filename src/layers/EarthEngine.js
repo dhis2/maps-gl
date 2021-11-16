@@ -1,4 +1,3 @@
-import { proxy } from 'comlink'
 import Layer from './Layer'
 import { getWorkerOptions } from '../earthengine/ee_utils'
 import getEarthEngineWorker from '../earthengine/ee_worker_loader'
@@ -8,7 +7,6 @@ import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
 import { setPrecision } from '../utils/numbers'
 
 export const defaultOptions = {
-    tokenType: 'Bearer',
     bandReducer: 'sum',
     popup: '{name}: {value} {unit}',
 }
@@ -38,14 +36,15 @@ class EarthEngine extends Layer {
 
     async createWorkerInstance() {
         if (!this.worker) {
-            const EarthEngineWorker = getEarthEngineWorker()
+            const EarthEngineWorker = await getEarthEngineWorker(
+                this.options.getAuthToken
+            )
 
             this.worker = await new EarthEngineWorker(
                 getWorkerOptions(this.options)
             )
 
-            const token = await this.options.accessToken
-            await this.worker.initialize(token, proxy(this.refreshAuthToken))
+            await this.worker.initialize()
         }
     }
 
@@ -88,35 +87,6 @@ class EarthEngine extends Layer {
                 })
             )
         }
-    }
-
-    setAuthToken = async () => {
-        const { accessToken, tokenType } = this.options
-
-        if (accessToken) {
-            const token = await accessToken
-
-            await this.worker.setAuthToken(
-                {
-                    ...token,
-                    tokenType,
-                },
-                proxy(this.refreshAuthToken)
-            )
-        }
-    }
-
-    // Refresh OAuth2 token when expired (called from worker)
-    refreshAuthToken = async (authArgs, callback) => {
-        const { accessToken, tokenType } = this.options
-        const token = await accessToken
-
-        callback({
-            token_type: tokenType,
-            access_token: token.access_token,
-            state: authArgs.scope,
-            expires_in: token.expires_in,
-        })
     }
 
     setFeatures(data = []) {

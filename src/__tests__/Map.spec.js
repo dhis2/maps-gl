@@ -9,6 +9,11 @@ jest.mock('maplibre-gl', () => ({
     FullscreenControl: () => {},
 }))
 
+jest.mock('../earthengine/ee_worker_loader', () => ({
+    __esModule: true,
+    default: jest.fn(),
+}))
+
 describe('DHIS2 Maps-gl Map', () => {
     it('should initialize correctly', () => {
         const map = new Map('el')
