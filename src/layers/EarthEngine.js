@@ -110,21 +110,6 @@ class EarthEngine extends Layer {
             : feature
     }
 
-    // Create feature collection for org unit aggregations
-    getFeatureCollection() {
-        const { FeatureCollection } = this.ee
-        const features = this.getFeatures()
-
-        return features.length
-            ? FeatureCollection(
-                  features.map(f => ({
-                      ...f,
-                      id: f.properties.id, // EE requires id to be string, MapLibre integer
-                  }))
-              )
-            : null
-    }
-
     // Returns value at at position
     getValue = async lnglat => {
         const { band, legend } = this.options
@@ -152,14 +137,6 @@ class EarthEngine extends Layer {
 
             this._map.openPopup(document.createTextNode(content), [lng, lat])
         })
-
-    // Returns ee image when ready
-    getImage = () =>
-        new Promise(resolve =>
-            this.eeImage
-                ? resolve(this.eeImage)
-                : this.once('imageready', evt => resolve(evt.image))
-        )
 
     getAggregations = () => {
         if (!this._aggregationsPromise) {

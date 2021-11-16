@@ -9,7 +9,9 @@ jest.mock('../../earthengine/ee_worker_loader', () => ({
     default: () =>
         class EarthEngineWorkerMock {
             initialize() {}
-            async getTileUrl() {}
+            async getTileUrl() {
+                return urlFormat
+            }
         },
 }))
 
@@ -19,7 +21,7 @@ const token = {
     expires_in: 1000,
 }
 
-const getAccessToken = () => token
+const getAuthToken = async () => token
 
 const onLoad = jest.fn()
 
@@ -83,7 +85,7 @@ const legend = [
 const buffer = 1000
 
 const options = {
-    getAccessToken,
+    getAuthToken,
     datasetId,
     filter,
     data,
@@ -107,8 +109,8 @@ describe('EarthEngine', () => {
 
         expect(layer.getMap()).toBe(mockMap)
         expect(layer.getMapGL()).toBe(mockMapGL)
-        // await expect(layer.init()).resolves.toEqual(undefined)
-        // await expect(layer.getAuthToken()).resolves.toEqual(token)
+
+        await expect(layer.options.getAuthToken()).resolves.toEqual(token)
     })
 
     it('Should create a raster source', async () => {
@@ -119,7 +121,7 @@ describe('EarthEngine', () => {
 
         expect(source).not.toBeUndefined()
         expect(source.type).toBe('raster')
-        // expect(source.tiles[0]).toBe(urlFormat)
+        expect(source.tiles[0]).toBe(urlFormat)
     })
 
     it('Should create a geojson source', async () => {
@@ -168,32 +170,6 @@ describe('EarthEngine', () => {
 
         expect(onLoad.mock.calls.length).toBe(numCalls + 1)
     })
-
-    /*
-    it('Should fire imageready event', async () => {
-        const layer = new EarthEngine(options)
-        await layer.init()
-        const onImageReady = jest.fn()
-        layer.on('imageready', onImageReady)
-        const image = await layer.createImage()
-
-        expect(image).not.toBe(undefined)
-        expect(onImageReady.mock.calls.length).toBe(1)
-    })
-    */
-
-    /*
-    it('Should use string ids for ee features', async () => {
-        const layer = new EarthEngine(options)
-        const before = layer.getFeatures()
-        await layer.addTo(mockMap)
-        const after = layer.getFeatureCollection()
-
-        expect(before.every(f => typeof f.id === 'number')).toBe(true)
-        expect(after.every(f => typeof f.id === 'string')).toBe(true)
-        expect(after.every(f => f.id === f.properties.id)).toBe(true)
-    })
-    */
 
     it('Should convert point feature to buffer polygon', async () => {
         const layer = new EarthEngine(options)
