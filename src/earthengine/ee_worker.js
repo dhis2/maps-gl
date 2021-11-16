@@ -119,9 +119,9 @@ class EarthEngineWorker {
         if (band) {
             eeImage = eeImage.select(band)
 
-            if (Array.isArray(band) && bandReducer && ee.Reducer[bandReducer]) {
+            if (Array.isArray(band) && bandReducer) {
                 // Combine multiple bands (e.g. age groups)
-                eeImage = eeImage.reduce(ee.Reducer[bandReducer]())
+                eeImage = eeImage.reduce(ee.call(`Reducer.${bandReducer}`))
             }
         }
 
@@ -198,7 +198,7 @@ class EarthEngineWorker {
         const { lng, lat } = lnglat
         const eeImage = await this.getImage()
         const point = ee.Geometry.Point(lng, lat)
-        const reducer = ee.call(`Reducer.mean`)
+        const reducer = ee.call('Reducer.mean')
 
         return getInfo(eeImage.reduceRegion(reducer, point, 1))
     }
