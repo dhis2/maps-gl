@@ -21,7 +21,7 @@ class EarthEngine extends Layer {
 
     async addTo(map) {
         if (map.styleIsLoaded()) {
-            this.worker = await this.createWorkerInstance()
+            this.worker = await this.getWorkerInstance()
 
             this.worker.getTileUrl().then(tileUrl => {
                 this.createSource(tileUrl)
@@ -36,7 +36,7 @@ class EarthEngine extends Layer {
         }
     }
 
-    async createWorkerInstance() {
+    async getWorkerInstance() {
         this.workerPromise =
             this.workerPromise ||
             (async () => {
