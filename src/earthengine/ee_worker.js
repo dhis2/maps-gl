@@ -33,44 +33,36 @@ class EarthEngineWorker {
 
     // Set EE API auth token if not already set
     static async setAuthToken(getAuthToken) {
-        if (!ee.data.getAuthToken()) {
-            const {
-                client_id,
-                tokenType = 'Bearer',
-                access_token,
-                expires_in,
-            } = await getAuthToken()
+        new Promise(async resolve => {
+            if (!ee.data.getAuthToken()) {
+                const {
+                    client_id,
+                    tokenType = 'Bearer',
+                    access_token,
+                    expires_in,
+                } = await getAuthToken()
 
-            console.log('setAuthToken', {
-                client_id,
-                tokenType,
-                access_token,
-                expires_in,
-            })
+                const extraScopes = null
+                const updateAuthLibrary = false
 
-            const extraScopes = null
-            const callback = null
-            const updateAuthLibrary = false
+                ee.data.setAuthToken(
+                    client_id,
+                    tokenType,
+                    access_token,
+                    expires_in,
+                    extraScopes,
+                    resolve,
+                    updateAuthLibrary
+                )
 
-            ee.data.setAuthToken(
-                client_id,
-                tokenType,
-                access_token,
-                expires_in,
-                extraScopes,
-                callback,
-                updateAuthLibrary
-            )
-
-            ee.data.setAuthTokenRefresher(async (authArgs, callback) =>
-                callback({
-                    ...(await getAuthToken()),
-                    state: authArgs.scope,
-                })
-            )
-        } else {
-            console.log('Token already set')
-        }
+                ee.data.setAuthTokenRefresher(async (authArgs, callback) =>
+                    callback({
+                        ...(await getAuthToken()),
+                        state: authArgs.scope,
+                    })
+                )
+            } else resolve()
+        })
     }
 
     getFeatureCollection() {
