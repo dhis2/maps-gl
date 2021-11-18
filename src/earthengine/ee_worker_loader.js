@@ -8,9 +8,9 @@ const getEarthEngineWorker = async getAuthToken => {
         EarthEngineWorker = wrap(
             new Worker(new URL('../earthengine/ee_worker.js', import.meta.url))
         )
-    }
 
-    await EarthEngineWorker.setAuthToken(proxy(getAuthToken))
+        await EarthEngineWorker.setAuthToken(proxy(getAuthToken))
+    }
 
     return EarthEngineWorker
 }

@@ -60,9 +60,6 @@ export const getScale = image =>
         .projection()
         .nominalScale()
 
-// Returns the image projection
-export const getProjection = image => image.select(0).projection()
-
 // Returns visualisation params from legend
 export const getParamsFromLegend = legend => {
     const keys = legend.map(l => l.id)

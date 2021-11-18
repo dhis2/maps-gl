@@ -44,16 +44,12 @@ class EarthEngine extends Layer {
                     this.options.getAuthToken
                 )
 
-                const worker = await new EarthEngineWorker(
+                return await new EarthEngineWorker(
                     getWorkerOptions(this.options)
                 )
+            })()
 
-                await worker.initialize()
-
-                return worker
-            })
-
-        return this.workerPromise()
+        return this.workerPromise
     }
 
     async createSource(tileUrl) {

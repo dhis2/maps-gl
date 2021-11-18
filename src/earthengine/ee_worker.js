@@ -4,7 +4,6 @@ import ee from './ee_api_js_worker' // https://github.com/google/earthengine-api
 import {
     getInfo,
     getScale,
-    getProjection,
     hasClasses,
     combineReducers,
     getParamsFromLegend,
@@ -23,17 +22,9 @@ class EarthEngineWorker {
         this.options = options
     }
 
-    // Initialise EE API
-    // https://developers.google.com/earth-engine/apidocs/ee-initialize
-    initialize() {
-        return new Promise(async (resolve, reject) =>
-            ee.initialize(null, null, resolve, reject)
-        )
-    }
-
     // Set EE API auth token if not already set
     static async setAuthToken(getAuthToken) {
-        new Promise(async resolve => {
+        new Promise(async (resolve, reject) => {
             if (!ee.data.getAuthToken()) {
                 const {
                     client_id,
@@ -43,6 +34,7 @@ class EarthEngineWorker {
                 } = await getAuthToken()
 
                 const extraScopes = null
+                const callback = null
                 const updateAuthLibrary = false
 
                 ee.data.setAuthToken(
@@ -51,7 +43,7 @@ class EarthEngineWorker {
                     access_token,
                     expires_in,
                     extraScopes,
-                    resolve,
+                    callback,
                     updateAuthLibrary
                 )
 
@@ -61,6 +53,10 @@ class EarthEngineWorker {
                         state: authArgs.scope,
                     })
                 )
+
+                // Initialise EE API
+                // https://developers.google.com/earth-engine/apidocs/ee-initialize
+                ee.initialize(null, null, resolve, reject)
             } else resolve()
         })
     }
