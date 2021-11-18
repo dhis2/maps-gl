@@ -34,7 +34,6 @@ class EarthEngineWorker {
                 } = await getAuthToken()
 
                 const extraScopes = null
-                const callback = null
                 const updateAuthLibrary = false
 
                 ee.data.setAuthToken(
@@ -43,7 +42,7 @@ class EarthEngineWorker {
                     access_token,
                     expires_in,
                     extraScopes,
-                    callback,
+                    () => ee.initialize(null, null, resolve, reject),
                     updateAuthLibrary
                 )
 
@@ -53,10 +52,6 @@ class EarthEngineWorker {
                         state: authArgs.scope,
                     })
                 )
-
-                // Initialise EE API
-                // https://developers.google.com/earth-engine/apidocs/ee-initialize
-                ee.initialize(null, null, resolve, reject)
             } else resolve()
         })
     }
