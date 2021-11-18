@@ -4,12 +4,14 @@ import ee from './ee_api_js_worker' // https://github.com/google/earthengine-api
 import {
     getInfo,
     getScale,
+    getProjection,
     hasClasses,
     combineReducers,
     getParamsFromLegend,
     getHistogramStatistics,
     getFeatureCollectionProperties,
 } from './ee_utils'
+import { getBufferGeometry } from '../utils/buffers'
 
 // Why we need to "hack" the '@google/earthengine bundle:
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
@@ -38,6 +40,7 @@ class EarthEngineWorker {
                 access_token,
                 expires_in,
             } = await getAuthToken()
+
             const extraScopes = null
             const callback = null
             const updateAuthLibrary = false
@@ -62,13 +65,18 @@ class EarthEngineWorker {
     }
 
     getFeatureCollection() {
-        const { data } = this.options
+        const { data, buffer } = this.options
 
         if (Array.isArray(data) && !this.eeFeatureCollection) {
             this.eeFeatureCollection = ee.FeatureCollection(
-                data.map(f => ({
-                    ...f,
-                    id: f.properties.id, // EE requires id to be string, MapLibre integer
+                data.map(feature => ({
+                    ...feature,
+                    id: feature.properties.id, // EE requires id to be string, MapLibre integer
+                    // Translate points to buffer polygons
+                    geometry:
+                        buffer && feature.geometry.type === 'Point'
+                            ? getBufferGeometry(feature, buffer / 1000)
+                            : feature.geometry,
                 }))
             )
         }

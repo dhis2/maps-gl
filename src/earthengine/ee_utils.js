@@ -8,6 +8,7 @@ const workerOptions = [
     'aggregationType',
     'band',
     'bandReducer',
+    'buffer',
     'data',
     'datasetId',
     'filter',
@@ -58,6 +59,9 @@ export const getScale = image =>
         .select(0)
         .projection()
         .nominalScale()
+
+// Returns the image projection
+export const getProjection = image => image.select(0).projection()
 
 // Returns visualisation params from legend
 export const getParamsFromLegend = legend => {

@@ -20,17 +20,19 @@ class EarthEngine extends Layer {
     }
 
     async addTo(map) {
-        await this.createWorkerInstance()
+        if (map.styleIsLoaded()) {
+            await this.createWorkerInstance()
 
-        this.worker.getTileUrl().then(tileUrl => {
-            this.createSource(tileUrl)
-            this.createLayers()
-            super.addTo(map)
-            this.onLoad()
-        })
+            this.worker.getTileUrl().then(tileUrl => {
+                this.createSource(tileUrl)
+                this.createLayers()
+                super.addTo(map)
+                this.onLoad()
+            })
 
-        if (this.options.preload) {
-            this.getAggregations()
+            if (this.options.preload) {
+                this.getAggregations()
+            }
         }
     }
 
