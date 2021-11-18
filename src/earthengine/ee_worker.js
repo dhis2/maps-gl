@@ -41,6 +41,13 @@ class EarthEngineWorker {
                 expires_in,
             } = await getAuthToken()
 
+            console.log('setAuthToken', {
+                client_id,
+                tokenType,
+                access_token,
+                expires_in,
+            })
+
             const extraScopes = null
             const callback = null
             const updateAuthLibrary = false
@@ -61,6 +68,8 @@ class EarthEngineWorker {
                     state: authArgs.scope,
                 })
             )
+        } else {
+            console.log('Token already set')
         }
     }
 
