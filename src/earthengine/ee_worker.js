@@ -25,7 +25,7 @@ class EarthEngineWorker {
 
     // Set EE API auth token if not already set
     static setAuthToken = memoizePromise(
-        async getAuthToken =>
+        getAuthToken =>
             new Promise(async (resolve, reject) => {
                 const {
                     client_id,

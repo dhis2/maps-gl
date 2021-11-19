@@ -1,6 +1,7 @@
 import Layer from './Layer'
 import { getWorkerOptions } from '../earthengine/ee_utils'
 import getEarthEngineWorker from '../earthengine/ee_worker_loader'
+import { memoizePromise } from '../earthengine/ee_utils'
 import { isPoint, featureCollection } from '../utils/geometry'
 import { getBufferGeometry } from '../utils/buffers'
 import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
@@ -36,21 +37,12 @@ class EarthEngine extends Layer {
         }
     }
 
-    async getWorkerInstance() {
-        this.workerPromise =
-            this.workerPromise ||
-            (async () => {
-                const EarthEngineWorker = await getEarthEngineWorker(
-                    this.options.getAuthToken
-                )
-
-                return await new EarthEngineWorker(
-                    getWorkerOptions(this.options)
-                )
-            })()
-
-        return this.workerPromise
-    }
+    getWorkerInstance = memoizePromise(async () => {
+        const EarthEngineWorker = await getEarthEngineWorker(
+            this.options.getAuthToken
+        )
+        return await new EarthEngineWorker(getWorkerOptions(this.options))
+    })
 
     async createSource(tileUrl) {
         const id = this.getId()
