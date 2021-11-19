@@ -9,6 +9,7 @@ import {
     getParamsFromLegend,
     getHistogramStatistics,
     getFeatureCollectionProperties,
+    promiseMemoize,
 } from './ee_utils'
 import { getBufferGeometry } from '../utils/buffers'
 
@@ -23,9 +24,9 @@ class EarthEngineWorker {
     }
 
     // Set EE API auth token if not already set
-    static async setAuthToken(getAuthToken) {
-        new Promise(async (resolve, reject) => {
-            if (!ee.data.getAuthToken()) {
+    static setAuthToken = promiseMemoize(
+        async getAuthToken =>
+            new Promise(async (resolve, reject) => {
                 const {
                     client_id,
                     tokenType = 'Bearer',
@@ -52,9 +53,8 @@ class EarthEngineWorker {
                         state: authArgs.scope,
                     })
                 )
-            } else resolve()
-        })
-    }
+            })
+    )
 
     getFeatureCollection() {
         const { data, buffer } = this.options
@@ -121,7 +121,7 @@ class EarthEngineWorker {
 
             if (Array.isArray(band) && bandReducer) {
                 // Combine multiple bands (e.g. age groups)
-                eeImage = eeImage.reduce(ee.call(`Reducer.${bandReducer}`))
+                eeImage = eeImage.reduce(ee.Reducer[bandReducer])
             }
         }
 
@@ -198,7 +198,7 @@ class EarthEngineWorker {
         const { lng, lat } = lnglat
         const eeImage = await this.getImage()
         const point = ee.Geometry.Point(lng, lat)
-        const reducer = ee.call('Reducer.mean')
+        const reducer = ee.Reducer.mean
 
         return getInfo(eeImage.reduceRegion(reducer, point, 1))
     }
@@ -229,7 +229,7 @@ class EarthEngineWorker {
 
         if (useHistogram) {
             // Used for landcover
-            const reducer = ee.call('Reducer.frequencyHistogram')
+            const reducer = ee.Reducer.frequencyHistogram
             return getInfo(
                 image
                     .reduceRegions(collection, reducer, scale)

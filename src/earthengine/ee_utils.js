@@ -41,16 +41,16 @@ export const getInfo = instance =>
 
 // Combine multiple aggregation types/reducers
 // https://developers.google.com/earth-engine/guides/reducers_intro
-// ee.Reducer is not available, using ee.call
-// https://github.com/google/earthengine-api/blob/6445cae4c371a8244f70ae08c01a6da05dbc4c7d/demos/cloud-functions/function.js
-export const combineReducers = ee => ([type, ...combine]) =>
-    combine.reduce(
-        (r, t) =>
-            r.combine({
-                reducer2: ee.call(`Reducer.${t}`),
-                sharedInputs: true,
-            }),
-        ee.call(`Reducer.${type}`)
+export const combineReducers = ee => types =>
+    types.reduce(
+        (r, t, i) =>
+            i === 0
+                ? r[t]()
+                : r.combine({
+                      reducer2: ee.Reducer[t](),
+                      sharedInputs: true,
+                  }),
+        ee.Reducer
     )
 
 // Returns the linear scale in meters of the units of this projection
@@ -114,3 +114,16 @@ export const getFeatureCollectionProperties = data =>
         }),
         {}
     )
+
+// Memomize a promise that is pending or fulfilled
+// https://medium.com/globant/memoize-javascript-promises-for-performance-1c77117fb6b8
+export const promiseMemoize = fn => {
+    let cache
+    return (...args) =>
+        cache
+            ? cache
+            : (cache = fn(...args).catch(error => {
+                  cache = undefined
+                  return error
+              }))
+}

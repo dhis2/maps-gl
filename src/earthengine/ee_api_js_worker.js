@@ -41955,6 +41955,7 @@ ee.initializeGeneratedClasses_ = function() {
         var rtype = signatures[sig].returns.replace(/<.*>/, '')
         returnTypes[rtype] = !0
     }
+
     var exportedEE = goog.global.ee,
         name
     for (name in names) {
@@ -46151,4 +46152,4 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
 })()
 
 goog.Timer.defaultTimerObject = self
-module.exports = ee
+module.exports = goog.global.ee = ee
