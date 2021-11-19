@@ -9,7 +9,7 @@ import {
     getParamsFromLegend,
     getHistogramStatistics,
     getFeatureCollectionProperties,
-    promiseMemoize,
+    memoizePromise,
 } from './ee_utils'
 import { getBufferGeometry } from '../utils/buffers'
 
@@ -24,7 +24,7 @@ class EarthEngineWorker {
     }
 
     // Set EE API auth token if not already set
-    static setAuthToken = promiseMemoize(
+    static setAuthToken = memoizePromise(
         async getAuthToken =>
             new Promise(async (resolve, reject) => {
                 const {
