@@ -37,10 +37,21 @@ class EarthEngine extends Layer {
         }
     }
 
+    removeFrom(map) {
+        if (this.terminateWorker) {
+            this.terminateWorker()
+        }
+        super.removeFrom(map)
+    }
+
     getWorkerInstance = memoizePromise(async () => {
-        const EarthEngineWorker = await getEarthEngineWorker(
-            this.options.getAuthToken
-        )
+        const {
+            EarthEngineWorker,
+            terminateWorker,
+        } = await getEarthEngineWorker(this.options.getAuthToken)
+
+        this.terminateWorker = terminateWorker
+
         return await new EarthEngineWorker(getWorkerOptions(this.options))
     })
 
