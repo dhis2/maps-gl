@@ -21,36 +21,38 @@ class EarthEngine extends Layer {
     }
 
     async addTo(map) {
-        if (map.styleIsLoaded()) {
-            this.worker = await this.getWorkerInstance()
+        this._map = map
 
-            this.worker.getTileUrl().then(tileUrl => {
+        if (map.styleIsLoaded()) {
+            const controller = new AbortController()
+            this.signal = controller.signal
+
+            this.worker = await this.getWorkerInstance()
+            const tileUrl = await this.worker.getTileUrl()
+
+            // Don't continue if layer is terminated (deleted or edited)
+            if (!this._terminated) {
                 this.createSource(tileUrl)
                 this.createLayers()
                 super.addTo(map)
                 this.onLoad()
-            })
 
-            if (this.options.preload) {
-                this.getAggregations()
+                if (this.options.preload) {
+                    this.getAggregations()
+                }
             }
         }
     }
 
     removeFrom(map) {
-        if (this.terminateWorker) {
-            this.terminateWorker()
-        }
+        this._terminated = true
         super.removeFrom(map)
     }
 
     getWorkerInstance = memoizePromise(async () => {
-        const {
-            EarthEngineWorker,
-            terminateWorker,
-        } = await getEarthEngineWorker(this.options.getAuthToken)
-
-        this.terminateWorker = terminateWorker
+        const EarthEngineWorker = await getEarthEngineWorker(
+            this.options.getAuthToken
+        )
 
         return await new EarthEngineWorker(getWorkerOptions(this.options))
     })
