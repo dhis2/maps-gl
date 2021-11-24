@@ -114,16 +114,3 @@ export const getFeatureCollectionProperties = data =>
         }),
         {}
     )
-
-// Memomize a promise that is pending or fulfilled
-// https://medium.com/globant/memoize-javascript-promises-for-performance-1c77117fb6b8
-export const memoizePromise = fn => {
-    let cache
-    return (...args) =>
-        cache
-            ? cache
-            : (cache = fn(...args).catch(error => {
-                  cache = undefined
-                  return error
-              }))
-}

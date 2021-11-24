@@ -9,7 +9,6 @@ import {
     getParamsFromLegend,
     getHistogramStatistics,
     getFeatureCollectionProperties,
-    memoizePromise,
 } from './ee_utils'
 import { getBufferGeometry } from '../utils/buffers'
 
@@ -24,37 +23,39 @@ class EarthEngineWorker {
     }
 
     // Set EE API auth token if not already set
-    static setAuthToken = memoizePromise(
-        getAuthToken =>
-            new Promise(async (resolve, reject) => {
-                const {
-                    client_id,
-                    tokenType = 'Bearer',
-                    access_token,
-                    expires_in,
-                } = await getAuthToken()
+    static setAuthToken = getAuthToken =>
+        new Promise((resolve, reject) => {
+            getAuthToken()
+                .then(token => {
+                    const {
+                        client_id,
+                        tokenType = 'Bearer',
+                        access_token,
+                        expires_in,
+                    } = token
 
-                const extraScopes = null
-                const updateAuthLibrary = false
+                    const extraScopes = null
+                    const updateAuthLibrary = false
 
-                ee.data.setAuthToken(
-                    client_id,
-                    tokenType,
-                    access_token,
-                    expires_in,
-                    extraScopes,
-                    () => ee.initialize(null, null, resolve, reject),
-                    updateAuthLibrary
-                )
+                    ee.data.setAuthToken(
+                        client_id,
+                        tokenType,
+                        access_token,
+                        expires_in,
+                        extraScopes,
+                        () => ee.initialize(null, null, resolve, reject),
+                        updateAuthLibrary
+                    )
 
-                ee.data.setAuthTokenRefresher(async (authArgs, callback) =>
-                    callback({
-                        ...(await getAuthToken()),
-                        state: authArgs.scope,
-                    })
-                )
-            })
-    )
+                    ee.data.setAuthTokenRefresher(async (authArgs, callback) =>
+                        callback({
+                            ...(await getAuthToken()),
+                            state: authArgs.scope,
+                        })
+                    )
+                })
+                .catch(reject)
+        })
 
     getFeatureCollection() {
         const { data, buffer } = this.options
@@ -179,7 +180,7 @@ class EarthEngineWorker {
     getTileUrl() {
         const { data, params } = this.options
 
-        return new Promise(async resolve => {
+        return new Promise(resolve => {
             this.eeImage = this.getImage()
 
             let eeImage = this.classifyImage(this.eeImage)

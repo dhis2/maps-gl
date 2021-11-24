@@ -1,7 +1,6 @@
 import Layer from './Layer'
 import { getWorkerOptions } from '../earthengine/ee_utils'
 import getEarthEngineWorker from '../earthengine/ee_worker_loader'
-import { memoizePromise } from '../earthengine/ee_utils'
 import { isPoint, featureCollection } from '../utils/geometry'
 import { getBufferGeometry } from '../utils/buffers'
 import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
@@ -24,23 +23,22 @@ class EarthEngine extends Layer {
         this._map = map
 
         if (map.styleIsLoaded()) {
-            const controller = new AbortController()
-            this.signal = controller.signal
+            this.getWorkerInstance().then(async worker => {
+                this.worker = worker
+                const tileUrl = await worker.getTileUrl()
 
-            this.worker = await this.getWorkerInstance()
-            const tileUrl = await this.worker.getTileUrl()
+                // Don't continue if layer is terminated (deleted or edited)
+                if (!this._terminated) {
+                    this.createSource(tileUrl)
+                    this.createLayers()
+                    super.addTo(map)
+                    this.onLoad()
 
-            // Don't continue if layer is terminated (deleted or edited)
-            if (!this._terminated) {
-                this.createSource(tileUrl)
-                this.createLayers()
-                super.addTo(map)
-                this.onLoad()
-
-                if (this.options.preload) {
-                    this.getAggregations()
+                    if (this.options.preload) {
+                        this.getAggregations()
+                    }
                 }
-            }
+            })
         }
     }
 
@@ -49,13 +47,16 @@ class EarthEngine extends Layer {
         super.removeFrom(map)
     }
 
-    getWorkerInstance = memoizePromise(async () => {
-        const EarthEngineWorker = await getEarthEngineWorker(
-            this.options.getAuthToken
-        )
-
-        return await new EarthEngineWorker(getWorkerOptions(this.options))
-    })
+    getWorkerInstance = () =>
+        new Promise((resolve, reject) => {
+            getEarthEngineWorker(this.options.getAuthToken)
+                .then(EarthEngineWorker => {
+                    new EarthEngineWorker(getWorkerOptions(this.options)).then(
+                        resolve
+                    )
+                })
+                .catch(reject)
+        })
 
     async createSource(tileUrl) {
         const id = this.getId()

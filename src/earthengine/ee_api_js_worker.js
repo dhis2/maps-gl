@@ -41955,7 +41955,6 @@ ee.initializeGeneratedClasses_ = function() {
         var rtype = signatures[sig].returns.replace(/<.*>/, '')
         returnTypes[rtype] = !0
     }
-
     var exportedEE = goog.global.ee,
         name
     for (name in names) {
