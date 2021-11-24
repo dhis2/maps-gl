@@ -9,7 +9,7 @@ import {
     getParamsFromLegend,
     getHistogramStatistics,
     getFeatureCollectionProperties,
-} from './ee_utils'
+} from './ee_worker_utils'
 import { getBufferGeometry } from '../utils/buffers'
 
 // Why we need to "hack" the '@google/earthengine bundle:

@@ -6,13 +6,10 @@ const urlFormat =
 // Mock out EE Worker - import.meta not supported in jest
 jest.mock('../../earthengine/ee_worker_loader', () => ({
     __esModule: true,
-    default: () =>
-        class EarthEngineWorkerMock {
-            initialize() {}
-            async getTileUrl() {
-                return urlFormat
-            }
-        },
+    default: async () => async () =>
+        new class EarthEngineWorkerMock {
+            getTileUrl = async () => urlFormat
+        }(),
 }))
 
 const token = {
@@ -103,7 +100,7 @@ describe('EarthEngine', () => {
         expect(layer.options).toEqual(defaultOptions)
     })
 
-    it('Should add to map and init EE', async () => {
+    it('Should add to map', async () => {
         const layer = new EarthEngine(options)
         await layer.addTo(mockMap)
 

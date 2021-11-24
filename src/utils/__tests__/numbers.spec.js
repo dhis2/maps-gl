@@ -33,12 +33,4 @@ describe('numbers', () => {
     it('Should convert km to miles', () => {
         expect(kmToMiles(1)).toBe(0.621371192)
     })
-
-    it('Should convert square meters to hectares', () => {
-        expect(squareMetersToHectares(1)).toBe(0.0001)
-    })
-
-    it('Should convert square meters to acres', () => {
-        expect(squareMetersToAcres(1)).toBe(0.0002471053814671653)
-    })
 })

@@ -23,7 +23,7 @@ class EarthEngine extends Layer {
         this._map = map
 
         if (map.styleIsLoaded()) {
-            this.getWorkerInstance().then(async worker => {
+            return this.getWorkerInstance().then(async worker => {
                 this.worker = worker
                 const tileUrl = await worker.getTileUrl()
 
@@ -48,7 +48,7 @@ class EarthEngine extends Layer {
     }
 
     getWorkerInstance = () =>
-        new Promise((resolve, reject) => {
+        new Promise((resolve, reject) =>
             getEarthEngineWorker(this.options.getAuthToken)
                 .then(EarthEngineWorker => {
                     new EarthEngineWorker(getWorkerOptions(this.options)).then(
@@ -56,9 +56,9 @@ class EarthEngine extends Layer {
                     )
                 })
                 .catch(reject)
-        })
+        )
 
-    async createSource(tileUrl) {
+    createSource(tileUrl) {
         const id = this.getId()
 
         this.setSource(`${id}-raster`, {
