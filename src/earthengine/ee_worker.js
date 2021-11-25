@@ -20,7 +20,7 @@ class EarthEngineWorker {
         this.options = options
     }
 
-    // Set EE API auth token if not already set
+    // Set EE API auth token if needed and run ee.initialize
     static setAuthToken = getAuthToken =>
         new Promise((resolve, reject) => {
             if (ee.data.getAuthToken()) {
@@ -61,6 +61,7 @@ class EarthEngineWorker {
             }
         })
 
+    // Translate org unit features to an EE feature collection
     getFeatureCollection() {
         const { data, buffer } = this.options
 
@@ -81,6 +82,7 @@ class EarthEngineWorker {
         return this.eeFeatureCollection
     }
 
+    // Returns a single image that can styled as raster tiles
     getImage() {
         if (this.eeImage) {
             return this.eeImage
@@ -99,9 +101,11 @@ class EarthEngineWorker {
         let eeImage
 
         if (!filter) {
+            // Single image
             eeImage = ee.Image(datasetId)
             this.eeScale = getScale(eeImage)
         } else {
+            // Image collection
             let collection = ee.ImageCollection(datasetId)
 
             // Scale is lost when creating a mosaic below
@@ -180,6 +184,7 @@ class EarthEngineWorker {
         return zones
     }
 
+    // Returns raster tile url for a classified image
     getTileUrl() {
         const { data, params } = this.options
 
@@ -198,15 +203,17 @@ class EarthEngineWorker {
         })
     }
 
+    // Returns the data value  at a position
     async getValue(lnglat) {
         const { lng, lat } = lnglat
         const eeImage = await this.getImage()
         const point = ee.Geometry.Point(lng, lat)
-        const reducer = ee.Reducer.mean
+        const reducer = ee.Reducer.mean()
 
         return getInfo(eeImage.reduceRegion(reducer, point, 1))
     }
 
+    // Returns available periods for an image collection
     getPeriods(eeId) {
         const imageCollection = ee
             .ImageCollection(eeId)
@@ -220,8 +227,7 @@ class EarthEngineWorker {
         return getInfo(featureCollection)
     }
 
-    // Need to be able to get aggregations in "isolation" for import/export app
-
+    // Returns aggregated values for org unit features
     async getAggregations() {
         const { aggregationType, legend } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
