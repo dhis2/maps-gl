@@ -42,17 +42,23 @@ class EarthEngine extends Layer {
         super.removeFrom(map)
     }
 
-    getWorkerInstance = () =>
-        new Promise((resolve, reject) =>
-            getEarthEngineWorker(this.options.getAuthToken)
-                .then(EarthEngineWorker => {
-                    new EarthEngineWorker(getWorkerOptions(this.options)).then(
-                        resolve
-                    )
-                })
-                .catch(reject)
-        )
+    // Returns promise resolving a new worker instance
+    getWorkerInstance = () => {
+        if (!this._workerPromise) {
+            this._workerPromise = new Promise((resolve, reject) =>
+                getEarthEngineWorker(this.options.getAuthToken)
+                    .then(EarthEngineWorker => {
+                        new EarthEngineWorker(
+                            getWorkerOptions(this.options)
+                        ).then(resolve)
+                    })
+                    .catch(reject)
+            )
+        }
+        return this._workerPromise
+    }
 
+    // Create layer source for raster tiles and org unit features
     createSource(tileUrl) {
         const id = this.getId()
 
@@ -70,6 +76,7 @@ class EarthEngine extends Layer {
         }
     }
 
+    // Create layers for raster tiles and org unit features
     createLayers() {
         const id = this.getId()
         const source = id
@@ -95,11 +102,13 @@ class EarthEngine extends Layer {
     }
 
     setFeatures(data = []) {
+        // Set layer source for org unit point (facilities)
         this.setSource(`${this.getId()}-points`, {
             type: 'geojson',
             data: featureCollection(data.filter(isPoint)),
         })
 
+        // Create buffer around org unit points
         super.setFeatures(data.map(this.createBuffer.bind(this)))
     }
 
@@ -143,6 +152,7 @@ class EarthEngine extends Layer {
             this._map.openPopup(document.createTextNode(content), [lng, lat])
         })
 
+    // Returns a promise that resolves to aggregation values
     getAggregations = () => {
         if (!this._aggregationsPromise) {
             this._aggregationsPromise = this.worker.getAggregations()
@@ -150,6 +160,7 @@ class EarthEngine extends Layer {
         return this._aggregationsPromise
     }
 
+    // Set the layer opacity
     setOpacity(opacity) {
         super.setOpacity(opacity)
 
