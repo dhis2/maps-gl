@@ -14,31 +14,41 @@ class EarthEngine extends Layer {
         })
     }
 
-    async addTo(map) {
-        this._map = map
+    addTo = map =>
+        new Promise((resolve, reject) => {
+            this._map = map
 
-        if (map.styleIsLoaded()) {
-            return this.getWorkerInstance().then(async worker => {
-                this.worker = worker
-                const tileUrl = await worker.getTileUrl()
+            if (map.styleIsLoaded()) {
+                this.getWorkerInstance()
+                    .then(async worker => {
+                        this.worker = worker
 
-                // Don't continue if layer is terminated (deleted or edited)
-                if (!this._terminated) {
-                    this.createSource(tileUrl)
-                    this.createLayers()
-                    super.addTo(map)
-                    this.onLoad()
+                        if (!this._tileUrl) {
+                            this._tileUrl = await worker.getTileUrl()
+                        }
 
-                    if (this.options.preload) {
-                        this.getAggregations()
-                    }
-                }
-            })
-        }
-    }
+                        // Don't continue if layer is terminated (deleted or edited)
+                        if (!this._terminated) {
+                            this.createSource()
+                            this.createLayers()
+                            super.addTo(map)
+                            this.onLoad()
 
-    removeFrom(map) {
-        this._terminated = true
+                            if (this.options.preload) {
+                                this.getAggregations()
+                            }
+                        }
+
+                        resolve()
+                    })
+                    .catch(reject)
+            } else {
+                resolve()
+            }
+        })
+
+    removeFrom(map, isStyleChange) {
+        this._terminated = !isStyleChange
         super.removeFrom(map)
     }
 
@@ -59,13 +69,13 @@ class EarthEngine extends Layer {
     }
 
     // Create layer source for raster tiles and org unit features
-    createSource(tileUrl) {
+    createSource() {
         const id = this.getId()
 
         this.setSource(`${id}-raster`, {
             type: 'raster',
             tileSize: 256,
-            tiles: [tileUrl],
+            tiles: [this._tileUrl],
         })
 
         if (this.options.data) {

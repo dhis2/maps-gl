@@ -70,7 +70,7 @@ class VectorStyle extends Evented {
     async removeOtherLayers() {
         this.getOtherLayers().forEach(async layer => {
             if (layer.isOnMap()) {
-                await layer.removeFrom(this._map)
+                await layer.removeFrom(this._map, true)
             }
         })
     }
