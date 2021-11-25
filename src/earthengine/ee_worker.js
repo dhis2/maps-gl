@@ -23,36 +23,42 @@ class EarthEngineWorker {
     // Set EE API auth token if not already set
     static setAuthToken = getAuthToken =>
         new Promise((resolve, reject) => {
-            getAuthToken()
-                .then(token => {
-                    const {
-                        client_id,
-                        tokenType = 'Bearer',
-                        access_token,
-                        expires_in,
-                    } = token
+            if (ee.data.getAuthToken()) {
+                // Already authenticated
+                ee.initialize(null, null, resolve, reject)
+            } else {
+                getAuthToken()
+                    .then(token => {
+                        const {
+                            client_id,
+                            tokenType = 'Bearer',
+                            access_token,
+                            expires_in,
+                        } = token
 
-                    const extraScopes = null
-                    const updateAuthLibrary = false
+                        const extraScopes = null
+                        const updateAuthLibrary = false
 
-                    ee.data.setAuthToken(
-                        client_id,
-                        tokenType,
-                        access_token,
-                        expires_in,
-                        extraScopes,
-                        () => ee.initialize(null, null, resolve, reject),
-                        updateAuthLibrary
-                    )
+                        ee.data.setAuthToken(
+                            client_id,
+                            tokenType,
+                            access_token,
+                            expires_in,
+                            extraScopes,
+                            () => ee.initialize(null, null, resolve, reject),
+                            updateAuthLibrary
+                        )
 
-                    ee.data.setAuthTokenRefresher(async (authArgs, callback) =>
-                        callback({
-                            ...(await getAuthToken()),
-                            state: authArgs.scope,
-                        })
-                    )
-                })
-                .catch(reject)
+                        ee.data.setAuthTokenRefresher(
+                            async (authArgs, callback) =>
+                                callback({
+                                    ...(await getAuthToken()),
+                                    state: authArgs.scope,
+                                })
+                        )
+                    })
+                    .catch(reject)
+            }
         })
 
     getFeatureCollection() {
@@ -99,7 +105,6 @@ class EarthEngineWorker {
             let collection = ee.ImageCollection(datasetId)
 
             // Scale is lost when creating a mosaic below
-            // https://developers.google.com/earth-engine/guides/projections
             this.eeScale = getScale(collection.first())
 
             // Apply array of filters (e.g. period)
@@ -216,7 +221,7 @@ class EarthEngineWorker {
     }
 
     // Need to be able to get aggregations in "isolation" for import/export app
-    // https://code.earthengine.google.com/980cb8f260423cc536092a76d6d2db51
+
     async getAggregations() {
         const { aggregationType, legend } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
