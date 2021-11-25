@@ -14,8 +14,6 @@ import { getBufferGeometry } from '../utils/buffers'
 
 // Why we need to "hack" the '@google/earthengine bundle:
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
-// https://github.com/google/closure-library/issues/903
-// https://github.com/google/blockly/issues/1901#issuecomment-396741501
 
 class EarthEngineWorker {
     constructor(options = {}) {
@@ -225,37 +223,39 @@ class EarthEngineWorker {
         const useHistogram =
             singleAggregation && hasClasses(aggregationType) && legend
         const image = await this.getImage()
-        const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
         const scale = this.eeScale
+        const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
 
-        if (useHistogram) {
-            // Used for landcover
-            const reducer = ee.Reducer.frequencyHistogram
-            return getInfo(
-                image
-                    .reduceRegions(collection, reducer, scale)
-                    .select(['histogram'], null, false)
-            ).then(data =>
-                getHistogramStatistics({
-                    data,
-                    scale,
-                    aggregationType,
-                    legend,
-                })
-            )
-        } else if (!singleAggregation && aggregationType.length) {
-            const reducer = combineReducers(ee)(aggregationType)
+        if (collection) {
+            if (useHistogram) {
+                // Used for landcover
+                const reducer = ee.Reducer.frequencyHistogram
+                return getInfo(
+                    image
+                        .reduceRegions(collection, reducer, scale)
+                        .select(['histogram'], null, false)
+                ).then(data =>
+                    getHistogramStatistics({
+                        data,
+                        scale,
+                        aggregationType,
+                        legend,
+                    })
+                )
+            } else if (!singleAggregation && aggregationType.length) {
+                const reducer = combineReducers(ee)(aggregationType)
 
-            const aggFeatures = image
-                .reduceRegions({
-                    collection,
-                    reducer,
-                    scale,
-                })
-                .select(aggregationType, null, false)
+                const aggFeatures = image
+                    .reduceRegions({
+                        collection,
+                        reducer,
+                        scale,
+                    })
+                    .select(aggregationType, null, false)
 
-            return getInfo(aggFeatures).then(getFeatureCollectionProperties)
-        }
+                return getInfo(aggFeatures).then(getFeatureCollectionProperties)
+            } else throw new Error('Aggregation type is not valid')
+        } else throw new Error('Missing org unit features')
     }
 }
 
