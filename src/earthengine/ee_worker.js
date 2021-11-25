@@ -129,7 +129,7 @@ class EarthEngineWorker {
 
             if (Array.isArray(band) && bandReducer) {
                 // Combine multiple bands (e.g. age groups)
-                eeImage = eeImage.reduce(ee.Reducer[bandReducer])
+                eeImage = eeImage.reduce(ee.Reducer[bandReducer]())
             }
         }
 
@@ -240,7 +240,7 @@ class EarthEngineWorker {
         if (collection) {
             if (useHistogram) {
                 // Used for landcover
-                const reducer = ee.Reducer.frequencyHistogram
+                const reducer = ee.Reducer.frequencyHistogram()
                 return getInfo(
                     image
                         .reduceRegions(collection, reducer, scale)

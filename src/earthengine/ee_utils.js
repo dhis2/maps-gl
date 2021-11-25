@@ -1,3 +1,8 @@
+export const defaultOptions = {
+    bandReducer: 'sum',
+    popup: '{name}: {value} {unit}',
+}
+
 const workerOptions = [
     'aggregationType',
     'band',

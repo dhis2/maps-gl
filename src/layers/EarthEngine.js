@@ -1,15 +1,10 @@
 import Layer from './Layer'
-import { getWorkerOptions } from '../earthengine/ee_utils'
+import { defaultOptions, getWorkerOptions } from '../earthengine/ee_utils'
 import getEarthEngineWorker from '../earthengine/ee_worker_loader'
 import { isPoint, featureCollection } from '../utils/geometry'
 import { getBufferGeometry } from '../utils/buffers'
 import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
 import { setPrecision } from '../utils/numbers'
-
-export const defaultOptions = {
-    bandReducer: 'sum',
-    popup: '{name}: {value} {unit}',
-}
 
 class EarthEngine extends Layer {
     constructor(options) {
