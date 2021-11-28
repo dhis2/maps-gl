@@ -128,6 +128,9 @@ class EarthEngineWorker {
             eeImage = eeImage.select(band)
 
             if (Array.isArray(band) && bandReducer) {
+                // Keep image bands for aggregations
+                this.eeImageBands = eeImage
+
                 // Combine multiple bands (e.g. age groups)
                 eeImage = eeImage.reduce(ee.Reducer[bandReducer]())
             }
@@ -229,13 +232,15 @@ class EarthEngineWorker {
 
     // Returns aggregated values for org unit features
     async getAggregations() {
-        const { aggregationType, legend } = this.options
+        const { aggregationType, band, legend } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
             singleAggregation && hasClasses(aggregationType) && legend
         const image = await this.getImage()
         const scale = this.eeScale
         const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
+
+        let aggBandFeatures
 
         if (collection) {
             if (useHistogram) {
@@ -262,7 +267,39 @@ class EarthEngineWorker {
                         reducer,
                         scale,
                     })
-                    .select(aggregationType, null, false)
+                    .select(['id', ...aggregationType], null, false)
+
+                if (this.eeImageBands) {
+                    const bandAggregationTypes = [
+                        ...band.map(b => aggregationType.map(t => `${b}_${t}`)),
+                    ]
+
+                    aggBandFeatures = this.eeImageBands
+                        .reduceRegions({
+                            collection,
+                            reducer,
+                            scale,
+                        })
+                        .select(
+                            ['id', ...bandAggregationTypes.flat()],
+                            null,
+                            false
+                        )
+
+                    var toyJoin = ee.Join.inner().apply(
+                        aggFeatures,
+                        aggBandFeatures,
+                        ee.Filter.equals({
+                            leftField: 'id',
+                            rightField: 'id',
+                        })
+                    )
+
+                    getInfo(toyJoin).then(console.log)
+                    // getInfo(aggBandFeatures).then(console.log)
+                }
+
+                // getInfo(combinedFeatureCollection).then(console.log)
 
                 return getInfo(aggFeatures).then(getFeatureCollectionProperties)
             } else throw new Error('Aggregation type is not valid')
