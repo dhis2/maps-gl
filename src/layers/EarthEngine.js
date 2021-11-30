@@ -1,6 +1,6 @@
 import Layer from './Layer'
-import { defaultOptions, getWorkerOptions } from '../earthengine/ee_utils'
-import getEarthEngineWorker from '../earthengine/ee_worker_loader'
+import getEarthEngineWorker from '../earthengine'
+import { defaultOptions, getWorkerOptions } from '../utils/earthengine'
 import { isPoint, featureCollection } from '../utils/geometry'
 import { getBufferGeometry } from '../utils/buffers'
 import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
