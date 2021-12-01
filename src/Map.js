@@ -287,8 +287,13 @@ export class MapGL extends Evented {
     onMouseOut = () => this.hideLabel()
 
     onError = evt => {
-        if (evt?.error?.message === 'Failed to fetch' && console?.error) {
-            console.error('Failed to fetch map data, are you offline?')
+        if (evt?.error?.message && console?.error) {
+            const { message } = evt.error
+            console.error(
+                message === 'Failed to fetch'
+                    ? 'Failed to fetch map data, are you offline?'
+                    : message
+            )
         }
     }
 
