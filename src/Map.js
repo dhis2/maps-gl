@@ -146,6 +146,7 @@ export class MapGL extends Evented {
         mapgl.off('contextmenu', this.onContextMenu)
         mapgl.off('mousemove', this.onMouseMove)
         mapgl.off('mouseout', this.onMouseOut)
+        mapgl.off('error', this.onError)
 
         mapgl.remove()
 
