@@ -13,9 +13,10 @@ export const hoverStrokeMultiplier = 3
 export const eventStrokeColor = '#333333'
 export const clusterCountColor = '#000000'
 
-export const mapStyle = ({
-    glyphs = 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf',
-}) => ({
+export const defaultGlyphs =
+    'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf'
+
+export const mapStyle = ({ glyphs = defaultGlyphs }) => ({
     version: 8,
     sources: {},
     layers: [],
