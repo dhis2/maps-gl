@@ -288,7 +288,8 @@ export class MapGL extends Evented {
     onMouseOut = () => this.hideLabel()
 
     onError = evt => {
-        if (evt?.error?.message && console?.error) {
+        // TODO: Use optional chaining when DHIS2 Maps 2.35 is not supported
+        if (evt && evt.error && evt.error.message && console && console.error) {
             const { message } = evt.error
             console.error(
                 message === 'Failed to fetch'
