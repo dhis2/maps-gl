@@ -1,3 +1,10 @@
+## [2.2.5](https://github.com/dhis2/maps-gl/compare/v2.2.4...v2.2.5) (2021-12-06)
+
+
+### Bug Fixes
+
+* don't use optional chaining in maps-gl ([#421](https://github.com/dhis2/maps-gl/issues/421)) ([0756a48](https://github.com/dhis2/maps-gl/commit/0756a480cf73cb196e38636f843e9d606f2ad242))
+
 ## [2.2.4](https://github.com/dhis2/maps-gl/compare/v2.2.3...v2.2.4) (2021-12-01)
 
 
