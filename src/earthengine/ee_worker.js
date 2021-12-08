@@ -244,6 +244,8 @@ class EarthEngineWorker {
             if (useHistogram) {
                 // Used for landcover
                 const reducer = ee.Reducer.frequencyHistogram()
+                const scaleValue = await getInfo(scale)
+
                 return getInfo(
                     image
                         .reduceRegions(collection, reducer, scale)
@@ -251,7 +253,7 @@ class EarthEngineWorker {
                 ).then(data =>
                     getHistogramStatistics({
                         data,
-                        scale,
+                        scale: scaleValue,
                         aggregationType,
                         legend,
                     })
