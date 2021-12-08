@@ -275,7 +275,11 @@ class EarthEngineWorker {
 
                     band.forEach(band =>
                         aggregationType.forEach(type =>
-                            props.push(`${band}_${type}`)
+                            props.push(
+                                aggregationType.length === 1
+                                    ? band
+                                    : `${band}_${type}`
+                            )
                         )
                     )
                 }
