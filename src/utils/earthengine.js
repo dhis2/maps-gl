@@ -11,6 +11,7 @@ const workerOptions = [
     'data',
     'datasetId',
     'filter',
+    'format',
     'legend',
     'mask',
     'methods',

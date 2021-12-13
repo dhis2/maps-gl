@@ -186,20 +186,43 @@ class EarthEngineWorker {
 
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { data, params } = this.options
+        const { data, params, format } = this.options
 
         return new Promise(resolve => {
-            this.eeImage = this.getImage()
+            if (format === 'FeatureCollection') {
+                const { datasetId } = this.options
 
-            let eeImage = this.classifyImage(this.eeImage)
+                // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-draw?hl=en
+                // https://developers.google.com/earth-engine/apidocs/ee-feature-contains?hl=en
+                // https://developers.google.com/earth-engine/guides/feature_collection_filtering
+                // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-filterbounds?hl=en
+                // https://developers.google.com/earth-engine/guides/feature_collection_reducing
 
-            if (data) {
-                eeImage = eeImage.clipToCollection(this.getFeatureCollection())
+                let test = ee
+                    .FeatureCollection(datasetId)
+                    // .filterBounds(this.getFeatureCollection()) // resource exhausted
+                    .draw({ color: 'FFA500', strokeWidth: 2 })
+
+                if (data) {
+                    test = test.clipToCollection(this.getFeatureCollection())
+                }
+
+                test.getMap(null, response => resolve(response.urlFormat))
+            } else {
+                this.eeImage = this.getImage()
+
+                let eeImage = this.classifyImage(this.eeImage)
+
+                if (data) {
+                    eeImage = eeImage.clipToCollection(
+                        this.getFeatureCollection()
+                    )
+                }
+
+                eeImage
+                    .visualize(this.params || params)
+                    .getMap(null, response => resolve(response.urlFormat))
             }
-
-            eeImage
-                .visualize(this.params || params)
-                .getMap(null, response => resolve(response.urlFormat))
         })
     }
 
