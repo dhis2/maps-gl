@@ -128,6 +128,9 @@ class EarthEngineWorker {
             eeImage = eeImage.select(band)
 
             if (Array.isArray(band) && bandReducer) {
+                // Keep image bands for aggregations
+                this.eeImageBands = eeImage
+
                 // Combine multiple bands (e.g. age groups)
                 eeImage = eeImage.reduce(ee.Reducer[bandReducer]())
             }
@@ -229,7 +232,7 @@ class EarthEngineWorker {
 
     // Returns aggregated values for org unit features
     async getAggregations() {
-        const { aggregationType, legend } = this.options
+        const { aggregationType, band, legend } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
             singleAggregation && hasClasses(aggregationType) && legend
@@ -241,6 +244,8 @@ class EarthEngineWorker {
             if (useHistogram) {
                 // Used for landcover
                 const reducer = ee.Reducer.frequencyHistogram()
+                const scaleValue = await getInfo(scale)
+
                 return getInfo(
                     image
                         .reduceRegions(collection, reducer, scale)
@@ -248,21 +253,40 @@ class EarthEngineWorker {
                 ).then(data =>
                     getHistogramStatistics({
                         data,
-                        scale,
+                        scale: scaleValue,
                         aggregationType,
                         legend,
                     })
                 )
             } else if (!singleAggregation && aggregationType.length) {
                 const reducer = combineReducers(ee)(aggregationType)
+                const props = [...aggregationType]
 
-                const aggFeatures = image
-                    .reduceRegions({
-                        collection,
+                let aggFeatures = image.reduceRegions({
+                    collection,
+                    reducer,
+                    scale,
+                })
+
+                if (this.eeImageBands) {
+                    aggFeatures = this.eeImageBands.reduceRegions({
+                        collection: aggFeatures,
                         reducer,
                         scale,
                     })
-                    .select(aggregationType, null, false)
+
+                    band.forEach(band =>
+                        aggregationType.forEach(type =>
+                            props.push(
+                                aggregationType.length === 1
+                                    ? band
+                                    : `${band}_${type}`
+                            )
+                        )
+                    )
+                }
+
+                aggFeatures = aggFeatures.select(props, null, false)
 
                 return getInfo(aggFeatures).then(getFeatureCollectionProperties)
             } else throw new Error('Aggregation type is not valid')
