@@ -1,7 +1,7 @@
 import Map from './Map'
 import supportedLayers from './layers/layerTypes'
 import supportedControls from './controls/controlTypes'
-import getEarthEngineApi from './utils/eeapi'
+import getEarthEngineWorker from './earthengine'
 import { getLabelPosition } from './utils/labels'
 
 /**
@@ -12,7 +12,7 @@ export const layerTypes = Object.keys(supportedLayers)
 
 export const controlTypes = Object.keys(supportedControls)
 
-export const loadEarthEngineApi = getEarthEngineApi
+export const loadEarthEngineWorker = getEarthEngineWorker
 
 export const poleOfInaccessibility = getLabelPosition
 

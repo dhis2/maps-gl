@@ -115,9 +115,7 @@ export class MapGL extends Evented {
     async removeLayer(layer) {
         this._layers = this._layers.filter(l => l !== layer)
 
-        if (this._mapgl && layer.isOnMap()) {
-            await layer.removeFrom(this)
-        }
+        await layer.removeFrom(this)
 
         this.fire('layerremove', this._layers)
     }

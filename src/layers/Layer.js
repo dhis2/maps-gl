@@ -52,6 +52,10 @@ class Layer extends Evented {
             }
         })
 
+        if (!this.isVisible()) {
+            this.setVisibility(false)
+        }
+
         if (opacity) {
             this.setOpacity(opacity)
         }
@@ -262,6 +266,8 @@ class Layer extends Evented {
         if (mapgl) {
             setLayersOpacity(mapgl, this.getId(), opacity)
         }
+
+        this.options.opacity = opacity
     }
 
     getBounds() {

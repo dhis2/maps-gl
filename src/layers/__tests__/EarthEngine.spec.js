@@ -3,63 +3,13 @@ import EarthEngine, { defaultOptions } from '../EarthEngine'
 const urlFormat =
     'https://earthengine.googleapis.com/v1alpha/projects/earthengine-legacy/maps/.../tiles/{z}/{x}/{y}'
 
-const eeMock = {
-    initialize(a, b, c) {
-        c()
-    },
-    data: {
-        setAuthToken: () => ({}),
-        setAuthTokenRefresher: () => ({}),
-    },
-    Geometry: () => ({}),
-    Image: () => ({
-        select() {
-            return this
-        },
-        projection() {
-            return {
-                nominalScale: () => {
-                    return this
-                },
-            }
-        },
-        evaluate: cb => cb({}),
-        clipToCollection() {
-            return this
-        },
-        add() {
-            return this
-        },
-        gt() {
-            return this
-        },
-        visualize() {
-            return this
-        },
-        getMap(a, b) {
-            b({
-                urlFormat,
-            })
-        },
-    }),
-    ImageCollection: () => ({
-        filter() {
-            return this
-        },
-        first: eeMock.Image,
-        mosaic: eeMock.Image,
-    }),
-    FeatureCollection: features => features,
-    Filter: {
-        eq: () => ({}),
-    },
-    Reducer: () => ({}),
-}
-
-// Mock out EE API
-jest.mock('../../utils/eeapi', () => ({
+// Mock out EE Worker - import.meta not supported in jest
+jest.mock('../../earthengine/ee_worker_loader', () => ({
     __esModule: true,
-    default: async () => eeMock,
+    default: async () => async () =>
+        new class EarthEngineWorkerMock {
+            getTileUrl = async () => urlFormat
+        }(),
 }))
 
 const token = {
@@ -68,7 +18,7 @@ const token = {
     expires_in: 1000,
 }
 
-const accessToken = Promise.resolve(token)
+const getAuthToken = async () => token
 
 const onLoad = jest.fn()
 
@@ -132,7 +82,7 @@ const legend = [
 const buffer = 1000
 
 const options = {
-    accessToken,
+    getAuthToken,
     datasetId,
     filter,
     data,
@@ -150,15 +100,14 @@ describe('EarthEngine', () => {
         expect(layer.options).toEqual(defaultOptions)
     })
 
-    it('Should add to map and init EE', async () => {
+    it('Should add to map', async () => {
         const layer = new EarthEngine(options)
         await layer.addTo(mockMap)
 
         expect(layer.getMap()).toBe(mockMap)
         expect(layer.getMapGL()).toBe(mockMapGL)
-        expect(layer.ee).toBe(eeMock)
-        await expect(layer.init()).resolves.toEqual(undefined)
-        await expect(layer.getAuthToken()).resolves.toEqual(token)
+
+        await expect(layer.options.getAuthToken()).resolves.toEqual(token)
     })
 
     it('Should create a raster source', async () => {
@@ -217,28 +166,6 @@ describe('EarthEngine', () => {
         await layer.addTo(mockMap)
 
         expect(onLoad.mock.calls.length).toBe(numCalls + 1)
-    })
-
-    it('Should fire imageready event', async () => {
-        const layer = new EarthEngine(options)
-        await layer.init()
-        const onImageReady = jest.fn()
-        layer.on('imageready', onImageReady)
-        const image = await layer.createImage()
-
-        expect(image).not.toBe(undefined)
-        expect(onImageReady.mock.calls.length).toBe(1)
-    })
-
-    it('Should use string ids for ee features', async () => {
-        const layer = new EarthEngine(options)
-        const before = layer.getFeatures()
-        await layer.addTo(mockMap)
-        const after = layer.getFeatureCollection()
-
-        expect(before.every(f => typeof f.id === 'number')).toBe(true)
-        expect(after.every(f => typeof f.id === 'string')).toBe(true)
-        expect(after.every(f => f.id === f.properties.id)).toBe(true)
     })
 
     it('Should convert point feature to buffer polygon', async () => {
