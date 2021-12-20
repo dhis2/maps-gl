@@ -78,8 +78,8 @@ class LayerGroup extends Evented {
         return this._isVisible
     }
 
-    moveToTop() {
-        this._layers.forEach(layer => layer.moveToTop())
+    move() {
+        this._layers.forEach(layer => layer.move())
     }
 
     hasLayerId(id) {
