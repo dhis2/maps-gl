@@ -1,3 +1,21 @@
+# [3.0.0](https://github.com/dhis2/maps-gl/compare/v2.2.5...v3.0.0) (2021-12-20)
+
+
+### Bug Fixes
+
+* ee worker test fix ([#424](https://github.com/dhis2/maps-gl/issues/424)) ([85c5e34](https://github.com/dhis2/maps-gl/commit/85c5e344a3fc141e48fa5c49f51d79abe9f51a40))
+
+
+### Features
+
+* run Earth Engine API in a web worker (DHIS2-12013) ([#415](https://github.com/dhis2/maps-gl/issues/415)) ([e3b9a46](https://github.com/dhis2/maps-gl/commit/e3b9a46e5559171fc0fedf5278bfd3444364f515))
+
+
+### BREAKING CHANGES
+
+* Run EE API requests in a separate web worker
+* Run all EE API code in a separate web worker
+
 ## [2.2.5](https://github.com/dhis2/maps-gl/compare/v2.2.4...v2.2.5) (2021-12-06)
 
 
