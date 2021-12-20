@@ -97,7 +97,6 @@ describe('EarthEngine', () => {
         const layer = new EarthEngine()
 
         expect(layer.getId()).not.toBeNull()
-        expect(layer.options).toEqual(defaultOptions)
     })
 
     it('Should add to map', async () => {
