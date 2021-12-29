@@ -34,7 +34,9 @@ class EarthEngine extends Layer {
                             super.addTo(map)
                             this.onLoad()
 
-                            if (this.options.preload) {
+                            const { preload, data } = this.options
+
+                            if (preload && data) {
                                 this.getAggregations()
                             }
                         }
