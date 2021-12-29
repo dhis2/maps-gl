@@ -36,6 +36,8 @@ class EarthEngine extends Layer {
 
                             const { preload, data } = this.options
 
+                            // Get aggregations if not plugin (preload=false) and org units
+                            // are passed (data not undefined)
                             if (preload && data) {
                                 this.getAggregations()
                             }
