@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/dhis2/maps-gl/compare/v3.0.0...v3.0.1) (2021-12-30)
+
+
+### Bug Fixes
+
+* only preload earth engine aggregations if org units are passed (DHIS2-12276) ([#425](https://github.com/dhis2/maps-gl/issues/425)) ([feec2e4](https://github.com/dhis2/maps-gl/commit/feec2e43d38e2ce0fb32d05726e372f566a52c41))
+
 # [3.0.0](https://github.com/dhis2/maps-gl/compare/v2.2.5...v3.0.0) (2021-12-20)
 
 
