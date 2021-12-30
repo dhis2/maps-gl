@@ -34,7 +34,11 @@ class EarthEngine extends Layer {
                             super.addTo(map)
                             this.onLoad()
 
-                            if (this.options.preload) {
+                            const { preload, data } = this.options
+
+                            // Get aggregations if not plugin (preload=false) and org units
+                            // are passed (data not undefined)
+                            if (preload && data) {
                                 this.getAggregations()
                             }
                         }

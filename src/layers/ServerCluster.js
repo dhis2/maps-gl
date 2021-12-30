@@ -206,7 +206,9 @@ class ServerCluster extends Cluster {
 
     getSourceCacheTiles = () => {
         const mapgl = this._map.getMapGL()
-        return Object.values(mapgl.style.sourceCaches[this.getId()]._tiles)
+        const sourceCache = mapgl.style.sourceCaches[this.getId()]
+
+        return sourceCache ? Object.values(sourceCache._tiles) : []
     }
 
     // Called by parent class
