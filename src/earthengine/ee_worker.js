@@ -294,4 +294,9 @@ class EarthEngineWorker {
     }
 }
 
-expose(EarthEngineWorker)
+// Service Worker not supported in Safari
+if (typeof onconnect !== 'undefined') {
+    onconnect = evt => expose(EarthEngineWorker, evt.ports[0])
+} else {
+    expose(EarthEngineWorker)
+}
