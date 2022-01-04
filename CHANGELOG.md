@@ -1,3 +1,10 @@
+## [3.0.2](https://github.com/dhis2/maps-gl/compare/v3.0.1...v3.0.2) (2022-01-04)
+
+
+### Bug Fixes
+
+* use shared worker for Earth Engine layers ([#427](https://github.com/dhis2/maps-gl/issues/427)) ([40f68c8](https://github.com/dhis2/maps-gl/commit/40f68c8cdc6f56771353b734885230b513119c7a))
+
 ## [3.0.1](https://github.com/dhis2/maps-gl/compare/v3.0.0...v3.0.1) (2021-12-30)
 
 
