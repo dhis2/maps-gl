@@ -10,7 +10,7 @@ const getEarthEngineWorker = getAuthToken =>
         } else {
             // Service Worker not supported in Safari
             const EarthEngineWorker = wrap(
-                typeof ServiceWorker !== 'undefined'
+                typeof SharedWorker !== 'undefined'
                     ? new SharedWorker(
                           new URL(
                               '../earthengine/ee_worker.js',
