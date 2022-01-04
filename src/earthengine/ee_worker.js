@@ -294,4 +294,4 @@ class EarthEngineWorker {
     }
 }
 
-expose(EarthEngineWorker)
+onconnect = evt => expose(EarthEngineWorker, evt.ports[0])

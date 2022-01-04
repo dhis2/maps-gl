@@ -9,9 +9,9 @@ const getEarthEngineWorker = getAuthToken =>
             resolve(resolvedWorker)
         } else {
             const EarthEngineWorker = wrap(
-                new Worker(
+                new SharedWorker(
                     new URL('../earthengine/ee_worker.js', import.meta.url)
-                )
+                ).port
             )
 
             EarthEngineWorker.setAuthToken(proxy(getAuthToken))
