@@ -4,6 +4,7 @@ export const defaultOptions = {
 }
 
 const workerOptions = [
+    'format',
     'aggregationType',
     'band',
     'bandReducer',

@@ -11,6 +11,7 @@ import {
     getFeatureCollectionProperties,
 } from './ee_worker_utils'
 import { getBufferGeometry } from '../utils/buffers'
+import { get } from 'lodash'
 
 // Why we need to "hack" the '@google/earthengine bundle:
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
@@ -189,20 +190,46 @@ class EarthEngineWorker {
 
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { data, params } = this.options
+        const { format, data, params } = this.options
 
         return new Promise(resolve => {
-            this.eeImage = this.getImage()
+            if (format === 'FeatureCollection') {
+                const { datasetId } = this.options
 
-            let eeImage = this.classifyImage(this.eeImage)
+                // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-draw?hl=en
+                // https://developers.google.com/earth-engine/apidocs/ee-feature-contains?hl=en
+                // https://developers.google.com/earth-engine/guides/feature_collection_filtering
+                // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-filterbounds?hl=en
+                // https://developers.google.com/earth-engine/guides/feature_collection_reducing
+                // https://gis.stackexchange.com/questions/318772/summing-amount-of-vector-points-in-area-of-another-vector-using-google-earth-eng
+                // https://gis.stackexchange.com/questions/308054/how-to-filter-a-feature-collection-to-only-features-entirely-inside-another-feat
 
-            if (data) {
-                eeImage = eeImage.clipToCollection(this.getFeatureCollection())
+                let dataset = ee
+                    .FeatureCollection(datasetId)
+                    .draw({ color: 'FFA500', strokeWidth: 2 })
+
+                if (data) {
+                    dataset = dataset.clipToCollection(
+                        this.getFeatureCollection()
+                    )
+                }
+
+                dataset.getMap(null, response => resolve(response.urlFormat))
+            } else {
+                this.eeImage = this.getImage()
+
+                let eeImage = this.classifyImage(this.eeImage)
+
+                if (data) {
+                    eeImage = eeImage.clipToCollection(
+                        this.getFeatureCollection()
+                    )
+                }
+
+                eeImage
+                    .visualize(this.params || params)
+                    .getMap(null, response => resolve(response.urlFormat))
             }
-
-            eeImage
-                .visualize(this.params || params)
-                .getMap(null, response => resolve(response.urlFormat))
         })
     }
 
@@ -232,7 +259,7 @@ class EarthEngineWorker {
 
     // Returns aggregated values for org unit features
     async getAggregations() {
-        const { aggregationType, band, legend } = this.options
+        const { format, aggregationType, band, legend } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
             singleAggregation && hasClasses(aggregationType) && legend
@@ -241,7 +268,31 @@ class EarthEngineWorker {
         const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
 
         if (collection) {
-            if (useHistogram) {
+            if (format === 'FeatureCollection') {
+                const { datasetId } = this.options
+
+                // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-draw?hl=en
+                // https://developers.google.com/earth-engine/apidocs/ee-feature-contains?hl=en
+                // https://developers.google.com/earth-engine/guides/feature_collection_filtering
+                // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-filterbounds?hl=en
+                // https://developers.google.com/earth-engine/guides/feature_collection_reducing
+
+                const dataset = ee.FeatureCollection(datasetId)
+
+                const aggFeatures = this.getFeatureCollection()
+                    .map(feature => {
+                        feature = ee.Feature(feature)
+                        const count = dataset
+                            .filterBounds(feature.geometry())
+                            .size()
+
+                        return feature.set('count', count)
+                    })
+                    .select(['count'], null, false)
+
+                // Uncaught (in promise) The service is currently unavailable.
+                return getInfo(aggFeatures).then(getFeatureCollectionProperties)
+            } else if (useHistogram) {
                 // Used for landcover
                 const reducer = ee.Reducer.frequencyHistogram()
                 const scaleValue = await getInfo(scale)
