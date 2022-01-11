@@ -1,3 +1,50 @@
+## [3.0.2](https://github.com/dhis2/maps-gl/compare/v3.0.1...v3.0.2) (2022-01-04)
+
+
+### Bug Fixes
+
+* use shared worker for Earth Engine layers ([#427](https://github.com/dhis2/maps-gl/issues/427)) ([40f68c8](https://github.com/dhis2/maps-gl/commit/40f68c8cdc6f56771353b734885230b513119c7a))
+
+## [3.0.1](https://github.com/dhis2/maps-gl/compare/v3.0.0...v3.0.1) (2021-12-30)
+
+
+### Bug Fixes
+
+* only preload earth engine aggregations if org units are passed (DHIS2-12276) ([#425](https://github.com/dhis2/maps-gl/issues/425)) ([feec2e4](https://github.com/dhis2/maps-gl/commit/feec2e43d38e2ce0fb32d05726e372f566a52c41))
+
+# [3.0.0](https://github.com/dhis2/maps-gl/compare/v2.2.5...v3.0.0) (2021-12-20)
+
+
+### Bug Fixes
+
+* ee worker test fix ([#424](https://github.com/dhis2/maps-gl/issues/424)) ([85c5e34](https://github.com/dhis2/maps-gl/commit/85c5e344a3fc141e48fa5c49f51d79abe9f51a40))
+
+
+### Features
+
+* run Earth Engine API in a web worker (DHIS2-12013) ([#415](https://github.com/dhis2/maps-gl/issues/415)) ([e3b9a46](https://github.com/dhis2/maps-gl/commit/e3b9a46e5559171fc0fedf5278bfd3444364f515))
+
+
+### BREAKING CHANGES
+
+* Run EE API requests in a separate web worker
+* Run all EE API code in a separate web worker
+
+## [2.2.5](https://github.com/dhis2/maps-gl/compare/v2.2.4...v2.2.5) (2021-12-06)
+
+
+### Bug Fixes
+
+* don't use optional chaining in maps-gl ([#421](https://github.com/dhis2/maps-gl/issues/421)) ([0756a48](https://github.com/dhis2/maps-gl/commit/0756a480cf73cb196e38636f843e9d606f2ad242))
+
+## [2.2.4](https://github.com/dhis2/maps-gl/compare/v2.2.3...v2.2.4) (2021-12-01)
+
+
+### Bug Fixes
+
+* basic offline support (DHIS2-12212) ([#418](https://github.com/dhis2/maps-gl/issues/418)) ([e8bed4d](https://github.com/dhis2/maps-gl/commit/e8bed4df3fe405c0dff2c8a6d13dbc80fe1e8db9))
+* unit test ([2d5f55e](https://github.com/dhis2/maps-gl/commit/2d5f55ee389c7f57a71d109bd2d00fa430d01d06))
+
 ## [2.2.3](https://github.com/dhis2/maps-gl/compare/v2.2.2...v2.2.3) (2021-10-29)
 
 

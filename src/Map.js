@@ -28,11 +28,11 @@ export class MapGL extends Evented {
     constructor(el, options = {}) {
         super()
 
-        const { locale, ...opts } = options
+        const { locale, glyphs, ...opts } = options
 
         const mapgl = new Map({
             container: el,
-            style: mapStyle,
+            style: mapStyle({ glyphs }),
             maxZoom: 18,
             preserveDrawingBuffer: true, // TODO: requred for map download, but reduced performance
             attributionControl: false,
@@ -42,6 +42,7 @@ export class MapGL extends Evented {
         })
 
         this._mapgl = mapgl
+        this._glyphs = glyphs
 
         // Translate strings
         if (locale) {
@@ -58,6 +59,7 @@ export class MapGL extends Evented {
         mapgl.on('contextmenu', this.onContextMenu)
         mapgl.on('mousemove', this.onMouseMove)
         mapgl.on('mouseout', this.onMouseOut)
+        mapgl.on('error', this.onError)
 
         this._layers = []
         this._controls = {}
@@ -142,6 +144,7 @@ export class MapGL extends Evented {
         mapgl.off('contextmenu', this.onContextMenu)
         mapgl.off('mousemove', this.onMouseMove)
         mapgl.off('mouseout', this.onMouseOut)
+        mapgl.off('error', this.onError)
 
         mapgl.remove()
 
@@ -281,6 +284,18 @@ export class MapGL extends Evented {
     }
 
     onMouseOut = () => this.hideLabel()
+
+    onError = evt => {
+        // TODO: Use optional chaining when DHIS2 Maps 2.35 is not supported
+        if (evt && evt.error && evt.error.message && console && console.error) {
+            const { message } = evt.error
+            console.error(
+                message === 'Failed to fetch'
+                    ? 'Failed to fetch map data, are you offline?'
+                    : message
+            )
+        }
+    }
 
     // Returns the map zoom level
     getZoom() {

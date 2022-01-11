@@ -128,6 +128,9 @@ class EarthEngineWorker {
             eeImage = eeImage.select(band)
 
             if (Array.isArray(band) && bandReducer) {
+                // Keep image bands for aggregations
+                this.eeImageBands = eeImage
+
                 // Combine multiple bands (e.g. age groups)
                 eeImage = eeImage.reduce(ee.Reducer[bandReducer]())
             }
@@ -186,43 +189,20 @@ class EarthEngineWorker {
 
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { data, params, format } = this.options
+        const { data, params } = this.options
 
         return new Promise(resolve => {
-            if (format === 'FeatureCollection') {
-                const { datasetId } = this.options
+            this.eeImage = this.getImage()
 
-                // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-draw?hl=en
-                // https://developers.google.com/earth-engine/apidocs/ee-feature-contains?hl=en
-                // https://developers.google.com/earth-engine/guides/feature_collection_filtering
-                // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-filterbounds?hl=en
-                // https://developers.google.com/earth-engine/guides/feature_collection_reducing
+            let eeImage = this.classifyImage(this.eeImage)
 
-                let test = ee
-                    .FeatureCollection(datasetId)
-                    // .filterBounds(this.getFeatureCollection()) // resource exhausted
-                    .draw({ color: 'FFA500', strokeWidth: 2 })
-
-                if (data) {
-                    test = test.clipToCollection(this.getFeatureCollection())
-                }
-
-                test.getMap(null, response => resolve(response.urlFormat))
-            } else {
-                this.eeImage = this.getImage()
-
-                let eeImage = this.classifyImage(this.eeImage)
-
-                if (data) {
-                    eeImage = eeImage.clipToCollection(
-                        this.getFeatureCollection()
-                    )
-                }
-
-                eeImage
-                    .visualize(this.params || params)
-                    .getMap(null, response => resolve(response.urlFormat))
+            if (data) {
+                eeImage = eeImage.clipToCollection(this.getFeatureCollection())
             }
+
+            eeImage
+                .visualize(this.params || params)
+                .getMap(null, response => resolve(response.urlFormat))
         })
     }
 
@@ -252,7 +232,7 @@ class EarthEngineWorker {
 
     // Returns aggregated values for org unit features
     async getAggregations() {
-        const { aggregationType, legend } = this.options
+        const { aggregationType, band, legend } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
             singleAggregation && hasClasses(aggregationType) && legend
@@ -264,6 +244,8 @@ class EarthEngineWorker {
             if (useHistogram) {
                 // Used for landcover
                 const reducer = ee.Reducer.frequencyHistogram()
+                const scaleValue = await getInfo(scale)
+
                 return getInfo(
                     image
                         .reduceRegions(collection, reducer, scale)
@@ -271,21 +253,40 @@ class EarthEngineWorker {
                 ).then(data =>
                     getHistogramStatistics({
                         data,
-                        scale,
+                        scale: scaleValue,
                         aggregationType,
                         legend,
                     })
                 )
             } else if (!singleAggregation && aggregationType.length) {
                 const reducer = combineReducers(ee)(aggregationType)
+                const props = [...aggregationType]
 
-                const aggFeatures = image
-                    .reduceRegions({
-                        collection,
+                let aggFeatures = image.reduceRegions({
+                    collection,
+                    reducer,
+                    scale,
+                })
+
+                if (this.eeImageBands) {
+                    aggFeatures = this.eeImageBands.reduceRegions({
+                        collection: aggFeatures,
                         reducer,
                         scale,
                     })
-                    .select(aggregationType, null, false)
+
+                    band.forEach(band =>
+                        aggregationType.forEach(type =>
+                            props.push(
+                                aggregationType.length === 1
+                                    ? band
+                                    : `${band}_${type}`
+                            )
+                        )
+                    )
+                }
+
+                aggFeatures = aggFeatures.select(props, null, false)
 
                 return getInfo(aggFeatures).then(getFeatureCollectionProperties)
             } else throw new Error('Aggregation type is not valid')
@@ -293,4 +294,9 @@ class EarthEngineWorker {
     }
 }
 
-expose(EarthEngineWorker)
+// Service Worker not supported in Safari
+if (typeof onconnect !== 'undefined') {
+    onconnect = evt => expose(EarthEngineWorker, evt.ports[0])
+} else {
+    expose(EarthEngineWorker)
+}
