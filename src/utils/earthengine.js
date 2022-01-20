@@ -1,9 +1,9 @@
-export const defaultOptions = {
+export const defaultEarthEngineOptions = {
     bandReducer: 'sum',
     popup: '{name}: {value} {unit}',
 }
 
-const workerOptions = [
+const earthEngineOptions = [
     'aggregationType',
     'band',
     'bandReducer',
@@ -19,9 +19,9 @@ const workerOptions = [
 ]
 
 // Returns the layer options that should be passed to the EE worker
-export const getWorkerOptions = options =>
+export const getEarthEngineOptions = options =>
     Object.keys(options)
-        .filter(option => workerOptions.includes(option))
+        .filter(option => earthEngineOptions.includes(option))
         .reduce((obj, key) => {
             obj[key] = options[key]
             return obj

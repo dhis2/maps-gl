@@ -1,4 +1,4 @@
-import EarthEngine, { defaultOptions } from '../EarthEngine'
+import EarthEngine from '../EarthEngine'
 
 const urlFormat =
     'https://earthengine.googleapis.com/v1alpha/projects/earthengine-legacy/maps/.../tiles/{z}/{x}/{y}'

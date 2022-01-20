@@ -6,7 +6,7 @@ import {
     getScale,
     hasClasses,
     combineReducers,
-    getParamsFromLegend,
+    getClassifiedImage,
     getHistogramStatistics,
     getFeatureCollectionProperties,
 } from './ee_worker_utils'
@@ -61,10 +61,20 @@ class EarthEngineWorker {
             }
         })
 
-    // Translate org unit features to an EE feature collection
-    getFeatureCollection() {
-        const { data, buffer } = this.options
+    //Reset all the class data so that a different
+    //set of options can be used
+    setOptions(options) {
+        this.options = options
+        this.eeFeatureCollection = null
+        this.eeImage = null
+        this.eeImageBands = null
+        this.eeScale = null
 
+        return this
+    }
+
+    // Translate org unit features to an EE feature collection
+    getFeatureCollection({ data, buffer }) {
         if (Array.isArray(data) && !this.eeFeatureCollection) {
             this.eeFeatureCollection = ee.FeatureCollection(
                 data.map(feature => ({
@@ -155,53 +165,24 @@ class EarthEngineWorker {
         return eeImage
     }
 
-    // Classify image according to legend
-    classifyImage(eeImage) {
-        const { legend = [], params } = this.options
-
-        let zones
-
-        if (!params) {
-            // Image has classes (e.g. landcover)
-            this.params = getParamsFromLegend(legend)
-            return eeImage
-        }
-
-        const min = 0
-        const max = legend.length - 1
-        const { palette } = params
-
-        for (let i = min, item; i < max; i++) {
-            item = legend[i]
-
-            if (!zones) {
-                zones = eeImage.gt(item.to)
-            } else {
-                zones = zones.add(eeImage.gt(item.to))
-            }
-        }
-
-        // Visualisation params
-        this.params = { min, max, palette }
-
-        return zones
-    }
-
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { data, params } = this.options
+        const { data } = this.options
 
         return new Promise(resolve => {
-            this.eeImage = this.getImage()
-
-            let eeImage = this.classifyImage(this.eeImage)
+            let { eeImage, params } = getClassifiedImage(
+                this.getImage(),
+                this.options
+            )
 
             if (data) {
-                eeImage = eeImage.clipToCollection(this.getFeatureCollection())
+                eeImage = eeImage.clipToCollection(
+                    this.getFeatureCollection(this.options)
+                )
             }
 
             eeImage
-                .visualize(this.params || params)
+                .visualize(params)
                 .getMap(null, response => resolve(response.urlFormat))
         })
     }
@@ -233,12 +214,13 @@ class EarthEngineWorker {
     // Returns aggregated values for org unit features
     async getAggregations() {
         const { aggregationType, band, legend } = this.options
+        console.log('maps-gl getAggregations with options', this.options)
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
             singleAggregation && hasClasses(aggregationType) && legend
         const image = await this.getImage()
         const scale = this.eeScale
-        const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
+        const collection = this.getFeatureCollection(this.options) // TODO: Throw error if no feature collection
 
         if (collection) {
             if (useHistogram) {
