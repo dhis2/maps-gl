@@ -1,3 +1,11 @@
+## [3.0.3](https://github.com/dhis2/maps-gl/compare/v3.0.2...v3.0.3) (2022-01-24)
+
+
+### Bug Fixes
+
+* keep data filter when earth engine layer is redrawn ([#431](https://github.com/dhis2/maps-gl/issues/431)) ([b74c12f](https://github.com/dhis2/maps-gl/commit/b74c12fe9556a746ad3e1e0a7095704bab83499e))
+* removed ee layer unit test ([0574148](https://github.com/dhis2/maps-gl/commit/057414857279b13f1487428bd12378265a5de6de))
+
 ## [3.0.2](https://github.com/dhis2/maps-gl/compare/v3.0.1...v3.0.2) (2022-01-04)
 
 
