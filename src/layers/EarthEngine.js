@@ -160,7 +160,6 @@ class EarthEngine extends Layer {
 
             if (value === null) {
                 content = setTemplate(options.nullPopup, options)
-                console.log('content', content)
             } else {
                 content = setTemplate(options.popup, {
                     ...options,
