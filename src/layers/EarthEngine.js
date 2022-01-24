@@ -85,7 +85,7 @@ class EarthEngine extends Layer {
         if (this.options.data) {
             this.setSource(id, {
                 type: 'geojson',
-                data: featureCollection(this.getFeatures()),
+                data: featureCollection(this.getFilteredFeatures()),
             })
         }
     }
@@ -189,8 +189,9 @@ class EarthEngine extends Layer {
     }
 
     // Returns filtered features based on string ids
-    getFilteredFeatures(ids) {
+    getFilteredFeatures() {
         const features = this.getFeatures()
+        const ids = this._filteredFeatureIds
 
         return Array.isArray(ids)
             ? features.filter(f => ids.includes(f.properties.id))
@@ -199,10 +200,12 @@ class EarthEngine extends Layer {
 
     // Filter the org units features shown
     filter(ids) {
+        this._filteredFeatureIds = ids
+
         const source = this.getMapGL().getSource(this.getId())
 
         if (source) {
-            source.setData(featureCollection(this.getFilteredFeatures(ids)))
+            source.setData(featureCollection(this.getFilteredFeatures()))
         }
     }
 }
