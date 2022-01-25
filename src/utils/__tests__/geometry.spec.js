@@ -24,7 +24,7 @@ const polygon = {
     },
 }
 
-describe('numbers', () => {
+describe('geometry', () => {
     it('Should return true if a feature has point geometry', () => {
         expect(isPoint(point)).toBe(true)
         expect(isPoint(polygon)).toBe(false)
