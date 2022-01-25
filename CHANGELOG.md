@@ -1,3 +1,10 @@
+## [3.0.4](https://github.com/dhis2/maps-gl/compare/v3.0.3...v3.0.4) (2022-01-25)
+
+
+### Bug Fixes
+
+* handle ee null values ([#433](https://github.com/dhis2/maps-gl/issues/433)) ([3cd806b](https://github.com/dhis2/maps-gl/commit/3cd806b2f0010025f65086ce477c9841c25d1bd9))
+
 ## [3.0.3](https://github.com/dhis2/maps-gl/compare/v3.0.2...v3.0.3) (2022-01-24)
 
 
