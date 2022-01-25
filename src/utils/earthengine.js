@@ -1,6 +1,8 @@
 export const defaultOptions = {
     bandReducer: 'sum',
     popup: '{name}: {value} {unit}',
+    nullPopup: '{name}: {noValue}',
+    noValue: 'no value',
 }
 
 const workerOptions = [

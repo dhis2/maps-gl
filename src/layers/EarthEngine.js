@@ -5,6 +5,7 @@ import { isPoint, featureCollection } from '../utils/geometry'
 import { getBufferGeometry } from '../utils/buffers'
 import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
 import { setPrecision } from '../utils/numbers'
+import { setTemplate } from '../utils/core'
 
 class EarthEngine extends Layer {
     constructor(options) {
@@ -154,14 +155,18 @@ class EarthEngine extends Layer {
     showValue = latlng =>
         this.getValue(latlng).then(value => {
             const { lng, lat } = latlng
-            const options = {
-                ...this.options,
-                value: typeof value === 'number' ? setPrecision(value) : value,
+            const options = this.options
+            let content
+
+            if (value === null) {
+                content = setTemplate(options.nullPopup, options)
+            } else {
+                content = setTemplate(options.popup, {
+                    ...options,
+                    value:
+                        typeof value === 'number' ? setPrecision(value) : value,
+                })
             }
-            const content = options.popup.replace(
-                /\{ *([\w_-]+) *\}/g,
-                (str, key) => options[key]
-            )
 
             this._map.openPopup(document.createTextNode(content), [lng, lat])
         })
