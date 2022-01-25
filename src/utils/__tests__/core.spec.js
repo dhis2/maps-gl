@@ -9,5 +9,12 @@ describe('core utils', () => {
                 unit: 'per hectare',
             })
         ).toBe('Population: 123 per hectare')
+
+        expect(
+            setTemplate('{name}: {noValue}', {
+                name: 'Population',
+                noValue: 'no value',
+            })
+        ).toBe('Population: no value')
     })
 })
