@@ -33037,6 +33037,7 @@ goog.net.XhrIo.prototype.send = function(
                 this.onProgressHandler_,
                 this
             )))
+
     try {
         goog.log.fine(this.logger_, this.formatMsg_('Opening Xhr')),
             (this.inOpen_ = !0),
@@ -33052,6 +33053,7 @@ goog.net.XhrIo.prototype.send = function(
     }
     var content = opt_content || '',
         headers = new Map(this.headers)
+
     if (opt_headers) {
         if (Object.getPrototypeOf(opt_headers) === Object.prototype) {
             for (var key in opt_headers) {
@@ -33107,6 +33109,9 @@ goog.net.XhrIo.prototype.send = function(
             value = $jscomp$destructuring$var19.next().value
         this.xhr_.setRequestHeader(key$59, value)
     }
+
+    console.log('headers', headers)
+
     this.responseType_ && (this.xhr_.responseType = this.responseType_)
     'withCredentials' in this.xhr_ &&
         this.xhr_.withCredentials !== this.withCredentials_ &&
@@ -33122,6 +33127,7 @@ goog.net.XhrIo.prototype.send = function(
         }
     }
     try {
+        /*
         this.cleanUpTimeoutTimer_(),
             0 < this.timeoutInterval_ &&
                 ((this.useXhr2Timeout_ = goog.net.XhrIo.shouldUseXhr2Timeout_(
@@ -33153,6 +33159,50 @@ goog.net.XhrIo.prototype.send = function(
             (this.inSend_ = !0),
             this.xhr_.send(content),
             (this.inSend_ = !1)
+        */
+
+        this.cleanUpTimeoutTimer_()
+
+        if (0 < this.timeoutInterval_) {
+            this.useXhr2Timeout_ = goog.net.XhrIo.shouldUseXhr2Timeout_(
+                this.xhr_
+            )
+
+            goog.log.fine(
+                this.logger_,
+                this.formatMsg_(
+                    'Will abort after ' +
+                        this.timeoutInterval_ +
+                        'ms if incomplete, xhr2 ' +
+                        this.useXhr2Timeout_
+                )
+            )
+
+            if (this.useXhr2Timeout_) {
+                this.xhr_[goog.net.XhrIo.XHR2_TIMEOUT_] = this.timeoutInterval_
+                this.xhr_[goog.net.XhrIo.XHR2_ON_TIMEOUT_] = goog.bind(
+                    this.timeout_,
+                    this
+                )
+            } else {
+                this.timeoutId_ = goog.Timer.callOnce(
+                    this.timeout_,
+                    this.timeoutInterval_,
+                    this
+                )
+            }
+        }
+
+        goog.log.fine(this.logger_, this.formatMsg_('Sending request'))
+
+        this.inSend_ = !0
+
+        console.log('this.xhr_.send content', content)
+        console.log('this.xhr_.send content length', content.length)
+
+        this.xhr_.send(content)
+
+        this.inSend_ = !1
     } catch (err$61) {
         goog.log.fine(
             this.logger_,

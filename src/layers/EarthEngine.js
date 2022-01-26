@@ -25,6 +25,7 @@ class EarthEngine extends Layer {
                         this.worker = worker
 
                         if (!this._tileUrl) {
+                            console.log('getTileUrl')
                             this._tileUrl = await worker.getTileUrl()
                         }
 

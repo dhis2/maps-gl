@@ -18,11 +18,14 @@ import { getBufferGeometry } from '../utils/buffers'
 class EarthEngineWorker {
     constructor(options = {}) {
         this.options = options
+        console.log('constructor')
     }
 
     // Set EE API auth token if needed and run ee.initialize
     static setAuthToken = getAuthToken =>
         new Promise((resolve, reject) => {
+            console.log('setAuthToken', ee.data.getAuthToken())
+
             if (ee.data.getAuthToken()) {
                 // Already authenticated
                 ee.initialize(null, null, resolve, reject)
@@ -66,6 +69,8 @@ class EarthEngineWorker {
         const { data, buffer } = this.options
 
         if (Array.isArray(data) && !this.eeFeatureCollection) {
+            console.log('getFeatureCollection', data.flat().length, data)
+
             this.eeFeatureCollection = ee.FeatureCollection(
                 data.map(feature => ({
                     ...feature,
@@ -191,18 +196,24 @@ class EarthEngineWorker {
     getTileUrl() {
         const { data, params } = this.options
 
+        console.log('worker getTileUrl')
+
         return new Promise(resolve => {
             this.eeImage = this.getImage()
 
             let eeImage = this.classifyImage(this.eeImage)
 
             if (data) {
+                console.log('FeatureCollection', this.getFeatureCollection())
+                // eeImage = eeImage.clipToCollection(this.getFeatureCollection())
                 eeImage = eeImage.clipToCollection(this.getFeatureCollection())
             }
 
-            eeImage
-                .visualize(this.params || params)
-                .getMap(null, response => resolve(response.urlFormat))
+            console.log('getMap start')
+            eeImage.visualize(this.params || params).getMap(null, response => {
+                console.log('getMap restore', response)
+                resolve(response.urlFormat)
+            })
         })
     }
 
@@ -295,8 +306,12 @@ class EarthEngineWorker {
 }
 
 // Service Worker not supported in Safari
+/*
 if (typeof onconnect !== 'undefined') {
     onconnect = evt => expose(EarthEngineWorker, evt.ports[0])
 } else {
     expose(EarthEngineWorker)
 }
+*/
+
+expose(EarthEngineWorker)
