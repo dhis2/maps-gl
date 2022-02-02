@@ -8,30 +8,34 @@ class LayerGroup extends Evented {
         this.options = options || {}
         this._layers = []
         this._layerConfigs = []
+        this._isVisible = true
+    }
+
+    createLayer() {
+        this._layerConfigs.forEach(config =>
+            this._layers.push(this._map.createLayer(config))
+        )
+
+        if (this.options.opacity) {
+            this.setOpacity(this.options.opacity)
+        }
     }
 
     addTo(map) {
         this._map = map
-        const { opacity } = this.options
 
-        this._layerConfigs.forEach(config => {
-            const layer = this._map.createLayer({
-                opacity,
-                ...config,
-            })
+        if (!this._layers.length) {
+            this.createLayer()
+        }
 
-            layer.addTo(map)
-
-            this._layers.push(layer)
-        })
+        this._layers.forEach(layer => layer.addTo(map))
 
         this.on('contextmenu', this.onContextMenu)
     }
 
     removeFrom(map) {
         this._layers.forEach(layer => layer.removeFrom(map))
-        this._layers = []
-        this._layerConfigs = []
+        this.off('contextmenu', this.onContextMenu)
     }
 
     addLayer(config) {
