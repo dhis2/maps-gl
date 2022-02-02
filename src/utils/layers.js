@@ -12,6 +12,7 @@ import {
     clusterRadiusExpr,
 } from './expressions'
 import defaults from './style'
+import { fill } from 'lodash'
 
 export const BASEMAP_POSITION = 0
 export const OVERLAY_START_POSITION = 1
@@ -51,7 +52,7 @@ export const lineLayer = ({ id, color, width, source, filter }) => ({
 })
 
 // Layer with polygon features
-export const polygonLayer = ({ id, color, source, filter }) => ({
+export const polygonLayer = ({ id, color, source, filter, opacityFactor }) => ({
     id: `${id}-polygon`,
     type: 'fill',
     source: source || id,
@@ -59,6 +60,7 @@ export const polygonLayer = ({ id, color, source, filter }) => ({
         'fill-color': colorExpr(color || defaults.noDataColor),
     },
     filter: filter || isPolygon,
+    opacityFactor,
 })
 
 // Polygon outline and hover state

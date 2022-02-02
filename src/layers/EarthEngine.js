@@ -95,6 +95,7 @@ class EarthEngine extends Layer {
     createLayers() {
         const id = this.getId()
         const source = id
+        const isInteractive = true
 
         this.addLayer({
             id: `${id}-raster`,
@@ -103,7 +104,9 @@ class EarthEngine extends Layer {
         })
 
         if (this.options.data) {
-            this.addLayer(polygonLayer({ id, source, opacity: 0.9 }), true)
+            this.addLayer(polygonLayer({ id, source, opacity: 0.9 }), {
+                isInteractive,
+            })
             this.addLayer(outlineLayer({ id, source }))
             this.addLayer(
                 pointLayer({
