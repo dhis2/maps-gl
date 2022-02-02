@@ -79,7 +79,6 @@ class LayerGroup extends Evented {
     }
 
     move() {
-        console.log('move', this._layers)
         this._layers.forEach(layer => layer.move())
     }
 
