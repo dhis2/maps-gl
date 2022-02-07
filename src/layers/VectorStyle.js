@@ -37,7 +37,9 @@ class VectorStyle extends Evented {
     // Remove vector style from map, reset to default map style
     async removeFrom() {
         const glyphs = this._map._glyphs
-        await this.toggleVectorStyle(false, mapStyle({ glyphs }))
+        if (this._map.getMapGL()) {
+            await this.toggleVectorStyle(false, mapStyle({ glyphs }))
+        }
     }
 
     // Set map style, resolves promise when map is ready for other layers
