@@ -79,17 +79,19 @@ class Layer extends Evented {
 
         this.onRemove()
 
-        layers.forEach(layer => {
-            if (mapgl.getLayer(layer.id)) {
-                mapgl.removeLayer(layer.id)
-            }
-        })
+        if (mapgl) {
+            layers.forEach(layer => {
+                if (mapgl.getLayer(layer.id)) {
+                    mapgl.removeLayer(layer.id)
+                }
+            })
 
-        Object.keys(source).forEach(id => {
-            if (mapgl.getSource(id)) {
-                mapgl.removeSource(id)
-            }
-        })
+            Object.keys(source).forEach(id => {
+                if (mapgl.getSource(id)) {
+                    mapgl.removeSource(id)
+                }
+            })
+        }
 
         if (onClick) {
             this.off('click', onClick)
