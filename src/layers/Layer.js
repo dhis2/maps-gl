@@ -187,7 +187,9 @@ class Layer extends Evented {
         return this.isInteractive() ? this._interactiveIds : []
     }
 
-    addLayer(layer, isInteractive) {
+    addLayer(layer, layerOptions = {}) {
+        const { isInteractive } = layerOptions
+
         this._layers.push(layer)
 
         if (isInteractive) {
