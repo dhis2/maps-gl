@@ -344,9 +344,10 @@ class Layer extends Evented {
                 /\{ *([\w_-]+) *\}/g,
                 (str, key) => properties[key] || ''
             )
-            const { lngLat, point } = evt
 
-            this._map.showLabel(content, lngLat)
+            this._map.showLabel(content, evt.lngLat)
+        } else {
+            this._map.hideLabel()
         }
     }
 }
