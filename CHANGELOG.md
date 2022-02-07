@@ -1,3 +1,10 @@
+## [3.0.5](https://github.com/dhis2/maps-gl/compare/v3.0.4...v3.0.5) (2022-02-07)
+
+
+### Bug Fixes
+
+* make sure map is present before removing layers and source ([#436](https://github.com/dhis2/maps-gl/issues/436)) ([58c6cd1](https://github.com/dhis2/maps-gl/commit/58c6cd1c01267294163cabcb8206e528a8a18ef3))
+
 ## [3.0.4](https://github.com/dhis2/maps-gl/compare/v3.0.3...v3.0.4) (2022-01-25)
 
 
