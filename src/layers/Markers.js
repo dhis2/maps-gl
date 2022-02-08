@@ -15,13 +15,14 @@ class Markers extends Layer {
     createLayer() {
         const id = this.getId()
         const { buffer, bufferStyle, label, labelStyle } = this.options
+        const isInteractive = true
 
         if (buffer) {
             this.addLayer(bufferLayer({ id, ...bufferStyle }))
             this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
         }
 
-        this.addLayer(symbolLayer({ id }), true)
+        this.addLayer(symbolLayer({ id }), { isInteractive })
 
         if (label) {
             this.addLayer(labelLayer({ id, label, ...labelStyle }))

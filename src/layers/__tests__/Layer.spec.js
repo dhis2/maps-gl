@@ -63,7 +63,7 @@ describe('Layer', () => {
         const mockMapLayer = { id: 42 }
 
         layer.addTo(mockMap)
-        layer.addLayer(mockMapLayer, true)
+        layer.addLayer(mockMapLayer, { isInteractive: true })
 
         expect(layer.getLayers()).toHaveLength(1)
         expect(layer.getLayers()[0].id).toBe(mockMapLayer.id)

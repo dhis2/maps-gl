@@ -18,11 +18,14 @@ class ClientCluster extends Cluster {
             strokeColor = eventStrokeColor,
             countColor = clusterCountColor,
         } = this.options
+        const isInteractive = true
 
         super.createLayers()
 
         // Clusters
-        this.addLayer(clusterLayer({ id, color, strokeColor }), true)
+        this.addLayer(clusterLayer({ id, color, strokeColor }), {
+            isInteractive,
+        })
         this.addLayer(clusterCountLayer({ id, color: countColor }))
     }
 
