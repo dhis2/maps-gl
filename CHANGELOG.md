@@ -1,3 +1,10 @@
+## [3.0.6](https://github.com/dhis2/maps-gl/compare/v3.0.5...v3.0.6) (2022-02-08)
+
+
+### Bug Fixes
+
+* redraw layer group on basemap change ([#438](https://github.com/dhis2/maps-gl/issues/438)) ([03aff61](https://github.com/dhis2/maps-gl/commit/03aff61e327d56d000e1547540ae0f95b598dc87))
+
 ## [3.0.5](https://github.com/dhis2/maps-gl/compare/v3.0.4...v3.0.5) (2022-02-07)
 
 
