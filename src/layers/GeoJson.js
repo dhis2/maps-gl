@@ -20,6 +20,7 @@ class GeoJson extends Layer {
 
     createLayers() {
         const id = this.getId()
+
         const {
             style = {},
             buffer,
@@ -27,6 +28,7 @@ class GeoJson extends Layer {
             label,
             labelStyle,
         } = this.options
+
         const {
             radius,
             color,
@@ -34,6 +36,7 @@ class GeoJson extends Layer {
             weight: width,
             opacityFactor,
         } = style
+
         const isInteractive = true
 
         if (buffer) {
