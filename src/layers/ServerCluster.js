@@ -51,6 +51,7 @@ class ServerCluster extends Cluster {
             countColor = clusterCountColor,
             radius,
         } = this.options
+        const isInteractive = true
 
         // Non-clustered points
         this.addLayer(
@@ -61,15 +62,17 @@ class ServerCluster extends Cluster {
                 radius,
                 filter: isClusterPoint,
             }),
-            true
+            { isInteractive }
         )
 
         // Non-clustered polygons
-        this.addLayer(polygonLayer({ id, color }), true)
+        this.addLayer(polygonLayer({ id, color }), { isInteractive })
         this.addLayer(outlineLayer({ id, color: strokeColor }))
 
         // Clusters
-        this.addLayer(clusterLayer({ id, color, strokeColor }), true)
+        this.addLayer(clusterLayer({ id, color, strokeColor }), {
+            isInteractive,
+        })
         this.addLayer(clusterCountLayer({ id, color: countColor }))
     }
 

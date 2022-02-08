@@ -66,6 +66,7 @@ class Cluster extends Layer {
             strokeColor = eventStrokeColor,
             radius,
         } = this.options
+        const isInteractive = true
 
         // Non-clustered points
         this.addLayer(
@@ -76,14 +77,13 @@ class Cluster extends Layer {
                 radius,
                 filter: isClusterPoint,
             }),
-            true
+            { isInteractive }
         )
 
         // Non-clustered polygons
-        this.addLayer(
-            polygonLayer({ id, color, source: `${id}-polygons` }),
-            true
-        )
+        this.addLayer(polygonLayer({ id, color, source: `${id}-polygons` }), {
+            isInteractive,
+        })
         this.addLayer(
             outlineLayer({
                 id,

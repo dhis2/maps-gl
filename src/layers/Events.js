@@ -20,14 +20,17 @@ class Events extends Layer {
             buffer,
             bufferStyle,
         } = this.options
+        const isInteractive = true
 
         if (buffer) {
             this.addLayer(bufferLayer({ id, ...bufferStyle }))
             this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
         }
 
-        this.addLayer(pointLayer({ id, color, radius, strokeColor }), true)
-        this.addLayer(polygonLayer({ id, color }), true)
+        this.addLayer(pointLayer({ id, color, radius, strokeColor }), {
+            isInteractive,
+        })
+        this.addLayer(polygonLayer({ id, color }), { isInteractive })
         this.addLayer(outlineLayer({ id, color: strokeColor }))
     }
 }
