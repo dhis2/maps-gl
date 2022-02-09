@@ -1,3 +1,10 @@
+## [3.0.7](https://github.com/dhis2/maps-gl/compare/v3.0.6...v3.0.7) (2022-02-09)
+
+
+### Bug Fixes
+
+* hide label on mouse move ([#442](https://github.com/dhis2/maps-gl/issues/442)) ([d1f14c9](https://github.com/dhis2/maps-gl/commit/d1f14c9a67852d8f701b8f6d11a10058f860c707))
+
 ## [3.0.6](https://github.com/dhis2/maps-gl/compare/v3.0.5...v3.0.6) (2022-02-08)
 
 
