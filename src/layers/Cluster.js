@@ -133,7 +133,10 @@ class Cluster extends Layer {
     unspiderfy = () => {
         if (this.spider) {
             this.spider.unspiderfy()
-            this.getMapGL().off('zoom', this.unspiderfy)
+            const mapgl = this.getMapGL()
+            if (mapgl) {
+                mapgl.off('zoom', this.unspiderfy)
+            }
         }
     }
 
