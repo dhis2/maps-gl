@@ -1,3 +1,10 @@
+## [3.0.8](https://github.com/dhis2/maps-gl/compare/v3.0.7...v3.0.8) (2022-02-13)
+
+
+### Bug Fixes
+
+* check if map still exists before collapsing a cluster (DHIS2-12583) ([#443](https://github.com/dhis2/maps-gl/issues/443)) ([46d2f15](https://github.com/dhis2/maps-gl/commit/46d2f154df1ccbfdf66bbce493796ec9be72de4a))
+
 ## [3.0.7](https://github.com/dhis2/maps-gl/compare/v3.0.6...v3.0.7) (2022-02-09)
 
 
