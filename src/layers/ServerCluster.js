@@ -142,17 +142,20 @@ class ServerCluster extends Cluster {
     onAdd() {
         super.onAdd()
 
-        const map = this._map.getMapGL()
-        map.on('sourcedata', this.onSourceData)
-        map.on('moveend', this.onMoveEnd)
+        const mapgl = this._map.getMapGL()
+        mapgl.on('sourcedata', this.onSourceData)
+        mapgl.on('moveend', this.onMoveEnd)
     }
 
     onRemove() {
         super.onRemove()
 
-        const map = this._map.getMapGL()
-        map.off('sourcedata', this.onSourceData)
-        map.off('moveend', this.onMoveEnd)
+        const mapgl = this._map.getMapGL()
+
+        if (mapgl) {
+            mapgl.off('sourcedata', this.onSourceData)
+            mapgl.off('moveend', this.onMoveEnd)
+        }
     }
 
     // Load clusters when new tiles are requested

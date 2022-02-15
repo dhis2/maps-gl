@@ -55,13 +55,15 @@ class BingLayer extends Layer {
     onRemove() {
         const mapgl = this.getMapGL()
 
-        mapgl.off('moveend', this.updateAttribution)
+        if (mapgl) {
+            mapgl.off('moveend', this.updateAttribution)
 
-        if (this._brandLogoImg) {
-            const container = mapgl.getContainer()
+            if (this._brandLogoImg) {
+                const container = mapgl.getContainer()
 
-            container.removeChild(this._brandLogoImg)
-            container.classList.remove('dhis2-map-bing')
+                container.removeChild(this._brandLogoImg)
+                container.classList.remove('dhis2-map-bing')
+            }
         }
     }
 
