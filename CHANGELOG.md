@@ -1,3 +1,10 @@
+## [3.0.9](https://github.com/dhis2/maps-gl/compare/v3.0.8...v3.0.9) (2022-02-15)
+
+
+### Bug Fixes
+
+* check if map still exists before removing layer events ([#445](https://github.com/dhis2/maps-gl/issues/445)) ([c97384f](https://github.com/dhis2/maps-gl/commit/c97384f9ddc8d8481a7b02777d0f2f904d54b86a))
+
 ## [3.0.8](https://github.com/dhis2/maps-gl/compare/v3.0.7...v3.0.8) (2022-02-13)
 
 
