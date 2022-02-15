@@ -48,8 +48,10 @@ class ClientCluster extends Cluster {
         if (this._hasPolygons) {
             const mapgl = this.getMapGL()
 
-            mapgl.off('sourcedata', this.onSourceData)
-            mapgl.off('moveend', this.updatePolygons)
+            if (mapgl) {
+                mapgl.off('sourcedata', this.onSourceData)
+                mapgl.off('moveend', this.updatePolygons)
+            }
         }
     }
 
