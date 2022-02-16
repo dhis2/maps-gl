@@ -127,7 +127,18 @@ class EarthEngine extends Layer {
         })
 
         // Create buffer around org unit points
-        super.setFeatures(data.map(this.createBuffer.bind(this)))
+        if (this.options.buffer) {
+            super.setFeatures(data.map(this.createBuffer.bind(this)))
+        } else {
+            console.log(
+                'setFeatures',
+                data,
+                data.filter(feature => feature.geometry.type !== 'Point')
+            )
+            super.setFeatures(
+                data.filter(feature => feature.geometry.type !== 'Point')
+            )
+        }
     }
 
     // Transform point feature to buffer polygon
