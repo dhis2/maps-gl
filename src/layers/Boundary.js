@@ -28,6 +28,7 @@ class Boundary extends Layer {
     createLayers() {
         const id = this.getId()
         const { label, labelStyle } = this.options
+        const isInteractive = true
 
         // Line layer
         this.addLayer(
@@ -46,7 +47,7 @@ class Boundary extends Layer {
                 },
                 filter: ['==', '$type', 'Polygon'],
             },
-            true
+            { isInteractive }
         )
 
         // Point layer
@@ -68,7 +69,7 @@ class Boundary extends Layer {
                 },
                 filter: ['==', '$type', 'Point'],
             },
-            true
+            { isInteractive }
         )
 
         if (label) {

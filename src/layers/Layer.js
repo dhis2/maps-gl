@@ -79,17 +79,19 @@ class Layer extends Evented {
 
         this.onRemove()
 
-        layers.forEach(layer => {
-            if (mapgl.getLayer(layer.id)) {
-                mapgl.removeLayer(layer.id)
-            }
-        })
+        if (mapgl) {
+            layers.forEach(layer => {
+                if (mapgl.getLayer(layer.id)) {
+                    mapgl.removeLayer(layer.id)
+                }
+            })
 
-        Object.keys(source).forEach(id => {
-            if (mapgl.getSource(id)) {
-                mapgl.removeSource(id)
-            }
-        })
+            Object.keys(source).forEach(id => {
+                if (mapgl.getSource(id)) {
+                    mapgl.removeSource(id)
+                }
+            })
+        }
 
         if (onClick) {
             this.off('click', onClick)
@@ -185,7 +187,9 @@ class Layer extends Evented {
         return this.isInteractive() ? this._interactiveIds : []
     }
 
-    addLayer(layer, isInteractive) {
+    addLayer(layer, layerOptions = {}) {
+        const { isInteractive } = layerOptions
+
         this._layers.push(layer)
 
         if (isInteractive) {
@@ -335,9 +339,10 @@ class Layer extends Evented {
                 /\{ *([\w_-]+) *\}/g,
                 (str, key) => properties[key] || ''
             )
-            const { lngLat, point } = evt
 
-            this._map.showLabel(content, lngLat)
+            this._map.showLabel(content, evt.lngLat)
+        } else {
+            this._map.hideLabel()
         }
     }
 }

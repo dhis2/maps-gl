@@ -1,4 +1,4 @@
-import throttle from 'lodash.throttle'
+import { throttle } from 'lodash'
 import Cluster from './Cluster'
 import DonutMarker from './DonutMarker'
 import { featureCollection } from '../utils/geometry'
@@ -38,9 +38,11 @@ class DonutCluster extends Cluster {
 
         const mapgl = this.getMapGL()
 
-        mapgl.off('sourcedata', this.onSourceData)
-        mapgl.off('move', this.updateClusters)
-        mapgl.off('moveend', this.updateClusters)
+        if (mapgl) {
+            mapgl.off('sourcedata', this.onSourceData)
+            mapgl.off('move', this.updateClusters)
+            mapgl.off('moveend', this.updateClusters)
+        }
 
         for (const id in this.clustersOnScreen) {
             this.clustersOnScreen[id].remove()
