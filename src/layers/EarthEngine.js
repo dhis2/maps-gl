@@ -130,11 +130,6 @@ class EarthEngine extends Layer {
         if (this.options.buffer) {
             super.setFeatures(data.map(this.createBuffer.bind(this)))
         } else {
-            console.log(
-                'setFeatures',
-                data,
-                data.filter(feature => feature.geometry.type !== 'Point')
-            )
             super.setFeatures(
                 data.filter(feature => feature.geometry.type !== 'Point')
             )
