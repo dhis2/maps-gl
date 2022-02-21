@@ -222,13 +222,23 @@ class Layer extends Evented {
         return this._features
     }
 
-    // Returns a feature from a string or numeric id
+    // Returns the first feature having a string or numeric id
     getFeature(id) {
         if (typeof id === 'string') {
             return this._features.find(f => f.properties.id === id)
         }
 
         return this._features.find(f => f.id === id)
+    }
+
+    // Returns all features having a string or numeric id
+    getFeaturesById(id) {
+        const features =
+            typeof id === 'string'
+                ? this._features.filter(f => f.properties.id === id)
+                : this._features.filter(f => f.id === id)
+
+        return features.map(f => ({ ...f, source: this.getId() }))
     }
 
     // Adds integer id for each feature (required by Feature State)
@@ -301,16 +311,7 @@ class Layer extends Evented {
         const map = this.getMap()
 
         if (map) {
-            const feature = id ? this.getFeature(id) : null
-
-            map.setHoverState(
-                feature
-                    ? {
-                          id: feature.id,
-                          source: this.getId(),
-                      }
-                    : null
-            )
+            map.setHoverState(id ? this.getFeaturesById(id) : null)
         }
     }
 

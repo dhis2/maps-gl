@@ -9,6 +9,7 @@ import { transformRequest } from './utils/images'
 import { mapStyle } from './utils/style'
 import { getBoundsFromLayers } from './utils/geometry'
 import syncMaps from './utils/sync'
+import { getFeaturesString } from './utils/core'
 import { OVERLAY_START_POSITION } from './utils/layers'
 import Popup from './ui/Popup'
 import Label from './ui/Label'
@@ -230,9 +231,10 @@ export class MapGL extends Evented {
 
     onMouseMove = evt => {
         const feature = this.getEventFeature(evt)
+        let layer
 
         if (feature) {
-            const layer = this.getLayerFromId(feature.layer.id)
+            layer = this.getLayerFromId(feature.layer.id)
 
             if (layer) {
                 layer.onMouseMove(evt, feature)
@@ -241,35 +243,36 @@ export class MapGL extends Evented {
             this.hideLabel()
         }
 
-        this.setHoverState(feature)
+        this.setHoverState(
+            feature && feature.properties.id && layer
+                ? layer.getFeaturesById(feature.properties.id)
+                : null
+        )
 
         this.getMapGL().getCanvas().style.cursor = feature ? 'pointer' : ''
     }
 
-    // Set hover state for source feature
-    setHoverState(feature) {
-        let featureSourceId
-
-        if (feature) {
-            const { id, source } = feature
-            featureSourceId = `${id}-${source}`
-        }
-
-        // Only set hover state when feature is changed
-        if (featureSourceId !== this._hoverId) {
-            // Clear state for existing hover feature
-            if (this._hoverState) {
-                this.setFeatureState(this._hoverState, { hover: false })
-                this._hoverState = null
+    // Set hover state for features
+    setHoverState(features) {
+        // Only set hover state when features are changed
+        if (
+            getFeaturesString(features) !==
+            getFeaturesString(this._hoverFeatures)
+        ) {
+            if (this._hoverFeatures) {
+                // Clear state for existing hover features
+                this._hoverFeatures.forEach(feature =>
+                    this.setFeatureState(feature, { hover: false })
+                )
+                this._hoverFeatures = null
             }
 
-            // Set new feature hover state
-            if (feature) {
-                this._hoverState = feature
-                this.setFeatureState(feature, { hover: true })
+            if (Array.isArray(features)) {
+                this._hoverFeatures = features
+                features.forEach(feature =>
+                    this.setFeatureState(feature, { hover: true })
+                )
             }
-
-            this._hoverId = featureSourceId
         }
     }
 
