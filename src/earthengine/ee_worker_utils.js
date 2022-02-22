@@ -85,6 +85,7 @@ export const getHistogramStatistics = ({
     }, {})
 
 // Reduce a feature collection to an object of properties
+/*
 export const getFeatureCollectionProperties = data =>
     data.features.reduce(
         (obj, f) => ({
@@ -93,3 +94,16 @@ export const getFeatureCollectionProperties = data =>
         }),
         {}
     )
+*/
+
+export const getFeatureCollectionProperties = data => {
+    console.log('getFeatureCollectionProperties', data)
+
+    return data.features.reduce(
+        (obj, f) => ({
+            ...obj,
+            [f.id]: f.properties,
+        }),
+        {}
+    )
+}
