@@ -1,3 +1,10 @@
+# [3.1.0](https://github.com/dhis2/maps-gl/compare/v3.0.9...v3.1.0) (2022-02-23)
+
+
+### Features
+
+* highlight multiple features with same string id ([#447](https://github.com/dhis2/maps-gl/issues/447)) ([3a3f65e](https://github.com/dhis2/maps-gl/commit/3a3f65ea3c9ff283e39cae9bf824c8866e98ff2c))
+
 ## [3.0.9](https://github.com/dhis2/maps-gl/compare/v3.0.8...v3.0.9) (2022-02-15)
 
 
