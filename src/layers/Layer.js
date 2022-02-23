@@ -232,16 +232,6 @@ class Layer extends Evented {
         return features.map(f => ({ ...f, source: this.getId() }))
     }
 
-    // Returns all features having a string or numeric id
-    getFeaturesById(id) {
-        const features =
-            typeof id === 'string'
-                ? this._features.filter(f => f.properties.id === id)
-                : this._features.filter(f => f.id === id)
-
-        return features.map(f => ({ ...f, source: this.getId() }))
-    }
-
     // Adds integer id for each feature (required by Feature State)
     setFeatures(data = []) {
         this._features = data.map((f, i) => ({ ...f, id: i + 1 }))
