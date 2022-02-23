@@ -1,3 +1,10 @@
+# [3.2.0](https://github.com/dhis2/maps-gl/compare/v3.1.0...v3.2.0) (2022-02-23)
+
+
+### Features
+
+* ee aggregations for catchment areas ([#452](https://github.com/dhis2/maps-gl/issues/452)) ([327b42b](https://github.com/dhis2/maps-gl/commit/327b42b9af361b743632ba89b7b0fb1b4e464a3b))
+
 # [3.1.0](https://github.com/dhis2/maps-gl/compare/v3.0.9...v3.1.0) (2022-02-23)
 
 
