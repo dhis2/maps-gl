@@ -222,20 +222,12 @@ class Layer extends Evented {
         return this._features
     }
 
-<<<<<<< HEAD
-    // Returns the first feature having a string or numeric id
-    getFeature(id) {
-        if (typeof id === 'string') {
-            return this._features.find(f => f.properties.id === id)
-        }
-=======
     // Returns all features having a string or numeric id
     getFeaturesById(id) {
         const features =
             typeof id === 'string'
                 ? this._features.filter(f => f.properties.id === id)
                 : this._features.filter(f => f.id === id)
->>>>>>> feat/multiple-features-highlight
 
         return features.map(f => ({ ...f, source: this.getId() }))
     }
