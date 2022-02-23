@@ -69,6 +69,10 @@ class LayerGroup extends Evented {
         )
     }
 
+    getFeaturesById(id) {
+        return this._layers.map(layer => layer.getFeaturesById(id)).flat()
+    }
+
     setOpacity(opacity) {
         this._layers.forEach(layer => layer.setOpacity(opacity))
     }

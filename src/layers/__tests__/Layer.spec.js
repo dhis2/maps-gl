@@ -76,8 +76,10 @@ describe('Layer', () => {
 
         expect(features.length).toBe(data.length)
         expect(features.every(f => typeof f.id === 'number')).toBe(true)
-        expect(layer.getFeature(2)).toBe(layer.getFeature('fdc6uOvgoji'))
-        expect(layer.getFeature(3)).toBe(undefined)
+        expect(layer.getFeaturesById(2)).toStrictEqual(
+            layer.getFeaturesById('fdc6uOvgoji')
+        )
+        expect(layer.getFeaturesById(3)).toStrictEqual([])
     })
     it('Should set feature hover state', () => {
         const layer = new Layer({ data })
@@ -87,12 +89,22 @@ describe('Layer', () => {
         layer.addTo(mockMap)
         layer.highlight('fdc6uOvgoji')
         expect(mockFn).toHaveBeenCalled()
-        expect(mockFn).lastCalledWith({ id: 2, source })
+        expect(mockFn.mock.calls[0][0]).toMatchObject([
+            {
+                id: 2,
+                source,
+            },
+        ])
         layer.highlight(1)
         expect(mockFn).toHaveBeenCalledTimes(2)
-        expect(mockFn).lastCalledWith({ id: 1, source })
+        expect(mockFn.mock.calls[1][0]).toMatchObject([
+            {
+                id: 1,
+                source,
+            },
+        ])
         layer.highlight('abc')
         expect(mockFn).toHaveBeenCalledTimes(3)
-        expect(mockFn).lastCalledWith(null)
+        expect(mockFn).lastCalledWith([])
     })
 })
