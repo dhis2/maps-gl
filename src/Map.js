@@ -244,7 +244,7 @@ export class MapGL extends Evented {
         }
 
         this.setHoverState(
-            feature && feature.properties.id && layer
+            layer && feature?.properties?.id
                 ? layer.getFeaturesById(feature.properties.id)
                 : null
         )
