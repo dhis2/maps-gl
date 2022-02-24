@@ -1,3 +1,10 @@
+# [3.3.0](https://github.com/dhis2/maps-gl/compare/v3.2.0...v3.3.0) (2022-02-24)
+
+
+### Features
+
+* opacity factor (DHIS2-11969) ([#435](https://github.com/dhis2/maps-gl/issues/435)) ([c50206d](https://github.com/dhis2/maps-gl/commit/c50206de7bd86acbc901c8e30df90fbfc50d5075))
+
 # [3.2.0](https://github.com/dhis2/maps-gl/compare/v3.1.0...v3.2.0) (2022-02-23)
 
 
