@@ -188,12 +188,16 @@ class Layer extends Evented {
     }
 
     addLayer(layer, layerOptions = {}) {
-        const { isInteractive } = layerOptions
+        const { isInteractive, opacityFactor } = layerOptions
 
         this._layers.push(layer)
 
         if (isInteractive) {
             this._interactiveIds.push(layer.id)
+        }
+
+        if (opacityFactor) {
+            this._opacityFactor = opacityFactor
         }
     }
 
@@ -268,8 +272,11 @@ class Layer extends Evented {
     setOpacity(opacity) {
         const mapgl = this.getMapGL()
 
+        const opacityFactor =
+            this._opacityFactor !== undefined ? this._opacityFactor : 1
+
         if (mapgl) {
-            setLayersOpacity(mapgl, this.getId(), opacity)
+            setLayersOpacity(mapgl, this.getId(), opacity * opacityFactor)
         }
 
         this.options.opacity = opacity
