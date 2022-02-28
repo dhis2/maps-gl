@@ -11,7 +11,6 @@ import {
     getFeatureCollectionProperties,
 } from './ee_worker_utils'
 import { getBufferGeometry } from '../utils/buffers'
-import { get } from 'lodash'
 
 // Why we need to "hack" the '@google/earthengine bundle:
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
