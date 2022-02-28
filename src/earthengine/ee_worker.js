@@ -15,6 +15,8 @@ import { getBufferGeometry } from '../utils/buffers'
 // Why we need to "hack" the '@google/earthengine bundle:
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
 
+const FEATURE_STYLE = { color: 'FFA500', strokeWidth: 2 }
+
 class EarthEngineWorker {
     constructor(options = {}) {
         this.options = options
@@ -189,20 +191,38 @@ class EarthEngineWorker {
 
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { data, params } = this.options
+        const { format, data, params } = this.options
 
         return new Promise(resolve => {
-            this.eeImage = this.getImage()
+            if (format === 'FeatureCollection') {
+                const { datasetId } = this.options
 
-            let eeImage = this.classifyImage(this.eeImage)
+                let dataset = ee
+                    .FeatureCollection(datasetId)
+                    .draw(FEATURE_STYLE)
 
-            if (data) {
-                eeImage = eeImage.clipToCollection(this.getFeatureCollection())
+                if (data) {
+                    dataset = dataset.clipToCollection(
+                        this.getFeatureCollection()
+                    )
+                }
+
+                dataset.getMap(null, response => resolve(response.urlFormat))
+            } else {
+                this.eeImage = this.getImage()
+
+                let eeImage = this.classifyImage(this.eeImage)
+
+                if (data) {
+                    eeImage = eeImage.clipToCollection(
+                        this.getFeatureCollection()
+                    )
+                }
+
+                eeImage
+                    .visualize(this.params || params)
+                    .getMap(null, response => resolve(response.urlFormat))
             }
-
-            eeImage
-                .visualize(this.params || params)
-                .getMap(null, response => resolve(response.urlFormat))
         })
     }
 
@@ -232,7 +252,7 @@ class EarthEngineWorker {
 
     // Returns aggregated values for org unit features
     async getAggregations() {
-        const { aggregationType, band, legend } = this.options
+        const { format, aggregationType, band, legend } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
             singleAggregation && hasClasses(aggregationType) && legend
@@ -241,7 +261,23 @@ class EarthEngineWorker {
         const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
 
         if (collection) {
-            if (useHistogram) {
+            if (format === 'FeatureCollection') {
+                const { datasetId } = this.options
+                const dataset = ee.FeatureCollection(datasetId)
+
+                const aggFeatures = this.getFeatureCollection()
+                    .map(feature => {
+                        feature = ee.Feature(feature)
+                        const count = dataset
+                            .filterBounds(feature.geometry())
+                            .size()
+
+                        return feature.set('count', count)
+                    })
+                    .select(['count'], null, false)
+
+                return getInfo(aggFeatures).then(getFeatureCollectionProperties)
+            } else if (useHistogram) {
                 // Used for landcover
                 const reducer = ee.Reducer.frequencyHistogram()
                 const scaleValue = await getInfo(scale)
