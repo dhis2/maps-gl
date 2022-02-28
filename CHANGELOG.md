@@ -1,3 +1,10 @@
+# [3.4.0](https://github.com/dhis2/maps-gl/compare/v3.3.0...v3.4.0) (2022-02-28)
+
+
+### Features
+
+* aggregate earth engine feature collection (DHIS2-11963) ([#428](https://github.com/dhis2/maps-gl/issues/428)) ([187e2c9](https://github.com/dhis2/maps-gl/commit/187e2c943bd38c437d95f6d7c356d4bed11aded0))
+
 # [3.3.0](https://github.com/dhis2/maps-gl/compare/v3.2.0...v3.3.0) (2022-02-24)
 
 
