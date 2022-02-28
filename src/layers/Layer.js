@@ -188,12 +188,16 @@ class Layer extends Evented {
     }
 
     addLayer(layer, layerOptions = {}) {
-        const { isInteractive } = layerOptions
+        const { isInteractive, opacityFactor } = layerOptions
 
         this._layers.push(layer)
 
         if (isInteractive) {
             this._interactiveIds.push(layer.id)
+        }
+
+        if (opacityFactor) {
+            this._opacityFactor = opacityFactor
         }
     }
 
@@ -218,13 +222,14 @@ class Layer extends Evented {
         return this._features
     }
 
-    // Returns a feature from a string or numeric id
-    getFeature(id) {
-        if (typeof id === 'string') {
-            return this._features.find(f => f.properties.id === id)
-        }
+    // Returns all features having a string or numeric id
+    getFeaturesById(id) {
+        const features =
+            typeof id === 'string'
+                ? this._features.filter(f => f.properties.id === id)
+                : this._features.filter(f => f.id === id)
 
-        return this._features.find(f => f.id === id)
+        return features.map(f => ({ ...f, source: this.getId() }))
     }
 
     // Adds integer id for each feature (required by Feature State)
@@ -267,8 +272,11 @@ class Layer extends Evented {
     setOpacity(opacity) {
         const mapgl = this.getMapGL()
 
+        const opacityFactor =
+            this._opacityFactor !== undefined ? this._opacityFactor : 1
+
         if (mapgl) {
-            setLayersOpacity(mapgl, this.getId(), opacity)
+            setLayersOpacity(mapgl, this.getId(), opacity * opacityFactor)
         }
 
         this.options.opacity = opacity
@@ -294,16 +302,7 @@ class Layer extends Evented {
         const map = this.getMap()
 
         if (map) {
-            const feature = id ? this.getFeature(id) : null
-
-            map.setHoverState(
-                feature
-                    ? {
-                          id: feature.id,
-                          source: this.getId(),
-                      }
-                    : null
-            )
+            map.setHoverState(id ? this.getFeaturesById(id) : null)
         }
     }
 

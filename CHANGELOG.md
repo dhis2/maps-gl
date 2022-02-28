@@ -1,3 +1,24 @@
+# [3.3.0](https://github.com/dhis2/maps-gl/compare/v3.2.0...v3.3.0) (2022-02-24)
+
+
+### Features
+
+* opacity factor (DHIS2-11969) ([#435](https://github.com/dhis2/maps-gl/issues/435)) ([c50206d](https://github.com/dhis2/maps-gl/commit/c50206de7bd86acbc901c8e30df90fbfc50d5075))
+
+# [3.2.0](https://github.com/dhis2/maps-gl/compare/v3.1.0...v3.2.0) (2022-02-23)
+
+
+### Features
+
+* ee aggregations for catchment areas ([#452](https://github.com/dhis2/maps-gl/issues/452)) ([327b42b](https://github.com/dhis2/maps-gl/commit/327b42b9af361b743632ba89b7b0fb1b4e464a3b))
+
+# [3.1.0](https://github.com/dhis2/maps-gl/compare/v3.0.9...v3.1.0) (2022-02-23)
+
+
+### Features
+
+* highlight multiple features with same string id ([#447](https://github.com/dhis2/maps-gl/issues/447)) ([3a3f65e](https://github.com/dhis2/maps-gl/commit/3a3f65ea3c9ff283e39cae9bf824c8866e98ff2c))
+
 ## [3.0.9](https://github.com/dhis2/maps-gl/compare/v3.0.8...v3.0.9) (2022-02-15)
 
 
