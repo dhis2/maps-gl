@@ -15,6 +15,8 @@ import { getBufferGeometry } from '../utils/buffers'
 // Why we need to "hack" the '@google/earthengine bundle:
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
 
+const FEATURE_STYLE = { color: 'FFA500', strokeWidth: 2 }
+
 class EarthEngineWorker {
     constructor(options = {}) {
         this.options = options
@@ -197,7 +199,7 @@ class EarthEngineWorker {
 
                 let dataset = ee
                     .FeatureCollection(datasetId)
-                    .draw({ color: 'FFA500', strokeWidth: 2 })
+                    .draw(FEATURE_STYLE)
 
                 if (data) {
                     dataset = dataset.clipToCollection(
