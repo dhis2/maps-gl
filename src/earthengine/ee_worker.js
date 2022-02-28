@@ -195,14 +195,6 @@ class EarthEngineWorker {
             if (format === 'FeatureCollection') {
                 const { datasetId } = this.options
 
-                // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-draw?hl=en
-                // https://developers.google.com/earth-engine/apidocs/ee-feature-contains?hl=en
-                // https://developers.google.com/earth-engine/guides/feature_collection_filtering
-                // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-filterbounds?hl=en
-                // https://developers.google.com/earth-engine/guides/feature_collection_reducing
-                // https://gis.stackexchange.com/questions/318772/summing-amount-of-vector-points-in-area-of-another-vector-using-google-earth-eng
-                // https://gis.stackexchange.com/questions/308054/how-to-filter-a-feature-collection-to-only-features-entirely-inside-another-feat
-
                 let dataset = ee
                     .FeatureCollection(datasetId)
                     .draw({ color: 'FFA500', strokeWidth: 2 })
@@ -269,13 +261,6 @@ class EarthEngineWorker {
         if (collection) {
             if (format === 'FeatureCollection') {
                 const { datasetId } = this.options
-
-                // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-draw?hl=en
-                // https://developers.google.com/earth-engine/apidocs/ee-feature-contains?hl=en
-                // https://developers.google.com/earth-engine/guides/feature_collection_filtering
-                // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-filterbounds?hl=en
-                // https://developers.google.com/earth-engine/guides/feature_collection_reducing
-
                 const dataset = ee.FeatureCollection(datasetId)
 
                 const aggFeatures = this.getFeatureCollection()
@@ -289,7 +274,6 @@ class EarthEngineWorker {
                     })
                     .select(['count'], null, false)
 
-                // Uncaught (in promise) The service is currently unavailable.
                 return getInfo(aggFeatures).then(getFeatureCollectionProperties)
             } else if (useHistogram) {
                 // Used for landcover
