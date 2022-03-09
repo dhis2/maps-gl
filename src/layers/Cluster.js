@@ -48,7 +48,7 @@ class Cluster extends Layer {
 
         this.setSource(id, {
             type: 'geojson',
-            clusterMaxZoom: 14,
+            clusterMaxZoom: 19,
             clusterRadius: 50,
             ...props,
         })
