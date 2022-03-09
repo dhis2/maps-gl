@@ -1,3 +1,10 @@
+## [3.4.1](https://github.com/dhis2/maps-gl/compare/v3.4.0...v3.4.1) (2022-03-09)
+
+
+### Bug Fixes
+
+* show event clusters on innermost zoom level (DHIS2-12196) ([#453](https://github.com/dhis2/maps-gl/issues/453)) ([bfd9511](https://github.com/dhis2/maps-gl/commit/bfd9511c76d9032b43f5244f0ccaed15cc12f6fa))
+
 # [3.4.0](https://github.com/dhis2/maps-gl/compare/v3.3.0...v3.4.0) (2022-02-28)
 
 
