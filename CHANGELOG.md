@@ -1,3 +1,10 @@
+## [3.4.2](https://github.com/dhis2/maps-gl/compare/v3.4.1...v3.4.2) (2022-03-12)
+
+
+### Bug Fixes
+
+* reduce ee dot size ([#455](https://github.com/dhis2/maps-gl/issues/455)) ([38c81f0](https://github.com/dhis2/maps-gl/commit/38c81f0ccfb030c23550b3bdb840b7ba2ff0f0a6))
+
 ## [3.4.1](https://github.com/dhis2/maps-gl/compare/v3.4.0...v3.4.1) (2022-03-09)
 
 
