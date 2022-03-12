@@ -112,7 +112,7 @@ class EarthEngine extends Layer {
                 pointLayer({
                     id,
                     source: `${id}-points`,
-                    radius: 4,
+                    radius: 2,
                     color: '#333',
                 })
             )
