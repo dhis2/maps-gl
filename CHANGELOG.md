@@ -1,3 +1,10 @@
+## [3.4.3](https://github.com/dhis2/maps-gl/compare/v3.4.2...v3.4.3) (2022-04-19)
+
+
+### Bug Fixes
+
+* inline bing maps logo ([#456](https://github.com/dhis2/maps-gl/issues/456)) ([8674418](https://github.com/dhis2/maps-gl/commit/86744188fedbd29634efc797ef61b8869622bdd1))
+
 ## [3.4.2](https://github.com/dhis2/maps-gl/compare/v3.4.1...v3.4.2) (2022-03-12)
 
 
