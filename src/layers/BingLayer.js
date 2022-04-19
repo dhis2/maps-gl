@@ -10,10 +10,7 @@ class BingLayer extends Layer {
             imageUrl,
             imageUrlSubdomains,
             imageryProviders,
-            brandLogoUri,
         } = await this.loadMetaData()
-
-        this._brandLogoUri = brandLogoUri.replace('http:', 'https:')
 
         this._imageryProviders = imageryProviders
 
@@ -89,25 +86,19 @@ class BingLayer extends Layer {
             )
         }
 
-        const { brandLogoUri, resourceSets } = metaData
-
-        return {
-            brandLogoUri,
-            ...resourceSets[0].resources[0],
-        }
+        return metaData.resourceSets[0].resources[0]
     }
 
     addBingMapsLogo() {
         const container = this.getMap().getContainer()
-        const img = document.createElement('img')
+        const div = document.createElement('div')
 
-        img.src = this._brandLogoUri
-        img.className = 'dhis2-map-bing-logo'
+        div.className = 'dhis2-map-bing-logo'
 
-        container.appendChild(img)
+        container.appendChild(div)
         container.classList.add('dhis2-map-bing')
 
-        this._brandLogoImg = img
+        this._brandLogoImg = div
     }
 
     getAttribution() {
