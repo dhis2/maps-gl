@@ -1022,7 +1022,10 @@ $jscomp.polyfill(
             try {
                 var x = Object.seal({}),
                     y = Object.seal({}),
-                    map = new NativeWeakMap([[x, 2], [y, 3]])
+                    map = new NativeWeakMap([
+                        [x, 2],
+                        [y, 3],
+                    ])
                 if (2 != map.get(x) || 3 != map.get(y)) {
                     return !1
                 }
@@ -14013,8 +14016,8 @@ function module$contents$eeapiclient$request_params_addQueryParameter(
         params.queryParams[key] = value
     } else {
         var $jscomp$compprop0 = {}
-        params.queryParams = (($jscomp$compprop0[key] = value),
-        $jscomp$compprop0)
+        params.queryParams =
+            (($jscomp$compprop0[key] = value), $jscomp$compprop0)
     }
 }
 var module$exports$eeapiclient$multipart_request = {},
@@ -33897,9 +33900,9 @@ module$contents$ee$apiclient_apiclient.setupMockSend = function(calls) {
         apiBaseUrl =
             apiBaseUrl || module$contents$ee$apiclient_apiclient.apiBaseUrl_
         var responseData = getResponse(url, method, data),
-            e = new function() {
+            e = new (function() {
                 this.target = {}
-            }()
+            })()
         e.target.getResponseText = function() {
             return responseData.text
         }
@@ -34613,7 +34616,13 @@ ee.rpc_convert.getListToListImages = function(param) {
 ee.rpc_convert.boundingBoxToGeoJson = function(bbox) {
     return (
         '{"type":"Polygon","coordinates":[[[' +
-        [[0, 1], [2, 1], [2, 3], [0, 3], [0, 1]]
+        [
+            [0, 1],
+            [2, 1],
+            [2, 3],
+            [0, 3],
+            [0, 1],
+        ]
             .map(function(i) {
                 return bbox[i[0]] + ',' + bbox[i[1]]
             })
@@ -38302,7 +38311,14 @@ ee.Geometry.Rectangle = function(coords, opt_proj, opt_geodesic, opt_evenOdd) {
             y1 = xy[0][1],
             x2 = xy[1][0],
             y2 = xy[1][1]
-        init.coordinates = [[[x1, y2], [x1, y1], [x2, y1], [x2, y2]]]
+        init.coordinates = [
+            [
+                [x1, y2],
+                [x1, y1],
+                [x2, y1],
+                [x2, y2],
+            ],
+        ]
         init.type = 'Polygon'
     }
     ee.Geometry.call(this, init)
@@ -38351,7 +38367,12 @@ ee.Geometry.BBox = function(west, south, east, north) {
         {
             type: 'Polygon',
             coordinates: [
-                [[west, north], [west, south], [east, south], [east, north]],
+                [
+                    [west, north],
+                    [west, south],
+                    [east, south],
+                    [east, north],
+                ],
             ],
         },
         void 0,
@@ -42427,32 +42448,32 @@ goog.fs.Error.getCodeFromName_ = function(name) {
     return goog.fs.Error.NameToCodeMap_[name]
 }
 var $jscomp$compprop4 = {}
-goog.fs.Error.NameToCodeMap_ = (($jscomp$compprop4[
-    goog.fs.Error.ErrorName.ABORT
-] = goog.fs.Error.ErrorCode.ABORT),
-($jscomp$compprop4[goog.fs.Error.ErrorName.ENCODING] =
-    goog.fs.Error.ErrorCode.ENCODING),
-($jscomp$compprop4[goog.fs.Error.ErrorName.INVALID_MODIFICATION] =
-    goog.fs.Error.ErrorCode.INVALID_MODIFICATION),
-($jscomp$compprop4[goog.fs.Error.ErrorName.INVALID_STATE] =
-    goog.fs.Error.ErrorCode.INVALID_STATE),
-($jscomp$compprop4[goog.fs.Error.ErrorName.NOT_FOUND] =
-    goog.fs.Error.ErrorCode.NOT_FOUND),
-($jscomp$compprop4[goog.fs.Error.ErrorName.NOT_READABLE] =
-    goog.fs.Error.ErrorCode.NOT_READABLE),
-($jscomp$compprop4[goog.fs.Error.ErrorName.NO_MODIFICATION_ALLOWED] =
-    goog.fs.Error.ErrorCode.NO_MODIFICATION_ALLOWED),
-($jscomp$compprop4[goog.fs.Error.ErrorName.PATH_EXISTS] =
-    goog.fs.Error.ErrorCode.PATH_EXISTS),
-($jscomp$compprop4[goog.fs.Error.ErrorName.QUOTA_EXCEEDED] =
-    goog.fs.Error.ErrorCode.QUOTA_EXCEEDED),
-($jscomp$compprop4[goog.fs.Error.ErrorName.SECURITY] =
-    goog.fs.Error.ErrorCode.SECURITY),
-($jscomp$compprop4[goog.fs.Error.ErrorName.SYNTAX] =
-    goog.fs.Error.ErrorCode.SYNTAX),
-($jscomp$compprop4[goog.fs.Error.ErrorName.TYPE_MISMATCH] =
-    goog.fs.Error.ErrorCode.TYPE_MISMATCH),
-$jscomp$compprop4)
+goog.fs.Error.NameToCodeMap_ =
+    (($jscomp$compprop4[goog.fs.Error.ErrorName.ABORT] =
+        goog.fs.Error.ErrorCode.ABORT),
+    ($jscomp$compprop4[goog.fs.Error.ErrorName.ENCODING] =
+        goog.fs.Error.ErrorCode.ENCODING),
+    ($jscomp$compprop4[goog.fs.Error.ErrorName.INVALID_MODIFICATION] =
+        goog.fs.Error.ErrorCode.INVALID_MODIFICATION),
+    ($jscomp$compprop4[goog.fs.Error.ErrorName.INVALID_STATE] =
+        goog.fs.Error.ErrorCode.INVALID_STATE),
+    ($jscomp$compprop4[goog.fs.Error.ErrorName.NOT_FOUND] =
+        goog.fs.Error.ErrorCode.NOT_FOUND),
+    ($jscomp$compprop4[goog.fs.Error.ErrorName.NOT_READABLE] =
+        goog.fs.Error.ErrorCode.NOT_READABLE),
+    ($jscomp$compprop4[goog.fs.Error.ErrorName.NO_MODIFICATION_ALLOWED] =
+        goog.fs.Error.ErrorCode.NO_MODIFICATION_ALLOWED),
+    ($jscomp$compprop4[goog.fs.Error.ErrorName.PATH_EXISTS] =
+        goog.fs.Error.ErrorCode.PATH_EXISTS),
+    ($jscomp$compprop4[goog.fs.Error.ErrorName.QUOTA_EXCEEDED] =
+        goog.fs.Error.ErrorCode.QUOTA_EXCEEDED),
+    ($jscomp$compprop4[goog.fs.Error.ErrorName.SECURITY] =
+        goog.fs.Error.ErrorCode.SECURITY),
+    ($jscomp$compprop4[goog.fs.Error.ErrorName.SYNTAX] =
+        goog.fs.Error.ErrorCode.SYNTAX),
+    ($jscomp$compprop4[goog.fs.Error.ErrorName.TYPE_MISMATCH] =
+        goog.fs.Error.ErrorCode.TYPE_MISMATCH),
+    $jscomp$compprop4)
 goog.fs.ProgressEvent = function(event, target) {
     goog.events.Event.call(this, event.type, target)
     this.event_ = event

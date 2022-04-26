@@ -80,7 +80,10 @@ export class MapGL extends Evented {
     }
 
     fitWorld() {
-        this.fitBounds([[-180, -90], [180, 90]])
+        this.fitBounds([
+            [-180, -90],
+            [180, 90],
+        ])
     }
 
     setView(lnglat, zoom) {

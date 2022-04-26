@@ -16,7 +16,10 @@ const map = new mapboxgl.Map({
     style: 'mapbox://styles/mapbox/streets-v9',
 })
 
-map.fitBounds([[-13.1899707, 7.009718], [-10.4107857, 9.860312]])
+map.fitBounds([
+    [-13.1899707, 7.009718],
+    [-10.4107857, 9.860312],
+])
 
 const addServerVectorLayers = () => {
     map.addSource('orgUnits', {

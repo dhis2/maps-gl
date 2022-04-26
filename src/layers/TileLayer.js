@@ -9,7 +9,12 @@ class TileLayer extends Layer {
     }
 
     createSource() {
-        const { url, layers, format = 'image/png', attribution = '' } = this.options
+        const {
+            url,
+            layers,
+            format = 'image/png',
+            attribution = '',
+        } = this.options
         let tiles
 
         if (layers) {

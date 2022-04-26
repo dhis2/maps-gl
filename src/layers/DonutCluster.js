@@ -1,4 +1,4 @@
-import { throttle } from 'lodash'
+import throttle from 'lodash.throttle'
 import Cluster from './Cluster'
 import DonutMarker from './DonutMarker'
 import { featureCollection } from '../utils/geometry'
