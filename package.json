@@ -1,77 +1,77 @@
 {
-  "name": "@dhis2/maps-gl",
-  "version": "3.4.3",
-  "description": "A WebGL rendering engine for DHIS2 maps based on Mapbox GL JS.",
-  "publishConfig": {
-    "access": "public"
-  },
-  "files": [
-    "build/**"
-  ],
-  "main": "build/cjs/index.js",
-  "module": "build/es/index.js",
-  "repository": "https://github.com/dhis2/maps-gl",
-  "author": "Bjorn Sandvik <bjorn@dhis2.org>",
-  "maintainers": [
-    "Bjorn Sandvik <bjorn@dhis2.org>",
-    "Austin McGee <austin@dhis2.org>"
-  ],
-  "license": "BSD-3-Clause",
-  "dependencies": {
-    "@mapbox/sphericalmercator": "^1.2.0",
-    "@turf/area": "^6.5.0",
-    "@turf/bbox": "^6.5.0",
-    "@turf/buffer": "^6.5.0",
-    "@turf/center-of-mass": "^6.5.0",
-    "@turf/circle": "^6.5.0",
-    "@turf/length": "^6.5.0",
-    "comlink": "^4.3.1",
-    "fetch-jsonp": "^1.2.1",
-    "lodash.throttle": "^4.1.1",
-    "maplibre-gl": "^2.1.9",
-    "polylabel": "^1.1.0",
-    "suggestions": "^1.7.1",
-    "uuid": "^8.3.2"
-  },
-  "devDependencies": {
-    "@babel/cli": "^7.17.6",
-    "@babel/core": "^7.17.9",
-    "@babel/plugin-proposal-class-properties": "^7.16.7",
-    "@babel/plugin-proposal-object-rest-spread": "^7.17.3",
-    "@babel/plugin-transform-runtime": "^7.17.0",
-    "@babel/preset-env": "^7.16.11",
-    "@babel/runtime": "^7.17.9",
-    "@dhis2/cli-style": "^2.2.2",
-    "@types/jest": "^27.4.1",
-    "babel-jest": "^27.5.1",
-    "concurrently": "^7.1.0",
-    "husky": "^7.0.4",
-    "identity-obj-proxy": "^3.0.0",
-    "jest": "^27.5.1",
-    "rimraf": "^3.0.2"
-  },
-  "scripts": {
-    "format": "d2-style js apply --all --no-stage",
-    "clean": "rimraf ./build/*",
-    "build:commonjs": "BABEL_ENV=commonjs babel src --out-dir ./build/cjs --copy-files --verbose",
-    "build:modules": "BABEL_ENV=modules babel src --out-dir ./build/es --copy-files --verbose",
-    "build": "NODE_ENV=production yarn clean && yarn build:commonjs && yarn build:modules",
-    "watch": "NODE_ENV=development yarn clean && concurrently -n watch-cjs,watch-es \"yarn build:commonjs --watch\" \"yarn build:modules --watch\"",
-    "test": "jest src/*"
-  },
-  "husky": {
-    "hooks": {
-      "commit-msg": "d2-style commit check",
-      "pre-commit": "d2-style js apply"
-    }
-  },
-  "jest": {
-    "setupFiles": [
-      "./jest.stub.js"
-    ],
-    "moduleNameMapper": {
-      "\\.(css|less)$": "identity-obj-proxy"
+    "name": "@dhis2/maps-gl",
+    "version": "3.4.3",
+    "description": "A WebGL rendering engine for DHIS2 maps based on Mapbox GL JS.",
+    "publishConfig": {
+        "access": "public"
     },
-    "testEnvironment": "jsdom"
-  }
+    "files": [
+        "build/**"
+    ],
+    "main": "build/cjs/index.js",
+    "module": "build/es/index.js",
+    "repository": "https://github.com/dhis2/maps-gl",
+    "author": "Bjorn Sandvik <bjorn@dhis2.org>",
+    "maintainers": [
+        "Bjorn Sandvik <bjorn@dhis2.org>",
+        "Austin McGee <austin@dhis2.org>"
+    ],
+    "license": "BSD-3-Clause",
+    "dependencies": {
+        "@mapbox/sphericalmercator": "^1.2.0",
+        "@turf/area": "^6.5.0",
+        "@turf/bbox": "^6.5.0",
+        "@turf/buffer": "^6.5.0",
+        "@turf/center-of-mass": "^6.5.0",
+        "@turf/circle": "^6.5.0",
+        "@turf/length": "^6.5.0",
+        "comlink": "^4.3.1",
+        "fetch-jsonp": "^1.2.1",
+        "lodash.throttle": "^4.1.1",
+        "maplibre-gl": "^2.1.9",
+        "polylabel": "^1.1.0",
+        "suggestions": "^1.7.1",
+        "uuid": "^8.3.2"
+    },
+    "devDependencies": {
+        "@babel/cli": "^7.17.6",
+        "@babel/core": "^7.17.9",
+        "@babel/plugin-proposal-class-properties": "^7.16.7",
+        "@babel/plugin-proposal-object-rest-spread": "^7.17.3",
+        "@babel/plugin-transform-runtime": "^7.17.0",
+        "@babel/preset-env": "^7.16.11",
+        "@babel/runtime": "^7.17.9",
+        "@dhis2/cli-style": "^10.4.0",
+        "@types/jest": "^27.4.1",
+        "babel-jest": "^27.5.1",
+        "concurrently": "^7.1.0",
+        "husky": "^7.0.4",
+        "identity-obj-proxy": "^3.0.0",
+        "jest": "^27.5.1",
+        "rimraf": "^3.0.2"
+    },
+    "scripts": {
+        "format": "d2-style apply --all --no-stage",
+        "clean": "rimraf ./build/*",
+        "build:commonjs": "BABEL_ENV=commonjs babel src --out-dir ./build/cjs --copy-files --verbose",
+        "build:modules": "BABEL_ENV=modules babel src --out-dir ./build/es --copy-files --verbose",
+        "build": "NODE_ENV=production yarn clean && yarn build:commonjs && yarn build:modules",
+        "watch": "NODE_ENV=development yarn clean && concurrently -n watch-cjs,watch-es \"yarn build:commonjs --watch\" \"yarn build:modules --watch\"",
+        "test": "jest src/*"
+    },
+    "husky": {
+        "hooks": {
+            "commit-msg": "d2-style commit check",
+            "pre-commit": "d2-style apply"
+        }
+    },
+    "jest": {
+        "setupFiles": [
+            "./jest.stub.js"
+        ],
+        "moduleNameMapper": {
+            "\\.(css|less)$": "identity-obj-proxy"
+        },
+        "testEnvironment": "jsdom"
+    }
 }
