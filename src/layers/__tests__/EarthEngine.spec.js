@@ -7,9 +7,9 @@ const urlFormat =
 jest.mock('../../earthengine/ee_worker_loader', () => ({
     __esModule: true,
     default: async () => async () =>
-        new class EarthEngineWorkerMock {
+        new (class EarthEngineWorkerMock {
             getTileUrl = async () => urlFormat
-        }(),
+        })(),
 }))
 
 const token = {

@@ -90,15 +90,8 @@ class EarthEngineWorker {
             return this.eeImage
         }
 
-        const {
-            datasetId,
-            filter,
-            mosaic,
-            band,
-            bandReducer,
-            mask,
-            methods,
-        } = this.options
+        const { datasetId, filter, mosaic, band, bandReducer, mask, methods } =
+            this.options
 
         let eeImage
 

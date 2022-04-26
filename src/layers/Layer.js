@@ -288,7 +288,10 @@ class Layer extends Evented {
         if (features.length) {
             const [x1, y1, x2, y2] = bbox(featureCollection(features))
 
-            return [[x1, y1], [x2, y2]]
+            return [
+                [x1, y1],
+                [x2, y2],
+            ]
         }
     }
 

@@ -312,9 +312,15 @@ class MeasureControl {
     _centerMap = () => {
         const [x1, y1, x2, y2] = bbox(this._geojson)
 
-        this._map.getMapGL().fitBounds([[x1, y1], [x2, y2]], {
-            padding: 100,
-        })
+        this._map.getMapGL().fitBounds(
+            [
+                [x1, y1],
+                [x2, y2],
+            ],
+            {
+                padding: 100,
+            }
+        )
     }
 
     _onButtonClick = () => {

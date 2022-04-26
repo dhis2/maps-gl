@@ -51,7 +51,10 @@ const syncMaps = (() => {
         const syncedMaps = syncedMapsById[id]
 
         if (syncedMaps && syncedMaps.includes(map)) {
-            updateMaps(id, syncedMaps.filter(m => m !== map))
+            updateMaps(
+                id,
+                syncedMaps.filter(m => m !== map)
+            )
         }
     }
 

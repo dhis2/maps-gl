@@ -26,7 +26,7 @@ Both of these commands will run the javascript files in the `src` directory thro
 
 ## Publishing
 
-Publication is done automatically by a GitHub action for all commits on the `master` branch.  Commits (including pull-request squashed commits) should follow the [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/) guidelines so that the release bot can determine which version to cut - breaking, feature, or bug
+Publication is done automatically by a GitHub action for all commits on the `master` branch. Commits (including pull-request squashed commits) should follow the [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/) guidelines so that the release bot can determine which version to cut - breaking, feature, or bug
 
 ## Report an issue
 

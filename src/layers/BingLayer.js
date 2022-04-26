@@ -6,11 +6,8 @@ import './BingLayer.css'
 // https://docs.microsoft.com/en-us/bingmaps/rest-services/directly-accessing-the-bing-maps-tiles
 class BingLayer extends Layer {
     async createSource() {
-        const {
-            imageUrl,
-            imageUrlSubdomains,
-            imageryProviders,
-        } = await this.loadMetaData()
+        const { imageUrl, imageUrlSubdomains, imageryProviders } =
+            await this.loadMetaData()
 
         this._imageryProviders = imageryProviders
 

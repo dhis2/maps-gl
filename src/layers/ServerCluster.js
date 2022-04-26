@@ -237,27 +237,29 @@ class ServerCluster extends Cluster {
     }
 
     // Returms true if geometry is outside bounds
-    isOutsideBounds = bounds => ({ geometry }) => {
-        const { coordinates } =
-            geometry.type === 'Point' ? geometry : centroid(geometry).geometry
-        const [lng, lat] = coordinates
+    isOutsideBounds =
+        bounds =>
+        ({ geometry }) => {
+            const { coordinates } =
+                geometry.type === 'Point'
+                    ? geometry
+                    : centroid(geometry).geometry
+            const [lng, lat] = coordinates
 
-        return (
-            lng <= bounds[0] ||
-            lng >= bounds[2] ||
-            lat <= bounds[1] ||
-            lat >= bounds[3]
-        )
-    }
+            return (
+                lng <= bounds[0] ||
+                lng >= bounds[2] ||
+                lat <= bounds[1] ||
+                lat >= bounds[3]
+            )
+        }
 
     getVisibleTiles = async () => {
         while (!this.areTilesUpdated()) {
             await new Promise(r => setTimeout(r, 100))
         }
 
-        return this.getSourceCacheTiles()
-            .map(this.getTileId)
-            .sort()
+        return this.getSourceCacheTiles().map(this.getTileId).sort()
     }
 
     // Returns sorted array of cluster ids
