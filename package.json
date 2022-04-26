@@ -43,7 +43,7 @@
     "@babel/runtime": "^7.17.9",
     "@dhis2/cli-style": "^2.2.2",
     "@types/jest": "^27.4.1",
-    "babel-jest": "^28.0.0",
+    "babel-jest": "^27.5.1",
     "concurrently": "^7.1.0",
     "husky": "^7.0.4",
     "identity-obj-proxy": "^3.0.0",
