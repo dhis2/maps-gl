@@ -51,7 +51,7 @@
         "rimraf": "^3.0.2"
     },
     "scripts": {
-        "format": "d2-style apply --all --no-stage",
+        "format": "d2-style apply js --all --no-stage",
         "clean": "rimraf ./build/*",
         "build:commonjs": "BABEL_ENV=commonjs babel src --out-dir ./build/cjs --copy-files --verbose",
         "build:modules": "BABEL_ENV=modules babel src --out-dir ./build/es --copy-files --verbose",
@@ -62,7 +62,7 @@
     "husky": {
         "hooks": {
             "commit-msg": "d2-style commit check",
-            "pre-commit": "d2-style apply"
+            "pre-commit": "d2-style apply js"
         }
     },
     "jest": {
