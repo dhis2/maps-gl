@@ -2,14 +2,7 @@
 
 [![DHIS2 Build and Release](https://github.com/dhis2/maps-gl/workflows/DHIS2%20Build%20and%20Release/badge.svg)](https://github.com/dhis2/maps-gl/actions?query=workflow%3A%22DHIS2+Build+and+Release%22)
 
-WebGL/vector tiles engine for DHIS2 Maps
-
-```sh
-> yarn link
-> cd examples/maps-gl-react
-> yarn link @dhis2/maps-gl
-> yarn start
-```
+WebGL mapping engine for DHIS2 Maps
 
 ## Link to DHIS2 Maps:
 
