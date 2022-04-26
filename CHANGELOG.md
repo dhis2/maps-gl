@@ -1,3 +1,10 @@
+## [3.4.4](https://github.com/dhis2/maps-gl/compare/v3.4.3...v3.4.4) (2022-04-26)
+
+
+### Bug Fixes
+
+* remove examples folder (not maintained) ([#462](https://github.com/dhis2/maps-gl/issues/462)) ([05d11ee](https://github.com/dhis2/maps-gl/commit/05d11eec6fecab190f2183c95dced509f6f429bb))
+
 ## [3.4.3](https://github.com/dhis2/maps-gl/compare/v3.4.2...v3.4.3) (2022-04-19)
 
 
