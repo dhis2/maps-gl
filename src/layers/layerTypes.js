@@ -1,4 +1,5 @@
 import VectorStyle from './VectorStyle'
+import VectorTile from './VectorTile'
 import TileLayer from './TileLayer'
 import Choropleth from './Choropleth'
 import Boundary from './Boundary'
@@ -13,7 +14,8 @@ import GeoJson from './GeoJson'
 import LayerGroup from './LayerGroup'
 
 export default {
-    vectorStyle: VectorStyle, //basemap /externalLayer
+    vectorStyle: VectorStyle, //basemap / externalLayer
+    vectorTile: VectorTile,
     tileLayer: TileLayer, // basemap / external layer
     wmsLayer: TileLayer, // external layer
     choropleth: Choropleth, // thematic layer

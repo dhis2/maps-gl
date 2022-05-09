@@ -63,10 +63,18 @@ export const polygonLayer = ({ id, color, source, filter }) => ({
 
 // Polygon outline and hover state
 // https://github.com/mapbox/mapbox-gl-js/issues/3018
-export const outlineLayer = ({ id, color, width, source, filter }) => ({
+export const outlineLayer = ({
+    id,
+    color,
+    width,
+    source,
+    sourceLayer,
+    filter,
+}) => ({
     id: `${id}-outline`,
     type: 'line',
     source: source || id,
+    'source-layer': sourceLayer,
     paint: {
         'line-color': color || defaults.strokeColor,
         'line-width': widthExpr(width),
