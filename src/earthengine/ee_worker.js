@@ -212,15 +212,17 @@ class EarthEngineWorker {
     }
 
     // Returns aggregated values for org unit features
-    async getAggregations() {
+    async getAggregations(config) {
+        if (config) {
+            this.setOptions(config)
+        }
         const { aggregationType, band, legend } = this.options
-        console.log('maps-gl getAggregations with options', this.options)
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
             singleAggregation && hasClasses(aggregationType) && legend
         const image = await this.getImage()
         const scale = this.eeScale
-        const collection = this.getFeatureCollection(this.options) // TODO: Throw error if no feature collection
+        const collection = this.getFeatureCollection(this.options)
 
         if (collection) {
             if (useHistogram) {
