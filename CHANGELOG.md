@@ -1,3 +1,11 @@
+## [3.4.5](https://github.com/dhis2/maps-gl/compare/v3.4.4...v3.4.5) (2022-06-21)
+
+
+### Bug Fixes
+
+* dev dependency upgrades ([#467](https://github.com/dhis2/maps-gl/issues/467)) ([e51ccd8](https://github.com/dhis2/maps-gl/commit/e51ccd8c7ca67fad64ad376486871e4771bc45ef))
+* downgrade husky be comatible with node 12 ([#469](https://github.com/dhis2/maps-gl/issues/469)) ([6760be1](https://github.com/dhis2/maps-gl/commit/6760be1a951deb92f7f4d74a1f6f3d80c86094eb))
+
 ## [3.4.4](https://github.com/dhis2/maps-gl/compare/v3.4.3...v3.4.4) (2022-04-26)
 
 
