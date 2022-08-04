@@ -1,3 +1,10 @@
+## [3.4.6](https://github.com/dhis2/maps-gl/compare/v3.4.5...v3.4.6) (2022-08-04)
+
+
+### Bug Fixes
+
+* zoom to content control hover style ([#484](https://github.com/dhis2/maps-gl/issues/484)) ([11612cc](https://github.com/dhis2/maps-gl/commit/11612cc3485b1081a7875cb56f9b520340790215))
+
 ## [3.4.5](https://github.com/dhis2/maps-gl/compare/v3.4.4...v3.4.5) (2022-06-21)
 
 
