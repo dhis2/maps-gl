@@ -11,7 +11,7 @@
 }
 
 .dhis2-map-ctrl-fitbounds:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: #f3f3f3;
 }
 
 .dhis2-map-download .dhis2-map-ctrl-fitbounds {
