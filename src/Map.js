@@ -70,6 +70,10 @@ export class MapGL extends Evented {
         }
     }
 
+    create() {
+        const { locale, glyphs, ...opts } = this.options
+    }
+
     fitBounds(bounds) {
         if (bounds) {
             this._mapgl.fitBounds(bounds, {
@@ -143,14 +147,18 @@ export class MapGL extends Evented {
     remove() {
         const mapgl = this._mapgl
 
-        mapgl.off('load', this.onLoad)
-        mapgl.off('click', this.onClick)
-        mapgl.off('contextmenu', this.onContextMenu)
-        mapgl.off('mousemove', this.onMouseMove)
-        mapgl.off('mouseout', this.onMouseOut)
-        mapgl.off('error', this.onError)
+        // console.log('remove', mapgl, this)
 
-        mapgl.remove()
+        if (mapgl) {
+            mapgl.off('load', this.onLoad)
+            mapgl.off('click', this.onClick)
+            mapgl.off('contextmenu', this.onContextMenu)
+            mapgl.off('mousemove', this.onMouseMove)
+            mapgl.off('mouseout', this.onMouseOut)
+            mapgl.off('error', this.onError)
+
+            mapgl.remove()
+        }
 
         this._mapgl = null
     }
@@ -189,7 +197,50 @@ export class MapGL extends Evented {
     }
 
     resize() {
-        this._mapgl.resize()
+        if (this._mapgl) {
+            this._mapgl.resize()
+        }
+    }
+
+    // https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext/isContextLost
+    // https://developer.mozilla.org/en-US/docs/Web/API/WebGLRenderingContext
+    // https://github.com/greggman/virtual-webgl
+    // https://github.com/mapbox/mapbox-gl-js/issues/9516
+    // https://stackoverflow.com/questions/28135551/webgl-context-lost-and-not-restored#comment51642149_28137949
+    restore() {
+        if (this.isContextLost()) {
+            const mapgl = this._mapgl
+
+            this.remove()
+
+            console.log('restore map', this.getLayers())
+
+            //mapgl.painter.destroy()
+
+            // mapgl._contextRestored()
+            // mapgl.redraw()
+
+            // mapgl.triggerRepaint()
+
+            /*
+            this.getLayers().forEach(async layer => {
+                await layer.removeFrom(this)
+            })
+
+            this.getLayers().forEach(async layer => {
+                await layer.addTo(this)
+            })
+            */
+
+            // const canvas = this._mapgl.getCanvas()
+
+            // this.remove()
+        }
+    }
+
+    // Returns true if the WebGL context is lost
+    isContextLost() {
+        return this._mapgl.painter.context.gl.isContextLost()
     }
 
     // Synchronize this map with other maps with the same id
