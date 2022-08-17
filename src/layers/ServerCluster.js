@@ -51,6 +51,7 @@ class ServerCluster extends Cluster {
             countColor = clusterCountColor,
             radius,
         } = this.options
+        const isInteractive = true
 
         // Non-clustered points
         this.addLayer(
@@ -61,15 +62,17 @@ class ServerCluster extends Cluster {
                 radius,
                 filter: isClusterPoint,
             }),
-            true
+            { isInteractive }
         )
 
         // Non-clustered polygons
-        this.addLayer(polygonLayer({ id, color }), true)
+        this.addLayer(polygonLayer({ id, color }), { isInteractive })
         this.addLayer(outlineLayer({ id, color: strokeColor }))
 
         // Clusters
-        this.addLayer(clusterLayer({ id, color, strokeColor }), true)
+        this.addLayer(clusterLayer({ id, color, strokeColor }), {
+            isInteractive,
+        })
         this.addLayer(clusterCountLayer({ id, color: countColor }))
     }
 
@@ -139,17 +142,20 @@ class ServerCluster extends Cluster {
     onAdd() {
         super.onAdd()
 
-        const map = this._map.getMapGL()
-        map.on('sourcedata', this.onSourceData)
-        map.on('moveend', this.onMoveEnd)
+        const mapgl = this._map.getMapGL()
+        mapgl.on('sourcedata', this.onSourceData)
+        mapgl.on('moveend', this.onMoveEnd)
     }
 
     onRemove() {
         super.onRemove()
 
-        const map = this._map.getMapGL()
-        map.off('sourcedata', this.onSourceData)
-        map.off('moveend', this.onMoveEnd)
+        const mapgl = this._map.getMapGL()
+
+        if (mapgl) {
+            mapgl.off('sourcedata', this.onSourceData)
+            mapgl.off('moveend', this.onMoveEnd)
+        }
     }
 
     // Load clusters when new tiles are requested
@@ -231,27 +237,29 @@ class ServerCluster extends Cluster {
     }
 
     // Returms true if geometry is outside bounds
-    isOutsideBounds = bounds => ({ geometry }) => {
-        const { coordinates } =
-            geometry.type === 'Point' ? geometry : centroid(geometry).geometry
-        const [lng, lat] = coordinates
+    isOutsideBounds =
+        bounds =>
+        ({ geometry }) => {
+            const { coordinates } =
+                geometry.type === 'Point'
+                    ? geometry
+                    : centroid(geometry).geometry
+            const [lng, lat] = coordinates
 
-        return (
-            lng <= bounds[0] ||
-            lng >= bounds[2] ||
-            lat <= bounds[1] ||
-            lat >= bounds[3]
-        )
-    }
+            return (
+                lng <= bounds[0] ||
+                lng >= bounds[2] ||
+                lat <= bounds[1] ||
+                lat >= bounds[3]
+            )
+        }
 
     getVisibleTiles = async () => {
         while (!this.areTilesUpdated()) {
             await new Promise(r => setTimeout(r, 100))
         }
 
-        return this.getSourceCacheTiles()
-            .map(this.getTileId)
-            .sort()
+        return this.getSourceCacheTiles().map(this.getTileId).sort()
     }
 
     // Returns sorted array of cluster ids

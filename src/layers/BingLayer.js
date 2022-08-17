@@ -6,14 +6,8 @@ import './BingLayer.css'
 // https://docs.microsoft.com/en-us/bingmaps/rest-services/directly-accessing-the-bing-maps-tiles
 class BingLayer extends Layer {
     async createSource() {
-        const {
-            imageUrl,
-            imageUrlSubdomains,
-            imageryProviders,
-            brandLogoUri,
-        } = await this.loadMetaData()
-
-        this._brandLogoUri = brandLogoUri.replace('http:', 'https:')
+        const { imageUrl, imageUrlSubdomains, imageryProviders } =
+            await this.loadMetaData()
 
         this._imageryProviders = imageryProviders
 
@@ -55,13 +49,15 @@ class BingLayer extends Layer {
     onRemove() {
         const mapgl = this.getMapGL()
 
-        mapgl.off('moveend', this.updateAttribution)
+        if (mapgl) {
+            mapgl.off('moveend', this.updateAttribution)
 
-        if (this._brandLogoImg) {
-            const container = mapgl.getContainer()
+            if (this._brandLogoImg) {
+                const container = mapgl.getContainer()
 
-            container.removeChild(this._brandLogoImg)
-            container.classList.remove('dhis2-map-bing')
+                container.removeChild(this._brandLogoImg)
+                container.classList.remove('dhis2-map-bing')
+            }
         }
     }
 
@@ -87,25 +83,19 @@ class BingLayer extends Layer {
             )
         }
 
-        const { brandLogoUri, resourceSets } = metaData
-
-        return {
-            brandLogoUri,
-            ...resourceSets[0].resources[0],
-        }
+        return metaData.resourceSets[0].resources[0]
     }
 
     addBingMapsLogo() {
         const container = this.getMap().getContainer()
-        const img = document.createElement('img')
+        const div = document.createElement('div')
 
-        img.src = this._brandLogoUri
-        img.className = 'dhis2-map-bing-logo'
+        div.className = 'dhis2-map-bing-logo'
 
-        container.appendChild(img)
+        container.appendChild(div)
         container.classList.add('dhis2-map-bing')
 
-        this._brandLogoImg = img
+        this._brandLogoImg = div
     }
 
     getAttribution() {

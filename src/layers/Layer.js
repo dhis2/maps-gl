@@ -79,17 +79,19 @@ class Layer extends Evented {
 
         this.onRemove()
 
-        layers.forEach(layer => {
-            if (mapgl.getLayer(layer.id)) {
-                mapgl.removeLayer(layer.id)
-            }
-        })
+        if (mapgl) {
+            layers.forEach(layer => {
+                if (mapgl.getLayer(layer.id)) {
+                    mapgl.removeLayer(layer.id)
+                }
+            })
 
-        Object.keys(source).forEach(id => {
-            if (mapgl.getSource(id)) {
-                mapgl.removeSource(id)
-            }
-        })
+            Object.keys(source).forEach(id => {
+                if (mapgl.getSource(id)) {
+                    mapgl.removeSource(id)
+                }
+            })
+        }
 
         if (onClick) {
             this.off('click', onClick)
@@ -185,11 +187,17 @@ class Layer extends Evented {
         return this.isInteractive() ? this._interactiveIds : []
     }
 
-    addLayer(layer, isInteractive) {
+    addLayer(layer, layerOptions = {}) {
+        const { isInteractive, opacityFactor } = layerOptions
+
         this._layers.push(layer)
 
         if (isInteractive) {
             this._interactiveIds.push(layer.id)
+        }
+
+        if (opacityFactor) {
+            this._opacityFactor = opacityFactor
         }
     }
 
@@ -214,13 +222,14 @@ class Layer extends Evented {
         return this._features
     }
 
-    // Returns a feature from a string or numeric id
-    getFeature(id) {
-        if (typeof id === 'string') {
-            return this._features.find(f => f.properties.id === id)
-        }
+    // Returns all features having a string or numeric id
+    getFeaturesById(id) {
+        const features =
+            typeof id === 'string'
+                ? this._features.filter(f => f.properties.id === id)
+                : this._features.filter(f => f.id === id)
 
-        return this._features.find(f => f.id === id)
+        return features.map(f => ({ ...f, source: this.getId() }))
     }
 
     // Adds integer id for each feature (required by Feature State)
@@ -263,8 +272,11 @@ class Layer extends Evented {
     setOpacity(opacity) {
         const mapgl = this.getMapGL()
 
+        const opacityFactor =
+            this._opacityFactor !== undefined ? this._opacityFactor : 1
+
         if (mapgl) {
-            setLayersOpacity(mapgl, this.getId(), opacity)
+            setLayersOpacity(mapgl, this.getId(), opacity * opacityFactor)
         }
 
         this.options.opacity = opacity
@@ -276,7 +288,10 @@ class Layer extends Evented {
         if (features.length) {
             const [x1, y1, x2, y2] = bbox(featureCollection(features))
 
-            return [[x1, y1], [x2, y2]]
+            return [
+                [x1, y1],
+                [x2, y2],
+            ]
         }
     }
 
@@ -290,16 +305,7 @@ class Layer extends Evented {
         const map = this.getMap()
 
         if (map) {
-            const feature = id ? this.getFeature(id) : null
-
-            map.setHoverState(
-                feature
-                    ? {
-                          id: feature.id,
-                          source: this.getId(),
-                      }
-                    : null
-            )
+            map.setHoverState(id ? this.getFeaturesById(id) : null)
         }
     }
 
@@ -335,9 +341,10 @@ class Layer extends Evented {
                 /\{ *([\w_-]+) *\}/g,
                 (str, key) => properties[key] || ''
             )
-            const { lngLat, point } = evt
 
-            this._map.showLabel(content, lngLat)
+            this._map.showLabel(content, evt.lngLat)
+        } else {
+            this._map.hideLabel()
         }
     }
 }

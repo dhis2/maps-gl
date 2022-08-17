@@ -22,6 +22,22 @@
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
 }
 
+.dhis2-map-split-view .maplibregl-ctrl-zoom-in:focus,
+.dhis2-map-split-view .maplibregl-ctrl-zoom-out:focus,
+.dhis2-map-split-view .maplibregl-ctrl-compass:focus,
+.dhis2-map-split-view .maplibregl-ctrl-fullscreen:focus,
+.dhis2-map-split-view .maplibregl-ctrl-shrink:focus {
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.dhis2-map-split-view .maplibregl-ctrl-zoom-in:focus:not(:focus-visible),
+.dhis2-map-split-view .maplibregl-ctrl-zoom-out:focus:not(:focus-visible),
+.dhis2-map-split-view .maplibregl-ctrl-compass:focus:not(:focus-visible),
+.dhis2-map-split-view .maplibregl-ctrl-fullscreen:focus:not(:focus-visible),
+.dhis2-map-split-view .maplibregl-ctrl-shrink:focus:not(:focus-visible) {
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
 .dhis2-map-split-view .maplibregl-ctrl-zoom-in:not(:disabled):hover,
 .dhis2-map-split-view .maplibregl-ctrl-zoom-out:not(:disabled):hover,
 .dhis2-map-split-view .maplibregl-ctrl-compass:not(:disabled):hover,

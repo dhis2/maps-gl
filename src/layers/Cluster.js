@@ -48,7 +48,7 @@ class Cluster extends Layer {
 
         this.setSource(id, {
             type: 'geojson',
-            clusterMaxZoom: 14,
+            clusterMaxZoom: 19,
             clusterRadius: 50,
             ...props,
         })
@@ -66,6 +66,7 @@ class Cluster extends Layer {
             strokeColor = eventStrokeColor,
             radius,
         } = this.options
+        const isInteractive = true
 
         // Non-clustered points
         this.addLayer(
@@ -76,14 +77,13 @@ class Cluster extends Layer {
                 radius,
                 filter: isClusterPoint,
             }),
-            true
+            { isInteractive }
         )
 
         // Non-clustered polygons
-        this.addLayer(
-            polygonLayer({ id, color, source: `${id}-polygons` }),
-            true
-        )
+        this.addLayer(polygonLayer({ id, color, source: `${id}-polygons` }), {
+            isInteractive,
+        })
         this.addLayer(
             outlineLayer({
                 id,
@@ -133,7 +133,10 @@ class Cluster extends Layer {
     unspiderfy = () => {
         if (this.spider) {
             this.spider.unspiderfy()
-            this.getMapGL().off('zoom', this.unspiderfy)
+            const mapgl = this.getMapGL()
+            if (mapgl) {
+                mapgl.off('zoom', this.unspiderfy)
+            }
         }
     }
 

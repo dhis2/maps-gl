@@ -38,9 +38,11 @@ class DonutCluster extends Cluster {
 
         const mapgl = this.getMapGL()
 
-        mapgl.off('sourcedata', this.onSourceData)
-        mapgl.off('move', this.updateClusters)
-        mapgl.off('moveend', this.updateClusters)
+        if (mapgl) {
+            mapgl.off('sourcedata', this.onSourceData)
+            mapgl.off('move', this.updateClusters)
+            mapgl.off('moveend', this.updateClusters)
+        }
 
         for (const id in this.clustersOnScreen) {
             this.clustersOnScreen[id].remove()

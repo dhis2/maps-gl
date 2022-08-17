@@ -2,7 +2,7 @@ import { Point } from 'maplibre-gl'
 import spiderifier from '../utils/spiderifier'
 import { eventStrokeColor as strokeColor, strokeWidth } from '../utils/style'
 
-const Spider = function(map, options) {
+const Spider = function (map, options) {
     let spider
     let spiderId
 

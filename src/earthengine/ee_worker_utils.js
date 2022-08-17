@@ -33,11 +33,7 @@ export const combineReducers = ee => types =>
     )
 
 // Returns the linear scale in meters of the units of this projection
-export const getScale = image =>
-    image
-        .select(0)
-        .projection()
-        .nominalScale()
+export const getScale = image => image.select(0).projection().nominalScale()
 
 // Returns visualisation params from legend
 const getParamsFromLegend = legend => {

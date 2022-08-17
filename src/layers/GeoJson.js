@@ -20,6 +20,7 @@ class GeoJson extends Layer {
 
     createLayers() {
         const id = this.getId()
+
         const {
             style = {},
             buffer,
@@ -27,21 +28,32 @@ class GeoJson extends Layer {
             label,
             labelStyle,
         } = this.options
-        const { radius, color, strokeColor, weight: width } = style
+
+        const {
+            radius,
+            color,
+            strokeColor,
+            weight: width,
+            opacityFactor,
+        } = style
+
+        const isInteractive = true
 
         if (buffer) {
             this.addLayer(bufferLayer({ id, ...bufferStyle }))
             this.addLayer(bufferOutlineLayer({ id, ...bufferStyle }))
         }
 
-        this.addLayer(polygonLayer({ id, color }), true)
+        this.addLayer(polygonLayer({ id, color }), {
+            isInteractive,
+            opacityFactor,
+        })
         this.addLayer(outlineLayer({ id, color: strokeColor, width }))
-        this.addLayer(lineLayer({ id, color, width }), true)
-        this.addLayer(
-            pointLayer({ id, color, strokeColor, width, radius }),
-            true
-        )
-        this.addLayer(symbolLayer({ id }), true)
+        this.addLayer(lineLayer({ id, color, width }), { isInteractive })
+        this.addLayer(pointLayer({ id, color, strokeColor, width, radius }), {
+            isInteractive,
+        })
+        this.addLayer(symbolLayer({ id }), { isInteractive })
 
         if (label) {
             this.addLayer(labelLayer({ id, label, ...labelStyle }))

@@ -1,3 +1,124 @@
+## [3.4.6](https://github.com/dhis2/maps-gl/compare/v3.4.5...v3.4.6) (2022-08-04)
+
+
+### Bug Fixes
+
+* zoom to content control hover style ([#484](https://github.com/dhis2/maps-gl/issues/484)) ([11612cc](https://github.com/dhis2/maps-gl/commit/11612cc3485b1081a7875cb56f9b520340790215))
+
+## [3.4.5](https://github.com/dhis2/maps-gl/compare/v3.4.4...v3.4.5) (2022-06-21)
+
+
+### Bug Fixes
+
+* dev dependency upgrades ([#467](https://github.com/dhis2/maps-gl/issues/467)) ([e51ccd8](https://github.com/dhis2/maps-gl/commit/e51ccd8c7ca67fad64ad376486871e4771bc45ef))
+* downgrade husky be comatible with node 12 ([#469](https://github.com/dhis2/maps-gl/issues/469)) ([6760be1](https://github.com/dhis2/maps-gl/commit/6760be1a951deb92f7f4d74a1f6f3d80c86094eb))
+
+## [3.4.4](https://github.com/dhis2/maps-gl/compare/v3.4.3...v3.4.4) (2022-04-26)
+
+
+### Bug Fixes
+
+* remove examples folder (not maintained) ([#462](https://github.com/dhis2/maps-gl/issues/462)) ([05d11ee](https://github.com/dhis2/maps-gl/commit/05d11eec6fecab190f2183c95dced509f6f429bb))
+
+## [3.4.3](https://github.com/dhis2/maps-gl/compare/v3.4.2...v3.4.3) (2022-04-19)
+
+
+### Bug Fixes
+
+* inline bing maps logo ([#456](https://github.com/dhis2/maps-gl/issues/456)) ([8674418](https://github.com/dhis2/maps-gl/commit/86744188fedbd29634efc797ef61b8869622bdd1))
+
+## [3.4.2](https://github.com/dhis2/maps-gl/compare/v3.4.1...v3.4.2) (2022-03-12)
+
+
+### Bug Fixes
+
+* reduce ee dot size ([#455](https://github.com/dhis2/maps-gl/issues/455)) ([38c81f0](https://github.com/dhis2/maps-gl/commit/38c81f0ccfb030c23550b3bdb840b7ba2ff0f0a6))
+
+## [3.4.1](https://github.com/dhis2/maps-gl/compare/v3.4.0...v3.4.1) (2022-03-09)
+
+
+### Bug Fixes
+
+* show event clusters on innermost zoom level (DHIS2-12196) ([#453](https://github.com/dhis2/maps-gl/issues/453)) ([bfd9511](https://github.com/dhis2/maps-gl/commit/bfd9511c76d9032b43f5244f0ccaed15cc12f6fa))
+
+# [3.4.0](https://github.com/dhis2/maps-gl/compare/v3.3.0...v3.4.0) (2022-02-28)
+
+
+### Features
+
+* aggregate earth engine feature collection (DHIS2-11963) ([#428](https://github.com/dhis2/maps-gl/issues/428)) ([187e2c9](https://github.com/dhis2/maps-gl/commit/187e2c943bd38c437d95f6d7c356d4bed11aded0))
+
+# [3.3.0](https://github.com/dhis2/maps-gl/compare/v3.2.0...v3.3.0) (2022-02-24)
+
+
+### Features
+
+* opacity factor (DHIS2-11969) ([#435](https://github.com/dhis2/maps-gl/issues/435)) ([c50206d](https://github.com/dhis2/maps-gl/commit/c50206de7bd86acbc901c8e30df90fbfc50d5075))
+
+# [3.2.0](https://github.com/dhis2/maps-gl/compare/v3.1.0...v3.2.0) (2022-02-23)
+
+
+### Features
+
+* ee aggregations for catchment areas ([#452](https://github.com/dhis2/maps-gl/issues/452)) ([327b42b](https://github.com/dhis2/maps-gl/commit/327b42b9af361b743632ba89b7b0fb1b4e464a3b))
+
+# [3.1.0](https://github.com/dhis2/maps-gl/compare/v3.0.9...v3.1.0) (2022-02-23)
+
+
+### Features
+
+* highlight multiple features with same string id ([#447](https://github.com/dhis2/maps-gl/issues/447)) ([3a3f65e](https://github.com/dhis2/maps-gl/commit/3a3f65ea3c9ff283e39cae9bf824c8866e98ff2c))
+
+## [3.0.9](https://github.com/dhis2/maps-gl/compare/v3.0.8...v3.0.9) (2022-02-15)
+
+
+### Bug Fixes
+
+* check if map still exists before removing layer events ([#445](https://github.com/dhis2/maps-gl/issues/445)) ([c97384f](https://github.com/dhis2/maps-gl/commit/c97384f9ddc8d8481a7b02777d0f2f904d54b86a))
+
+## [3.0.8](https://github.com/dhis2/maps-gl/compare/v3.0.7...v3.0.8) (2022-02-13)
+
+
+### Bug Fixes
+
+* check if map still exists before collapsing a cluster (DHIS2-12583) ([#443](https://github.com/dhis2/maps-gl/issues/443)) ([46d2f15](https://github.com/dhis2/maps-gl/commit/46d2f154df1ccbfdf66bbce493796ec9be72de4a))
+
+## [3.0.7](https://github.com/dhis2/maps-gl/compare/v3.0.6...v3.0.7) (2022-02-09)
+
+
+### Bug Fixes
+
+* hide label on mouse move ([#442](https://github.com/dhis2/maps-gl/issues/442)) ([d1f14c9](https://github.com/dhis2/maps-gl/commit/d1f14c9a67852d8f701b8f6d11a10058f860c707))
+
+## [3.0.6](https://github.com/dhis2/maps-gl/compare/v3.0.5...v3.0.6) (2022-02-08)
+
+
+### Bug Fixes
+
+* redraw layer group on basemap change ([#438](https://github.com/dhis2/maps-gl/issues/438)) ([03aff61](https://github.com/dhis2/maps-gl/commit/03aff61e327d56d000e1547540ae0f95b598dc87))
+
+## [3.0.5](https://github.com/dhis2/maps-gl/compare/v3.0.4...v3.0.5) (2022-02-07)
+
+
+### Bug Fixes
+
+* make sure map is present before removing layers and source ([#436](https://github.com/dhis2/maps-gl/issues/436)) ([58c6cd1](https://github.com/dhis2/maps-gl/commit/58c6cd1c01267294163cabcb8206e528a8a18ef3))
+
+## [3.0.4](https://github.com/dhis2/maps-gl/compare/v3.0.3...v3.0.4) (2022-01-25)
+
+
+### Bug Fixes
+
+* handle ee null values ([#433](https://github.com/dhis2/maps-gl/issues/433)) ([3cd806b](https://github.com/dhis2/maps-gl/commit/3cd806b2f0010025f65086ce477c9841c25d1bd9))
+
+## [3.0.3](https://github.com/dhis2/maps-gl/compare/v3.0.2...v3.0.3) (2022-01-24)
+
+
+### Bug Fixes
+
+* keep data filter when earth engine layer is redrawn ([#431](https://github.com/dhis2/maps-gl/issues/431)) ([b74c12f](https://github.com/dhis2/maps-gl/commit/b74c12fe9556a746ad3e1e0a7095704bab83499e))
+* removed ee layer unit test ([0574148](https://github.com/dhis2/maps-gl/commit/057414857279b13f1487428bd12378265a5de6de))
+
 ## [3.0.2](https://github.com/dhis2/maps-gl/compare/v3.0.1...v3.0.2) (2022-01-04)
 
 

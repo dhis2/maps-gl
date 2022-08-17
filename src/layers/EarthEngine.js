@@ -8,6 +8,7 @@ import { isPoint, featureCollection } from '../utils/geometry'
 import { getBufferGeometry } from '../utils/buffers'
 import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
 import { setPrecision } from '../utils/numbers'
+import { setTemplate } from '../utils/core'
 
 class EarthEngine extends Layer {
     constructor(options) {
@@ -88,7 +89,7 @@ class EarthEngine extends Layer {
         if (this.options.data) {
             this.setSource(id, {
                 type: 'geojson',
-                data: featureCollection(this.getFeatures()),
+                data: featureCollection(this.getFilteredFeatures()),
             })
         }
     }
@@ -97,6 +98,7 @@ class EarthEngine extends Layer {
     createLayers() {
         const id = this.getId()
         const source = id
+        const isInteractive = true
 
         this.addLayer({
             id: `${id}-raster`,
@@ -105,13 +107,15 @@ class EarthEngine extends Layer {
         })
 
         if (this.options.data) {
-            this.addLayer(polygonLayer({ id, source, opacity: 0.9 }), true)
+            this.addLayer(polygonLayer({ id, source, opacity: 0.9 }), {
+                isInteractive,
+            })
             this.addLayer(outlineLayer({ id, source }))
             this.addLayer(
                 pointLayer({
                     id,
                     source: `${id}-points`,
-                    radius: 4,
+                    radius: 2,
                     color: '#333',
                 })
             )
@@ -157,14 +161,18 @@ class EarthEngine extends Layer {
     showValue = latlng =>
         this.getValue(latlng).then(value => {
             const { lng, lat } = latlng
-            const options = {
-                ...this.options,
-                value: typeof value === 'number' ? setPrecision(value) : value,
+            const options = this.options
+            let content
+
+            if (value === null) {
+                content = setTemplate(options.nullPopup, options)
+            } else {
+                content = setTemplate(options.popup, {
+                    ...options,
+                    value:
+                        typeof value === 'number' ? setPrecision(value) : value,
+                })
             }
-            const content = options.popup.replace(
-                /\{ *([\w_-]+) *\}/g,
-                (str, key) => options[key]
-            )
 
             this._map.openPopup(document.createTextNode(content), [lng, lat])
         })
@@ -192,8 +200,9 @@ class EarthEngine extends Layer {
     }
 
     // Returns filtered features based on string ids
-    getFilteredFeatures(ids) {
+    getFilteredFeatures() {
         const features = this.getFeatures()
+        const ids = this._filteredFeatureIds
 
         return Array.isArray(ids)
             ? features.filter(f => ids.includes(f.properties.id))
@@ -202,10 +211,12 @@ class EarthEngine extends Layer {
 
     // Filter the org units features shown
     filter(ids) {
+        this._filteredFeatureIds = ids
+
         const source = this.getMapGL().getSource(this.getId())
 
         if (source) {
-            source.setData(featureCollection(this.getFilteredFeatures(ids)))
+            source.setData(featureCollection(this.getFilteredFeatures()))
         }
     }
 }

@@ -7,9 +7,9 @@ const urlFormat =
 jest.mock('../../earthengine/ee_worker_loader', () => ({
     __esModule: true,
     default: async () => async () =>
-        new class EarthEngineWorkerMock {
+        new (class EarthEngineWorkerMock {
             getTileUrl = async () => urlFormat
-        }(),
+        })(),
 }))
 
 const token = {
@@ -172,14 +172,5 @@ describe('EarthEngine', () => {
         const features = layer.getFeatures()
 
         expect(features.some(f => f.geometry.type === 'Point')).toBe(false)
-    })
-
-    it('Should filter features based on ids', async () => {
-        const layer = new EarthEngine(options)
-
-        expect(layer.getFilteredFeatures().length).toBe(3)
-        expect(layer.getFilteredFeatures([]).length).toBe(0)
-        expect(layer.getFilteredFeatures(['O6uvpzGd5pu']).length).toBe(1)
-        expect(layer.getFilteredFeatures(['O6uvpzGd5pu', 'abc']).length).toBe(1)
     })
 })
