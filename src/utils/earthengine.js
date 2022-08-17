@@ -23,7 +23,6 @@ const earthEngineOptions = [
 
 // Returns the layer options that should be passed to the EE worker
 export const getEarthEngineOptions = opts => {
-    console.log('hey getEarthEngineOptions', opts)
     const options = Object.keys(opts)
         .filter(option => earthEngineOptions.includes(option))
         .reduce((obj, key) => {
