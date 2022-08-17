@@ -40,7 +40,7 @@ export const getScale = image =>
         .nominalScale()
 
 // Returns visualisation params from legend
-export const getParamsFromLegend = legend => {
+const getParamsFromLegend = legend => {
     const keys = legend.map(l => l.id)
     const min = Math.min(...keys)
     const max = Math.max(...keys)

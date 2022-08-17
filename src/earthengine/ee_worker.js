@@ -222,7 +222,7 @@ class EarthEngineWorker {
             singleAggregation && hasClasses(aggregationType) && legend
         const image = await this.getImage()
         const scale = this.eeScale
-        const collection = this.getFeatureCollection(this.options)
+        const collection = this.getFeatureCollection(this.options) // TODO: Throw error if no feature collection
 
         if (collection) {
             if (useHistogram) {
