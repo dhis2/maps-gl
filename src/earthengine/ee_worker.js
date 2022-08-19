@@ -6,7 +6,7 @@ import {
     getScale,
     hasClasses,
     combineReducers,
-    getParamsFromLegend,
+    getClassifiedImage,
     getHistogramStatistics,
     getFeatureCollectionProperties,
 } from './ee_worker_utils'
@@ -63,10 +63,21 @@ class EarthEngineWorker {
             }
         })
 
+    //Reset all the class data so that a different
+    //set of options can be used
+    setOptions(options) {
+        this.options = options
+        this.eeFeatureCollection = null
+        this.eeImage = null
+        this.eeImageBands = null
+        this.eeScale = null
+
+        return this
+    }
+
     // Translate org unit features to an EE feature collection
     getFeatureCollection() {
         const { data, buffer } = this.options
-
         if (Array.isArray(data) && !this.eeFeatureCollection) {
             this.eeFeatureCollection = ee.FeatureCollection(
                 data.map(feature => ({
@@ -90,8 +101,15 @@ class EarthEngineWorker {
             return this.eeImage
         }
 
-        const { datasetId, filter, mosaic, band, bandReducer, mask, methods } =
-            this.options
+        const {
+            datasetId,
+            filter,
+            mosaic,
+            band,
+            bandReducer,
+            mask,
+            methods,
+        } = this.options
 
         let eeImage
 
@@ -150,41 +168,9 @@ class EarthEngineWorker {
         return eeImage
     }
 
-    // Classify image according to legend
-    classifyImage(eeImage) {
-        const { legend = [], params } = this.options
-
-        let zones
-
-        if (!params) {
-            // Image has classes (e.g. landcover)
-            this.params = getParamsFromLegend(legend)
-            return eeImage
-        }
-
-        const min = 0
-        const max = legend.length - 1
-        const { palette } = params
-
-        for (let i = min, item; i < max; i++) {
-            item = legend[i]
-
-            if (!zones) {
-                zones = eeImage.gt(item.to)
-            } else {
-                zones = zones.add(eeImage.gt(item.to))
-            }
-        }
-
-        // Visualisation params
-        this.params = { min, max, palette }
-
-        return zones
-    }
-
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { format, data, params } = this.options
+        const { format, data } = this.options
 
         return new Promise(resolve => {
             if (format === 'FeatureCollection') {
@@ -202,9 +188,10 @@ class EarthEngineWorker {
 
                 dataset.getMap(null, response => resolve(response.urlFormat))
             } else {
-                this.eeImage = this.getImage()
-
-                let eeImage = this.classifyImage(this.eeImage)
+                let { eeImage, params } = getClassifiedImage(
+                    this.getImage(),
+                    this.options
+                )
 
                 if (data) {
                     eeImage = eeImage.clipToCollection(
@@ -213,7 +200,7 @@ class EarthEngineWorker {
                 }
 
                 eeImage
-                    .visualize(this.params || params)
+                    .visualize(params)
                     .getMap(null, response => resolve(response.urlFormat))
             }
         })
@@ -244,7 +231,10 @@ class EarthEngineWorker {
     }
 
     // Returns aggregated values for org unit features
-    async getAggregations() {
+    async getAggregations(config) {
+        if (config) {
+            this.setOptions(config)
+        }
         const { format, aggregationType, band, legend } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
@@ -258,7 +248,7 @@ class EarthEngineWorker {
                 const { datasetId } = this.options
                 const dataset = ee.FeatureCollection(datasetId)
 
-                const aggFeatures = this.getFeatureCollection()
+                const aggFeatures = collection
                     .map(feature => {
                         feature = ee.Feature(feature)
                         const count = dataset

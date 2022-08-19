@@ -36,7 +36,7 @@ export const combineReducers = ee => types =>
 export const getScale = image => image.select(0).projection().nominalScale()
 
 // Returns visualisation params from legend
-export const getParamsFromLegend = legend => {
+const getParamsFromLegend = legend => {
     const keys = legend.map(l => l.id)
     const min = Math.min(...keys)
     const max = Math.max(...keys)
@@ -89,3 +89,28 @@ export const getFeatureCollectionProperties = data =>
         }),
         {}
     )
+
+// Classify image according to legend
+export const getClassifiedImage = (eeImage, { legend = [], params }) => {
+    if (!params) {
+        // Image has classes (e.g. landcover)
+        return { eeImage, params: getParamsFromLegend(legend) }
+    }
+
+    const min = 0
+    const max = legend.length - 1
+    const { palette } = params
+    let zones
+
+    for (let i = min, item; i < max; i++) {
+        item = legend[i]
+
+        if (!zones) {
+            zones = eeImage.gt(item.to)
+        } else {
+            zones = zones.add(eeImage.gt(item.to))
+        }
+    }
+
+    return { eeImage: zones, params: { min, max, palette } }
+}
