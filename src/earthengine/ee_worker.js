@@ -76,7 +76,8 @@ class EarthEngineWorker {
     }
 
     // Translate org unit features to an EE feature collection
-    getFeatureCollection({ data, buffer }) {
+    getFeatureCollection() {
+        const { data, buffer } = this.options
         if (Array.isArray(data) && !this.eeFeatureCollection) {
             this.eeFeatureCollection = ee.FeatureCollection(
                 data.map(feature => ({
@@ -181,7 +182,7 @@ class EarthEngineWorker {
 
                 if (data) {
                     dataset = dataset.clipToCollection(
-                        this.getFeatureCollection(this.options)
+                        this.getFeatureCollection()
                     )
                 }
 
@@ -194,7 +195,7 @@ class EarthEngineWorker {
 
                 if (data) {
                     eeImage = eeImage.clipToCollection(
-                        this.getFeatureCollection(this.options)
+                        this.getFeatureCollection()
                     )
                 }
 
@@ -240,7 +241,7 @@ class EarthEngineWorker {
             singleAggregation && hasClasses(aggregationType) && legend
         const image = await this.getImage()
         const scale = this.eeScale
-        const collection = this.getFeatureCollection(this.options) // TODO: Throw error if no feature collection
+        const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
 
         if (collection) {
             if (format === 'FeatureCollection') {

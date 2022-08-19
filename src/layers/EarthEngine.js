@@ -1,9 +1,6 @@
 import Layer from './Layer'
 import getEarthEngineWorker from '../earthengine'
-import {
-    defaultEarthEngineOptions,
-    getEarthEngineOptions,
-} from '../utils/earthengine'
+import { defaultOptions, getWorkerOptions } from '../utils/earthengine'
 import { isPoint, featureCollection } from '../utils/geometry'
 import { getBufferGeometry } from '../utils/buffers'
 import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
@@ -13,7 +10,7 @@ import { setTemplate } from '../utils/core'
 class EarthEngine extends Layer {
     constructor(options) {
         super({
-            ...defaultEarthEngineOptions,
+            ...defaultOptions,
             ...options,
         })
     }
@@ -67,7 +64,7 @@ class EarthEngine extends Layer {
                 getEarthEngineWorker(this.options.getAuthToken)
                     .then(EarthEngineWorker => {
                         new EarthEngineWorker(
-                            getEarthEngineOptions(this.options)
+                            getWorkerOptions(this.options)
                         ).then(resolve)
                     })
                     .catch(reject)

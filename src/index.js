@@ -8,11 +8,6 @@ import { getLabelPosition } from './utils/labels'
  *  Wrapper around MapLibre GL JS for DHIS2 Maps
  */
 
-export {
-    defaultEarthEngineOptions,
-    getEarthEngineOptions,
-} from './utils/earthengine'
-
 export const layerTypes = Object.keys(supportedLayers)
 
 export const controlTypes = Object.keys(supportedControls)
