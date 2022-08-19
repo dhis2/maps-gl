@@ -1,3 +1,15 @@
+# [3.5.0](https://github.com/dhis2/maps-gl/compare/v3.4.6...v3.5.0) (2022-08-19)
+
+
+### Bug Fixes
+
+* split view map controls focus style ([#485](https://github.com/dhis2/maps-gl/issues/485)) ([069a8ec](https://github.com/dhis2/maps-gl/commit/069a8ec4794811757d0f5a5d8bcb11a7360266e8))
+
+
+### Features
+
+* import ee data ([#463](https://github.com/dhis2/maps-gl/issues/463)) ([dbfebf4](https://github.com/dhis2/maps-gl/commit/dbfebf4dfc7d4489e5cf980347b982f41505f407))
+
 ## [3.4.6](https://github.com/dhis2/maps-gl/compare/v3.4.5...v3.4.6) (2022-08-04)
 
 
