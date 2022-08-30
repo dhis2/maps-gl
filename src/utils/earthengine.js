@@ -19,6 +19,7 @@ const workerOptions = [
     'methods',
     'mosaic',
     'params',
+    'tileScale',
 ]
 
 // Returns the layer options that should be passed to the EE worker

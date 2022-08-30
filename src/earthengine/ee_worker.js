@@ -101,15 +101,8 @@ class EarthEngineWorker {
             return this.eeImage
         }
 
-        const {
-            datasetId,
-            filter,
-            mosaic,
-            band,
-            bandReducer,
-            mask,
-            methods,
-        } = this.options
+        const { datasetId, filter, mosaic, band, bandReducer, mask, methods } =
+            this.options
 
         let eeImage
 
@@ -235,13 +228,21 @@ class EarthEngineWorker {
         if (config) {
             this.setOptions(config)
         }
-        const { format, aggregationType, band, legend } = this.options
+        const {
+            format,
+            aggregationType,
+            band,
+            legend,
+            tileScale = 1,
+        } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
             singleAggregation && hasClasses(aggregationType) && legend
         const image = await this.getImage()
         const scale = this.eeScale
         const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
+
+        console.log('tileScale', tileScale)
 
         if (collection) {
             if (format === 'FeatureCollection') {
@@ -267,7 +268,12 @@ class EarthEngineWorker {
 
                 return getInfo(
                     image
-                        .reduceRegions(collection, reducer, scale)
+                        .reduceRegions({
+                            collection,
+                            reducer,
+                            scale,
+                            tileScale,
+                        })
                         .select(['histogram'], null, false)
                 ).then(data =>
                     getHistogramStatistics({
@@ -285,6 +291,7 @@ class EarthEngineWorker {
                     collection,
                     reducer,
                     scale,
+                    tileScale,
                 })
 
                 if (this.eeImageBands) {
@@ -292,6 +299,7 @@ class EarthEngineWorker {
                         collection: aggFeatures,
                         reducer,
                         scale,
+                        tileScale,
                     })
 
                     band.forEach(band =>
