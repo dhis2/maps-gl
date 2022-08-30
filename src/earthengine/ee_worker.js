@@ -16,6 +16,7 @@ import { getBufferGeometry } from '../utils/buffers'
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
 
 const FEATURE_STYLE = { color: 'FFA500', strokeWidth: 2 }
+const DEFAULT_TILE_SCALE = 1
 
 class EarthEngineWorker {
     constructor(options = {}) {
@@ -233,7 +234,7 @@ class EarthEngineWorker {
             aggregationType,
             band,
             legend,
-            tileScale = 1,
+            tileScale = DEFAULT_TILE_SCALE,
         } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
