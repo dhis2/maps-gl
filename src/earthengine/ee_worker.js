@@ -242,8 +242,6 @@ class EarthEngineWorker {
         const scale = this.eeScale
         const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
 
-        console.log('tileScale', tileScale)
-
         if (collection) {
             if (format === 'FeatureCollection') {
                 const { datasetId } = this.options
