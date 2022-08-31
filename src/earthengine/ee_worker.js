@@ -16,6 +16,7 @@ import { getBufferGeometry } from '../utils/buffers'
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
 
 const FEATURE_STYLE = { color: 'FFA500', strokeWidth: 2 }
+const DEFAULT_TILE_SCALE = 1
 
 class EarthEngineWorker {
     constructor(options = {}) {
@@ -101,15 +102,8 @@ class EarthEngineWorker {
             return this.eeImage
         }
 
-        const {
-            datasetId,
-            filter,
-            mosaic,
-            band,
-            bandReducer,
-            mask,
-            methods,
-        } = this.options
+        const { datasetId, filter, mosaic, band, bandReducer, mask, methods } =
+            this.options
 
         let eeImage
 
@@ -235,7 +229,13 @@ class EarthEngineWorker {
         if (config) {
             this.setOptions(config)
         }
-        const { format, aggregationType, band, legend } = this.options
+        const {
+            format,
+            aggregationType,
+            band,
+            legend,
+            tileScale = DEFAULT_TILE_SCALE,
+        } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
             singleAggregation && hasClasses(aggregationType) && legend
@@ -267,7 +267,12 @@ class EarthEngineWorker {
 
                 return getInfo(
                     image
-                        .reduceRegions(collection, reducer, scale)
+                        .reduceRegions({
+                            collection,
+                            reducer,
+                            scale,
+                            tileScale,
+                        })
                         .select(['histogram'], null, false)
                 ).then(data =>
                     getHistogramStatistics({
@@ -285,6 +290,7 @@ class EarthEngineWorker {
                     collection,
                     reducer,
                     scale,
+                    tileScale,
                 })
 
                 if (this.eeImageBands) {
@@ -292,6 +298,7 @@ class EarthEngineWorker {
                         collection: aggFeatures,
                         reducer,
                         scale,
+                        tileScale,
                     })
 
                     band.forEach(band =>
