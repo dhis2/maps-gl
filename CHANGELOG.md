@@ -1,3 +1,10 @@
+## [3.5.1](https://github.com/dhis2/maps-gl/compare/v3.5.0...v3.5.1) (2022-08-31)
+
+
+### Bug Fixes
+
+* use tileScale to avoid ee timeout ([#490](https://github.com/dhis2/maps-gl/issues/490)) ([d03992b](https://github.com/dhis2/maps-gl/commit/d03992b519a52d176e2076e138d05b3fd6e2a7f4))
+
 # [3.5.0](https://github.com/dhis2/maps-gl/compare/v3.4.6...v3.5.0) (2022-08-19)
 
 
