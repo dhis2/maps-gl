@@ -1,3 +1,10 @@
+## [3.5.2](https://github.com/dhis2/maps-gl/compare/v3.5.1...v3.5.2) (2022-09-06)
+
+
+### Bug Fixes
+
+* bump node version ([cc0cfb3](https://github.com/dhis2/maps-gl/commit/cc0cfb3e5bc076088ea93e3c8abfb4b6ed65f3e2))
+
 ## [3.5.1](https://github.com/dhis2/maps-gl/compare/v3.5.0...v3.5.1) (2022-08-31)
 
 
