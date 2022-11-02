@@ -1,4 +1,5 @@
-import { AttributionControl, ScaleControl } from 'maplibre-gl'
+import { ScaleControl } from 'maplibre-gl'
+import Attribution from './Attribution'
 import Navigation from './Navigation'
 import Search from './Search'
 import Measure from './Measure'
@@ -8,7 +9,7 @@ import './Controls.css'
 
 export default {
     zoom: Navigation,
-    attribution: AttributionControl,
+    attribution: Attribution,
     scale: ScaleControl,
     fullscreen: Fullscreen,
     search: Search,
