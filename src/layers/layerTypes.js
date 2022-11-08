@@ -10,6 +10,8 @@ import ServerCluster from './ServerCluster'
 import EarthEngine from './EarthEngine'
 import BingLayer from './BingLayer'
 import GeoJson from './GeoJson'
+import GeoJsonUrl from './GeoJsonUrl'
+import FeatureService from './FeatureService'
 import LayerGroup from './LayerGroup'
 
 export default {
@@ -25,6 +27,8 @@ export default {
     serverCluster: ServerCluster, // event layer
     earthEngine: EarthEngine, // google earth engine layer
     bingLayer: BingLayer, // bing layer basemap
-    geoJson: GeoJson, // tracked entity layer
+    geoJson: GeoJson, // geojson layer
+    geoJsonUrl: GeoJsonUrl, // geojson layer from url
+    featureService: FeatureService, // ArcGIS feature service
     group: LayerGroup, // tracked entity layer
 }
