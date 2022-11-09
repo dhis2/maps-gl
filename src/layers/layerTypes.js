@@ -11,7 +11,7 @@ import EarthEngine from './EarthEngine'
 import BingLayer from './BingLayer'
 import GeoJson from './GeoJson'
 import GeoJsonUrl from './GeoJsonUrl'
-import FeatureService from './FeatureService'
+import FeatureService from './ArcGIS/FeatureService'
 import LayerGroup from './LayerGroup'
 
 export default {

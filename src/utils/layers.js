@@ -51,10 +51,16 @@ export const lineLayer = ({ id, color, width, source, filter }) => ({
 })
 
 // Layer with polygon features
-export const polygonLayer = ({ id, color, source, filter }) => ({
+export const polygonLayer = ({
+    id,
+    color,
+    source,
+    /* sourceLayer, */ filter,
+}) => ({
     id: `${id}-polygon`,
     type: 'fill',
     source: source || id,
+    // 'source-layer': sourceLayer || id,
     paint: {
         'fill-color': colorExpr(color || defaults.noDataColor),
     },

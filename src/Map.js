@@ -42,6 +42,8 @@ export class MapGL extends Evented {
             ...opts,
         })
 
+        // mapgl.showTileBoundaries = true // TODO: Remove
+
         this._mapgl = mapgl
         this._glyphs = glyphs
 
