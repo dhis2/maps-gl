@@ -22,6 +22,7 @@
         "@esri/arcgis-rest-portal": "^4.1.0",
         "@esri/arcgis-rest-request": "^4.1.1",
         "@mapbox/sphericalmercator": "^1.2.0",
+        "@terraformer/arcgis": "^2.1.2",
         "@turf/area": "^6.5.0",
         "@turf/bbox": "^6.5.0",
         "@turf/buffer": "^6.5.0",
