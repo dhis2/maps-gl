@@ -15,8 +15,6 @@ class VectorStyle extends Evented {
     // Before we change the style we remove all overlays for a proper cleanup
     // After the style is changed and ready, we add the overlays back again
     async toggleVectorStyle(isOnMap, style, beforeId) {
-        this._visibleLayers = []
-
         await this.removeOtherLayers()
         this._map.setBeforeLayerId(beforeId)
 
@@ -26,6 +24,7 @@ class VectorStyle extends Evented {
             await this.setStyle(style)
             this._map._styleIsLoading = false
 
+            // Store id of all style layers that are visible
             this._visibleLayers = this._map
                 .getMapGL()
                 .getStyle()
@@ -40,8 +39,16 @@ class VectorStyle extends Evented {
     // Add vector style to map
     async addTo(map) {
         this._map = map
-        const { url, beforeId } = this.options
+        const { url, beforeId, isVisible } = this.options
         await this.toggleVectorStyle(true, url, beforeId)
+
+        // Set vector style visibility after added to the map
+        if (
+            this.isVisible() === false ||
+            (this.isVisible() !== true && isVisible === false)
+        ) {
+            setVisibility(false)
+        }
     }
 
     // Remove vector style from map, reset to default map style
