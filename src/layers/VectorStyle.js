@@ -47,7 +47,7 @@ class VectorStyle extends Evented {
             this.isVisible() === false ||
             (this.isVisible() !== true && isVisible === false)
         ) {
-            setVisibility(false)
+            this.setVisibility(false)
         }
     }
 
