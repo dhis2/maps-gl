@@ -44,11 +44,24 @@ class VectorStyle extends Evented {
 
     // Set map style, resolves promise when map is ready for other layers
     setStyle(style) {
-        return new Promise(resolve => {
+        return new Promise((resolve, reject) => {
             this._map
                 .getMapGL()
                 .once('idle', resolve)
                 .setStyle(style, { diff: false })
+                .once('error', e => {
+                    let msg
+                    if (e.error.message.includes('missing required property')) {
+                        msg = 'The vector style is malformed or invalid.'
+                    } else if (
+                        e.error.message.includes('r.blob is not a function')
+                    ) {
+                        msg = 'The vector style was not found.'
+                    } else {
+                        msg = 'An error occured while loading the vector style.'
+                    }
+                    reject(msg)
+                })
         })
     }
 
