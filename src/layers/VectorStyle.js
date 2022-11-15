@@ -8,7 +8,6 @@ class VectorStyle extends Evented {
         this.options = options
         this._visibleLayers = []
         this._isOnMap = false
-        this._isVisible = true
     }
 
     // Changing vector style will also delete all overlays on the map
@@ -45,7 +44,7 @@ class VectorStyle extends Evented {
         // Set vector style visibility after added to the map
         if (
             this.isVisible() === false ||
-            (this.isVisible() !== true && isVisible === false)
+            (this.isVisible() === undefined && isVisible === false)
         ) {
             this.setVisibility(false)
         }
