@@ -37,6 +37,19 @@ export const labelSource = (features, { fontSize }, isBoundary) => ({
     ),
 })
 
+// const LABEL_DISPLAY_OPTION_NAME_ONLY = 'NAME'
+const LABEL_DISPLAY_OPTION_NAME_AND_VALUE = 'NAME_AND_VALUE'
+const LABEL_DISPLAY_OPTION_VALUE_ONLY = 'VALUE'
+
+export const getLabelDisplayOptionFormat = labelDisplayOption => {
+    if (labelDisplayOption === LABEL_DISPLAY_OPTION_NAME_AND_VALUE) {
+        return ['format', ['get', 'name'], '\n', ['get', 'value']]
+    } else if (labelDisplayOption === LABEL_DISPLAY_OPTION_VALUE_ONLY) {
+        return '{value}'
+    }
+    return '{name}'
+}
+
 export const labelLayer = ({
     id,
     label,
@@ -53,7 +66,7 @@ export const labelLayer = ({
         id: `${id}-label`,
         source: `${id}-label`,
         layout: {
-            'text-field': label || '{name}',
+            'text-field': getLabelDisplayOptionFormat(label),
             'text-font': [fonts[font]],
             'text-size': size,
             'text-anchor': ['get', 'anchor'],
