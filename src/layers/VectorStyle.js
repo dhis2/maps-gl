@@ -6,6 +6,7 @@ class VectorStyle extends Evented {
     constructor(options = {}) {
         super()
         this.options = options
+        this._visibleLayers = []
         this._isOnMap = false
     }
 
@@ -21,6 +22,13 @@ class VectorStyle extends Evented {
             this._map._styleIsLoading = true
             await this.setStyle(style)
             this._map._styleIsLoading = false
+
+            // Store id of all style layers that are visible
+            this._visibleLayers = this._map
+                .getMapGL()
+                .getStyle()
+                .layers.filter(l => l.layout?.visibility !== 'none')
+                .map(l => l.id)
         }
 
         this._isOnMap = isOnMap
@@ -30,8 +38,16 @@ class VectorStyle extends Evented {
     // Add vector style to map
     async addTo(map) {
         this._map = map
-        const { url, beforeId } = this.options
+        const { url, beforeId, isVisible } = this.options
         await this.toggleVectorStyle(true, url, beforeId)
+
+        // Set vector style visibility after added to the map
+        if (
+            this.isVisible() === false ||
+            (this.isVisible() === undefined && isVisible === false)
+        ) {
+            this.setVisibility(false)
+        }
     }
 
     // Remove vector style from map, reset to default map style
@@ -102,6 +118,23 @@ class VectorStyle extends Evented {
     // No opacity support for vector style
     setOpacity() {
         return
+    }
+
+    setVisibility(isVisible) {
+        if (this.isOnMap()) {
+            const mapgl = this._map.getMapGL()
+            const value = isVisible ? 'visible' : 'none'
+
+            this._visibleLayers.forEach(id =>
+                mapgl.setLayoutProperty(id, 'visibility', value)
+            )
+        }
+
+        this._isVisible = isVisible
+    }
+
+    isVisible() {
+        return this._isVisible
     }
 
     // Vector style basemap is not interactive
