@@ -31,7 +31,7 @@ class GeoJson extends Layer {
 
         const {
             radius,
-            color,
+            color = '#333', // TODO
             strokeColor,
             weight: width,
             opacityFactor,
