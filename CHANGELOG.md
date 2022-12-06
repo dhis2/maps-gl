@@ -1,3 +1,11 @@
+## [3.5.3](https://github.com/dhis2/maps-gl/compare/v3.5.2...v3.5.3) (2022-11-16)
+
+### Bug Fixes
+
+-   force compact attribution if overlapping scale bar (DHIS2-14014) ([#508](https://github.com/dhis2/maps-gl/issues/508)) ([52a20cb](https://github.com/dhis2/maps-gl/commit/52a20cbe862fb3950d561be774975d39981263a7))
+-   reject promise is setStyle triggers an error ([#509](https://github.com/dhis2/maps-gl/issues/509)) ([976d027](https://github.com/dhis2/maps-gl/commit/976d02774eaf6615554f2679ddc6f8776963db56))
+-   vector style visibility ([#511](https://github.com/dhis2/maps-gl/issues/511)) ([381b8df](https://github.com/dhis2/maps-gl/commit/381b8dfaf331d6d5de753791bc6fc9466b02d516))
+
 ## [3.5.2](https://github.com/dhis2/maps-gl/compare/v3.5.1...v3.5.2) (2022-09-06)
 
 ### Bug Fixes
