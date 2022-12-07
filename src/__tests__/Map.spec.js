@@ -14,13 +14,6 @@ jest.mock('../earthengine/ee_worker_loader', () => ({
     default: jest.fn(),
 }))
 
-// Gives error if not present:
-// TypeError: Super expression must either be null or a function
-jest.mock('../controls/Attribution', () => ({
-    __esModule: true,
-    default: jest.fn(),
-}))
-
 describe('DHIS2 Maps-gl Map', () => {
     it('should initialize correctly', () => {
         const map = new Map('el')

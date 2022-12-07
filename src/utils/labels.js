@@ -31,6 +31,7 @@ export const labelSource = (features, { fontSize }, isBoundary) => ({
                     getOffsetEms(geometry.type, properties.radius, fontSize),
                 ],
                 color: isBoundary ? properties.color : '#333',
+                value: properties.value,
             },
         }))
     ),
