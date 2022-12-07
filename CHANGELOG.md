@@ -1,3 +1,10 @@
+# [3.6.0](https://github.com/dhis2/maps-gl/compare/v3.5.3...v3.6.0) (2022-12-07)
+
+
+### Features
+
+* enable ability to show values in the labels ([#512](https://github.com/dhis2/maps-gl/issues/512)) ([6f47032](https://github.com/dhis2/maps-gl/commit/6f47032f4e4bb63056dca483d15a58cee9852b56))
+
 ## [3.5.2](https://github.com/dhis2/maps-gl/compare/v3.5.1...v3.5.2) (2022-09-06)
 
 
