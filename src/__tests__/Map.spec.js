@@ -5,6 +5,7 @@ jest.mock('maplibre-gl', () => ({
     Evented: () => {},
     Marker: () => {},
     Popup: () => {},
+    AttributionControl: () => {},
     NavigationControl: () => {},
     FullscreenControl: () => {},
 }))
