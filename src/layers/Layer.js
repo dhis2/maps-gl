@@ -37,11 +37,7 @@ class Layer extends Evented {
         const beforeId = map.getBeforeLayerId()
 
         if (images) {
-            try {
-                await addImages(mapgl, images)
-            } catch (error) {
-                this.onError(error)
-            }
+            await addImages(mapgl, images)
         }
 
         Object.keys(source).forEach(id => {
@@ -349,17 +345,6 @@ class Layer extends Evented {
             this._map.showLabel(content, evt.lngLat)
         } else {
             this._map.hideLabel()
-        }
-    }
-
-    // Pass layer error to calling app if handler exists
-    onError(error) {
-        const { onError } = this.options
-
-        if (onError) {
-            onError(error)
-        } else {
-            console.error(error)
         }
     }
 }
