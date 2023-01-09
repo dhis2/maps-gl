@@ -38,15 +38,11 @@ const loadImage = map => url =>
                     addImage(map, url, img)
                     resolve(img)
                 })
-                .catch(error => {
-                    console.log('SVG not added', url, error)
+                .catch(() => {
                     resolve()
                 })
         } else {
             map.loadImage(url, (error, img) => {
-                if (error) {
-                    console.log('Image not loaded', url, error)
-                }
                 if (img) {
                     addImage(map, url, img)
                 }
@@ -56,8 +52,15 @@ const loadImage = map => url =>
     })
 
 // Load and add images to map sprite
-export const addImages = async (map, images) =>
-    Promise.all(images.map(loadImage(map)))
+export const addImages = async (map, images) => {
+    const result = await Promise.all(images.map(loadImage(map)))
+    const errorIndex = result.indexOf(undefined)
+
+    // Throws error for the first image not found
+    if (errorIndex !== -1) {
+        throw `Symbol not found: ${images[errorIndex]}`
+    }
+}
 
 // Include cookies for cross-origin image requests
 export const transformRequest = (url, resourceType) =>
