@@ -352,6 +352,7 @@ class Layer extends Evented {
         }
     }
 
+    // Pass layer error to calling app if handler exists
     onError(error) {
         const { onError } = this.options
 
