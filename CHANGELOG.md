@@ -1,3 +1,21 @@
+# [3.7.0](https://github.com/dhis2/maps-gl/compare/v3.6.0...v3.7.0) (2023-01-12)
+
+
+### Bug Fixes
+
+* use the updated tokens in the publish step ([#521](https://github.com/dhis2/maps-gl/issues/521)) ([ce19be7](https://github.com/dhis2/maps-gl/commit/ce19be7d70dcbe713cae4d556464ef818ba3b3fb))
+
+
+### Features
+
+* support SVG symbols (DHIS2-14440) ([#517](https://github.com/dhis2/maps-gl/issues/517)) ([87c25b9](https://github.com/dhis2/maps-gl/commit/87c25b9987d0892309db1833c6c232830ae281c3))
+* support SVG symbols (DHIS2-14440) v2 ([#520](https://github.com/dhis2/maps-gl/issues/520)) ([62f5eea](https://github.com/dhis2/maps-gl/commit/62f5eea18797b05ef7086c631fc2967ff0200daa))
+
+
+### Reverts
+
+* Revert "feat: support SVG symbols (DHIS2-14440) (#517)" (#519) ([17b32ca](https://github.com/dhis2/maps-gl/commit/17b32cac1e9d271ef32cba789761463e519b7422)), closes [#517](https://github.com/dhis2/maps-gl/issues/517) [#519](https://github.com/dhis2/maps-gl/issues/519)
+
 # [3.6.0](https://github.com/dhis2/maps-gl/compare/v3.5.3...v3.6.0) (2022-12-07)
 
 
