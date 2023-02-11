@@ -283,6 +283,7 @@ class EarthEngineWorker {
                     })
                 )
             } else if (!singleAggregation && aggregationType.length) {
+                console.log('aggregate')
                 const reducer = combineReducers(ee)(aggregationType)
                 const props = [...aggregationType]
 
