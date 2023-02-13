@@ -70,12 +70,15 @@ export class MapGL extends Evented {
         }
     }
 
-    fitBounds(bounds) {
+    fitBounds(bounds, fitBoundsOptions) {
         if (bounds) {
-            this._mapgl.fitBounds(bounds, {
-                padding: 10,
-                duration: 0,
-            })
+            this._mapgl.fitBounds(
+                bounds,
+                fitBoundsOptions || {
+                    padding: 10,
+                    duration: 0,
+                }
+            )
         }
     }
 
