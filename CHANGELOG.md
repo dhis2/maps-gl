@@ -1,3 +1,10 @@
+## [3.8.1](https://github.com/dhis2/maps-gl/compare/v3.8.0...v3.8.1) (2023-02-13)
+
+
+### Bug Fixes
+
+* use cell centroids in calculations (DHIS2-14261) ([#525](https://github.com/dhis2/maps-gl/issues/525)) ([7dbbec5](https://github.com/dhis2/maps-gl/commit/7dbbec52502e4e9c9071f6743429a6ea76a0439a))
+
 # [3.8.0](https://github.com/dhis2/maps-gl/compare/v3.7.0...v3.8.0) (2023-02-13)
 
 
