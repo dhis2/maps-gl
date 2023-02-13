@@ -1,3 +1,10 @@
+# [3.8.0](https://github.com/dhis2/maps-gl/compare/v3.7.0...v3.8.0) (2023-02-13)
+
+
+### Features
+
+* fit bounds options support ([#524](https://github.com/dhis2/maps-gl/issues/524)) ([604ec16](https://github.com/dhis2/maps-gl/commit/604ec1674a4ac30e6a1866b02777dc045a8db70e))
+
 # [3.7.0](https://github.com/dhis2/maps-gl/compare/v3.6.0...v3.7.0) (2023-01-12)
 
 
