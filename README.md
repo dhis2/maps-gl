@@ -9,6 +9,21 @@ WebGL mapping engine for DHIS2 Maps
 maps-gl folder: `yarn link`
 maps-app folder: `yarn link @dhis2/maps-gl`
 
+## How to upgrade earthengine-api
+
+We run earthengine-api in a web worker for performance reasons, and this requires a separate build:
+
+1. git clone https://github.com/MasterMaps/earthengine-api/tree/master (make sure the fork is synced)
+2. git chekout master
+3. git pull
+4. git checkout web-worker-build
+5. git merge master
+6. cd javascript
+7. yarn build
+8. copy the contents of javascript/build/worker.js to ee_api_js_worker in this repo
+
+PR to main earthengine-api repo: https://github.com/google/earthengine-api/pull/173
+
 ## Build from source
 
 In order to use the library you must first build it from source using the command `yarn build`
