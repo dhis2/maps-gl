@@ -129,21 +129,19 @@ $jscomp.polyfillIsolated = function (target, polyfill, fromLang, toLang) {
                 writable: !0,
                 value: impl,
             })
-        } else {
-            if (impl !== nativeImpl) {
-                if (void 0 === $jscomp.propertyToPolyfillSymbol[property]) {
-                    var BIN_ID = (1e9 * Math.random()) >>> 0
-                    $jscomp.propertyToPolyfillSymbol[property] =
-                        $jscomp.IS_SYMBOL_NATIVE
-                            ? $jscomp.global.Symbol(property)
-                            : $jscomp.POLYFILL_PREFIX + BIN_ID + '$' + property
-                }
-                $jscomp.defineProperty(
-                    ownerObject,
-                    $jscomp.propertyToPolyfillSymbol[property],
-                    { configurable: !0, writable: !0, value: impl }
-                )
+        } else if (impl !== nativeImpl) {
+            if (void 0 === $jscomp.propertyToPolyfillSymbol[property]) {
+                var BIN_ID = (1e9 * Math.random()) >>> 0
+                $jscomp.propertyToPolyfillSymbol[property] =
+                    $jscomp.IS_SYMBOL_NATIVE
+                        ? $jscomp.global.Symbol(property)
+                        : $jscomp.POLYFILL_PREFIX + BIN_ID + '$' + property
             }
+            $jscomp.defineProperty(
+                ownerObject,
+                $jscomp.propertyToPolyfillSymbol[property],
+                { configurable: !0, writable: !0, value: impl }
+            )
         }
     }
 }
@@ -257,6 +255,32 @@ $jscomp.arrayFromIterable = function (iterable) {
         ? iterable
         : $jscomp.arrayFromIterator($jscomp.makeIterator(iterable))
 }
+$jscomp.owns = function (obj, prop) {
+    return Object.prototype.hasOwnProperty.call(obj, prop)
+}
+$jscomp.assign =
+    $jscomp.TRUST_ES6_POLYFILLS && 'function' == typeof Object.assign
+        ? Object.assign
+        : function (target, var_args) {
+              for (var i = 1; i < arguments.length; i++) {
+                  var source = arguments[i]
+                  if (source) {
+                      for (var key in source) {
+                          $jscomp.owns(source, key) &&
+                              (target[key] = source[key])
+                      }
+                  }
+              }
+              return target
+          }
+$jscomp.polyfill(
+    'Object.assign',
+    function (orig) {
+        return orig || $jscomp.assign
+    },
+    'es6',
+    'es3'
+)
 $jscomp.objectCreate =
     $jscomp.ASSUME_ES5 || 'function' == typeof Object.create
         ? Object.create
@@ -629,6 +653,16 @@ $jscomp.asyncExecutePromiseGeneratorProgram = function (program) {
     return $jscomp.asyncExecutePromiseGenerator(
         new $jscomp.generator.Generator_(new $jscomp.generator.Engine_(program))
     )
+}
+$jscomp.getRestArguments = function () {
+    for (
+        var startIndex = Number(this), restArgs = [], i = startIndex;
+        i < arguments.length;
+        i++
+    ) {
+        restArgs[i - startIndex] = arguments[i]
+    }
+    return restArgs
 }
 $jscomp.polyfill(
     'Reflect',
@@ -1011,9 +1045,6 @@ $jscomp.USE_PROXY_FOR_ES6_CONFORMANCE_CHECKS = !1
 $jscomp.ES6_CONFORMANCE =
     $jscomp.USE_PROXY_FOR_ES6_CONFORMANCE_CHECKS &&
     $jscomp.checkEs6ConformanceViaProxy()
-$jscomp.owns = function (obj, prop) {
-    return Object.prototype.hasOwnProperty.call(obj, prop)
-}
 $jscomp.polyfill(
     'WeakMap',
     function (NativeWeakMap) {
@@ -1474,29 +1505,6 @@ $jscomp.polyfill(
     'es6',
     'es5'
 )
-$jscomp.assign =
-    $jscomp.TRUST_ES6_POLYFILLS && 'function' == typeof Object.assign
-        ? Object.assign
-        : function (target, var_args) {
-              for (var i = 1; i < arguments.length; i++) {
-                  var source = arguments[i]
-                  if (source) {
-                      for (var key in source) {
-                          $jscomp.owns(source, key) &&
-                              (target[key] = source[key])
-                      }
-                  }
-              }
-              return target
-          }
-$jscomp.polyfill(
-    'Object.assign',
-    function (orig) {
-        return orig || $jscomp.assign
-    },
-    'es6',
-    'es3'
-)
 $jscomp.polyfill(
     'String.prototype.endsWith',
     function (orig) {
@@ -1557,6 +1565,20 @@ $jscomp.polyfill(
                       }
                   }
                   return j >= searchLen
+              }
+    },
+    'es6',
+    'es3'
+)
+$jscomp.polyfill(
+    'Number.isFinite',
+    function (orig) {
+        return orig
+            ? orig
+            : function (x) {
+                  return 'number' !== typeof x
+                      ? !1
+                      : !isNaN(x) && Infinity !== x && -Infinity !== x
               }
     },
     'es6',
@@ -1850,12 +1872,16 @@ goog.define = function (name, defaultValue) {
 goog.FEATURESET_YEAR = 2012
 goog.DEBUG = !0
 goog.LOCALE = 'en'
-goog.getLocale = function () {
-    return goog.LOCALE
-}
 goog.TRUSTED_SITE = !0
 goog.DISALLOW_TEST_ONLY_CODE = !goog.DEBUG
 goog.ENABLE_CHROME_APP_SAFE_SCRIPT_LOADING = !1
+goog.readFlagInternalDoNotUseOrElse = function (googFlagId, defaultValue) {
+    var obj = goog.getObjectByName(goog.FLAGS_OBJECT_),
+        val = obj && obj[googFlagId]
+    return null != val ? val : defaultValue
+}
+goog.FLAGS_OBJECT_ = 'CLOSURE_FLAGS'
+goog.FLAGS_STAGING_DEFAULT = !0
 goog.provide = function (name) {
     if (goog.isInModuleLoader_()) {
         throw Error('goog.provide cannot be used within a module.')
@@ -1905,6 +1931,17 @@ goog.module.get = function (name) {
 goog.module.getInternal_ = function (name) {
     var ns
     return null
+}
+goog.requireDynamic = function (name) {
+    return null
+}
+goog.importHandler_ = null
+goog.uncompiledChunkIdHandler_ = null
+goog.setImportHandlerInternalDoNotCallOrElse = function (fn) {
+    goog.importHandler_ = fn
+}
+goog.setUncompiledChunkIdHandlerInternalDoNotCallOrElse = function (fn) {
+    goog.uncompiledChunkIdHandler_ = fn
 }
 goog.ModuleType = { ES6: 'es6', GOOG: 'goog' }
 goog.moduleLoaderState_ = null
@@ -1990,7 +2027,6 @@ goog.requireType = function (namespace) {
     return {}
 }
 goog.basePath = ''
-goog.nullFunction = function () {}
 goog.abstractMethod = function () {
     throw Error('unimplemented abstract method')
 }
@@ -2013,8 +2049,6 @@ goog.loadedModules_ = {}
 goog.DEPENDENCIES_ENABLED = !1
 goog.TRANSPILE = 'detect'
 goog.ASSUME_ES_MODULES_TRANSPILED = !1
-goog.TRANSPILE_TO_LANGUAGE = ''
-goog.TRANSPILER = 'transpile.js'
 goog.TRUSTED_TYPES_POLICY_NAME = 'goog'
 goog.hasBadLetScoping = null
 goog.loadModule = function (moduleDef) {
@@ -2029,16 +2063,14 @@ goog.loadModule = function (moduleDef) {
             exports = origExports
         if ('function' === typeof moduleDef) {
             exports = moduleDef.call(void 0, exports)
+        } else if ('string' === typeof moduleDef) {
+            exports = goog.loadModuleFromSource_.call(
+                void 0,
+                exports,
+                moduleDef
+            )
         } else {
-            if ('string' === typeof moduleDef) {
-                exports = goog.loadModuleFromSource_.call(
-                    void 0,
-                    exports,
-                    moduleDef
-                )
-            } else {
-                throw Error('Invalid module definition')
-            }
+            throw Error('Invalid module definition')
         }
         var moduleName = goog.moduleLoaderState_.moduleName
         if ('string' === typeof moduleName && moduleName) {
@@ -2101,44 +2133,6 @@ goog.loadFileSync_ = function (src) {
     } catch (err) {
         return null
     }
-}
-goog.transpile_ = function (code$jscomp$0, path$jscomp$0, target) {
-    var jscomp = goog.global.$jscomp
-    jscomp || (goog.global.$jscomp = jscomp = {})
-    var transpile = jscomp.transpile
-    if (!transpile) {
-        var transpilerPath = goog.basePath + goog.TRANSPILER,
-            transpilerCode = goog.loadFileSync_(transpilerPath)
-        if (transpilerCode) {
-            ;(function () {
-                ;(0, eval)(transpilerCode + '\n//# sourceURL=' + transpilerPath)
-            }.call(goog.global))
-            if (
-                goog.global.$gwtExport &&
-                goog.global.$gwtExport.$jscomp &&
-                !goog.global.$gwtExport.$jscomp.transpile
-            ) {
-                throw Error(
-                    'The transpiler did not properly export the "transpile" method. $gwtExport: ' +
-                        JSON.stringify(goog.global.$gwtExport)
-                )
-            }
-            goog.global.$jscomp.transpile =
-                goog.global.$gwtExport.$jscomp.transpile
-            jscomp = goog.global.$jscomp
-            transpile = jscomp.transpile
-        }
-    }
-    if (!transpile) {
-        var suffix = ' requires transpilation but no transpiler was found.'
-        suffix +=
-            ' Please add "//javascript/closure:transpiler" as a data dependency to ensure it is included.'
-        transpile = jscomp.transpile = function (code, path) {
-            goog.logToConsole_(path + suffix)
-            return code
-        }
-    }
-    return transpile(code$jscomp$0, path$jscomp$0, target)
 }
 goog.typeOf = function (value) {
     var s = typeof value
@@ -2238,11 +2232,6 @@ goog.partial = function (fn, var_args) {
         return fn.apply(this, newArgs)
     }
 }
-goog.mixin = function (target, source) {
-    for (var x in source) {
-        target[x] = source[x]
-    }
-}
 goog.now = function () {
     return Date.now()
 }
@@ -2287,6 +2276,7 @@ goog.setCssNameMapping = function (mapping, opt_style) {
     goog.cssNameMapping_ = mapping
     goog.cssNameMappingStyle_ = opt_style
 }
+goog.GetMsgOptions = function () {}
 goog.getMsg = function (str, opt_values, opt_options) {
     opt_options && opt_options.html && (str = str.replace(/</g, '&lt;'))
     opt_options &&
@@ -2571,23 +2561,28 @@ goog.dom.NodeType = {
 }
 goog.asserts = {}
 goog.asserts.ENABLE_ASSERTS = goog.DEBUG
-goog.asserts.AssertionError = function (messagePattern, messageArgs) {
+function module$contents$goog$asserts_AssertionError(
+    messagePattern,
+    messageArgs
+) {
     module$contents$goog$debug$Error_DebugError.call(
         this,
-        goog.asserts.subs_(messagePattern, messageArgs)
+        module$contents$goog$asserts_subs(messagePattern, messageArgs)
     )
     this.messagePattern = messagePattern
 }
 goog.inherits(
-    goog.asserts.AssertionError,
+    module$contents$goog$asserts_AssertionError,
     module$contents$goog$debug$Error_DebugError
 )
-goog.asserts.AssertionError.prototype.name = 'AssertionError'
+goog.asserts.AssertionError = module$contents$goog$asserts_AssertionError
+module$contents$goog$asserts_AssertionError.prototype.name = 'AssertionError'
 goog.asserts.DEFAULT_ERROR_HANDLER = function (e) {
     throw e
 }
-goog.asserts.errorHandler_ = goog.asserts.DEFAULT_ERROR_HANDLER
-goog.asserts.subs_ = function (pattern, subs) {
+var module$contents$goog$asserts_errorHandler_ =
+    goog.asserts.DEFAULT_ERROR_HANDLER
+function module$contents$goog$asserts_subs(pattern, subs) {
     for (
         var splitParts = pattern.split('%s'),
             returnString = '',
@@ -2600,7 +2595,7 @@ goog.asserts.subs_ = function (pattern, subs) {
     }
     return returnString + splitParts[subLast]
 }
-goog.asserts.doAssertFailure_ = function (
+function module$contents$goog$asserts_doAssertFailure(
     defaultMessage,
     defaultArgs,
     givenMessage,
@@ -2614,16 +2609,20 @@ goog.asserts.doAssertFailure_ = function (
         defaultMessage &&
             ((message += ': ' + defaultMessage), (args = defaultArgs))
     }
-    var e = new goog.asserts.AssertionError('' + message, args || [])
-    goog.asserts.errorHandler_(e)
+    var e = new module$contents$goog$asserts_AssertionError(
+        '' + message,
+        args || []
+    )
+    module$contents$goog$asserts_errorHandler_(e)
 }
 goog.asserts.setErrorHandler = function (errorHandler) {
-    goog.asserts.ENABLE_ASSERTS && (goog.asserts.errorHandler_ = errorHandler)
+    goog.asserts.ENABLE_ASSERTS &&
+        (module$contents$goog$asserts_errorHandler_ = errorHandler)
 }
 goog.asserts.assert = function (condition, opt_message, var_args) {
     goog.asserts.ENABLE_ASSERTS &&
         !condition &&
-        goog.asserts.doAssertFailure_(
+        module$contents$goog$asserts_doAssertFailure(
             '',
             null,
             opt_message,
@@ -2634,7 +2633,7 @@ goog.asserts.assert = function (condition, opt_message, var_args) {
 goog.asserts.assertExists = function (value, opt_message, var_args) {
     goog.asserts.ENABLE_ASSERTS &&
         null == value &&
-        goog.asserts.doAssertFailure_(
+        module$contents$goog$asserts_doAssertFailure(
             'Expected to exist: %s.',
             [value],
             opt_message,
@@ -2644,8 +2643,8 @@ goog.asserts.assertExists = function (value, opt_message, var_args) {
 }
 goog.asserts.fail = function (opt_message, var_args) {
     goog.asserts.ENABLE_ASSERTS &&
-        goog.asserts.errorHandler_(
-            new goog.asserts.AssertionError(
+        module$contents$goog$asserts_errorHandler_(
+            new module$contents$goog$asserts_AssertionError(
                 'Failure' + (opt_message ? ': ' + opt_message : ''),
                 Array.prototype.slice.call(arguments, 1)
             )
@@ -2654,7 +2653,7 @@ goog.asserts.fail = function (opt_message, var_args) {
 goog.asserts.assertNumber = function (value, opt_message, var_args) {
     goog.asserts.ENABLE_ASSERTS &&
         'number' !== typeof value &&
-        goog.asserts.doAssertFailure_(
+        module$contents$goog$asserts_doAssertFailure(
             'Expected number but got %s: %s.',
             [goog.typeOf(value), value],
             opt_message,
@@ -2665,7 +2664,7 @@ goog.asserts.assertNumber = function (value, opt_message, var_args) {
 goog.asserts.assertString = function (value, opt_message, var_args) {
     goog.asserts.ENABLE_ASSERTS &&
         'string' !== typeof value &&
-        goog.asserts.doAssertFailure_(
+        module$contents$goog$asserts_doAssertFailure(
             'Expected string but got %s: %s.',
             [goog.typeOf(value), value],
             opt_message,
@@ -2676,7 +2675,7 @@ goog.asserts.assertString = function (value, opt_message, var_args) {
 goog.asserts.assertFunction = function (value, opt_message, var_args) {
     goog.asserts.ENABLE_ASSERTS &&
         'function' !== typeof value &&
-        goog.asserts.doAssertFailure_(
+        module$contents$goog$asserts_doAssertFailure(
             'Expected function but got %s: %s.',
             [goog.typeOf(value), value],
             opt_message,
@@ -2687,7 +2686,7 @@ goog.asserts.assertFunction = function (value, opt_message, var_args) {
 goog.asserts.assertObject = function (value, opt_message, var_args) {
     goog.asserts.ENABLE_ASSERTS &&
         !goog.isObject(value) &&
-        goog.asserts.doAssertFailure_(
+        module$contents$goog$asserts_doAssertFailure(
             'Expected object but got %s: %s.',
             [goog.typeOf(value), value],
             opt_message,
@@ -2698,7 +2697,7 @@ goog.asserts.assertObject = function (value, opt_message, var_args) {
 goog.asserts.assertArray = function (value, opt_message, var_args) {
     goog.asserts.ENABLE_ASSERTS &&
         !Array.isArray(value) &&
-        goog.asserts.doAssertFailure_(
+        module$contents$goog$asserts_doAssertFailure(
             'Expected array but got %s: %s.',
             [goog.typeOf(value), value],
             opt_message,
@@ -2709,7 +2708,7 @@ goog.asserts.assertArray = function (value, opt_message, var_args) {
 goog.asserts.assertBoolean = function (value, opt_message, var_args) {
     goog.asserts.ENABLE_ASSERTS &&
         'boolean' !== typeof value &&
-        goog.asserts.doAssertFailure_(
+        module$contents$goog$asserts_doAssertFailure(
             'Expected boolean but got %s: %s.',
             [goog.typeOf(value), value],
             opt_message,
@@ -2720,7 +2719,7 @@ goog.asserts.assertBoolean = function (value, opt_message, var_args) {
 goog.asserts.assertElement = function (value, opt_message, var_args) {
     !goog.asserts.ENABLE_ASSERTS ||
         (goog.isObject(value) && value.nodeType == goog.dom.NodeType.ELEMENT) ||
-        goog.asserts.doAssertFailure_(
+        module$contents$goog$asserts_doAssertFailure(
             'Expected Element but got %s: %s.',
             [goog.typeOf(value), value],
             opt_message,
@@ -2731,9 +2730,12 @@ goog.asserts.assertElement = function (value, opt_message, var_args) {
 goog.asserts.assertInstanceof = function (value, type, opt_message, var_args) {
     !goog.asserts.ENABLE_ASSERTS ||
         value instanceof type ||
-        goog.asserts.doAssertFailure_(
+        module$contents$goog$asserts_doAssertFailure(
             'Expected instanceof %s but got %s.',
-            [goog.asserts.getType_(type), goog.asserts.getType_(value)],
+            [
+                module$contents$goog$asserts_getType(type),
+                module$contents$goog$asserts_getType(value),
+            ],
             opt_message,
             Array.prototype.slice.call(arguments, 3)
         )
@@ -2742,7 +2744,7 @@ goog.asserts.assertInstanceof = function (value, type, opt_message, var_args) {
 goog.asserts.assertFinite = function (value, opt_message, var_args) {
     !goog.asserts.ENABLE_ASSERTS ||
         ('number' == typeof value && isFinite(value)) ||
-        goog.asserts.doAssertFailure_(
+        module$contents$goog$asserts_doAssertFailure(
             'Expected %s to be a finite number but it is not.',
             [value],
             opt_message,
@@ -2750,7 +2752,7 @@ goog.asserts.assertFinite = function (value, opt_message, var_args) {
         )
     return value
 }
-goog.asserts.getType_ = function (value) {
+function module$contents$goog$asserts_getType(value) {
     return value instanceof Function
         ? value.displayName || value.name || 'unknown type name'
         : value instanceof Object
@@ -3190,8 +3192,7 @@ function module$contents$goog$array_toArray(object) {
     }
     return []
 }
-var module$contents$goog$array_clone = (goog.array.toArray =
-    module$contents$goog$array_toArray)
+goog.array.toArray = module$contents$goog$array_toArray
 goog.array.clone = module$contents$goog$array_toArray
 function module$contents$goog$array_extend(arr1, var_args) {
     for (var i = 1; i < arguments.length; i++) {
@@ -3310,8 +3311,8 @@ goog.array.stableSort = function module$contents$goog$array_stableSort(
             )
         }
     )
-    for (var i$28 = 0; i$28 < arr.length; i$28++) {
-        arr[i$28] = compArr[i$28].value
+    for (var i$35 = 0; i$35 < arr.length; i$35++) {
+        arr[i$35] = compArr[i$35].value
     }
 }
 function module$contents$goog$array_sortByKey(arr, keyFn, opt_compareFn) {
@@ -3494,8 +3495,8 @@ function module$contents$goog$array_range(startOrEnd, opt_end, opt_step) {
             array.push(i)
         }
     } else {
-        for (var i$29 = start; i$29 > end; i$29 += step) {
-            array.push(i$29)
+        for (var i$36 = start; i$36 > end; i$36 += step) {
+            array.push(i$36)
         }
     }
     return array
@@ -3568,9 +3569,9 @@ goog.array.zip = function module$contents$goog$array_zip(var_args) {
     ) {
         arguments[i].length < minLen && (minLen = arguments[i].length)
     }
-    for (var i$30 = 0; i$30 < minLen; i$30++) {
+    for (var i$37 = 0; i$37 < minLen; i$37++) {
         for (var value = [], j = 0; j < arguments.length; j++) {
-            value.push(arguments[j][i$30])
+            value.push(arguments[j][i$37])
         }
         result.push(value)
     }
@@ -3680,52 +3681,35 @@ goog.debug.deepExpose = function (obj$jscomp$0, opt_showFn) {
             try {
                 if (void 0 === obj) {
                     str$jscomp$0.push('undefined')
-                } else {
-                    if (null === obj) {
-                        str$jscomp$0.push('NULL')
+                } else if (null === obj) {
+                    str$jscomp$0.push('NULL')
+                } else if ('string' === typeof obj) {
+                    str$jscomp$0.push('"' + indentMultiline(obj) + '"')
+                } else if ('function' === typeof obj) {
+                    str$jscomp$0.push(indentMultiline(String(obj)))
+                } else if (goog.isObject(obj)) {
+                    goog.hasUid(obj) || uidsToCleanup.push(obj)
+                    var uid = goog.getUid(obj)
+                    if (ancestorUids[uid]) {
+                        str$jscomp$0.push(
+                            '*** reference loop detected (id=' + uid + ') ***'
+                        )
                     } else {
-                        if ('string' === typeof obj) {
-                            str$jscomp$0.push('"' + indentMultiline(obj) + '"')
-                        } else {
-                            if ('function' === typeof obj) {
-                                str$jscomp$0.push(indentMultiline(String(obj)))
-                            } else {
-                                if (goog.isObject(obj)) {
-                                    goog.hasUid(obj) || uidsToCleanup.push(obj)
-                                    var uid = goog.getUid(obj)
-                                    if (ancestorUids[uid]) {
-                                        str$jscomp$0.push(
-                                            '*** reference loop detected (id=' +
-                                                uid +
-                                                ') ***'
-                                        )
-                                    } else {
-                                        ancestorUids[uid] = !0
-                                        str$jscomp$0.push('{')
-                                        for (var x in obj) {
-                                            if (
-                                                opt_showFn ||
-                                                'function' !== typeof obj[x]
-                                            ) {
-                                                str$jscomp$0.push('\n'),
-                                                    str$jscomp$0.push(
-                                                        nestspace
-                                                    ),
-                                                    str$jscomp$0.push(
-                                                        x + ' = '
-                                                    ),
-                                                    helper(obj[x], nestspace)
-                                            }
-                                        }
-                                        str$jscomp$0.push('\n' + space + '}')
-                                        delete ancestorUids[uid]
-                                    }
-                                } else {
-                                    str$jscomp$0.push(obj)
-                                }
+                        ancestorUids[uid] = !0
+                        str$jscomp$0.push('{')
+                        for (var x in obj) {
+                            if (opt_showFn || 'function' !== typeof obj[x]) {
+                                str$jscomp$0.push('\n'),
+                                    str$jscomp$0.push(nestspace),
+                                    str$jscomp$0.push(x + ' = '),
+                                    helper(obj[x], nestspace)
                             }
                         }
+                        str$jscomp$0.push('\n' + space + '}')
+                        delete ancestorUids[uid]
                     }
+                } else {
+                    str$jscomp$0.push(obj)
                 }
             } catch (e) {
                 str$jscomp$0.push('*** ' + e + ' ***')
@@ -3770,7 +3754,7 @@ goog.debug.normalizeErrorObject = function (err) {
             err.sourceURL ||
             goog.global.$googDebugFname ||
             href
-    } catch (e$31) {
+    } catch (e$38) {
         ;(fileName = 'Not available'), (threwError = !0)
     }
     var stack = goog.debug.serializeErrorStack_(err)
@@ -3798,7 +3782,7 @@ goog.debug.normalizeErrorObject = function (err) {
                             ' with Event.type "' +
                             (err.type || '') +
                             '"'
-                    } catch (e$32) {}
+                    } catch (e$39) {}
                 }
             } else {
                 message = 'Unknown Error of unknown type'
@@ -3937,46 +3921,44 @@ goog.debug.getStacktraceHelper_ = function (fn, visited) {
     var sb = []
     if (module$contents$goog$array_contains(visited, fn)) {
         sb.push('[...circular reference...]')
-    } else {
-        if (fn && visited.length < goog.debug.MAX_STACK_DEPTH) {
-            sb.push(goog.debug.getFunctionName(fn) + '(')
-            for (var args = fn.arguments, i = 0; args && i < args.length; i++) {
-                0 < i && sb.push(', ')
-                var arg = args[i]
-                switch (typeof arg) {
-                    case 'object':
-                        var argDesc = arg ? 'object' : 'null'
-                        break
-                    case 'string':
-                        argDesc = arg
-                        break
-                    case 'number':
-                        argDesc = String(arg)
-                        break
-                    case 'boolean':
-                        argDesc = arg ? 'true' : 'false'
-                        break
-                    case 'function':
-                        argDesc = (argDesc = goog.debug.getFunctionName(arg))
-                            ? argDesc
-                            : '[fn]'
-                        break
-                    default:
-                        argDesc = typeof arg
-                }
-                40 < argDesc.length && (argDesc = argDesc.substr(0, 40) + '...')
-                sb.push(argDesc)
+    } else if (fn && visited.length < goog.debug.MAX_STACK_DEPTH) {
+        sb.push(goog.debug.getFunctionName(fn) + '(')
+        for (var args = fn.arguments, i = 0; args && i < args.length; i++) {
+            0 < i && sb.push(', ')
+            var arg = args[i]
+            switch (typeof arg) {
+                case 'object':
+                    var argDesc = arg ? 'object' : 'null'
+                    break
+                case 'string':
+                    argDesc = arg
+                    break
+                case 'number':
+                    argDesc = String(arg)
+                    break
+                case 'boolean':
+                    argDesc = arg ? 'true' : 'false'
+                    break
+                case 'function':
+                    argDesc = (argDesc = goog.debug.getFunctionName(arg))
+                        ? argDesc
+                        : '[fn]'
+                    break
+                default:
+                    argDesc = typeof arg
             }
-            visited.push(fn)
-            sb.push(')\n')
-            try {
-                sb.push(goog.debug.getStacktraceHelper_(fn.caller, visited))
-            } catch (e) {
-                sb.push('[exception trying to get caller]\n')
-            }
-        } else {
-            fn ? sb.push('[...long stack...]') : sb.push('[end]')
+            40 < argDesc.length && (argDesc = argDesc.slice(0, 40) + '...')
+            sb.push(argDesc)
         }
+        visited.push(fn)
+        sb.push(')\n')
+        try {
+            sb.push(goog.debug.getStacktraceHelper_(fn.caller, visited))
+        } catch (e) {
+            sb.push('[exception trying to get caller]\n')
+        }
+    } else {
+        fn ? sb.push('[...long stack...]') : sb.push('[end]')
     }
     return sb.join('')
 }
@@ -4024,12 +4006,6 @@ goog.debug.freeze = function (arg) {
     })()
 }
 goog.events.BrowserFeature = {
-    HAS_W3C_BUTTON: !0,
-    HAS_W3C_EVENT_SUPPORT: !0,
-    SET_KEY_CODE_TO_PREVENT_DEFAULT: !1,
-    HAS_NAVIGATOR_ONLINE_PROPERTY: !0,
-    HAS_HTML5_NETWORK_EVENT_SUPPORT: !0,
-    HTML5_NETWORK_EVENTS_FIRE_ON_BODY: !1,
     TOUCH_ENABLED:
         'ontouchstart' in goog.global ||
         !!(
@@ -4043,9 +4019,7 @@ goog.events.BrowserFeature = {
                 !goog.global.navigator.msMaxTouchPoints)
         ),
     POINTER_EVENTS: 'PointerEvent' in goog.global,
-    MSPOINTER_EVENTS:
-        'MSPointerEvent' in goog.global &&
-        !(!goog.global.navigator || !goog.global.navigator.msPointerEnabled),
+    MSPOINTER_EVENTS: !1,
     PASSIVE_EVENTS: (function (fn) {
         return { valueOf: fn }.valueOf()
     })(function () {
@@ -4059,20 +4033,21 @@ goog.events.BrowserFeature = {
                 },
             })
         try {
-            goog.global.addEventListener('test', goog.nullFunction, options),
-                goog.global.removeEventListener(
-                    'test',
-                    goog.nullFunction,
-                    options
-                )
+            goog.global.addEventListener('test', function () {}, options),
+                goog.global.removeEventListener('test', function () {}, options)
         } catch (e) {}
         return passive
     }),
 }
-var module$exports$goog$labs$userAgent = {}
-module$exports$goog$labs$userAgent.USE_CLIENT_HINTS = (function () {
-    return !1
-})()
+goog.labs = {}
+goog.labs.userAgent = {}
+var module$contents$goog$labs$userAgent_forceClientHintsInTests = !1
+goog.labs.userAgent.setUseClientHintsForTesting = function (use) {
+    module$contents$goog$labs$userAgent_forceClientHintsInTests = use
+}
+goog.labs.userAgent.useClientHints = function () {
+    return module$contents$goog$labs$userAgent_forceClientHintsInTests
+}
 goog.string = {}
 goog.string.internal = {}
 goog.string.internal.startsWith = function (str, prefix) {
@@ -4087,7 +4062,7 @@ goog.string.internal.caseInsensitiveStartsWith = function (str, prefix) {
         0 ==
         goog.string.internal.caseInsensitiveCompare(
             prefix,
-            str.substr(0, prefix.length)
+            str.slice(0, prefix.length)
         )
     )
 }
@@ -4096,7 +4071,7 @@ goog.string.internal.caseInsensitiveEndsWith = function (str, suffix) {
         0 ==
         goog.string.internal.caseInsensitiveCompare(
             suffix,
-            str.substr(str.length - suffix.length, suffix.length)
+            str.slice(str.length - suffix.length)
         )
     )
 }
@@ -4212,8 +4187,6 @@ goog.string.internal.compareVersions = function (version1, version2) {
 goog.string.internal.compareElements_ = function (left, right) {
     return left < right ? -1 : left > right ? 1 : 0
 }
-goog.labs = {}
-goog.labs.userAgent = {}
 goog.labs.userAgent.util = {}
 function module$contents$goog$labs$userAgent$util_getNativeUserAgentString() {
     var navigator = module$contents$goog$labs$userAgent$util_getNavigator()
@@ -4226,26 +4199,27 @@ function module$contents$goog$labs$userAgent$util_getNativeUserAgentString() {
     return ''
 }
 function module$contents$goog$labs$userAgent$util_getNativeUserAgentData() {
-    if (!module$exports$goog$labs$userAgent.USE_CLIENT_HINTS) {
-        return null
-    }
     var navigator = module$contents$goog$labs$userAgent$util_getNavigator()
     return navigator ? navigator.userAgentData || null : null
 }
 function module$contents$goog$labs$userAgent$util_getNavigator() {
     return goog.global.navigator
 }
-var module$contents$goog$labs$userAgent$util_userAgentInternal =
-        module$contents$goog$labs$userAgent$util_getNativeUserAgentString(),
+var module$contents$goog$labs$userAgent$util_userAgentInternal = null,
     module$contents$goog$labs$userAgent$util_userAgentDataInternal =
         module$contents$goog$labs$userAgent$util_getNativeUserAgentData()
 function module$contents$goog$labs$userAgent$util_getUserAgent() {
-    return module$contents$goog$labs$userAgent$util_userAgentInternal
+    return null == module$contents$goog$labs$userAgent$util_userAgentInternal
+        ? module$contents$goog$labs$userAgent$util_getNativeUserAgentString()
+        : module$contents$goog$labs$userAgent$util_userAgentInternal
 }
 function module$contents$goog$labs$userAgent$util_getUserAgentData() {
     return module$contents$goog$labs$userAgent$util_userAgentDataInternal
 }
 function module$contents$goog$labs$userAgent$util_matchUserAgentDataBrand(str) {
+    if (!(0, goog.labs.userAgent.useClientHints)()) {
+        return !1
+    }
     var data = module$contents$goog$labs$userAgent$util_getUserAgentData()
     return data
         ? data.brands.some(function ($jscomp$destructuring$var0) {
@@ -4273,7 +4247,7 @@ function module$contents$goog$labs$userAgent$util_extractVersionTuples(
 ) {
     for (
         var versionRegExp = RegExp(
-                '(\\w[\\w ]+)/([^\\s]+)\\s*(?:\\((.*?)\\))?',
+                '([A-Z][\\w ]+)/([^\\s]+)\\s*(?:\\((.*?)\\))?',
                 'g'
             ),
             data = [],
@@ -4440,11 +4414,6 @@ module$exports$goog$labs$userAgent$highEntropy$highEntropyData.platformVersion =
     new module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.HighEntropyValue(
         'platformVersion'
     )
-module$exports$goog$labs$userAgent$highEntropy$highEntropyData.resetAllForTesting =
-    function module$contents$goog$labs$userAgent$highEntropy$highEntropyData_resetAllForTesting() {
-        module$exports$goog$labs$userAgent$highEntropy$highEntropyData.fullVersionList.resetForTesting()
-        module$exports$goog$labs$userAgent$highEntropy$highEntropyData.platformVersion.resetForTesting()
-    }
 goog.labs.userAgent.browser = {}
 var module$contents$goog$labs$userAgent$browser_Brand = {
     ANDROID_BROWSER: 'Android Browser',
@@ -4458,95 +4427,95 @@ var module$contents$goog$labs$userAgent$browser_Brand = {
 }
 goog.labs.userAgent.browser.Brand =
     module$contents$goog$labs$userAgent$browser_Brand
-function module$contents$goog$labs$userAgent$browser_useUserAgentBrand() {
+function module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand(
+    ignoreClientHintsFlag
+) {
+    if (
+        !(
+            (void 0 !== ignoreClientHintsFlag && ignoreClientHintsFlag) ||
+            (0, goog.labs.userAgent.useClientHints)()
+        )
+    ) {
+        return !1
+    }
     var userAgentData =
         module$contents$goog$labs$userAgent$util_getUserAgentData()
     return !!userAgentData && 0 < userAgentData.brands.length
 }
+function module$contents$goog$labs$userAgent$browser_hasFullVersionList() {
+    return module$contents$goog$labs$userAgent$browser_isAtLeast(
+        module$contents$goog$labs$userAgent$browser_Brand.CHROMIUM,
+        98
+    )
+}
 function module$contents$goog$labs$userAgent$browser_matchOpera() {
-    return module$contents$goog$labs$userAgent$util_getUserAgentData()
+    return module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand()
         ? !1
         : module$contents$goog$labs$userAgent$util_matchUserAgent('Opera')
 }
 function module$contents$goog$labs$userAgent$browser_matchIE() {
-    return module$contents$goog$labs$userAgent$util_getUserAgentData()
+    return module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand()
         ? !1
         : module$contents$goog$labs$userAgent$util_matchUserAgent('Trident') ||
               module$contents$goog$labs$userAgent$util_matchUserAgent('MSIE')
 }
 function module$contents$goog$labs$userAgent$browser_matchEdgeHtml() {
-    return module$contents$goog$labs$userAgent$util_getUserAgentData()
+    return module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand()
         ? !1
         : module$contents$goog$labs$userAgent$util_matchUserAgent('Edge')
 }
 function module$contents$goog$labs$userAgent$browser_matchEdgeChromium() {
-    return module$contents$goog$labs$userAgent$browser_useUserAgentBrand()
+    return module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand()
         ? module$contents$goog$labs$userAgent$util_matchUserAgentDataBrand(
               module$contents$goog$labs$userAgent$browser_Brand.EDGE
           )
         : module$contents$goog$labs$userAgent$util_matchUserAgent('Edg/')
 }
 function module$contents$goog$labs$userAgent$browser_matchOperaChromium() {
-    return module$contents$goog$labs$userAgent$browser_useUserAgentBrand()
+    return module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand()
         ? module$contents$goog$labs$userAgent$util_matchUserAgentDataBrand(
               module$contents$goog$labs$userAgent$browser_Brand.OPERA
           )
         : module$contents$goog$labs$userAgent$util_matchUserAgent('OPR')
 }
 function module$contents$goog$labs$userAgent$browser_matchFirefox() {
-    return module$contents$goog$labs$userAgent$util_getUserAgentData()
-        ? !1
-        : module$contents$goog$labs$userAgent$util_matchUserAgent('Firefox') ||
-              module$contents$goog$labs$userAgent$util_matchUserAgent('FxiOS')
+    return (
+        module$contents$goog$labs$userAgent$util_matchUserAgent('Firefox') ||
+        module$contents$goog$labs$userAgent$util_matchUserAgent('FxiOS')
+    )
 }
 function module$contents$goog$labs$userAgent$browser_matchSafari() {
-    return module$contents$goog$labs$userAgent$browser_useUserAgentBrand()
-        ? !1
-        : module$contents$goog$labs$userAgent$util_matchUserAgent('Safari') &&
-              !(
-                  module$contents$goog$labs$userAgent$browser_matchChrome() ||
-                  module$contents$goog$labs$userAgent$browser_matchCoast() ||
-                  module$contents$goog$labs$userAgent$browser_matchOpera() ||
-                  module$contents$goog$labs$userAgent$browser_matchEdgeHtml() ||
-                  module$contents$goog$labs$userAgent$browser_matchEdgeChromium() ||
-                  module$contents$goog$labs$userAgent$browser_matchOperaChromium() ||
-                  module$contents$goog$labs$userAgent$browser_matchFirefox() ||
-                  module$contents$goog$labs$userAgent$browser_isSilk() ||
-                  module$contents$goog$labs$userAgent$util_matchUserAgent(
-                      'Android'
-                  )
-              )
+    return (
+        module$contents$goog$labs$userAgent$util_matchUserAgent('Safari') &&
+        !(
+            module$contents$goog$labs$userAgent$browser_matchChrome() ||
+            module$contents$goog$labs$userAgent$browser_matchCoast() ||
+            module$contents$goog$labs$userAgent$browser_matchOpera() ||
+            module$contents$goog$labs$userAgent$browser_matchEdgeHtml() ||
+            module$contents$goog$labs$userAgent$browser_matchEdgeChromium() ||
+            module$contents$goog$labs$userAgent$browser_matchOperaChromium() ||
+            module$contents$goog$labs$userAgent$browser_matchFirefox() ||
+            module$contents$goog$labs$userAgent$browser_isSilk() ||
+            module$contents$goog$labs$userAgent$util_matchUserAgent('Android')
+        )
+    )
 }
 function module$contents$goog$labs$userAgent$browser_matchCoast() {
-    return module$contents$goog$labs$userAgent$util_getUserAgentData()
+    return module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand()
         ? !1
         : module$contents$goog$labs$userAgent$util_matchUserAgent('Coast')
 }
-function module$contents$goog$labs$userAgent$browser_matchIosWebview() {
-    return module$contents$goog$labs$userAgent$util_getUserAgentData()
-        ? !1
-        : (module$contents$goog$labs$userAgent$util_matchUserAgent('iPad') ||
-              module$contents$goog$labs$userAgent$util_matchUserAgent(
-                  'iPhone'
-              )) &&
-              !module$contents$goog$labs$userAgent$browser_matchSafari() &&
-              !module$contents$goog$labs$userAgent$browser_matchChrome() &&
-              !module$contents$goog$labs$userAgent$browser_matchCoast() &&
-              !module$contents$goog$labs$userAgent$browser_matchFirefox() &&
-              module$contents$goog$labs$userAgent$util_matchUserAgent(
-                  'AppleWebKit'
-              )
-}
 function module$contents$goog$labs$userAgent$browser_matchChrome() {
-    return module$contents$goog$labs$userAgent$browser_useUserAgentBrand()
+    return module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand()
         ? module$contents$goog$labs$userAgent$util_matchUserAgentDataBrand(
               module$contents$goog$labs$userAgent$browser_Brand.CHROMIUM
           )
-        : (module$contents$goog$labs$userAgent$util_matchUserAgent('Chrome') ||
+        : ((module$contents$goog$labs$userAgent$util_matchUserAgent('Chrome') ||
               module$contents$goog$labs$userAgent$util_matchUserAgent(
                   'CriOS'
               )) &&
-              !module$contents$goog$labs$userAgent$browser_matchEdgeHtml()
+              !module$contents$goog$labs$userAgent$browser_matchEdgeHtml()) ||
+              module$contents$goog$labs$userAgent$browser_isSilk()
 }
 function module$contents$goog$labs$userAgent$browser_matchAndroidBrowser() {
     return (
@@ -4591,10 +4560,22 @@ var module$contents$goog$labs$userAgent$browser_isCoast =
     module$contents$goog$labs$userAgent$browser_matchCoast
 goog.labs.userAgent.browser.isCoast =
     module$contents$goog$labs$userAgent$browser_matchCoast
-var module$contents$goog$labs$userAgent$browser_isIosWebview =
-    module$contents$goog$labs$userAgent$browser_matchIosWebview
 goog.labs.userAgent.browser.isIosWebview =
-    module$contents$goog$labs$userAgent$browser_matchIosWebview
+    function module$contents$goog$labs$userAgent$browser_matchIosWebview() {
+        return (
+            (module$contents$goog$labs$userAgent$util_matchUserAgent('iPad') ||
+                module$contents$goog$labs$userAgent$util_matchUserAgent(
+                    'iPhone'
+                )) &&
+            !module$contents$goog$labs$userAgent$browser_matchSafari() &&
+            !module$contents$goog$labs$userAgent$browser_matchChrome() &&
+            !module$contents$goog$labs$userAgent$browser_matchCoast() &&
+            !module$contents$goog$labs$userAgent$browser_matchFirefox() &&
+            module$contents$goog$labs$userAgent$util_matchUserAgent(
+                'AppleWebKit'
+            )
+        )
+    }
 var module$contents$goog$labs$userAgent$browser_isChrome =
     module$contents$goog$labs$userAgent$browser_matchChrome
 goog.labs.userAgent.browser.isChrome =
@@ -4649,6 +4630,9 @@ function module$contents$goog$labs$userAgent$browser_getVersion() {
     }
     if (module$contents$goog$labs$userAgent$browser_matchEdgeChromium()) {
         return lookUpValueWithKeys(['Edg'])
+    }
+    if (module$contents$goog$labs$userAgent$browser_isSilk()) {
+        return lookUpValueWithKeys(['Silk'])
     }
     if (module$contents$goog$labs$userAgent$browser_matchChrome()) {
         return lookUpValueWithKeys(['Chrome', 'CriOS', 'HeadlessChrome'])
@@ -4761,15 +4745,20 @@ function module$contents$goog$labs$userAgent$browser_getFullVersionFromUserAgent
             module$contents$goog$labs$userAgent$browser_matchSafari()) ||
         (browser ===
             module$contents$goog$labs$userAgent$browser_Brand.ANDROID_BROWSER &&
-            module$contents$goog$labs$userAgent$browser_matchAndroidBrowser())
+            module$contents$goog$labs$userAgent$browser_matchAndroidBrowser()) ||
+        (browser === module$contents$goog$labs$userAgent$browser_Brand.SILK &&
+            module$contents$goog$labs$userAgent$browser_isSilk())
     ) {
         var tuple = versionTuples[2]
         return (tuple && tuple[1]) || ''
     }
     return ''
 }
-function module$contents$goog$labs$userAgent$browser_versionOf(browser) {
-    if (module$contents$goog$labs$userAgent$browser_useUserAgentBrand()) {
+function module$contents$goog$labs$userAgent$browser_versionOf_(browser) {
+    if (
+        module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand() &&
+        browser !== module$contents$goog$labs$userAgent$browser_Brand.SILK
+    ) {
         var matchingBrand =
             module$contents$goog$labs$userAgent$util_getUserAgentData().brands.find(
                 function ($jscomp$destructuring$var2) {
@@ -4792,27 +4781,66 @@ function module$contents$goog$labs$userAgent$browser_versionOf(browser) {
     }
     return 0 === versionParts.length ? NaN : Number(versionParts[0])
 }
-goog.labs.userAgent.browser.versionOf =
-    module$contents$goog$labs$userAgent$browser_versionOf
+function module$contents$goog$labs$userAgent$browser_isAtLeast(
+    brand,
+    majorVersion
+) {
+    ;(0, goog.asserts.assert)(
+        Math.floor(majorVersion) === majorVersion,
+        'Major version must be an integer'
+    )
+    return (
+        module$contents$goog$labs$userAgent$browser_versionOf_(brand) >=
+        majorVersion
+    )
+}
+goog.labs.userAgent.browser.isAtLeast =
+    module$contents$goog$labs$userAgent$browser_isAtLeast
+goog.labs.userAgent.browser.isAtMost =
+    function module$contents$goog$labs$userAgent$browser_isAtMost(
+        brand,
+        majorVersion
+    ) {
+        ;(0, goog.asserts.assert)(
+            Math.floor(majorVersion) === majorVersion,
+            'Major version must be an integer'
+        )
+        return (
+            module$contents$goog$labs$userAgent$browser_versionOf_(brand) <=
+            majorVersion
+        )
+    }
 var module$contents$goog$labs$userAgent$browser_HighEntropyBrandVersion =
-    function (brand) {
+    function (brand, useUach, fallbackVersion) {
         this.brand_ = brand
+        this.version_ =
+            new module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.Version(
+                fallbackVersion
+            )
+        this.useUach_ = useUach
     }
 module$contents$goog$labs$userAgent$browser_HighEntropyBrandVersion.prototype.getIfLoaded =
     function () {
-        var $jscomp$this = this,
-            loadedVersionList =
+        var $jscomp$this = this
+        if (this.useUach_) {
+            var loadedVersionList =
                 module$exports$goog$labs$userAgent$highEntropy$highEntropyData.fullVersionList.getIfLoaded()
-        if (void 0 !== loadedVersionList) {
-            var matchingBrand = loadedVersionList.find(function (
-                $jscomp$destructuring$var4
-            ) {
-                return $jscomp$this.brand_ === $jscomp$destructuring$var4.brand
-            })
-            goog.asserts.assertExists(matchingBrand)
-            return new module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.Version(
-                matchingBrand.version
-            )
+            if (void 0 !== loadedVersionList) {
+                var matchingBrand = loadedVersionList.find(function (
+                    $jscomp$destructuring$var4
+                ) {
+                    return (
+                        $jscomp$this.brand_ === $jscomp$destructuring$var4.brand
+                    )
+                })
+                ;(0, goog.asserts.assertExists)(matchingBrand)
+                return new module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.Version(
+                    matchingBrand.version
+                )
+            }
+        }
+        if (module$contents$goog$labs$userAgent$browser_preUachHasLoaded) {
+            return this.version_
         }
     }
 module$contents$goog$labs$userAgent$browser_HighEntropyBrandVersion.prototype.load =
@@ -4824,75 +4852,91 @@ module$contents$goog$labs$userAgent$browser_HighEntropyBrandVersion.prototype.lo
             $jscomp$generator$context
         ) {
             if (1 == $jscomp$generator$context.nextAddress) {
-                return $jscomp$generator$context.yield(
-                    module$exports$goog$labs$userAgent$highEntropy$highEntropyData.fullVersionList.load(),
-                    2
-                )
+                return $jscomp$async$this.useUach_
+                    ? $jscomp$generator$context.yield(
+                          module$exports$goog$labs$userAgent$highEntropy$highEntropyData.fullVersionList.load(),
+                          5
+                      )
+                    : $jscomp$generator$context.yield(0, 3)
             }
-            loadedVersionList = $jscomp$generator$context.yieldResult
-            matchingBrand = loadedVersionList.find(function (
-                $jscomp$destructuring$var6
+            if (
+                3 != $jscomp$generator$context.nextAddress &&
+                ((loadedVersionList = $jscomp$generator$context.yieldResult),
+                void 0 !== loadedVersionList)
             ) {
                 return (
-                    $jscomp$async$this.brand_ ===
-                    $jscomp$destructuring$var6.brand
+                    (matchingBrand = loadedVersionList.find(function (
+                        $jscomp$destructuring$var6
+                    ) {
+                        return (
+                            $jscomp$async$this.brand_ ===
+                            $jscomp$destructuring$var6.brand
+                        )
+                    })),
+                    (0, goog.asserts.assertExists)(matchingBrand),
+                    $jscomp$generator$context.return(
+                        new module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.Version(
+                            matchingBrand.version
+                        )
+                    )
                 )
-            })
-            goog.asserts.assertExists(matchingBrand)
-            return $jscomp$generator$context.return(
-                new module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.Version(
-                    matchingBrand.version
-                )
-            )
-        })
-    }
-var module$contents$goog$labs$userAgent$browser_UserAgentStringFallbackBrandVersion =
-    function (versionString) {
-        this.version_ =
-            new module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.Version(
-                versionString
-            )
-    }
-module$contents$goog$labs$userAgent$browser_UserAgentStringFallbackBrandVersion.prototype.getIfLoaded =
-    function () {
-        return this.version_
-    }
-module$contents$goog$labs$userAgent$browser_UserAgentStringFallbackBrandVersion.prototype.load =
-    function () {
-        var $jscomp$async$this = this
-        return $jscomp.asyncExecutePromiseGeneratorProgram(function (
-            $jscomp$generator$context
-        ) {
+            }
+            module$contents$goog$labs$userAgent$browser_preUachHasLoaded = !0
             return $jscomp$generator$context.return($jscomp$async$this.version_)
         })
     }
+var module$contents$goog$labs$userAgent$browser_preUachHasLoaded = !1
+goog.labs.userAgent.browser.loadFullVersions =
+    function module$contents$goog$labs$userAgent$browser_loadFullVersions() {
+        return $jscomp.asyncExecutePromiseGeneratorProgram(function (
+            $jscomp$generator$context
+        ) {
+            if (1 == $jscomp$generator$context.nextAddress) {
+                return module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand(
+                    !0
+                )
+                    ? $jscomp$generator$context.yield(
+                          module$exports$goog$labs$userAgent$highEntropy$highEntropyData.fullVersionList.load(),
+                          2
+                      )
+                    : $jscomp$generator$context.jumpTo(2)
+            }
+            module$contents$goog$labs$userAgent$browser_preUachHasLoaded = !0
+            $jscomp$generator$context.jumpToEnd()
+        })
+    }
+goog.labs.userAgent.browser.resetForTesting = function () {
+    module$contents$goog$labs$userAgent$browser_preUachHasLoaded = !1
+    module$exports$goog$labs$userAgent$highEntropy$highEntropyData.fullVersionList.resetForTesting()
+}
 function module$contents$goog$labs$userAgent$browser_fullVersionOf(browser) {
-    if (
-        !module$contents$goog$labs$userAgent$browser_useUserAgentBrand() ||
-        101 >
-            module$contents$goog$labs$userAgent$browser_versionOf(
-                module$contents$goog$labs$userAgent$browser_Brand.CHROMIUM
-            )
-    ) {
-        var fullVersionFromUserAgentString =
+    var fallbackVersionString = ''
+    module$contents$goog$labs$userAgent$browser_hasFullVersionList() ||
+        (fallbackVersionString =
             module$contents$goog$labs$userAgent$browser_getFullVersionFromUserAgentString(
                 browser
+            ))
+    var useUach =
+        browser !== module$contents$goog$labs$userAgent$browser_Brand.SILK &&
+        module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand(!0)
+    if (useUach) {
+        if (
+            !module$contents$goog$labs$userAgent$util_getUserAgentData().brands.find(
+                function ($jscomp$destructuring$var8) {
+                    return $jscomp$destructuring$var8.brand === browser
+                }
             )
-        return '' === fullVersionFromUserAgentString
-            ? void 0
-            : new module$contents$goog$labs$userAgent$browser_UserAgentStringFallbackBrandVersion(
-                  fullVersionFromUserAgentString
-              )
-    }
-    return module$contents$goog$labs$userAgent$util_getUserAgentData().brands.find(
-        function ($jscomp$destructuring$var8) {
-            return $jscomp$destructuring$var8.brand === browser
+        ) {
+            return
         }
+    } else if ('' === fallbackVersionString) {
+        return
+    }
+    return new module$contents$goog$labs$userAgent$browser_HighEntropyBrandVersion(
+        browser,
+        useUach,
+        fallbackVersionString
     )
-        ? new module$contents$goog$labs$userAgent$browser_HighEntropyBrandVersion(
-              browser
-          )
-        : void 0
 }
 goog.labs.userAgent.browser.fullVersionOf =
     module$contents$goog$labs$userAgent$browser_fullVersionOf
@@ -4900,7 +4944,11 @@ goog.labs.userAgent.browser.getVersionStringForLogging =
     function module$contents$goog$labs$userAgent$browser_getVersionStringForLogging(
         browser
     ) {
-        if (module$contents$goog$labs$userAgent$browser_useUserAgentBrand()) {
+        if (
+            module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand(
+                !0
+            )
+        ) {
             var fullVersionObj =
                 module$contents$goog$labs$userAgent$browser_fullVersionOf(
                     browser
@@ -4916,7 +4964,7 @@ goog.labs.userAgent.browser.getVersionStringForLogging =
                             return $jscomp$destructuring$var10.brand === browser
                         }
                     )
-                goog.asserts.assertExists(matchingBrand)
+                ;(0, goog.asserts.assertExists)(matchingBrand)
                 return matchingBrand.version
             }
             return ''
@@ -5029,8 +5077,27 @@ goog.labs.userAgent.engine.isVersionOrHigher =
 goog.labs.userAgent.engine.isWebKit =
     module$contents$goog$labs$userAgent$engine_isWebKit
 goog.labs.userAgent.platform = {}
+function module$contents$goog$labs$userAgent$platform_useUserAgentDataPlatform(
+    ignoreClientHintsFlag
+) {
+    if (
+        !(
+            (void 0 !== ignoreClientHintsFlag && ignoreClientHintsFlag) ||
+            (0, goog.labs.userAgent.useClientHints)()
+        )
+    ) {
+        return !1
+    }
+    var userAgentData =
+        module$contents$goog$labs$userAgent$util_getUserAgentData()
+    return !!userAgentData && !!userAgentData.platform
+}
 function module$contents$goog$labs$userAgent$platform_isAndroid() {
-    return module$contents$goog$labs$userAgent$util_matchUserAgent('Android')
+    return module$contents$goog$labs$userAgent$platform_useUserAgentDataPlatform()
+        ? 'Android' ===
+              module$contents$goog$labs$userAgent$util_getUserAgentData()
+                  .platform
+        : module$contents$goog$labs$userAgent$util_matchUserAgent('Android')
 }
 function module$contents$goog$labs$userAgent$platform_isIpod() {
     return module$contents$goog$labs$userAgent$util_matchUserAgent('iPod')
@@ -5053,16 +5120,32 @@ function module$contents$goog$labs$userAgent$platform_isIos() {
     )
 }
 function module$contents$goog$labs$userAgent$platform_isMacintosh() {
-    return module$contents$goog$labs$userAgent$util_matchUserAgent('Macintosh')
+    return module$contents$goog$labs$userAgent$platform_useUserAgentDataPlatform()
+        ? 'macOS' ===
+              module$contents$goog$labs$userAgent$util_getUserAgentData()
+                  .platform
+        : module$contents$goog$labs$userAgent$util_matchUserAgent('Macintosh')
 }
 function module$contents$goog$labs$userAgent$platform_isLinux() {
-    return module$contents$goog$labs$userAgent$util_matchUserAgent('Linux')
+    return module$contents$goog$labs$userAgent$platform_useUserAgentDataPlatform()
+        ? 'Linux' ===
+              module$contents$goog$labs$userAgent$util_getUserAgentData()
+                  .platform
+        : module$contents$goog$labs$userAgent$util_matchUserAgent('Linux')
 }
 function module$contents$goog$labs$userAgent$platform_isWindows() {
-    return module$contents$goog$labs$userAgent$util_matchUserAgent('Windows')
+    return module$contents$goog$labs$userAgent$platform_useUserAgentDataPlatform()
+        ? 'Windows' ===
+              module$contents$goog$labs$userAgent$util_getUserAgentData()
+                  .platform
+        : module$contents$goog$labs$userAgent$util_matchUserAgent('Windows')
 }
 function module$contents$goog$labs$userAgent$platform_isChromeOS() {
-    return module$contents$goog$labs$userAgent$util_matchUserAgent('CrOS')
+    return module$contents$goog$labs$userAgent$platform_useUserAgentDataPlatform()
+        ? 'Chrome OS' ===
+              module$contents$goog$labs$userAgent$util_getUserAgentData()
+                  .platform
+        : module$contents$goog$labs$userAgent$util_matchUserAgent('CrOS')
 }
 function module$contents$goog$labs$userAgent$platform_isKaiOS() {
     return module$contents$goog$labs$userAgent$util_matchUserAgentIgnoreCase(
@@ -5077,56 +5160,48 @@ function module$contents$goog$labs$userAgent$platform_getVersion() {
         var re = /Windows (?:NT|Phone) ([0-9.]+)/
         var match = re.exec(userAgentString)
         version = match ? match[1] : '0.0'
-    } else {
-        if (module$contents$goog$labs$userAgent$platform_isIos()) {
-            re = /(?:iPhone|iPod|iPad|CPU)\s+OS\s+(\S+)/
-            var match$33 = re.exec(userAgentString)
-            version = match$33 && match$33[1].replace(/_/g, '.')
-        } else {
-            if (module$contents$goog$labs$userAgent$platform_isMacintosh()) {
-                re = /Mac OS X ([0-9_.]+)/
-                var match$34 = re.exec(userAgentString)
-                version = match$34 ? match$34[1].replace(/_/g, '.') : '10'
-            } else {
-                if (module$contents$goog$labs$userAgent$platform_isKaiOS()) {
-                    re = /(?:KaiOS)\/(\S+)/i
-                    var match$35 = re.exec(userAgentString)
-                    version = match$35 && match$35[1]
-                } else {
-                    if (
-                        module$contents$goog$labs$userAgent$platform_isAndroid()
-                    ) {
-                        re = /Android\s+([^\);]+)(\)|;)/
-                        var match$36 = re.exec(userAgentString)
-                        version = match$36 && match$36[1]
-                    } else {
-                        if (
-                            module$contents$goog$labs$userAgent$platform_isChromeOS()
-                        ) {
-                            re = /(?:CrOS\s+(?:i686|x86_64)\s+([0-9.]+))/
-                            var match$37 = re.exec(userAgentString)
-                            version = match$37 && match$37[1]
-                        }
-                    }
-                }
-            }
-        }
+    } else if (module$contents$goog$labs$userAgent$platform_isIos()) {
+        re = /(?:iPhone|iPod|iPad|CPU)\s+OS\s+(\S+)/
+        var match$40 = re.exec(userAgentString)
+        version = match$40 && match$40[1].replace(/_/g, '.')
+    } else if (module$contents$goog$labs$userAgent$platform_isMacintosh()) {
+        re = /Mac OS X ([0-9_.]+)/
+        var match$41 = re.exec(userAgentString)
+        version = match$41 ? match$41[1].replace(/_/g, '.') : '10'
+    } else if (module$contents$goog$labs$userAgent$platform_isKaiOS()) {
+        re = /(?:KaiOS)\/(\S+)/i
+        var match$42 = re.exec(userAgentString)
+        version = match$42 && match$42[1]
+    } else if (module$contents$goog$labs$userAgent$platform_isAndroid()) {
+        re = /Android\s+([^\);]+)(\)|;)/
+        var match$43 = re.exec(userAgentString)
+        version = match$43 && match$43[1]
+    } else if (module$contents$goog$labs$userAgent$platform_isChromeOS()) {
+        re = /(?:CrOS\s+(?:i686|x86_64)\s+([0-9.]+))/
+        var match$44 = re.exec(userAgentString)
+        version = match$44 && match$44[1]
     }
     return version || ''
 }
-var module$contents$goog$labs$userAgent$platform_PlatformVersion =
-    function () {}
+var module$contents$goog$labs$userAgent$platform_PlatformVersion = function () {
+    this.preUachHasLoaded_ = !1
+}
 module$contents$goog$labs$userAgent$platform_PlatformVersion.prototype.getIfLoaded =
     function () {
-        if (module$contents$goog$labs$userAgent$util_getUserAgentData()) {
+        if (
+            module$contents$goog$labs$userAgent$platform_useUserAgentDataPlatform(
+                !0
+            )
+        ) {
             var loadedPlatformVersion =
                 module$exports$goog$labs$userAgent$highEntropy$highEntropyData.platformVersion.getIfLoaded()
-            if (void 0 !== loadedPlatformVersion) {
-                return new module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.Version(
-                    loadedPlatformVersion
-                )
-            }
-        } else {
+            return void 0 === loadedPlatformVersion
+                ? void 0
+                : new module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.Version(
+                      loadedPlatformVersion
+                  )
+        }
+        if (this.preUachHasLoaded_) {
             return new module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.Version(
                 module$contents$goog$labs$userAgent$platform_getVersion()
             )
@@ -5134,14 +5209,18 @@ module$contents$goog$labs$userAgent$platform_PlatformVersion.prototype.getIfLoad
     }
 module$contents$goog$labs$userAgent$platform_PlatformVersion.prototype.load =
     function () {
-        var JSCompiler_temp_const
+        var $jscomp$async$this = this,
+            JSCompiler_temp_const
         return $jscomp.asyncExecutePromiseGeneratorProgram(function (
             $jscomp$generator$context
         ) {
             if (1 == $jscomp$generator$context.nextAddress) {
                 if (
-                    !module$contents$goog$labs$userAgent$util_getUserAgentData()
+                    !module$contents$goog$labs$userAgent$platform_useUserAgentDataPlatform(
+                        !0
+                    )
                 ) {
+                    $jscomp$async$this.preUachHasLoaded_ = !0
                     return $jscomp$generator$context.return(
                         new module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.Version(
                             module$contents$goog$labs$userAgent$platform_getVersion()
@@ -5160,6 +5239,11 @@ module$contents$goog$labs$userAgent$platform_PlatformVersion.prototype.load =
                 new JSCompiler_temp_const($jscomp$generator$context.yieldResult)
             )
         })
+    }
+module$contents$goog$labs$userAgent$platform_PlatformVersion.prototype.resetForTesting =
+    function () {
+        module$exports$goog$labs$userAgent$highEntropy$highEntropyData.platformVersion.resetForTesting()
+        this.preUachHasLoaded_ = !1
     }
 var module$contents$goog$labs$userAgent$platform_version =
     new module$contents$goog$labs$userAgent$platform_PlatformVersion()
@@ -5214,7 +5298,7 @@ goog.reflect.sinkValue = function (x) {
     goog.reflect.sinkValue[' '](x)
     return x
 }
-goog.reflect.sinkValue[' '] = goog.nullFunction
+goog.reflect.sinkValue[' '] = function () {}
 goog.reflect.canAccessProperty = function (obj, prop) {
     try {
         return goog.reflect.sinkValue(obj[prop]), !0
@@ -5413,11 +5497,22 @@ goog.userAgent.DOCUMENT_MODE = (function () {
             : parseInt(goog.userAgent.VERSION, 10) || void 0
     }
 })()
-goog.events.MouseEvents = {}
-goog.events.getVendorPrefixedName_ = function (eventName) {
+goog.events.eventTypeHelpers = {}
+goog.events.eventTypeHelpers.getVendorPrefixedName = function (eventName) {
     return goog.userAgent.WEBKIT
         ? 'webkit' + eventName
         : eventName.toLowerCase()
+}
+goog.events.eventTypeHelpers.getPointerFallbackEventName = function (
+    pointerEventName,
+    msPointerEventName,
+    fallbackEventName
+) {
+    return goog.events.BrowserFeature.POINTER_EVENTS
+        ? pointerEventName
+        : goog.events.BrowserFeature.MSPOINTER_EVENTS
+        ? msPointerEventName
+        : fallbackEventName
 }
 goog.events.EventType = {
     CLICK: 'click',
@@ -5524,11 +5619,16 @@ goog.events.EventType = {
     STATECHANGE: 'statechange',
     UPDATEFOUND: 'updatefound',
     CONTROLLERCHANGE: 'controllerchange',
-    ANIMATIONSTART: goog.events.getVendorPrefixedName_('AnimationStart'),
-    ANIMATIONEND: goog.events.getVendorPrefixedName_('AnimationEnd'),
+    ANIMATIONSTART:
+        goog.events.eventTypeHelpers.getVendorPrefixedName('AnimationStart'),
+    ANIMATIONEND:
+        goog.events.eventTypeHelpers.getVendorPrefixedName('AnimationEnd'),
     ANIMATIONITERATION:
-        goog.events.getVendorPrefixedName_('AnimationIteration'),
-    TRANSITIONEND: goog.events.getVendorPrefixedName_('TransitionEnd'),
+        goog.events.eventTypeHelpers.getVendorPrefixedName(
+            'AnimationIteration'
+        ),
+    TRANSITIONEND:
+        goog.events.eventTypeHelpers.getVendorPrefixedName('TransitionEnd'),
     POINTERDOWN: 'pointerdown',
     POINTERUP: 'pointerup',
     POINTERCANCEL: 'pointercancel',
@@ -5562,6 +5662,9 @@ goog.events.EventType = {
     COMPOSITIONUPDATE: 'compositionupdate',
     COMPOSITIONEND: 'compositionend',
     BEFOREINPUT: 'beforeinput',
+    FULLSCREENCHANGE: 'fullscreenchange',
+    WEBKITBEGINFULLSCREEN: 'webkitbeginfullscreen',
+    WEBKITENDFULLSCREEN: 'webkitendfullscreen',
     EXIT: 'exit',
     LOADABORT: 'loadabort',
     LOADCOMMIT: 'loadcommit',
@@ -5584,109 +5687,10 @@ goog.events.EventType = {
     AFTERPRINT: 'afterprint',
     BEFOREINSTALLPROMPT: 'beforeinstallprompt',
     APPINSTALLED: 'appinstalled',
+    CANCEL: 'cancel',
+    FINISH: 'finish',
+    REMOVE: 'remove',
 }
-goog.events.getPointerFallbackEventName_ = function (
-    pointerEventName,
-    msPointerEventName,
-    fallbackEventName
-) {
-    return goog.events.BrowserFeature.POINTER_EVENTS
-        ? pointerEventName
-        : goog.events.BrowserFeature.MSPOINTER_EVENTS
-        ? msPointerEventName
-        : fallbackEventName
-}
-goog.events.PointerFallbackEventType = {
-    POINTERDOWN: goog.events.getPointerFallbackEventName_(
-        goog.events.EventType.POINTERDOWN,
-        goog.events.EventType.MSPOINTERDOWN,
-        goog.events.EventType.MOUSEDOWN
-    ),
-    POINTERUP: goog.events.getPointerFallbackEventName_(
-        goog.events.EventType.POINTERUP,
-        goog.events.EventType.MSPOINTERUP,
-        goog.events.EventType.MOUSEUP
-    ),
-    POINTERCANCEL: goog.events.getPointerFallbackEventName_(
-        goog.events.EventType.POINTERCANCEL,
-        goog.events.EventType.MSPOINTERCANCEL,
-        goog.events.EventType.MOUSECANCEL
-    ),
-    POINTERMOVE: goog.events.getPointerFallbackEventName_(
-        goog.events.EventType.POINTERMOVE,
-        goog.events.EventType.MSPOINTERMOVE,
-        goog.events.EventType.MOUSEMOVE
-    ),
-    POINTEROVER: goog.events.getPointerFallbackEventName_(
-        goog.events.EventType.POINTEROVER,
-        goog.events.EventType.MSPOINTEROVER,
-        goog.events.EventType.MOUSEOVER
-    ),
-    POINTEROUT: goog.events.getPointerFallbackEventName_(
-        goog.events.EventType.POINTEROUT,
-        goog.events.EventType.MSPOINTEROUT,
-        goog.events.EventType.MOUSEOUT
-    ),
-    POINTERENTER: goog.events.getPointerFallbackEventName_(
-        goog.events.EventType.POINTERENTER,
-        goog.events.EventType.MSPOINTERENTER,
-        goog.events.EventType.MOUSEENTER
-    ),
-    POINTERLEAVE: goog.events.getPointerFallbackEventName_(
-        goog.events.EventType.POINTERLEAVE,
-        goog.events.EventType.MSPOINTERLEAVE,
-        goog.events.EventType.MOUSELEAVE
-    ),
-}
-goog.events.PointerTouchFallbackEventType = {
-    POINTERDOWN: goog.events.getPointerFallbackEventName_(
-        goog.events.EventType.POINTERDOWN,
-        goog.events.EventType.MSPOINTERDOWN,
-        goog.events.EventType.TOUCHSTART
-    ),
-    POINTERUP: goog.events.getPointerFallbackEventName_(
-        goog.events.EventType.POINTERUP,
-        goog.events.EventType.MSPOINTERUP,
-        goog.events.EventType.TOUCHEND
-    ),
-    POINTERCANCEL: goog.events.getPointerFallbackEventName_(
-        goog.events.EventType.POINTERCANCEL,
-        goog.events.EventType.MSPOINTERCANCEL,
-        goog.events.EventType.TOUCHCANCEL
-    ),
-    POINTERMOVE: goog.events.getPointerFallbackEventName_(
-        goog.events.EventType.POINTERMOVE,
-        goog.events.EventType.MSPOINTERMOVE,
-        goog.events.EventType.TOUCHMOVE
-    ),
-}
-goog.events.PointerAsMouseEventType = {
-    MOUSEDOWN: goog.events.PointerFallbackEventType.POINTERDOWN,
-    MOUSEUP: goog.events.PointerFallbackEventType.POINTERUP,
-    MOUSECANCEL: goog.events.PointerFallbackEventType.POINTERCANCEL,
-    MOUSEMOVE: goog.events.PointerFallbackEventType.POINTERMOVE,
-    MOUSEOVER: goog.events.PointerFallbackEventType.POINTEROVER,
-    MOUSEOUT: goog.events.PointerFallbackEventType.POINTEROUT,
-    MOUSEENTER: goog.events.PointerFallbackEventType.POINTERENTER,
-    MOUSELEAVE: goog.events.PointerFallbackEventType.POINTERLEAVE,
-}
-goog.events.MouseAsMouseEventType = {
-    MOUSEDOWN: goog.events.EventType.MOUSEDOWN,
-    MOUSEUP: goog.events.EventType.MOUSEUP,
-    MOUSECANCEL: goog.events.EventType.MOUSECANCEL,
-    MOUSEMOVE: goog.events.EventType.MOUSEMOVE,
-    MOUSEOVER: goog.events.EventType.MOUSEOVER,
-    MOUSEOUT: goog.events.EventType.MOUSEOUT,
-    MOUSEENTER: goog.events.EventType.MOUSEENTER,
-    MOUSELEAVE: goog.events.EventType.MOUSELEAVE,
-}
-goog.events.PointerAsTouchEventType = {
-    TOUCHCANCEL: goog.events.PointerTouchFallbackEventType.POINTERCANCEL,
-    TOUCHEND: goog.events.PointerTouchFallbackEventType.POINTERUP,
-    TOUCHMOVE: goog.events.PointerTouchFallbackEventType.POINTERMOVE,
-    TOUCHSTART: goog.events.PointerTouchFallbackEventType.POINTERDOWN,
-}
-goog.events.USE_LAYER_XY_AS_OFFSET_XY = !1
 goog.events.BrowserEvent = function (opt_e, opt_currentTarget) {
     goog.events.Event.call(this, opt_e ? opt_e.type : '')
     this.relatedTarget = this.currentTarget = this.target = null
@@ -5709,7 +5713,14 @@ goog.events.BrowserEvent = function (opt_e, opt_currentTarget) {
     opt_e && this.init(opt_e, opt_currentTarget)
 }
 goog.inherits(goog.events.BrowserEvent, goog.events.Event)
-goog.events.BrowserEvent.MouseButton = { LEFT: 0, MIDDLE: 1, RIGHT: 2 }
+goog.events.BrowserEvent.USE_LAYER_XY_AS_OFFSET_XY = !1
+goog.events.BrowserEvent.MouseButton = {
+    LEFT: 0,
+    MIDDLE: 1,
+    RIGHT: 2,
+    BACK: 3,
+    FORWARD: 4,
+}
 goog.events.BrowserEvent.PointerType = {
     MOUSE: 'mouse',
     PEN: 'pen',
@@ -5751,7 +5762,7 @@ goog.events.BrowserEvent.prototype.init = function (e, opt_currentTarget) {
                   : relevantTouch.pageY),
           (this.screenX = relevantTouch.screenX || 0),
           (this.screenY = relevantTouch.screenY || 0))
-        : (goog.events.USE_LAYER_XY_AS_OFFSET_XY
+        : (goog.events.BrowserEvent.USE_LAYER_XY_AS_OFFSET_XY
               ? ((this.offsetX = void 0 !== e.layerX ? e.layerX : e.offsetX),
                 (this.offsetY = void 0 !== e.layerY ? e.layerY : e.offsetY))
               : ((this.offsetX =
@@ -6003,6 +6014,9 @@ function module$contents$goog$object_unsafeClone(obj) {
     if ('undefined' !== typeof Set && obj instanceof Set) {
         return new Set(obj)
     }
+    if (obj instanceof Date) {
+        return new Date(obj.getTime())
+    }
     var clone = Array.isArray(obj)
             ? []
             : 'function' !== typeof ArrayBuffer ||
@@ -6088,8 +6102,8 @@ goog.object.equals = function module$contents$goog$object_equals(a, b) {
             return !1
         }
     }
-    for (var k$38 in b) {
-        if (!(k$38 in a)) {
+    for (var k$45 in b) {
+        if (!(k$45 in a)) {
             return !1
         }
     }
@@ -6479,20 +6493,16 @@ goog.events.listen_ = function (
         goog.events.BrowserFeature.PASSIVE_EVENTS || (opt_options = capture),
             void 0 === opt_options && (opt_options = !1),
             src.addEventListener(type.toString(), proxy, opt_options)
+    } else if (src.attachEvent) {
+        src.attachEvent(goog.events.getOnString_(type.toString()), proxy)
+    } else if (src.addListener && src.removeListener) {
+        goog.asserts.assert(
+            'change' === type,
+            'MediaQueryList only has a change event'
+        ),
+            src.addListener(proxy)
     } else {
-        if (src.attachEvent) {
-            src.attachEvent(goog.events.getOnString_(type.toString()), proxy)
-        } else {
-            if (src.addListener && src.removeListener) {
-                goog.asserts.assert(
-                    'change' === type,
-                    'MediaQueryList only has a change event'
-                ),
-                    src.addListener(proxy)
-            } else {
-                throw Error('addEventListener and attachEvent are unavailable.')
-            }
-        }
+        throw Error('addEventListener and attachEvent are unavailable.')
     }
     goog.events.listenerCountEstimate_++
     return listenerObj
@@ -6811,7 +6821,7 @@ goog.events.EventTarget = function () {
 }
 goog.inherits(goog.events.EventTarget, goog.Disposable)
 goog.events.Listenable.addImplementation(goog.events.EventTarget)
-goog.events.EventTarget.MAX_ANCESTORS_ = 1000
+goog.events.EventTarget.MAX_ANCESTORS_ = 1e3
 goog.events.EventTarget.prototype.getParentEventTarget = function () {
     return this.parentEventTarget_
 }
@@ -6975,14 +6985,12 @@ goog.events.EventTarget.dispatchEventInternal_ = function (
     var type = e.type || e
     if ('string' === typeof e) {
         e = new goog.events.Event(e, target)
+    } else if (e instanceof goog.events.Event) {
+        e.target = e.target || target
     } else {
-        if (e instanceof goog.events.Event) {
-            e.target = e.target || target
-        } else {
-            var oldEvent = e
-            e = new goog.events.Event(type, target)
-            module$contents$goog$object_extend(e, oldEvent)
-        }
+        var oldEvent = e
+        e = new goog.events.Event(type, target)
+        module$contents$goog$object_extend(e, oldEvent)
     }
     var rv = !0
     if (opt_ancestorsTree) {
@@ -7021,16 +7029,12 @@ function module$contents$goog$collections$iters_getIterator(iterable) {
 }
 goog.collections.iters.getIterator =
     module$contents$goog$collections$iters_getIterator
-goog.collections.iters.forEach = function (iterable, f) {
-    for (
-        var $jscomp$iter$5 = $jscomp.makeIterator(iterable),
-            $jscomp$key$elem = $jscomp$iter$5.next();
-        !$jscomp$key$elem.done;
-        $jscomp$key$elem = $jscomp$iter$5.next()
-    ) {
-        f($jscomp$key$elem.value)
+function module$contents$goog$collections$iters_forEach(iterator, f) {
+    for (var result; !(result = iterator.next()).done; ) {
+        f(result.value)
     }
 }
+goog.collections.iters.forEach = module$contents$goog$collections$iters_forEach
 var module$contents$goog$collections$iters_MapIterator = function (
     childIter,
     mapFn
@@ -7038,7 +7042,6 @@ var module$contents$goog$collections$iters_MapIterator = function (
     this.childIterator_ =
         module$contents$goog$collections$iters_getIterator(childIter)
     this.mapFn_ = mapFn
-    this.nextIndex_ = 0
 }
 module$contents$goog$collections$iters_MapIterator.prototype[Symbol.iterator] =
     function () {
@@ -7050,11 +7053,7 @@ module$contents$goog$collections$iters_MapIterator.prototype.next =
         return {
             value: childResult.done
                 ? void 0
-                : this.mapFn_.call(
-                      void 0,
-                      childResult.value,
-                      this.nextIndex_++
-                  ),
+                : this.mapFn_.call(void 0, childResult.value),
             done: childResult.done,
         }
     }
@@ -7068,7 +7067,6 @@ var module$contents$goog$collections$iters_FilterIterator = function (
     this.childIter_ =
         module$contents$goog$collections$iters_getIterator(childIter)
     this.filterFn_ = filterFn
-    this.nextIndex_ = 0
 }
 module$contents$goog$collections$iters_FilterIterator.prototype[
     Symbol.iterator
@@ -7082,13 +7080,7 @@ module$contents$goog$collections$iters_FilterIterator.prototype.next =
             if (childResult.done) {
                 return { done: !0, value: void 0 }
             }
-            if (
-                this.filterFn_.call(
-                    void 0,
-                    childResult.value,
-                    this.nextIndex_++
-                )
-            ) {
+            if (this.filterFn_.call(void 0, childResult.value)) {
                 return childResult
             }
         }
@@ -7121,19 +7113,19 @@ module$contents$goog$collections$iters_ConcatIterator.prototype.next =
         }
         return { done: !0 }
     }
-goog.collections.iters.concat = function (iterables) {
-    for (
-        var $jscomp$restParams = [], $jscomp$restIndex = 0;
-        $jscomp$restIndex < arguments.length;
-        ++$jscomp$restIndex
-    ) {
-        $jscomp$restParams[$jscomp$restIndex - 0] = arguments[$jscomp$restIndex]
-    }
+goog.collections.iters.concat = function () {
     return new module$contents$goog$collections$iters_ConcatIterator(
-        $jscomp$restParams.map(
-            module$contents$goog$collections$iters_getIterator
-        )
+        $jscomp.getRestArguments
+            .apply(0, arguments)
+            .map(module$contents$goog$collections$iters_getIterator)
     )
+}
+goog.collections.iters.toArray = function (iterator) {
+    var arr = []
+    module$contents$goog$collections$iters_forEach(iterator, function (e) {
+        return arr.push(e)
+    })
+    return arr
 }
 goog.functions = {}
 goog.functions.constant = function (retValue) {
@@ -7338,7 +7330,7 @@ goog.math.lerp = function (a, b, x) {
     return a + x * (b - a)
 }
 goog.math.nearlyEquals = function (a, b, opt_tolerance) {
-    return Math.abs(a - b) <= (opt_tolerance || 0.000001)
+    return Math.abs(a - b) <= (opt_tolerance || 1e-6)
 }
 goog.math.standardAngle = function (angle) {
     return goog.math.modulo(angle, 360)
@@ -7476,34 +7468,13 @@ goog.math.safeCeil = function (num, opt_epsilon) {
 }
 goog.iter = {}
 goog.iter.Iterable = {}
-goog.iter.StopIteration =
-    'StopIteration' in goog.global
-        ? goog.global.StopIteration
-        : { message: 'StopIteration', stack: '' }
 goog.iter.Iterator = function () {}
-goog.iter.Iterator.prototype.nextValueOrThrow = function () {
-    throw goog.iter.StopIteration
-}
 goog.iter.Iterator.prototype.next = function () {
     return goog.iter.ES6_ITERATOR_DONE
 }
 goog.iter.ES6_ITERATOR_DONE = goog.debug.freeze({ done: !0, value: void 0 })
 goog.iter.createEs6IteratorYield = function (value) {
     return { value: value, done: !1 }
-}
-goog.iter.toEs4IteratorNext = function (es6NextValue) {
-    if (es6NextValue.done) {
-        throw goog.iter.StopIteration
-    }
-    return es6NextValue.value
-}
-goog.iter.checkNoImplicitStopIterationInEs6 = function (ex) {
-    if (ex === goog.iter.StopIteration) {
-        throw Error(
-            'ES6 Iteration protocol does NOT adjust control flow when StopIteration is thrown from callback helper functions. If your code relies on this behavior, consider throwing a different error and catching it to terminate iteration.'
-        )
-    }
-    throw ex
 }
 goog.iter.Iterator.prototype.__iterator__ = function (opt_keys) {
     return this
@@ -7518,13 +7489,13 @@ goog.iter.toIterator = function (iterable) {
     if (goog.isArrayLike(iterable)) {
         var i = 0,
             newIter = new goog.iter.Iterator()
-        newIter.nextValueOrThrow = function () {
+        newIter.next = function () {
             for (;;) {
                 if (i >= iterable.length) {
-                    throw goog.iter.StopIteration
+                    return goog.iter.ES6_ITERATOR_DONE
                 }
                 if (i in iterable) {
-                    return iterable[i++]
+                    return goog.iter.createEs6IteratorYield(iterable[i++])
                 }
                 i++
             }
@@ -7535,34 +7506,29 @@ goog.iter.toIterator = function (iterable) {
 }
 goog.iter.forEach = function (iterable, f, opt_obj) {
     if (goog.isArrayLike(iterable)) {
-        try {
-            module$contents$goog$array_forEach(iterable, f, opt_obj)
-        } catch (ex) {
-            if (ex !== goog.iter.StopIteration) {
-                throw ex
-            }
-        }
+        module$contents$goog$array_forEach(iterable, f, opt_obj)
     } else {
-        iterable = goog.iter.toIterator(iterable)
-        try {
-            for (;;) {
-                f.call(opt_obj, iterable.nextValueOrThrow(), void 0, iterable)
+        for (var iterator = goog.iter.toIterator(iterable); ; ) {
+            var $jscomp$destructuring$var12 = iterator.next()
+            if ($jscomp$destructuring$var12.done) {
+                break
             }
-        } catch (ex$40) {
-            if (ex$40 !== goog.iter.StopIteration) {
-                throw ex$40
-            }
+            f.call(opt_obj, $jscomp$destructuring$var12.value, void 0, iterator)
         }
     }
 }
 goog.iter.filter = function (iterable, f, opt_obj) {
     var iterator = goog.iter.toIterator(iterable),
         newIter = new goog.iter.Iterator()
-    newIter.nextValueOrThrow = function () {
+    newIter.next = function () {
         for (;;) {
-            var val = iterator.nextValueOrThrow()
-            if (f.call(opt_obj, val, void 0, iterator)) {
-                return val
+            var $jscomp$destructuring$var13 = iterator.next(),
+                value = $jscomp$destructuring$var13.value
+            if ($jscomp$destructuring$var13.done) {
+                return goog.iter.ES6_ITERATOR_DONE
+            }
+            if (f.call(opt_obj, value, void 0, iterator)) {
+                return goog.iter.createEs6IteratorYield(value)
             }
         }
     }
@@ -7580,13 +7546,13 @@ goog.iter.range = function (startOrStop, opt_stop, opt_step) {
         throw Error('Range step argument must not be zero')
     }
     var newIter = new goog.iter.Iterator()
-    newIter.nextValueOrThrow = function () {
+    newIter.next = function () {
         if ((0 < step && start >= stop) || (0 > step && start <= stop)) {
-            throw goog.iter.StopIteration
+            return goog.iter.ES6_ITERATOR_DONE
         }
         var rv = start
         start += step
-        return rv
+        return goog.iter.createEs6IteratorYield(rv)
     }
     return newIter
 }
@@ -7596,9 +7562,18 @@ goog.iter.join = function (iterable, deliminator) {
 goog.iter.map = function (iterable, f, opt_obj) {
     var iterator = goog.iter.toIterator(iterable),
         newIter = new goog.iter.Iterator()
-    newIter.nextValueOrThrow = function () {
-        var val = iterator.nextValueOrThrow()
-        return f.call(opt_obj, val, void 0, iterator)
+    newIter.next = function () {
+        var $jscomp$destructuring$var14 = iterator.next()
+        if ($jscomp$destructuring$var14.done) {
+            return goog.iter.ES6_ITERATOR_DONE
+        }
+        var mappedVal = f.call(
+            opt_obj,
+            $jscomp$destructuring$var14.value,
+            void 0,
+            iterator
+        )
+        return goog.iter.createEs6IteratorYield(mappedVal)
     }
     return newIter
 }
@@ -7610,59 +7585,57 @@ goog.iter.reduce = function (iterable, f, val$jscomp$0, opt_obj) {
     return rval
 }
 goog.iter.some = function (iterable, f, opt_obj) {
-    iterable = goog.iter.toIterator(iterable)
-    try {
-        for (;;) {
-            if (
-                f.call(opt_obj, iterable.nextValueOrThrow(), void 0, iterable)
-            ) {
-                return !0
-            }
+    for (var iterator = goog.iter.toIterator(iterable); ; ) {
+        var $jscomp$destructuring$var15 = iterator.next()
+        if ($jscomp$destructuring$var15.done) {
+            return !1
         }
-    } catch (ex) {
-        if (ex !== goog.iter.StopIteration) {
-            throw ex
+        if (
+            f.call(opt_obj, $jscomp$destructuring$var15.value, void 0, iterator)
+        ) {
+            return !0
         }
     }
-    return !1
 }
 goog.iter.every = function (iterable, f, opt_obj) {
-    iterable = goog.iter.toIterator(iterable)
-    try {
-        for (;;) {
-            if (
-                !f.call(opt_obj, iterable.nextValueOrThrow(), void 0, iterable)
-            ) {
-                return !1
-            }
+    for (var iterator = goog.iter.toIterator(iterable); ; ) {
+        var $jscomp$destructuring$var16 = iterator.next()
+        if ($jscomp$destructuring$var16.done) {
+            return !0
         }
-    } catch (ex) {
-        if (ex !== goog.iter.StopIteration) {
-            throw ex
+        if (
+            !f.call(
+                opt_obj,
+                $jscomp$destructuring$var16.value,
+                void 0,
+                iterator
+            )
+        ) {
+            return !1
         }
     }
-    return !0
 }
 goog.iter.chain = function (var_args) {
     return goog.iter.chainFromIterable(arguments)
 }
 goog.iter.chainFromIterable = function (iterable) {
-    var iterator = goog.iter.toIterator(iterable),
+    var iteratorOfIterators = goog.iter.toIterator(iterable),
         iter = new goog.iter.Iterator(),
         current = null
-    iter.nextValueOrThrow = function () {
+    iter.next = function () {
         for (;;) {
             if (null == current) {
-                var it = iterator.nextValueOrThrow()
-                current = goog.iter.toIterator(it)
-            }
-            try {
-                return current.nextValueOrThrow()
-            } catch (ex) {
-                if (ex !== goog.iter.StopIteration) {
-                    throw ex
+                var it = iteratorOfIterators.next()
+                if (it.done) {
+                    return goog.iter.ES6_ITERATOR_DONE
                 }
+                current = goog.iter.toIterator(it.value)
+            }
+            var it$46 = current.next()
+            if (it$46.done) {
                 current = null
+            } else {
+                return goog.iter.createEs6IteratorYield(it$46.value)
             }
         }
     }
@@ -7672,11 +7645,15 @@ goog.iter.dropWhile = function (iterable, f, opt_obj) {
     var iterator = goog.iter.toIterator(iterable),
         newIter = new goog.iter.Iterator(),
         dropping = !0
-    newIter.nextValueOrThrow = function () {
+    newIter.next = function () {
         for (;;) {
-            var val = iterator.nextValueOrThrow()
-            if (!dropping || !f.call(opt_obj, val, void 0, iterator)) {
-                return (dropping = !1), val
+            var $jscomp$destructuring$var17 = iterator.next(),
+                value = $jscomp$destructuring$var17.value
+            if ($jscomp$destructuring$var17.done) {
+                return goog.iter.ES6_ITERATOR_DONE
+            }
+            if (!dropping || !f.call(opt_obj, value, void 0, iterator)) {
+                return (dropping = !1), goog.iter.createEs6IteratorYield(value)
             }
         }
     }
@@ -7685,12 +7662,14 @@ goog.iter.dropWhile = function (iterable, f, opt_obj) {
 goog.iter.takeWhile = function (iterable, f, opt_obj) {
     var iterator = goog.iter.toIterator(iterable),
         iter = new goog.iter.Iterator()
-    iter.nextValueOrThrow = function () {
-        var val = iterator.nextValueOrThrow()
-        if (f.call(opt_obj, val, void 0, iterator)) {
-            return val
-        }
-        throw goog.iter.StopIteration
+    iter.next = function () {
+        var $jscomp$destructuring$var18 = iterator.next(),
+            value = $jscomp$destructuring$var18.value
+        return $jscomp$destructuring$var18.done
+            ? goog.iter.ES6_ITERATOR_DONE
+            : f.call(opt_obj, value, void 0, iterator)
+            ? goog.iter.createEs6IteratorYield(value)
+            : goog.iter.ES6_ITERATOR_DONE
     }
     return iter
 }
@@ -7714,14 +7693,10 @@ goog.iter.equals = function (iterable1, iterable2, opt_equalsFn) {
     })
 }
 goog.iter.nextOrValue = function (iterable, defaultValue) {
-    try {
-        return goog.iter.toIterator(iterable).nextValueOrThrow()
-    } catch (e) {
-        if (e != goog.iter.StopIteration) {
-            throw e
-        }
-        return defaultValue
-    }
+    var $jscomp$destructuring$var19 = goog.iter.toIterator(iterable).next()
+    return $jscomp$destructuring$var19.done
+        ? defaultValue
+        : $jscomp$destructuring$var19.value
 }
 goog.iter.product = function (var_args) {
     if (
@@ -7734,34 +7709,34 @@ goog.iter.product = function (var_args) {
     }
     var iter = new goog.iter.Iterator(),
         arrays = arguments,
-        indicies = module$contents$goog$array_repeat(0, arrays.length)
-    iter.nextValueOrThrow = function () {
-        if (indicies) {
+        indices = module$contents$goog$array_repeat(0, arrays.length)
+    iter.next = function () {
+        if (indices) {
             for (
                 var retVal = module$contents$goog$array_map(
-                        indicies,
+                        indices,
                         function (valueIndex, arrayIndex) {
                             return arrays[arrayIndex][valueIndex]
                         }
                     ),
-                    i = indicies.length - 1;
+                    i = indices.length - 1;
                 0 <= i;
                 i--
             ) {
-                goog.asserts.assert(indicies)
-                if (indicies[i] < arrays[i].length - 1) {
-                    indicies[i]++
+                goog.asserts.assert(indices)
+                if (indices[i] < arrays[i].length - 1) {
+                    indices[i]++
                     break
                 }
                 if (0 == i) {
-                    indicies = null
+                    indices = null
                     break
                 }
-                indicies[i] = 0
+                indices[i] = 0
             }
-            return retVal
+            return goog.iter.createEs6IteratorYield(retVal)
         }
-        throw goog.iter.StopIteration
+        return goog.iter.ES6_ITERATOR_DONE
     }
     return iter
 }
@@ -7771,28 +7746,22 @@ goog.iter.cycle = function (iterable) {
         cacheIndex = 0,
         iter = new goog.iter.Iterator(),
         useCache = !1
-    iter.nextValueOrThrow = function () {
+    iter.next = function () {
         var returnElement = null
         if (!useCache) {
-            try {
-                return (
-                    (returnElement = baseIterator.nextValueOrThrow()),
-                    cache.push(returnElement),
-                    returnElement
-                )
-            } catch (e) {
-                if (
-                    e != goog.iter.StopIteration ||
-                    module$contents$goog$array_isEmpty(cache)
-                ) {
-                    throw e
+            var it = baseIterator.next()
+            if (it.done) {
+                if (module$contents$goog$array_isEmpty(cache)) {
+                    return goog.iter.ES6_ITERATOR_DONE
                 }
                 useCache = !0
+            } else {
+                return cache.push(it.value), it
             }
         }
         returnElement = cache[cacheIndex]
         cacheIndex = (cacheIndex + 1) % cache.length
-        return returnElement
+        return goog.iter.createEs6IteratorYield(returnElement)
     }
     return iter
 }
@@ -7800,24 +7769,31 @@ goog.iter.count = function (opt_start, opt_step) {
     var counter = opt_start || 0,
         step = void 0 !== opt_step ? opt_step : 1,
         iter = new goog.iter.Iterator()
-    iter.nextValueOrThrow = function () {
+    iter.next = function () {
         var returnValue = counter
         counter += step
-        return returnValue
+        return goog.iter.createEs6IteratorYield(returnValue)
     }
     return iter
 }
 goog.iter.repeat = function (value) {
     var iter = new goog.iter.Iterator()
-    iter.nextValueOrThrow = goog.functions.constant(value)
+    iter.next = function () {
+        return goog.iter.createEs6IteratorYield(value)
+    }
     return iter
 }
 goog.iter.accumulate = function (iterable) {
     var iterator = goog.iter.toIterator(iterable),
         total = 0,
         iter = new goog.iter.Iterator()
-    iter.nextValueOrThrow = function () {
-        return (total += iterator.nextValueOrThrow())
+    iter.next = function () {
+        var $jscomp$destructuring$var20 = iterator.next()
+        if ($jscomp$destructuring$var20.done) {
+            return goog.iter.ES6_ITERATOR_DONE
+        }
+        total += $jscomp$destructuring$var20.value
+        return goog.iter.createEs6IteratorYield(total)
     }
     return iter
 }
@@ -7826,13 +7802,26 @@ goog.iter.zip = function (var_args) {
         iter = new goog.iter.Iterator()
     if (0 < args.length) {
         var iterators = module$contents$goog$array_map(
-            args,
-            goog.iter.toIterator
-        )
-        iter.nextValueOrThrow = function () {
-            return module$contents$goog$array_map(iterators, function (it) {
-                return it.nextValueOrThrow()
-            })
+                args,
+                goog.iter.toIterator
+            ),
+            allDone = !1
+        iter.next = function () {
+            if (allDone) {
+                return goog.iter.ES6_ITERATOR_DONE
+            }
+            for (
+                var arr = [], i = 0, iterator = void 0;
+                (iterator = iterators[i++]);
+
+            ) {
+                var it = iterator.next()
+                if (it.done) {
+                    return (allDone = !0), goog.iter.ES6_ITERATOR_DONE
+                }
+                arr.push(it.value)
+            }
+            return goog.iter.createEs6IteratorYield(arr)
         }
     }
     return iter
@@ -7842,61 +7831,88 @@ goog.iter.zipLongest = function (fillValue, var_args) {
         iter = new goog.iter.Iterator()
     if (0 < args.length) {
         var iterators = module$contents$goog$array_map(
-            args,
-            goog.iter.toIterator
-        )
-        iter.nextValueOrThrow = function () {
-            var iteratorsHaveValues = !1,
-                arr = module$contents$goog$array_map(iterators, function (it) {
-                    try {
-                        var returnValue = it.nextValueOrThrow()
-                        iteratorsHaveValues = !0
-                    } catch (ex) {
-                        if (ex !== goog.iter.StopIteration) {
-                            throw ex
-                        }
-                        returnValue = fillValue
-                    }
-                    return returnValue
-                })
-            if (!iteratorsHaveValues) {
-                throw goog.iter.StopIteration
+                args,
+                goog.iter.toIterator
+            ),
+            allDone = !1
+        iter.next = function () {
+            if (allDone) {
+                return goog.iter.ES6_ITERATOR_DONE
             }
-            return arr
+            for (
+                var iteratorsHaveValues = !1,
+                    arr = [],
+                    i = 0,
+                    iterator = void 0;
+                (iterator = iterators[i++]);
+
+            ) {
+                var it = iterator.next()
+                it.done
+                    ? arr.push(fillValue)
+                    : (arr.push(it.value), (iteratorsHaveValues = !0))
+            }
+            return iteratorsHaveValues
+                ? goog.iter.createEs6IteratorYield(arr)
+                : ((allDone = !0), goog.iter.ES6_ITERATOR_DONE)
         }
     }
     return iter
 }
 goog.iter.compress = function (iterable, selectors) {
-    var selectorIterator = goog.iter.toIterator(selectors)
-    return goog.iter.filter(iterable, function () {
-        return !!selectorIterator.nextValueOrThrow()
-    })
+    var valueIterator = goog.iter.toIterator(iterable),
+        selectorIterator = goog.iter.toIterator(selectors),
+        iter = new goog.iter.Iterator(),
+        allDone = !1
+    iter.next = function () {
+        if (allDone) {
+            return goog.iter.ES6_ITERATOR_DONE
+        }
+        for (;;) {
+            var valIt = valueIterator.next()
+            if (valIt.done) {
+                return (allDone = !0), goog.iter.ES6_ITERATOR_DONE
+            }
+            var selectorIt = selectorIterator.next()
+            if (selectorIt.done) {
+                return (allDone = !0), goog.iter.ES6_ITERATOR_DONE
+            }
+            var val = valIt.value
+            if (selectorIt.value) {
+                return goog.iter.createEs6IteratorYield(val)
+            }
+        }
+    }
+    return iter
 }
 goog.iter.GroupByIterator_ = function (iterable, opt_keyFunc) {
     this.iterator = goog.iter.toIterator(iterable)
     this.keyFunc = opt_keyFunc || goog.functions.identity
 }
 goog.inherits(goog.iter.GroupByIterator_, goog.iter.Iterator)
-goog.iter.GroupByIterator_.prototype.nextValueOrThrow = function () {
+goog.iter.GroupByIterator_.prototype.next = function () {
     for (; this.currentKey == this.targetKey; ) {
-        ;(this.currentValue = this.iterator.nextValueOrThrow()),
-            (this.currentKey = this.keyFunc(this.currentValue))
+        var it = this.iterator.next()
+        if (it.done) {
+            return goog.iter.ES6_ITERATOR_DONE
+        }
+        this.currentValue = it.value
+        this.currentKey = this.keyFunc(this.currentValue)
     }
     this.targetKey = this.currentKey
-    return [this.currentKey, this.groupItems_(this.targetKey)]
+    return goog.iter.createEs6IteratorYield([
+        this.currentKey,
+        this.groupItems_(this.targetKey),
+    ])
 }
 goog.iter.GroupByIterator_.prototype.groupItems_ = function (targetKey) {
     for (var arr = []; this.currentKey == targetKey; ) {
         arr.push(this.currentValue)
-        try {
-            this.currentValue = this.iterator.nextValueOrThrow()
-        } catch (ex) {
-            if (ex !== goog.iter.StopIteration) {
-                throw ex
-            }
+        var it = this.iterator.next()
+        if (it.done) {
             break
         }
+        this.currentValue = it.value
         this.currentKey = this.keyFunc(this.currentValue)
     }
     return arr
@@ -7907,16 +7923,29 @@ goog.iter.groupBy = function (iterable, opt_keyFunc) {
 goog.iter.starMap = function (iterable, f, opt_obj) {
     var iterator = goog.iter.toIterator(iterable),
         iter = new goog.iter.Iterator()
-    iter.nextValueOrThrow = function () {
-        var args = goog.iter.toArray(iterator.nextValueOrThrow())
-        return f.apply(
-            opt_obj,
-            module$contents$goog$array_concat(args, void 0, iterator)
-        )
+    iter.next = function () {
+        var it = iterator.next()
+        if (it.done) {
+            return goog.iter.ES6_ITERATOR_DONE
+        }
+        var args = goog.iter.toArray(it.value),
+            value = f.apply(opt_obj, [].concat(args, void 0, iterator))
+        return goog.iter.createEs6IteratorYield(value)
     }
     return iter
 }
 goog.iter.tee = function (iterable, opt_num) {
+    function addNextIteratorValueToBuffers() {
+        var $jscomp$destructuring$var21 = iterator.next(),
+            value = $jscomp$destructuring$var21.value
+        if ($jscomp$destructuring$var21.done) {
+            return !1
+        }
+        for (var i = 0, buffer = void 0; (buffer = buffers[i++]); ) {
+            buffer.push(value)
+        }
+        return !0
+    }
     var iterator = goog.iter.toIterator(iterable),
         buffers = module$contents$goog$array_map(
             module$contents$goog$array_range(
@@ -7925,23 +7954,24 @@ goog.iter.tee = function (iterable, opt_num) {
             function () {
                 return []
             }
-        ),
-        addNextIteratorValueToBuffers = function () {
-            var val = iterator.nextValueOrThrow()
-            module$contents$goog$array_forEach(buffers, function (buffer) {
-                buffer.push(val)
-            })
+        )
+    return module$contents$goog$array_map(
+        buffers,
+        function createIterator(buffer) {
+            var iter = new goog.iter.Iterator()
+            iter.next = function () {
+                if (
+                    module$contents$goog$array_isEmpty(buffer) &&
+                    !addNextIteratorValueToBuffers()
+                ) {
+                    return goog.iter.ES6_ITERATOR_DONE
+                }
+                goog.asserts.assert(!module$contents$goog$array_isEmpty(buffer))
+                return goog.iter.createEs6IteratorYield(buffer.shift())
+            }
+            return iter
         }
-    return module$contents$goog$array_map(buffers, function (buffer) {
-        var iter = new goog.iter.Iterator()
-        iter.nextValueOrThrow = function () {
-            module$contents$goog$array_isEmpty(buffer) &&
-                addNextIteratorValueToBuffers()
-            goog.asserts.assert(!module$contents$goog$array_isEmpty(buffer))
-            return buffer.shift()
-        }
-        return iter
-    })
+    )
 }
 goog.iter.enumerate = function (iterable, opt_start) {
     return goog.iter.zip(goog.iter.count(opt_start), iterable)
@@ -7951,11 +7981,8 @@ goog.iter.limit = function (iterable, limitSize) {
     var iterator = goog.iter.toIterator(iterable),
         iter = new goog.iter.Iterator(),
         remaining = limitSize
-    iter.nextValueOrThrow = function () {
-        if (0 < remaining--) {
-            return iterator.nextValueOrThrow()
-        }
-        throw goog.iter.StopIteration
+    iter.next = function () {
+        return 0 < remaining-- ? iterator.next() : goog.iter.ES6_ITERATOR_DONE
     }
     return iter
 }
@@ -8003,11 +8030,16 @@ goog.iter.combinations = function (iterable, length) {
             return module$contents$goog$array_isSorted(arr)
         }),
         iter = new goog.iter.Iterator()
-    iter.nextValueOrThrow = function () {
-        return module$contents$goog$array_map(
-            sortedIndexIterator.nextValueOrThrow(),
-            getIndexFromElements
-        )
+    iter.next = function () {
+        var $jscomp$destructuring$var22 = sortedIndexIterator.next()
+        return $jscomp$destructuring$var22.done
+            ? goog.iter.ES6_ITERATOR_DONE
+            : goog.iter.createEs6IteratorYield(
+                  module$contents$goog$array_map(
+                      $jscomp$destructuring$var22.value,
+                      getIndexFromElements
+                  )
+              )
     }
     return iter
 }
@@ -8025,11 +8057,16 @@ goog.iter.combinationsWithReplacement = function (iterable, length) {
             return module$contents$goog$array_isSorted(arr)
         }),
         iter = new goog.iter.Iterator()
-    iter.nextValueOrThrow = function () {
-        return module$contents$goog$array_map(
-            sortedIndexIterator.nextValueOrThrow(),
-            getIndexFromElements
-        )
+    iter.next = function () {
+        var $jscomp$destructuring$var23 = sortedIndexIterator.next()
+        return $jscomp$destructuring$var23.done
+            ? goog.iter.ES6_ITERATOR_DONE
+            : goog.iter.createEs6IteratorYield(
+                  module$contents$goog$array_map(
+                      $jscomp$destructuring$var23.value,
+                      getIndexFromElements
+                  )
+              )
     }
     return iter
 }
@@ -8047,9 +8084,9 @@ module$contents$goog$iter$es6_ShimIterable.of = function (iter) {
     ) {
         return iter
     }
-    if ('function' == typeof iter.nextValueOrThrow) {
+    if ('function' == typeof iter.next) {
         return new module$contents$goog$iter$es6_ShimIterableImpl(function () {
-            return module$contents$goog$iter$es6_wrapGoog(iter)
+            return iter
         })
     }
     if ('function' == typeof iter[Symbol.iterator]) {
@@ -8059,36 +8096,14 @@ module$contents$goog$iter$es6_ShimIterable.of = function (iter) {
     }
     if ('function' == typeof iter.__iterator__) {
         return new module$contents$goog$iter$es6_ShimIterableImpl(function () {
-            return module$contents$goog$iter$es6_wrapGoog(iter.__iterator__())
+            return iter.__iterator__()
         })
     }
     throw Error('Not an iterator or iterable.')
 }
-var module$contents$goog$iter$es6_wrapGoog = function (iter) {
-        if (!(iter instanceof goog.iter.Iterator)) {
-            return iter
-        }
-        var done = !1
-        return {
-            next: function () {
-                for (var value; !done; ) {
-                    try {
-                        value = iter.nextValueOrThrow()
-                        break
-                    } catch (err$41) {
-                        if (err$41 !== goog.iter.StopIteration) {
-                            throw err$41
-                        }
-                        done = !0
-                    }
-                }
-                return { value: value, done: done }
-            },
-        }
-    },
-    module$contents$goog$iter$es6_ShimIterableImpl = function (func) {
-        this.func_ = func
-    }
+var module$contents$goog$iter$es6_ShimIterableImpl = function (func) {
+    this.func_ = func
+}
 module$contents$goog$iter$es6_ShimIterableImpl.prototype.__iterator__ =
     function () {
         return new module$contents$goog$iter$es6_ShimGoogIterator(this.func_())
@@ -8111,14 +8126,9 @@ $jscomp.inherits(
     module$contents$goog$iter$es6_ShimGoogIterator,
     goog.iter.Iterator
 )
-module$contents$goog$iter$es6_ShimGoogIterator.prototype.nextValueOrThrow =
-    function () {
-        var result = this.iter_.next()
-        if (result.done) {
-            throw goog.iter.StopIteration
-        }
-        return result.value
-    }
+module$contents$goog$iter$es6_ShimGoogIterator.prototype.next = function () {
+    return this.iter_.next()
+}
 module$contents$goog$iter$es6_ShimGoogIterator.prototype.toGoog = function () {
     return this
 }
@@ -8329,15 +8339,17 @@ goog.structs.Map.prototype.__iterator__ = function (opt_keys) {
         version = this.version_,
         selfObj = this,
         newIter = new goog.iter.Iterator()
-    newIter.nextValueOrThrow = function () {
+    newIter.next = function () {
         if (version != selfObj.version_) {
             throw Error('The map has changed since the iterator was created')
         }
         if (i >= selfObj.keys_.length) {
-            throw goog.iter.StopIteration
+            return goog.iter.ES6_ITERATOR_DONE
         }
         var key = selfObj.keys_[i++]
-        return opt_keys ? key : selfObj.map_[key]
+        return goog.iter.createEs6IteratorYield(
+            opt_keys ? key : selfObj.map_[key]
+        )
     }
     return newIter
 }
@@ -8420,20 +8432,18 @@ goog.structs.clear = function (col) {
 goog.structs.forEach = function (col, f, opt_obj) {
     if (col.forEach && 'function' == typeof col.forEach) {
         col.forEach(f, opt_obj)
+    } else if (goog.isArrayLike(col) || 'string' === typeof col) {
+        Array.prototype.forEach.call(col, f, opt_obj)
     } else {
-        if (goog.isArrayLike(col) || 'string' === typeof col) {
-            Array.prototype.forEach.call(col, f, opt_obj)
-        } else {
-            for (
-                var keys = goog.structs.getKeys(col),
-                    values = goog.structs.getValues(col),
-                    l = values.length,
-                    i = 0;
-                i < l;
-                i++
-            ) {
-                f.call(opt_obj, values[i], keys && keys[i], col)
-            }
+        for (
+            var keys = goog.structs.getKeys(col),
+                values = goog.structs.getValues(col),
+                l = values.length,
+                i = 0;
+            i < l;
+            i++
+        ) {
+            f.call(opt_obj, values[i], keys && keys[i], col)
         }
     }
 }
@@ -8534,7 +8544,7 @@ goog.structs.Set.getKey_ = function (val) {
     var type = typeof val
     return ('object' == type && val) || 'function' == type
         ? 'o' + goog.getUid(val)
-        : type.substr(0, 1) + val
+        : type.slice(0, 1) + val
 }
 goog.structs.Set.prototype.getCount = function () {
     return this.map_.size
@@ -8672,13 +8682,9 @@ goog.inherits(ee.TileEvent, goog.events.Event)
 var module$exports$tslib = {},
     module$contents$tslib_extendStatics =
         Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array &&
-            function (d, b) {
-                d.__proto__ = b
-            }) ||
         function (d, b) {
             for (var p in b) {
-                b.hasOwnProperty(p) && (d[p] = b[p])
+                Object.prototype.hasOwnProperty.call(b, p) && (d[p] = b[p])
             }
         }
 module$exports$tslib.__extends = function (d, b) {
@@ -8711,7 +8717,9 @@ module$exports$tslib.__rest = function (s, e) {
     if (null != s && 'function' === typeof Object.getOwnPropertySymbols) {
         var i = 0
         for (p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            0 > e.indexOf(p[i]) && (t[p[i]] = s[p[i]])
+            0 > e.indexOf(p[i]) &&
+                Object.prototype.propertyIsEnumerable.call(s, p[i]) &&
+                (t[p[i]] = s[p[i]])
         }
     }
     return t
@@ -8745,6 +8753,11 @@ module$exports$tslib.__decorate = function (decorators, target, key, desc) {
     }
     return 3 < c && r && Object.defineProperty(target, key, r), r
 }
+module$exports$tslib.__param = function (paramIndex, decorator) {
+    return function (target, key) {
+        decorator(target, key, paramIndex)
+    }
+}
 module$exports$tslib.__metadata = function (metadataKey, metadataValue) {
     if (
         'object' === typeof Reflect &&
@@ -8754,13 +8767,15 @@ module$exports$tslib.__metadata = function (metadataKey, metadataValue) {
         return Reflect.metadata(metadataKey, metadataValue)
     }
 }
-module$exports$tslib.__param = function (paramIndex, decorator) {
-    return function (target, key) {
-        decorator(target, key, paramIndex)
-    }
-}
 module$exports$tslib.__awaiter = function (thisArg, _arguments, P, generator) {
-    return new (P || (P = Promise))(function (resolve$jscomp$0, reject) {
+    function adopt(value) {
+        return value instanceof P
+            ? value
+            : new P(function (resolve) {
+                  resolve(value)
+              })
+    }
+    return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) {
             try {
                 step(generator.next(value))
@@ -8777,12 +8792,10 @@ module$exports$tslib.__awaiter = function (thisArg, _arguments, P, generator) {
         }
         function step(result) {
             result.done
-                ? resolve$jscomp$0(result.value)
-                : new P(function (resolve) {
-                      resolve(result.value)
-                  }).then(fulfilled, rejected)
+                ? resolve(result.value)
+                : adopt(result.value).then(fulfilled, rejected)
         }
-        step((generator = generator.apply(thisArg, _arguments)).next())
+        step((generator = generator.apply(thisArg, _arguments || [])).next())
     })
 }
 module$exports$tslib.__generator = function (thisArg, body) {
@@ -8801,15 +8814,18 @@ module$exports$tslib.__generator = function (thisArg, body) {
                     ((f = 1),
                     y &&
                         (t =
-                            y[
-                                op[0] & 2 ? 'return' : op[0] ? 'throw' : 'next'
-                            ]) &&
+                            op[0] & 2
+                                ? y['return']
+                                : op[0]
+                                ? y['throw'] ||
+                                  ((t = y['return']) && t.call(y), 0)
+                                : y.next) &&
                         !(t = t.call(y, op[1])).done)
                 ) {
                     return t
                 }
                 if (((y = 0), t)) {
-                    op = [0, t.value]
+                    op = [op[0] & 2, t.value]
                 }
                 switch (op[0]) {
                     case 0:
@@ -8891,9 +8907,9 @@ module$exports$tslib.__generator = function (thisArg, body) {
         g
     )
 }
-module$exports$tslib.__exportStar = function (m, e) {
+module$exports$tslib.__exportStar = function (m, o) {
     for (var p in m) {
-        e.hasOwnProperty(p) || (e[p] = m[p])
+        o.hasOwnProperty(p) || (o[p] = m[p])
     }
 }
 module$exports$tslib.__values = function (o) {
@@ -8952,21 +8968,25 @@ module$exports$tslib.__spreadArrays = function () {
     }
     return r
 }
-module$exports$tslib.__spreadArray = function (to, from) {
+module$exports$tslib.__spreadArray = function (to, from, pack) {
     if (!(Array.isArray(from) || from instanceof NodeList)) {
         throw new TypeError('Expected an Array or NodeList: ' + String(from))
     }
-    for (var i = 0, il = from.length, j = to.length; i < il; i++, j++) {
-        to[j] = from[i]
+    if (pack || 2 === arguments.length) {
+        for (var i = 0, l = from.length, ar; i < l; i++) {
+            ;(!ar && i in from) ||
+                (ar || (ar = Array.prototype.slice.call(from, 0, i)),
+                (ar[i] = from[i]))
+        }
     }
-    return to
+    return to.concat(ar || Array.prototype.slice.call(from))
 }
 module$exports$tslib.__await = function (v) {
     return this instanceof module$exports$tslib.__await
         ? ((this.v = v), this)
         : new module$exports$tslib.__await(v)
 }
-module$exports$tslib.__asyncGenerator = function __asyncGenerator(
+module$exports$tslib.__asyncGenerator = function (
     thisArg,
     _arguments,
     generator
@@ -9019,17 +9039,18 @@ module$exports$tslib.__asyncGenerator = function __asyncGenerator(
 }
 module$exports$tslib.__asyncDelegator = function (o) {
     function verb(n, f) {
-        o[n] &&
-            (i[n] = function (v) {
-                return (p = !p)
-                    ? {
-                          value: new module$exports$tslib.__await(o[n](v)),
-                          done: 'return' === n,
-                      }
-                    : f
-                    ? f(v)
-                    : v
-            })
+        i[n] = o[n]
+            ? function (v) {
+                  return (p = !p)
+                      ? {
+                            value: new module$exports$tslib.__await(o[n](v)),
+                            done: 'return' === n,
+                        }
+                      : f
+                      ? f(v)
+                      : v
+              }
+            : f
     }
     var i, p
     return (
@@ -9046,15 +9067,40 @@ module$exports$tslib.__asyncDelegator = function (o) {
     )
 }
 module$exports$tslib.__asyncValues = function (o) {
+    function verb(n) {
+        i[n] =
+            o[n] &&
+            function (v) {
+                return new Promise(function (resolve, reject) {
+                    v = o[n](v)
+                    settle(resolve, reject, v.done, v.value)
+                })
+            }
+    }
+    function settle(resolve, reject, d, v$jscomp$0) {
+        Promise.resolve(v$jscomp$0).then(function (v) {
+            resolve({ value: v, done: d })
+        }, reject)
+    }
     if (!Symbol.asyncIterator) {
         throw new TypeError('Symbol.asyncIterator is not defined.')
     }
-    var m = o[Symbol.asyncIterator]
+    var m = o[Symbol.asyncIterator],
+        i
     return m
         ? m.call(o)
-        : 'function' === typeof __values
-        ? __values(o)
-        : o[Symbol.iterator]()
+        : ((o =
+              'function' === typeof __values
+                  ? __values(o)
+                  : o[Symbol.iterator]()),
+          (i = {}),
+          verb('next'),
+          verb('throw'),
+          verb('return'),
+          (i[Symbol.asyncIterator] = function () {
+              return this
+          }),
+          i)
 }
 module$exports$tslib.__makeTemplateObject = function (cooked, raw) {
     Object.defineProperty
@@ -9062,22 +9108,73 @@ module$exports$tslib.__makeTemplateObject = function (cooked, raw) {
         : (cooked.raw = raw)
     return cooked
 }
-module$exports$tslib.__classPrivateFieldGet = function (receiver, privateMap) {
-    if (!privateMap.has(receiver)) {
-        throw new TypeError('attempted to get private field on non-instance')
+module$exports$tslib.__classPrivateFieldGet = function (
+    receiver,
+    state,
+    kind,
+    f
+) {
+    if ('a' === kind && !f) {
+        throw new TypeError('Private accessor was defined without a getter')
     }
-    return privateMap.get(receiver)
+    if (
+        'function' === typeof state
+            ? receiver !== state || !f
+            : !state.has(receiver)
+    ) {
+        throw new TypeError(
+            'Cannot read private member from an object whose class did not declare it'
+        )
+    }
+    return 'm' === kind
+        ? f
+        : 'a' === kind
+        ? f.call(receiver)
+        : f
+        ? f.value
+        : state.get(receiver)
 }
 module$exports$tslib.__classPrivateFieldSet = function (
     receiver,
-    privateMap,
-    value
+    state,
+    value,
+    kind,
+    f
 ) {
-    if (!privateMap.has(receiver)) {
-        throw new TypeError('attempted to set private field on non-instance')
+    if ('m' === kind) {
+        throw new TypeError('Private method is not writable')
     }
-    privateMap.set(receiver, value)
-    return value
+    if ('a' === kind && !f) {
+        throw new TypeError('Private accessor was defined without a setter')
+    }
+    if (
+        'function' === typeof state
+            ? receiver !== state || !f
+            : !state.has(receiver)
+    ) {
+        throw new TypeError(
+            'Cannot write private member to an object whose class did not declare it'
+        )
+    }
+    return (
+        'a' === kind
+            ? f.call(receiver, value)
+            : f
+            ? (f.value = value)
+            : state.set(receiver, value),
+        value
+    )
+}
+module$exports$tslib.__classPrivateFieldIn = function (state, receiver) {
+    if (
+        null === receiver ||
+        ('object' !== typeof receiver && 'function' !== typeof receiver)
+    ) {
+        throw new TypeError("Cannot use 'in' operator on non-object")
+    }
+    return 'function' === typeof state
+        ? receiver === state
+        : state.has(receiver)
 }
 var module$exports$eeapiclient$domain_object = {},
     module$contents$eeapiclient$domain_object_module =
@@ -9098,6 +9195,7 @@ function module$contents$eeapiclient$domain_object_buildClassMetadataFromPartial
     partialClassMetadata
 ) {
     return Object.assign(
+        {},
         {
             arrays: {},
             descriptions: {},
@@ -9233,15 +9331,15 @@ function module$contents$eeapiclient$domain_object_deepCopy(
             arrays = metadata.arrays || {},
             objects = metadata.objects || {},
             objectMaps = metadata.objectMaps || {},
-            $jscomp$loop$65 = {},
-            $jscomp$iter$6 = $jscomp.makeIterator(metadata.keys || []),
-            $jscomp$key$key = $jscomp$iter$6.next();
+            $jscomp$loop$72 = {},
+            $jscomp$iter$12 = $jscomp.makeIterator(metadata.keys || []),
+            $jscomp$key$key = $jscomp$iter$12.next();
         !$jscomp$key$key.done;
-        $jscomp$loop$65 = {
-            $jscomp$loop$prop$mapMetadata$66:
-                $jscomp$loop$65.$jscomp$loop$prop$mapMetadata$66,
+        $jscomp$loop$72 = {
+            $jscomp$loop$prop$mapMetadata$73:
+                $jscomp$loop$72.$jscomp$loop$prop$mapMetadata$73,
         },
-            $jscomp$key$key = $jscomp$iter$6.next()
+            $jscomp$key$key = $jscomp$iter$12.next()
     ) {
         var key = $jscomp$key$key.value,
             value = valueGetter(key, source)
@@ -9260,71 +9358,59 @@ function module$contents$eeapiclient$domain_object_deepCopy(
                     !0,
                     arrays[key]
                 )
-            } else {
-                if (objects.hasOwnProperty(key)) {
-                    copy =
-                        module$contents$eeapiclient$domain_object_deepCopyValue(
-                            value,
-                            valueGetter,
-                            valueSetter,
-                            copyInstanciator,
-                            !1,
-                            !0,
-                            objects[key]
-                        )
-                } else {
-                    if (objectMaps.hasOwnProperty(key)) {
-                        ;($jscomp$loop$65.$jscomp$loop$prop$mapMetadata$66 =
-                            objectMaps[key]),
-                            (copy = $jscomp$loop$65
-                                .$jscomp$loop$prop$mapMetadata$66
-                                .isPropertyArray
-                                ? value.map(
-                                      (function ($jscomp$loop$65) {
-                                          return function (v) {
-                                              return module$contents$eeapiclient$domain_object_deepCopyObjectMap(
-                                                  v,
-                                                  $jscomp$loop$65.$jscomp$loop$prop$mapMetadata$66,
-                                                  valueGetter,
-                                                  valueSetter,
-                                                  copyInstanciator
-                                              )
-                                          }
-                                      })($jscomp$loop$65)
-                                  )
-                                : module$contents$eeapiclient$domain_object_deepCopyObjectMap(
-                                      value,
-                                      $jscomp$loop$65.$jscomp$loop$prop$mapMetadata$66,
-                                      valueGetter,
-                                      valueSetter,
-                                      copyInstanciator
-                                  ))
-                    } else {
-                        if (Array.isArray(value)) {
-                            if (
-                                metadata.emptyArrayIsUnset &&
-                                0 === value.length
-                            ) {
-                                continue
-                            }
-                            copy =
-                                module$contents$eeapiclient$domain_object_deepCopyValue(
-                                    value,
-                                    valueGetter,
-                                    valueSetter,
-                                    copyInstanciator,
-                                    !0,
-                                    !1
-                                )
-                        } else {
-                            copy =
-                                value instanceof
-                                module$contents$eeapiclient$domain_object_NullClass
-                                    ? null
-                                    : value
-                        }
-                    }
+            } else if (objects.hasOwnProperty(key)) {
+                copy = module$contents$eeapiclient$domain_object_deepCopyValue(
+                    value,
+                    valueGetter,
+                    valueSetter,
+                    copyInstanciator,
+                    !1,
+                    !0,
+                    objects[key]
+                )
+            } else if (objectMaps.hasOwnProperty(key)) {
+                ;($jscomp$loop$72.$jscomp$loop$prop$mapMetadata$73 =
+                    objectMaps[key]),
+                    (copy = $jscomp$loop$72.$jscomp$loop$prop$mapMetadata$73
+                        .isPropertyArray
+                        ? value.map(
+                              (function ($jscomp$loop$72) {
+                                  return function (v) {
+                                      return module$contents$eeapiclient$domain_object_deepCopyObjectMap(
+                                          v,
+                                          $jscomp$loop$72.$jscomp$loop$prop$mapMetadata$73,
+                                          valueGetter,
+                                          valueSetter,
+                                          copyInstanciator
+                                      )
+                                  }
+                              })($jscomp$loop$72)
+                          )
+                        : module$contents$eeapiclient$domain_object_deepCopyObjectMap(
+                              value,
+                              $jscomp$loop$72.$jscomp$loop$prop$mapMetadata$73,
+                              valueGetter,
+                              valueSetter,
+                              copyInstanciator
+                          ))
+            } else if (Array.isArray(value)) {
+                if (metadata.emptyArrayIsUnset && 0 === value.length) {
+                    continue
                 }
+                copy = module$contents$eeapiclient$domain_object_deepCopyValue(
+                    value,
+                    valueGetter,
+                    valueSetter,
+                    copyInstanciator,
+                    !0,
+                    !1
+                )
+            } else {
+                copy =
+                    value instanceof
+                    module$contents$eeapiclient$domain_object_NullClass
+                        ? null
+                        : value
             }
             valueSetter(key, target, copy)
         }
@@ -9340,10 +9426,10 @@ function module$contents$eeapiclient$domain_object_deepCopyObjectMap(
 ) {
     for (
         var objMap = {},
-            $jscomp$iter$7 = $jscomp.makeIterator(Object.keys(value)),
-            $jscomp$key$mapKey = $jscomp$iter$7.next();
+            $jscomp$iter$13 = $jscomp.makeIterator(Object.keys(value)),
+            $jscomp$key$mapKey = $jscomp$iter$13.next();
         !$jscomp$key$mapKey.done;
-        $jscomp$key$mapKey = $jscomp$iter$7.next()
+        $jscomp$key$mapKey = $jscomp$iter$13.next()
     ) {
         var mapKey = $jscomp$key$mapKey.value,
             mapValue = value[mapKey]
@@ -9413,15 +9499,12 @@ function module$contents$eeapiclient$domain_object_deepCopyMetadata(
         target instanceof module$exports$eeapiclient$domain_object.Serializable
     ) {
         var metadata = target.getClassMetadata()
+    } else if (
+        source instanceof module$exports$eeapiclient$domain_object.Serializable
+    ) {
+        metadata = source.getClassMetadata()
     } else {
-        if (
-            source instanceof
-            module$exports$eeapiclient$domain_object.Serializable
-        ) {
-            metadata = source.getClassMetadata()
-        } else {
-            throw Error('Cannot find ClassMetadata.')
-        }
+        throw Error('Cannot find ClassMetadata.')
     }
     return metadata
 }
@@ -9461,17 +9544,17 @@ function module$contents$eeapiclient$domain_object_deepEquals(
         return !1
     }
     for (
-        var $jscomp$loop$67 = {},
-            $jscomp$iter$8 = $jscomp.makeIterator(keys1),
-            $jscomp$key$key = $jscomp$iter$8.next();
+        var $jscomp$loop$74 = {},
+            $jscomp$iter$14 = $jscomp.makeIterator(keys1),
+            $jscomp$key$key = $jscomp$iter$14.next();
         !$jscomp$key$key.done;
-        $jscomp$loop$67 = {
-            $jscomp$loop$prop$value2$68:
-                $jscomp$loop$67.$jscomp$loop$prop$value2$68,
-            $jscomp$loop$prop$mapMetadata$69:
-                $jscomp$loop$67.$jscomp$loop$prop$mapMetadata$69,
+        $jscomp$loop$74 = {
+            $jscomp$loop$prop$value2$75:
+                $jscomp$loop$74.$jscomp$loop$prop$value2$75,
+            $jscomp$loop$prop$mapMetadata$76:
+                $jscomp$loop$74.$jscomp$loop$prop$mapMetadata$76,
         },
-            $jscomp$key$key = $jscomp$iter$8.next()
+            $jscomp$key$key = $jscomp$iter$14.next()
     ) {
         var key = $jscomp$key$key.value,
             has1 =
@@ -9491,98 +9574,86 @@ function module$contents$eeapiclient$domain_object_deepEquals(
         }
         if (has1) {
             var value1 = serializable1.Serializable$get(key)
-            $jscomp$loop$67.$jscomp$loop$prop$value2$68 =
+            $jscomp$loop$74.$jscomp$loop$prop$value2$75 =
                 serializable2.Serializable$get(key)
             if (arrays1.hasOwnProperty(key)) {
                 if (
                     !module$contents$eeapiclient$domain_object_deepEqualsValue(
                         value1,
-                        $jscomp$loop$67.$jscomp$loop$prop$value2$68,
+                        $jscomp$loop$74.$jscomp$loop$prop$value2$75,
                         !0,
                         !0
                     )
                 ) {
                     return !1
                 }
-            } else {
-                if (objects1.hasOwnProperty(key)) {
+            } else if (objects1.hasOwnProperty(key)) {
+                if (
+                    !module$contents$eeapiclient$domain_object_deepEqualsValue(
+                        value1,
+                        $jscomp$loop$74.$jscomp$loop$prop$value2$75,
+                        !1,
+                        !0
+                    )
+                ) {
+                    return !1
+                }
+            } else if (objectMaps1.hasOwnProperty(key)) {
+                if (
+                    (($jscomp$loop$74.$jscomp$loop$prop$mapMetadata$76 =
+                        objectMaps1[key]),
+                    $jscomp$loop$74.$jscomp$loop$prop$mapMetadata$76
+                        .isPropertyArray)
+                ) {
                     if (
-                        !module$contents$eeapiclient$domain_object_deepEqualsValue(
+                        !module$contents$eeapiclient$domain_object_sameKeys(
                             value1,
-                            $jscomp$loop$67.$jscomp$loop$prop$value2$68,
-                            !1,
-                            !0
+                            $jscomp$loop$74.$jscomp$loop$prop$value2$75
+                        ) ||
+                        value1.some(
+                            (function ($jscomp$loop$74) {
+                                return function (v1, i) {
+                                    return !module$contents$eeapiclient$domain_object_deepEqualsObjectMap(
+                                        v1,
+                                        $jscomp$loop$74
+                                            .$jscomp$loop$prop$value2$75[i],
+                                        $jscomp$loop$74.$jscomp$loop$prop$mapMetadata$76
+                                    )
+                                }
+                            })($jscomp$loop$74)
                         )
                     ) {
                         return !1
                     }
-                } else {
-                    if (objectMaps1.hasOwnProperty(key)) {
-                        if (
-                            (($jscomp$loop$67.$jscomp$loop$prop$mapMetadata$69 =
-                                objectMaps1[key]),
-                            $jscomp$loop$67.$jscomp$loop$prop$mapMetadata$69
-                                .isPropertyArray)
-                        ) {
-                            if (
-                                !module$contents$eeapiclient$domain_object_sameKeys(
-                                    value1,
-                                    $jscomp$loop$67.$jscomp$loop$prop$value2$68
-                                ) ||
-                                value1.some(
-                                    (function ($jscomp$loop$67) {
-                                        return function (v1, i) {
-                                            return !module$contents$eeapiclient$domain_object_deepEqualsObjectMap(
-                                                v1,
-                                                $jscomp$loop$67
-                                                    .$jscomp$loop$prop$value2$68[
-                                                    i
-                                                ],
-                                                $jscomp$loop$67.$jscomp$loop$prop$mapMetadata$69
-                                            )
-                                        }
-                                    })($jscomp$loop$67)
-                                )
-                            ) {
-                                return !1
-                            }
-                        } else {
-                            if (
-                                !module$contents$eeapiclient$domain_object_deepEqualsObjectMap(
-                                    value1,
-                                    $jscomp$loop$67.$jscomp$loop$prop$value2$68,
-                                    $jscomp$loop$67.$jscomp$loop$prop$mapMetadata$69
-                                )
-                            ) {
-                                return !1
-                            }
-                        }
-                    } else {
-                        if (Array.isArray(value1)) {
-                            if (
-                                !module$contents$eeapiclient$domain_object_deepEqualsValue(
-                                    value1,
-                                    $jscomp$loop$67.$jscomp$loop$prop$value2$68,
-                                    !0,
-                                    !1
-                                )
-                            ) {
-                                return !1
-                            }
-                        } else {
-                            if (
-                                !module$contents$eeapiclient$domain_object_deepEqualsValue(
-                                    value1,
-                                    $jscomp$loop$67.$jscomp$loop$prop$value2$68,
-                                    !1,
-                                    !1
-                                )
-                            ) {
-                                return !1
-                            }
-                        }
-                    }
+                } else if (
+                    !module$contents$eeapiclient$domain_object_deepEqualsObjectMap(
+                        value1,
+                        $jscomp$loop$74.$jscomp$loop$prop$value2$75,
+                        $jscomp$loop$74.$jscomp$loop$prop$mapMetadata$76
+                    )
+                ) {
+                    return !1
                 }
+            } else if (Array.isArray(value1)) {
+                if (
+                    !module$contents$eeapiclient$domain_object_deepEqualsValue(
+                        value1,
+                        $jscomp$loop$74.$jscomp$loop$prop$value2$75,
+                        !0,
+                        !1
+                    )
+                ) {
+                    return !1
+                }
+            } else if (
+                !module$contents$eeapiclient$domain_object_deepEqualsValue(
+                    value1,
+                    $jscomp$loop$74.$jscomp$loop$prop$value2$75,
+                    !1,
+                    !1
+                )
+            ) {
+                return !1
             }
         }
     }
@@ -9613,10 +9684,10 @@ function module$contents$eeapiclient$domain_object_deepEqualsObjectMap(
         return !1
     }
     for (
-        var $jscomp$iter$9 = $jscomp.makeIterator(Object.keys(value1)),
-            $jscomp$key$mapKey = $jscomp$iter$9.next();
+        var $jscomp$iter$15 = $jscomp.makeIterator(Object.keys(value1)),
+            $jscomp$key$mapKey = $jscomp$iter$15.next();
         !$jscomp$key$mapKey.done;
-        $jscomp$key$mapKey = $jscomp$iter$9.next()
+        $jscomp$key$mapKey = $jscomp$iter$15.next()
     ) {
         var mapKey = $jscomp$key$mapKey.value
         if (
@@ -9656,29 +9727,31 @@ function module$contents$eeapiclient$domain_object_deepEqualsValue(
         ) {
             return !1
         }
+    } else if (isArray && !isSerializable) {
+        if (
+            !module$contents$eeapiclient$domain_object_sameKeys(
+                value1,
+                value2
+            ) ||
+            value1.some(function (v, i) {
+                return v !== value2[i]
+            })
+        ) {
+            return !1
+        }
     } else {
-        if (isArray && !isSerializable) {
-            if (
-                !module$contents$eeapiclient$domain_object_sameKeys(
-                    value1,
-                    value2
-                ) ||
-                value1.some(function (v, i) {
-                    return v !== value2[i]
-                })
-            ) {
+        if (isSerializable) {
+            return module$contents$eeapiclient$domain_object_deepEquals(
+                value1,
+                value2
+            )
+        }
+        if ('object' === typeof value1) {
+            if (JSON.stringify(value1) !== JSON.stringify(value2)) {
                 return !1
             }
-        } else {
-            if ('object' === typeof value1) {
-                if (JSON.stringify(value1) !== JSON.stringify(value2)) {
-                    return !1
-                }
-            } else {
-                if (value1 !== value2) {
-                    return !1
-                }
-            }
+        } else if (value1 !== value2) {
+            return !1
         }
     }
     return !0
@@ -9717,113 +9790,6 @@ module$exports$eeapiclient$domain_object.serializableEqualityTester =
             )
         }
     }
-goog.dom.asserts = {}
-goog.dom.asserts.assertIsLocation = function (o) {
-    if (goog.asserts.ENABLE_ASSERTS) {
-        var win = goog.dom.asserts.getWindow_(o)
-        win &&
-            (!o ||
-                (!(o instanceof win.Location) && o instanceof win.Element)) &&
-            goog.asserts.fail(
-                'Argument is not a Location (or a non-Element mock); got: %s',
-                goog.dom.asserts.debugStringForType_(o)
-            )
-    }
-    return o
-}
-goog.dom.asserts.assertIsElementType_ = function (o, typename) {
-    if (goog.asserts.ENABLE_ASSERTS) {
-        var win = goog.dom.asserts.getWindow_(o)
-        win &&
-            'undefined' != typeof win[typename] &&
-            ((o &&
-                (o instanceof win[typename] ||
-                    !(
-                        o instanceof win.Location || o instanceof win.Element
-                    ))) ||
-                goog.asserts.fail(
-                    'Argument is not a %s (or a non-Element, non-Location mock); got: %s',
-                    typename,
-                    goog.dom.asserts.debugStringForType_(o)
-                ))
-    }
-    return o
-}
-goog.dom.asserts.assertIsHTMLAnchorElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLAnchorElement')
-}
-goog.dom.asserts.assertIsHTMLButtonElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLButtonElement')
-}
-goog.dom.asserts.assertIsHTMLLinkElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLLinkElement')
-}
-goog.dom.asserts.assertIsHTMLImageElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLImageElement')
-}
-goog.dom.asserts.assertIsHTMLAudioElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLAudioElement')
-}
-goog.dom.asserts.assertIsHTMLVideoElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLVideoElement')
-}
-goog.dom.asserts.assertIsHTMLInputElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLInputElement')
-}
-goog.dom.asserts.assertIsHTMLTextAreaElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLTextAreaElement')
-}
-goog.dom.asserts.assertIsHTMLCanvasElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLCanvasElement')
-}
-goog.dom.asserts.assertIsHTMLEmbedElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLEmbedElement')
-}
-goog.dom.asserts.assertIsHTMLFormElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLFormElement')
-}
-goog.dom.asserts.assertIsHTMLFrameElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLFrameElement')
-}
-goog.dom.asserts.assertIsHTMLIFrameElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLIFrameElement')
-}
-goog.dom.asserts.assertIsHTMLObjectElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLObjectElement')
-}
-goog.dom.asserts.assertIsHTMLScriptElement = function (o) {
-    return goog.dom.asserts.assertIsElementType_(o, 'HTMLScriptElement')
-}
-goog.dom.asserts.debugStringForType_ = function (value) {
-    if (goog.isObject(value)) {
-        try {
-            return (
-                value.constructor.displayName ||
-                value.constructor.name ||
-                Object.prototype.toString.call(value)
-            )
-        } catch (e) {
-            return '<object could not be stringified>'
-        }
-    } else {
-        return void 0 === value
-            ? 'undefined'
-            : null === value
-            ? 'null'
-            : typeof value
-    }
-}
-goog.dom.asserts.getWindow_ = function (o) {
-    try {
-        var doc = o && o.ownerDocument,
-            win = doc && (doc.defaultView || doc.parentWindow)
-        win = win || goog.global
-        if (win.Element && win.Location) {
-            return win
-        }
-    } catch (ex) {}
-    return null
-}
 goog.dom.HtmlElement = function () {}
 goog.dom.TagName = function () {}
 goog.dom.TagName.cast = function (name, type) {
@@ -9960,6 +9926,367 @@ goog.dom.TagName.UL = 'UL'
 goog.dom.TagName.VAR = 'VAR'
 goog.dom.TagName.VIDEO = 'VIDEO'
 goog.dom.TagName.WBR = 'WBR'
+goog.dom.element = {}
+var module$contents$goog$dom$element_isElement = function (value) {
+        return (
+            goog.isObject(value) && value.nodeType === goog.dom.NodeType.ELEMENT
+        )
+    },
+    module$contents$goog$dom$element_isHtmlElement = function (value) {
+        return (
+            goog.isObject(value) &&
+            module$contents$goog$dom$element_isElement(value) &&
+            (!value.namespaceURI ||
+                'http://www.w3.org/1999/xhtml' === value.namespaceURI)
+        )
+    },
+    module$contents$goog$dom$element_isHtmlElementOfType = function (
+        value,
+        tagName
+    ) {
+        return (
+            goog.isObject(value) &&
+            module$contents$goog$dom$element_isHtmlElement(value) &&
+            value.tagName.toUpperCase() === tagName.toString()
+        )
+    }
+goog.dom.element.isElement = module$contents$goog$dom$element_isElement
+goog.dom.element.isHtmlElement = module$contents$goog$dom$element_isHtmlElement
+goog.dom.element.isHtmlElementOfType =
+    module$contents$goog$dom$element_isHtmlElementOfType
+goog.dom.element.isHtmlAnchorElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.A
+    )
+}
+goog.dom.element.isHtmlButtonElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.BUTTON
+    )
+}
+goog.dom.element.isHtmlLinkElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.LINK
+    )
+}
+goog.dom.element.isHtmlImageElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.IMG
+    )
+}
+goog.dom.element.isHtmlAudioElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.AUDIO
+    )
+}
+goog.dom.element.isHtmlVideoElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.VIDEO
+    )
+}
+goog.dom.element.isHtmlInputElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.INPUT
+    )
+}
+goog.dom.element.isHtmlTextAreaElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.TEXTAREA
+    )
+}
+goog.dom.element.isHtmlCanvasElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.CANVAS
+    )
+}
+goog.dom.element.isHtmlEmbedElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.EMBED
+    )
+}
+goog.dom.element.isHtmlFormElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.FORM
+    )
+}
+goog.dom.element.isHtmlFrameElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.FRAME
+    )
+}
+goog.dom.element.isHtmlIFrameElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.IFRAME
+    )
+}
+goog.dom.element.isHtmlObjectElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.OBJECT
+    )
+}
+goog.dom.element.isHtmlScriptElement = function (value) {
+    return module$contents$goog$dom$element_isHtmlElementOfType(
+        value,
+        goog.dom.TagName.SCRIPT
+    )
+}
+goog.asserts.dom = {}
+var module$contents$goog$asserts$dom_assertIsHtmlElement = function (value) {
+        goog.asserts.ENABLE_ASSERTS &&
+            !module$contents$goog$dom$element_isHtmlElement(value) &&
+            goog.asserts.fail(
+                'Argument is not an HTML Element; got: ' +
+                    module$contents$goog$asserts$dom_debugStringForType(value)
+            )
+        return value
+    },
+    module$contents$goog$asserts$dom_assertIsHtmlElementOfType = function (
+        value,
+        tagName
+    ) {
+        goog.asserts.ENABLE_ASSERTS &&
+            !module$contents$goog$dom$element_isHtmlElementOfType(
+                value,
+                tagName
+            ) &&
+            goog.asserts.fail(
+                'Argument is not an HTML Element with tag name ' +
+                    (tagName.toString() +
+                        '; got: ' +
+                        module$contents$goog$asserts$dom_debugStringForType(
+                            value
+                        ))
+            )
+        return value
+    },
+    module$contents$goog$asserts$dom_assertIsHtmlAnchorElement = function (
+        value
+    ) {
+        return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+            value,
+            goog.dom.TagName.A
+        )
+    },
+    module$contents$goog$asserts$dom_assertIsHtmlButtonElement = function (
+        value
+    ) {
+        return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+            value,
+            goog.dom.TagName.BUTTON
+        )
+    },
+    module$contents$goog$asserts$dom_assertIsHtmlLinkElement = function (
+        value
+    ) {
+        return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+            value,
+            goog.dom.TagName.LINK
+        )
+    },
+    module$contents$goog$asserts$dom_assertIsHtmlAudioElement = function (
+        value
+    ) {
+        return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+            value,
+            goog.dom.TagName.AUDIO
+        )
+    },
+    module$contents$goog$asserts$dom_assertIsHtmlVideoElement = function (
+        value
+    ) {
+        return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+            value,
+            goog.dom.TagName.VIDEO
+        )
+    },
+    module$contents$goog$asserts$dom_assertIsHtmlInputElement = function (
+        value
+    ) {
+        return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+            value,
+            goog.dom.TagName.INPUT
+        )
+    },
+    module$contents$goog$asserts$dom_assertIsHtmlEmbedElement = function (
+        value
+    ) {
+        return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+            value,
+            goog.dom.TagName.EMBED
+        )
+    },
+    module$contents$goog$asserts$dom_assertIsHtmlFormElement = function (
+        value
+    ) {
+        return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+            value,
+            goog.dom.TagName.FORM
+        )
+    },
+    module$contents$goog$asserts$dom_assertIsHtmlFrameElement = function (
+        value
+    ) {
+        return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+            value,
+            goog.dom.TagName.FRAME
+        )
+    },
+    module$contents$goog$asserts$dom_assertIsHtmlIFrameElement = function (
+        value
+    ) {
+        return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+            value,
+            goog.dom.TagName.IFRAME
+        )
+    },
+    module$contents$goog$asserts$dom_assertIsHtmlObjectElement = function (
+        value
+    ) {
+        return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+            value,
+            goog.dom.TagName.OBJECT
+        )
+    },
+    module$contents$goog$asserts$dom_assertIsHtmlScriptElement = function (
+        value
+    ) {
+        return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+            value,
+            goog.dom.TagName.SCRIPT
+        )
+    },
+    module$contents$goog$asserts$dom_debugStringForType = function (value) {
+        if (goog.isObject(value)) {
+            try {
+                return (
+                    value.constructor.displayName ||
+                    value.constructor.name ||
+                    Object.prototype.toString.call(value)
+                )
+            } catch (e) {
+                return '<object could not be stringified>'
+            }
+        } else {
+            return void 0 === value
+                ? 'undefined'
+                : null === value
+                ? 'null'
+                : typeof value
+        }
+    }
+goog.asserts.dom.assertIsElement = function (value) {
+    goog.asserts.ENABLE_ASSERTS &&
+        !module$contents$goog$dom$element_isElement(value) &&
+        goog.asserts.fail(
+            'Argument is not an Element; got: ' +
+                module$contents$goog$asserts$dom_debugStringForType(value)
+        )
+    return value
+}
+goog.asserts.dom.assertIsHtmlElement =
+    module$contents$goog$asserts$dom_assertIsHtmlElement
+goog.asserts.dom.assertIsHtmlElementOfType =
+    module$contents$goog$asserts$dom_assertIsHtmlElementOfType
+goog.asserts.dom.assertIsHtmlAnchorElement =
+    module$contents$goog$asserts$dom_assertIsHtmlAnchorElement
+goog.asserts.dom.assertIsHtmlButtonElement =
+    module$contents$goog$asserts$dom_assertIsHtmlButtonElement
+goog.asserts.dom.assertIsHtmlLinkElement =
+    module$contents$goog$asserts$dom_assertIsHtmlLinkElement
+goog.asserts.dom.assertIsHtmlImageElement = function (value) {
+    return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+        value,
+        goog.dom.TagName.IMG
+    )
+}
+goog.asserts.dom.assertIsHtmlAudioElement =
+    module$contents$goog$asserts$dom_assertIsHtmlAudioElement
+goog.asserts.dom.assertIsHtmlVideoElement =
+    module$contents$goog$asserts$dom_assertIsHtmlVideoElement
+goog.asserts.dom.assertIsHtmlInputElement =
+    module$contents$goog$asserts$dom_assertIsHtmlInputElement
+goog.asserts.dom.assertIsHtmlTextAreaElement = function (value) {
+    return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+        value,
+        goog.dom.TagName.TEXTAREA
+    )
+}
+goog.asserts.dom.assertIsHtmlCanvasElement = function (value) {
+    return module$contents$goog$asserts$dom_assertIsHtmlElementOfType(
+        value,
+        goog.dom.TagName.CANVAS
+    )
+}
+goog.asserts.dom.assertIsHtmlEmbedElement =
+    module$contents$goog$asserts$dom_assertIsHtmlEmbedElement
+goog.asserts.dom.assertIsHtmlFormElement =
+    module$contents$goog$asserts$dom_assertIsHtmlFormElement
+goog.asserts.dom.assertIsHtmlFrameElement =
+    module$contents$goog$asserts$dom_assertIsHtmlFrameElement
+goog.asserts.dom.assertIsHtmlIFrameElement =
+    module$contents$goog$asserts$dom_assertIsHtmlIFrameElement
+goog.asserts.dom.assertIsHtmlObjectElement =
+    module$contents$goog$asserts$dom_assertIsHtmlObjectElement
+goog.asserts.dom.assertIsHtmlScriptElement =
+    module$contents$goog$asserts$dom_assertIsHtmlScriptElement
+goog.dom.asserts = {}
+goog.dom.asserts.assertIsLocation = function (o) {
+    if (goog.asserts.ENABLE_ASSERTS) {
+        var win = goog.dom.asserts.getWindow_(o)
+        win &&
+            (!o ||
+                (!(o instanceof win.Location) && o instanceof win.Element)) &&
+            goog.asserts.fail(
+                'Argument is not a Location (or a non-Element mock); got: %s',
+                goog.dom.asserts.debugStringForType_(o)
+            )
+    }
+    return o
+}
+goog.dom.asserts.debugStringForType_ = function (value) {
+    if (goog.isObject(value)) {
+        try {
+            return (
+                value.constructor.displayName ||
+                value.constructor.name ||
+                Object.prototype.toString.call(value)
+            )
+        } catch (e) {
+            return '<object could not be stringified>'
+        }
+    } else {
+        return void 0 === value
+            ? 'undefined'
+            : null === value
+            ? 'null'
+            : typeof value
+    }
+}
+goog.dom.asserts.getWindow_ = function (o) {
+    try {
+        var doc = o && o.ownerDocument,
+            win = doc && (doc.defaultView || doc.parentWindow)
+        win = win || goog.global
+        if (win.Element && win.Location) {
+            return win
+        }
+    } catch (ex) {}
+    return null
+}
 goog.dom.tags = {}
 goog.dom.tags.VOID_TAGS_ = {
     area: !0,
@@ -9984,13 +10311,16 @@ goog.dom.tags.isVoidTag = function (tagName) {
 }
 goog.html = {}
 goog.html.trustedtypes = {}
+goog.html.trustedtypes.POLICY_NAME = goog.TRUSTED_TYPES_POLICY_NAME
+    ? goog.TRUSTED_TYPES_POLICY_NAME + '#html'
+    : ''
 goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse = function () {
-    if (!goog.TRUSTED_TYPES_POLICY_NAME) {
+    if (!goog.html.trustedtypes.POLICY_NAME) {
         return null
     }
     void 0 === goog.html.trustedtypes.cachedPolicy_ &&
         (goog.html.trustedtypes.cachedPolicy_ = goog.createTrustedTypesPolicy(
-            goog.TRUSTED_TYPES_POLICY_NAME + '#html'
+            goog.html.trustedtypes.POLICY_NAME
         ))
     return goog.html.trustedtypes.cachedPolicy_
 }
@@ -10049,6 +10379,10 @@ var module$contents$goog$html$SafeScript_CONSTRUCTOR_TOKEN_PRIVATE = {},
                 : ''
         this.implementsGoogStringTypedString = !0
     }
+module$contents$goog$html$SafeScript_SafeScript.prototype.toString =
+    function () {
+        return this.privateDoNotAccessOrElseSafeScriptWrappedValue_.toString()
+    }
 module$contents$goog$html$SafeScript_SafeScript.fromConstant = function (
     script
 ) {
@@ -10096,16 +10430,15 @@ module$contents$goog$html$SafeScript_SafeScript.stringify_ = function (val) {
 }
 module$contents$goog$html$SafeScript_SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse =
     function (script) {
-        var policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse(),
-            trustedScript = policy ? policy.createScript(script) : script
+        var noinlineScript = script,
+            policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse(),
+            trustedScript = policy
+                ? policy.createScript(noinlineScript)
+                : noinlineScript
         return new module$contents$goog$html$SafeScript_SafeScript(
             trustedScript,
             module$contents$goog$html$SafeScript_CONSTRUCTOR_TOKEN_PRIVATE
         )
-    }
-module$contents$goog$html$SafeScript_SafeScript.prototype.toString =
-    function () {
-        return this.privateDoNotAccessOrElseSafeScriptWrappedValue_.toString()
     }
 module$contents$goog$html$SafeScript_SafeScript.EMPTY = (function () {
     return module$contents$goog$html$SafeScript_SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse(
@@ -10171,283 +10504,18 @@ goog.fs.blob.getBlobWithProperties = function (parts, opt_type, opt_endings) {
     }
     throw Error("This browser doesn't seem to support creating Blobs")
 }
-goog.i18n = {}
-goog.i18n.bidi = {}
-goog.i18n.bidi.FORCE_RTL = !1
-goog.i18n.bidi.IS_RTL =
-    goog.i18n.bidi.FORCE_RTL ||
-    (('ar' == goog.LOCALE.substring(0, 2).toLowerCase() ||
-        'fa' == goog.LOCALE.substring(0, 2).toLowerCase() ||
-        'he' == goog.LOCALE.substring(0, 2).toLowerCase() ||
-        'iw' == goog.LOCALE.substring(0, 2).toLowerCase() ||
-        'ps' == goog.LOCALE.substring(0, 2).toLowerCase() ||
-        'sd' == goog.LOCALE.substring(0, 2).toLowerCase() ||
-        'ug' == goog.LOCALE.substring(0, 2).toLowerCase() ||
-        'ur' == goog.LOCALE.substring(0, 2).toLowerCase() ||
-        'yi' == goog.LOCALE.substring(0, 2).toLowerCase()) &&
-        (2 == goog.LOCALE.length ||
-            '-' == goog.LOCALE.substring(2, 3) ||
-            '_' == goog.LOCALE.substring(2, 3))) ||
-    (3 <= goog.LOCALE.length &&
-        'ckb' == goog.LOCALE.substring(0, 3).toLowerCase() &&
-        (3 == goog.LOCALE.length ||
-            '-' == goog.LOCALE.substring(3, 4) ||
-            '_' == goog.LOCALE.substring(3, 4))) ||
-    (7 <= goog.LOCALE.length &&
-        ('-' == goog.LOCALE.substring(2, 3) ||
-            '_' == goog.LOCALE.substring(2, 3)) &&
-        ('adlm' == goog.LOCALE.substring(3, 7).toLowerCase() ||
-            'arab' == goog.LOCALE.substring(3, 7).toLowerCase() ||
-            'hebr' == goog.LOCALE.substring(3, 7).toLowerCase() ||
-            'nkoo' == goog.LOCALE.substring(3, 7).toLowerCase() ||
-            'rohg' == goog.LOCALE.substring(3, 7).toLowerCase() ||
-            'thaa' == goog.LOCALE.substring(3, 7).toLowerCase())) ||
-    (8 <= goog.LOCALE.length &&
-        ('-' == goog.LOCALE.substring(3, 4) ||
-            '_' == goog.LOCALE.substring(3, 4)) &&
-        ('adlm' == goog.LOCALE.substring(4, 8).toLowerCase() ||
-            'arab' == goog.LOCALE.substring(4, 8).toLowerCase() ||
-            'hebr' == goog.LOCALE.substring(4, 8).toLowerCase() ||
-            'nkoo' == goog.LOCALE.substring(4, 8).toLowerCase() ||
-            'rohg' == goog.LOCALE.substring(4, 8).toLowerCase() ||
-            'thaa' == goog.LOCALE.substring(4, 8).toLowerCase()))
-goog.i18n.bidi.Format = {
-    LRE: '\u202a',
-    RLE: '\u202b',
-    PDF: '\u202c',
-    LRM: '\u200e',
-    RLM: '\u200f',
-}
-goog.i18n.bidi.Dir = { LTR: 1, RTL: -1, NEUTRAL: 0 }
-goog.i18n.bidi.RIGHT = 'right'
-goog.i18n.bidi.LEFT = 'left'
-goog.i18n.bidi.I18N_RIGHT = goog.i18n.bidi.IS_RTL
-    ? goog.i18n.bidi.LEFT
-    : goog.i18n.bidi.RIGHT
-goog.i18n.bidi.I18N_LEFT = goog.i18n.bidi.IS_RTL
-    ? goog.i18n.bidi.RIGHT
-    : goog.i18n.bidi.LEFT
-goog.i18n.bidi.toDir = function (givenDir, opt_noNeutral) {
-    return 'number' == typeof givenDir
-        ? 0 < givenDir
-            ? goog.i18n.bidi.Dir.LTR
-            : 0 > givenDir
-            ? goog.i18n.bidi.Dir.RTL
-            : opt_noNeutral
-            ? null
-            : goog.i18n.bidi.Dir.NEUTRAL
-        : null == givenDir
-        ? null
-        : givenDir
-        ? goog.i18n.bidi.Dir.RTL
-        : goog.i18n.bidi.Dir.LTR
-}
-goog.i18n.bidi.ltrChars_ =
-    'A-Za-z\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u02b8\u0300-\u0590\u0900-\u1fff\u200e\u2c00-\ud801\ud804-\ud839\ud83c-\udbff\uf900-\ufb1c\ufe00-\ufe6f\ufefd-\uffff'
-goog.i18n.bidi.rtlChars_ =
-    '\u0591-\u06ef\u06fa-\u08ff\u200f\ud802-\ud803\ud83a-\ud83b\ufb1d-\ufdff\ufe70-\ufefc'
-goog.i18n.bidi.htmlSkipReg_ = /<[^>]*>|&[^;]+;/g
-goog.i18n.bidi.stripHtmlIfNeeded_ = function (str, opt_isStripNeeded) {
-    return opt_isStripNeeded
-        ? str.replace(goog.i18n.bidi.htmlSkipReg_, '')
-        : str
-}
-goog.i18n.bidi.rtlCharReg_ = new RegExp('[' + goog.i18n.bidi.rtlChars_ + ']')
-goog.i18n.bidi.ltrCharReg_ = new RegExp('[' + goog.i18n.bidi.ltrChars_ + ']')
-goog.i18n.bidi.hasAnyRtl = function (str, opt_isHtml) {
-    return goog.i18n.bidi.rtlCharReg_.test(
-        goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml)
-    )
-}
-goog.i18n.bidi.hasRtlChar = goog.i18n.bidi.hasAnyRtl
-goog.i18n.bidi.hasAnyLtr = function (str, opt_isHtml) {
-    return goog.i18n.bidi.ltrCharReg_.test(
-        goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml)
-    )
-}
-goog.i18n.bidi.ltrRe_ = new RegExp('^[' + goog.i18n.bidi.ltrChars_ + ']')
-goog.i18n.bidi.rtlRe_ = new RegExp('^[' + goog.i18n.bidi.rtlChars_ + ']')
-goog.i18n.bidi.isRtlChar = function (str) {
-    return goog.i18n.bidi.rtlRe_.test(str)
-}
-goog.i18n.bidi.isLtrChar = function (str) {
-    return goog.i18n.bidi.ltrRe_.test(str)
-}
-goog.i18n.bidi.isNeutralChar = function (str) {
-    return !goog.i18n.bidi.isLtrChar(str) && !goog.i18n.bidi.isRtlChar(str)
-}
-goog.i18n.bidi.ltrDirCheckRe_ = new RegExp(
-    '^[^' + goog.i18n.bidi.rtlChars_ + ']*[' + goog.i18n.bidi.ltrChars_ + ']'
-)
-goog.i18n.bidi.rtlDirCheckRe_ = new RegExp(
-    '^[^' + goog.i18n.bidi.ltrChars_ + ']*[' + goog.i18n.bidi.rtlChars_ + ']'
-)
-goog.i18n.bidi.startsWithRtl = function (str, opt_isHtml) {
-    return goog.i18n.bidi.rtlDirCheckRe_.test(
-        goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml)
-    )
-}
-goog.i18n.bidi.isRtlText = goog.i18n.bidi.startsWithRtl
-goog.i18n.bidi.startsWithLtr = function (str, opt_isHtml) {
-    return goog.i18n.bidi.ltrDirCheckRe_.test(
-        goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml)
-    )
-}
-goog.i18n.bidi.isLtrText = goog.i18n.bidi.startsWithLtr
-goog.i18n.bidi.isRequiredLtrRe_ = /^http:\/\/.*/
-goog.i18n.bidi.isNeutralText = function (str, opt_isHtml) {
-    str = goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml)
-    return (
-        goog.i18n.bidi.isRequiredLtrRe_.test(str) ||
-        (!goog.i18n.bidi.hasAnyLtr(str) && !goog.i18n.bidi.hasAnyRtl(str))
-    )
-}
-goog.i18n.bidi.ltrExitDirCheckRe_ = new RegExp(
-    '[' + goog.i18n.bidi.ltrChars_ + '][^' + goog.i18n.bidi.rtlChars_ + ']*$'
-)
-goog.i18n.bidi.rtlExitDirCheckRe_ = new RegExp(
-    '[' + goog.i18n.bidi.rtlChars_ + '][^' + goog.i18n.bidi.ltrChars_ + ']*$'
-)
-goog.i18n.bidi.endsWithLtr = function (str, opt_isHtml) {
-    return goog.i18n.bidi.ltrExitDirCheckRe_.test(
-        goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml)
-    )
-}
-goog.i18n.bidi.isLtrExitText = goog.i18n.bidi.endsWithLtr
-goog.i18n.bidi.endsWithRtl = function (str, opt_isHtml) {
-    return goog.i18n.bidi.rtlExitDirCheckRe_.test(
-        goog.i18n.bidi.stripHtmlIfNeeded_(str, opt_isHtml)
-    )
-}
-goog.i18n.bidi.isRtlExitText = goog.i18n.bidi.endsWithRtl
-goog.i18n.bidi.rtlLocalesRe_ = RegExp(
-    '^(ar|ckb|dv|he|iw|fa|nqo|ps|sd|ug|ur|yi|.*[-_](Adlm|Arab|Hebr|Nkoo|Rohg|Thaa))(?!.*[-_](Latn|Cyrl)($|-|_))($|-|_)',
-    'i'
-)
-goog.i18n.bidi.isRtlLanguage = function (lang) {
-    return goog.i18n.bidi.rtlLocalesRe_.test(lang)
-}
-goog.i18n.bidi.bracketGuardTextRe_ =
-    /(\(.*?\)+)|(\[.*?\]+)|(\{.*?\}+)|(<.*?>+)/g
-goog.i18n.bidi.guardBracketInText = function (s, opt_isRtlContext) {
-    var mark = (
-        void 0 === opt_isRtlContext
-            ? goog.i18n.bidi.hasAnyRtl(s)
-            : opt_isRtlContext
-    )
-        ? goog.i18n.bidi.Format.RLM
-        : goog.i18n.bidi.Format.LRM
-    return s.replace(goog.i18n.bidi.bracketGuardTextRe_, mark + '$&' + mark)
-}
-goog.i18n.bidi.enforceRtlInHtml = function (html) {
-    return '<' == html.charAt(0)
-        ? html.replace(/<\w+/, '$& dir=rtl')
-        : '\n<span dir=rtl>' + html + '</span>'
-}
-goog.i18n.bidi.enforceRtlInText = function (text) {
-    return goog.i18n.bidi.Format.RLE + text + goog.i18n.bidi.Format.PDF
-}
-goog.i18n.bidi.enforceLtrInHtml = function (html) {
-    return '<' == html.charAt(0)
-        ? html.replace(/<\w+/, '$& dir=ltr')
-        : '\n<span dir=ltr>' + html + '</span>'
-}
-goog.i18n.bidi.enforceLtrInText = function (text) {
-    return goog.i18n.bidi.Format.LRE + text + goog.i18n.bidi.Format.PDF
-}
-goog.i18n.bidi.dimensionsRe_ =
-    /:\s*([.\d][.\w]*)\s+([.\d][.\w]*)\s+([.\d][.\w]*)\s+([.\d][.\w]*)/g
-goog.i18n.bidi.leftRe_ = /left/gi
-goog.i18n.bidi.rightRe_ = /right/gi
-goog.i18n.bidi.tempRe_ = /%%%%/g
-goog.i18n.bidi.mirrorCSS = function (cssStr) {
-    return cssStr
-        .replace(goog.i18n.bidi.dimensionsRe_, ':$1 $4 $3 $2')
-        .replace(goog.i18n.bidi.leftRe_, '%%%%')
-        .replace(goog.i18n.bidi.rightRe_, goog.i18n.bidi.LEFT)
-        .replace(goog.i18n.bidi.tempRe_, goog.i18n.bidi.RIGHT)
-}
-goog.i18n.bidi.doubleQuoteSubstituteRe_ = /([\u0591-\u05f2])"/g
-goog.i18n.bidi.singleQuoteSubstituteRe_ = /([\u0591-\u05f2])'/g
-goog.i18n.bidi.normalizeHebrewQuote = function (str) {
-    return str
-        .replace(goog.i18n.bidi.doubleQuoteSubstituteRe_, '$1\u05f4')
-        .replace(goog.i18n.bidi.singleQuoteSubstituteRe_, '$1\u05f3')
-}
-goog.i18n.bidi.wordSeparatorRe_ = /\s+/
-goog.i18n.bidi.hasNumeralsRe_ = /[\d\u06f0-\u06f9]/
-goog.i18n.bidi.rtlDetectionThreshold_ = 0.4
-goog.i18n.bidi.estimateDirection = function (str, opt_isHtml) {
-    for (
-        var rtlCount = 0,
-            totalCount = 0,
-            hasWeaklyLtr = !1,
-            tokens = goog.i18n.bidi
-                .stripHtmlIfNeeded_(str, opt_isHtml)
-                .split(goog.i18n.bidi.wordSeparatorRe_),
-            i = 0;
-        i < tokens.length;
-        i++
-    ) {
-        var token = tokens[i]
-        goog.i18n.bidi.startsWithRtl(token)
-            ? (rtlCount++, totalCount++)
-            : goog.i18n.bidi.isRequiredLtrRe_.test(token)
-            ? (hasWeaklyLtr = !0)
-            : goog.i18n.bidi.hasAnyLtr(token)
-            ? totalCount++
-            : goog.i18n.bidi.hasNumeralsRe_.test(token) && (hasWeaklyLtr = !0)
-    }
-    return 0 == totalCount
-        ? hasWeaklyLtr
-            ? goog.i18n.bidi.Dir.LTR
-            : goog.i18n.bidi.Dir.NEUTRAL
-        : rtlCount / totalCount > goog.i18n.bidi.rtlDetectionThreshold_
-        ? goog.i18n.bidi.Dir.RTL
-        : goog.i18n.bidi.Dir.LTR
-}
-goog.i18n.bidi.detectRtlDirectionality = function (str, opt_isHtml) {
-    return (
-        goog.i18n.bidi.estimateDirection(str, opt_isHtml) ==
-        goog.i18n.bidi.Dir.RTL
-    )
-}
-goog.i18n.bidi.setElementDirAndAlign = function (element, dir) {
-    element &&
-        (dir = goog.i18n.bidi.toDir(dir)) &&
-        ((element.style.textAlign =
-            dir == goog.i18n.bidi.Dir.RTL
-                ? goog.i18n.bidi.RIGHT
-                : goog.i18n.bidi.LEFT),
-        (element.dir = dir == goog.i18n.bidi.Dir.RTL ? 'rtl' : 'ltr'))
-}
-goog.i18n.bidi.setElementDirByTextDirectionality = function (element, text) {
-    switch (goog.i18n.bidi.estimateDirection(text)) {
-        case goog.i18n.bidi.Dir.LTR:
-            'ltr' !== element.dir && (element.dir = 'ltr')
-            break
-        case goog.i18n.bidi.Dir.RTL:
-            'rtl' !== element.dir && (element.dir = 'rtl')
-            break
-        default:
-            element.removeAttribute('dir')
-    }
-}
-goog.i18n.bidi.DirectionalString = function () {}
 goog.html.TrustedResourceUrl = function (value, token) {
     this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ =
         token === goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_
             ? value
             : ''
 }
+goog.html.TrustedResourceUrl.prototype.toString = function () {
+    return this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ + ''
+}
 goog.html.TrustedResourceUrl.prototype.implementsGoogStringTypedString = !0
 goog.html.TrustedResourceUrl.prototype.getTypedStringValue = function () {
     return this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_.toString()
-}
-goog.html.TrustedResourceUrl.prototype.implementsGoogI18nBidiDirectionalString =
-    !0
-goog.html.TrustedResourceUrl.prototype.getDirection = function () {
-    return goog.i18n.bidi.Dir.LTR
 }
 goog.html.TrustedResourceUrl.prototype.cloneWithParams = function (
     searchParams,
@@ -10469,9 +10537,6 @@ goog.html.TrustedResourceUrl.prototype.cloneWithParams = function (
                 opt_hashParams
             )
     )
-}
-goog.html.TrustedResourceUrl.prototype.toString = function () {
-    return this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ + ''
 }
 goog.html.TrustedResourceUrl.unwrap = function (trustedResourceUrl) {
     return goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(
@@ -10571,8 +10636,9 @@ goog.html.TrustedResourceUrl.fromSafeScript = function (safeScript) {
 goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {}
 goog.html.TrustedResourceUrl.createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse =
     function (url) {
-        var policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse(),
-            value = policy ? policy.createScriptURL(url) : url
+        var noinlineUrl = url,
+            policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse(),
+            value = policy ? policy.createScriptURL(noinlineUrl) : noinlineUrl
         return new goog.html.TrustedResourceUrl(
             value,
             goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_
@@ -10615,16 +10681,12 @@ goog.html.SafeUrl = function (value, token) {
     this.privateDoNotAccessOrElseSafeUrlWrappedValue_ =
         token === goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_ ? value : ''
 }
+goog.html.SafeUrl.prototype.toString = function () {
+    return this.privateDoNotAccessOrElseSafeUrlWrappedValue_.toString()
+}
 goog.html.SafeUrl.INNOCUOUS_STRING = 'about:invalid#zClosurez'
 goog.html.SafeUrl.prototype.implementsGoogStringTypedString = !0
 goog.html.SafeUrl.prototype.getTypedStringValue = function () {
-    return this.privateDoNotAccessOrElseSafeUrlWrappedValue_.toString()
-}
-goog.html.SafeUrl.prototype.implementsGoogI18nBidiDirectionalString = !0
-goog.html.SafeUrl.prototype.getDirection = function () {
-    return goog.i18n.bidi.Dir.LTR
-}
-goog.html.SafeUrl.prototype.toString = function () {
     return this.privateDoNotAccessOrElseSafeUrlWrappedValue_.toString()
 }
 goog.html.SafeUrl.unwrap = function (safeUrl) {
@@ -10648,7 +10710,7 @@ goog.html.SafeUrl.fromConstant = function (url) {
     )
 }
 goog.html.SAFE_MIME_TYPE_PATTERN_ = RegExp(
-    '^(?:audio/(?:3gpp2|3gpp|aac|L16|midi|mp3|mp4|mpeg|oga|ogg|opus|x-m4a|x-matroska|x-wav|wav|webm)|font/\\w+|image/(?:bmp|gif|jpeg|jpg|png|tiff|webp|x-icon)|video/(?:mpeg|mp4|ogg|webm|quicktime|x-matroska))(?:;\\w+=(?:\\w+|"[\\w;,= ]+"))*$',
+    '^(?:audio/(?:3gpp2|3gpp|aac|L16|midi|mp3|mp4|mpeg|oga|ogg|opus|x-m4a|x-matroska|x-wav|wav|webm)|font/\\w+|image/(?:bmp|gif|jpeg|jpg|png|tiff|webp|x-icon|heic|heif)|video/(?:mpeg|mp4|ogg|webm|quicktime|x-matroska))(?:;\\w+=(?:\\w+|"[\\w;,= ]+"))*$',
     'i'
 )
 goog.html.SafeUrl.isSafeMimeType = function (mimeType) {
@@ -10679,9 +10741,8 @@ goog.html.SafeUrl.fromMediaSource = function (mediaSource) {
 goog.html.DATA_URL_PATTERN_ = /^data:(.*);base64,[a-z0-9+\/]+=*$/i
 goog.html.SafeUrl.tryFromDataUrl = function (dataUrl) {
     dataUrl = String(dataUrl)
-    var filteredDataUrl = dataUrl.replace(/(%0A|%0D)/g, ''),
-        match = filteredDataUrl.match(goog.html.DATA_URL_PATTERN_)
-    return match && goog.html.SafeUrl.isSafeMimeType(match[1])
+    var filteredDataUrl = dataUrl.replace(/(%0A|%0D)/g, '')
+    return filteredDataUrl.match(goog.html.DATA_URL_PATTERN_)
         ? goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
               filteredDataUrl
           )
@@ -10846,6 +10907,54 @@ goog.html.SafeUrl.sanitizeAssertUnchanged = function (url, opt_allowDataUrl) {
     ) || (url = goog.html.SafeUrl.INNOCUOUS_STRING)
     return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url)
 }
+goog.html.SafeUrl.ASSUME_IMPLEMENTS_URL_API_GOOG = 2020 <= goog.FEATURESET_YEAR
+goog.html.SafeUrl.supportsURLAPI = (function () {
+    if (goog.html.SafeUrl.ASSUME_IMPLEMENTS_URL_API_GOOG) {
+        return !0
+    }
+    try {
+        return new URL('s://g'), !0
+    } catch (e) {
+        return !1
+    }
+})()
+goog.html.SafeUrl.legacyExtractScheme = function (url) {
+    var aTag = document.createElement('a')
+    try {
+        aTag.href = url
+    } catch (e) {
+        return
+    }
+    var protocol = aTag.protocol
+    return ':' === protocol || '' === protocol ? 'https:' : protocol
+}
+goog.html.SafeUrl.extractScheme = function (url) {
+    if (!goog.html.SafeUrl.supportsURLAPI) {
+        return goog.html.SafeUrl.legacyExtractScheme(url)
+    }
+    try {
+        var parsedUrl = new URL(url)
+    } catch (e) {
+        return 'https:'
+    }
+    return parsedUrl.protocol
+}
+goog.html.SafeUrl.sanitizeJavascriptUrlAssertUnchanged = function (url) {
+    if (url instanceof goog.html.SafeUrl) {
+        return url
+    }
+    url =
+        'object' == typeof url && url.implementsGoogStringTypedString
+            ? url.getTypedStringValue()
+            : String(url)
+    var parsedScheme = goog.html.SafeUrl.extractScheme(url)
+    goog.asserts.assert(
+        'javascript:' !== parsedScheme,
+        '%s is a javascript: URL',
+        url
+    ) || (url = goog.html.SafeUrl.INNOCUOUS_STRING)
+    return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(url)
+}
 goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_ = {}
 goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse = function (
     url
@@ -10986,7 +11095,7 @@ function module$contents$goog$html$SafeStyle_sanitizePropertyValue(value) {
                   String(value)
               )
     if (/[{;}]/.test(result)) {
-        throw new goog.asserts.AssertionError(
+        throw new module$contents$goog$asserts_AssertionError(
             'Value does not allow [{;}], got: %s.',
             [result]
         )
@@ -11035,7 +11144,7 @@ function module$contents$goog$html$SafeStyle_sanitizePropertyValueString(
     } else {
         return (
             (0, goog.asserts.fail)(
-                'String value allows only [-,."\'%_!#/ a-zA-Z0-9\\[\\]] and simple functions, got: ' +
+                'String value allows only [-+,."\'%_!#/ a-zA-Z0-9\\[\\]] and simple functions, got: ' +
                     value
             ),
             module$contents$goog$html$SafeStyle_SafeStyle.INNOCUOUS_STRING
@@ -11068,30 +11177,26 @@ function module$contents$goog$html$SafeStyle_hasBalancedSquareBrackets(value) {
                 return !1
             }
             outside = !0
-        } else {
-            if ('[' == c) {
-                if (!outside) {
-                    return !1
-                }
-                outside = !1
-            } else {
-                if (!outside && !tokenRe.test(c)) {
-                    return !1
-                }
+        } else if ('[' == c) {
+            if (!outside) {
+                return !1
             }
+            outside = !1
+        } else if (!outside && !tokenRe.test(c)) {
+            return !1
         }
     }
     return outside
 }
 var module$contents$goog$html$SafeStyle_VALUE_RE = RegExp(
-        '^[-,."\'%_!#/ a-zA-Z0-9\\[\\]]+$'
+        '^[-+,."\'%_!#/ a-zA-Z0-9\\[\\]]+$'
     ),
     module$contents$goog$html$SafeStyle_URL_RE = RegExp(
         '\\b(url\\([ \t\n]*)(\'[ -&(-\\[\\]-~]*\'|"[ !#-\\[\\]-~]*"|[!#-&*-\\[\\]-~]*)([ \t\n]*\\))',
         'g'
     ),
     module$contents$goog$html$SafeStyle_FUNCTIONS_RE = RegExp(
-        '\\b(calc|cubic-bezier|fit-content|hsl|hsla|linear-gradient|matrix|minmax|repeat|rgb|rgba|(rotate|scale|translate)(X|Y|Z|3d)?|var)\\([-+*/0-9a-z.%#\\[\\], ]+\\)',
+        '\\b(calc|cubic-bezier|fit-content|hsl|hsla|linear-gradient|matrix|minmax|radial-gradient|repeat|rgb|rgba|(rotate|scale|translate)(X|Y|Z|3d)?|steps|var)\\([-+*/0-9a-zA-Z.%#\\[\\], ]+\\)',
         'g'
     ),
     module$contents$goog$html$SafeStyle_COMMENT_RE = /\/\*/
@@ -11125,6 +11230,10 @@ var module$contents$goog$html$SafeStyleSheet_CONSTRUCTOR_TOKEN_PRIVATE = {},
                 ? value
                 : ''
         this.implementsGoogStringTypedString = !0
+    }
+module$contents$goog$html$SafeStyleSheet_SafeStyleSheet.prototype.toString =
+    function () {
+        return this.privateDoNotAccessOrElseSafeStyleSheetWrappedValue_.toString()
     }
 module$contents$goog$html$SafeStyleSheet_SafeStyleSheet.createRule = function (
     selector,
@@ -11173,13 +11282,11 @@ module$contents$goog$html$SafeStyleSheet_SafeStyleSheet.hasBalancedBrackets_ =
             var ch = s[i]
             if (brackets[ch]) {
                 expectedBrackets.push(brackets[ch])
-            } else {
-                if (
-                    module$contents$goog$object_contains(brackets, ch) &&
-                    expectedBrackets.pop() != ch
-                ) {
-                    return !1
-                }
+            } else if (
+                module$contents$goog$object_contains(brackets, ch) &&
+                expectedBrackets.pop() != ch
+            ) {
+                return !1
             }
         }
         return 0 == expectedBrackets.length
@@ -11245,10 +11352,6 @@ module$contents$goog$html$SafeStyleSheet_SafeStyleSheet.createSafeStyleSheetSecu
             module$contents$goog$html$SafeStyleSheet_CONSTRUCTOR_TOKEN_PRIVATE
         )
     }
-module$contents$goog$html$SafeStyleSheet_SafeStyleSheet.prototype.toString =
-    function () {
-        return this.privateDoNotAccessOrElseSafeStyleSheetWrappedValue_.toString()
-    }
 module$contents$goog$html$SafeStyleSheet_SafeStyleSheet.EMPTY =
     module$contents$goog$html$SafeStyleSheet_SafeStyleSheet.createSafeStyleSheetSecurityPrivateDoNotAccessOrElse(
         ''
@@ -11256,19 +11359,13 @@ module$contents$goog$html$SafeStyleSheet_SafeStyleSheet.EMPTY =
 goog.html.SafeStyleSheet =
     module$contents$goog$html$SafeStyleSheet_SafeStyleSheet
 var module$contents$goog$html$SafeHtml_CONSTRUCTOR_TOKEN_PRIVATE = {},
-    module$contents$goog$html$SafeHtml_SafeHtml = function (value, dir, token) {
+    module$contents$goog$html$SafeHtml_SafeHtml = function (value, token) {
         this.privateDoNotAccessOrElseSafeHtmlWrappedValue_ =
             token ===
             module$contents$goog$html$SafeHtml_CONSTRUCTOR_TOKEN_PRIVATE
                 ? value
                 : ''
-        this.dir_ = dir
-        this.implementsGoogStringTypedString =
-            this.implementsGoogI18nBidiDirectionalString = !0
-    }
-module$contents$goog$html$SafeHtml_SafeHtml.prototype.getDirection =
-    function () {
-        return this.dir_
+        this.implementsGoogStringTypedString = !0
     }
 module$contents$goog$html$SafeHtml_SafeHtml.prototype.getTypedStringValue =
     function () {
@@ -11300,22 +11397,16 @@ module$contents$goog$html$SafeHtml_SafeHtml.unwrapTrustedHTML = function (
     return 'type_error:SafeHtml'
 }
 module$contents$goog$html$SafeHtml_SafeHtml.htmlEscape = function (textOrHtml) {
-    if (textOrHtml instanceof module$contents$goog$html$SafeHtml_SafeHtml) {
-        return textOrHtml
-    }
-    var textIsObject = 'object' == typeof textOrHtml,
-        dir = null
-    textIsObject &&
-        textOrHtml.implementsGoogI18nBidiDirectionalString &&
-        (dir = textOrHtml.getDirection())
-    return module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
-        goog.string.internal.htmlEscape(
-            textIsObject && textOrHtml.implementsGoogStringTypedString
-                ? textOrHtml.getTypedStringValue()
-                : String(textOrHtml)
-        ),
-        dir
-    )
+    return textOrHtml instanceof module$contents$goog$html$SafeHtml_SafeHtml
+        ? textOrHtml
+        : module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
+              goog.string.internal.htmlEscape(
+                  'object' == typeof textOrHtml &&
+                      textOrHtml.implementsGoogStringTypedString
+                      ? textOrHtml.getTypedStringValue()
+                      : String(textOrHtml)
+              )
+          )
 }
 module$contents$goog$html$SafeHtml_SafeHtml.htmlEscapePreservingNewlines =
     function (textOrHtml) {
@@ -11327,8 +11418,7 @@ module$contents$goog$html$SafeHtml_SafeHtml.htmlEscapePreservingNewlines =
         return module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
             goog.string.internal.newLineToBr(
                 module$contents$goog$html$SafeHtml_SafeHtml.unwrap(html)
-            ),
-            html.getDirection()
+            )
         )
     }
 module$contents$goog$html$SafeHtml_SafeHtml.htmlEscapePreservingNewlinesAndSpaces =
@@ -11341,14 +11431,12 @@ module$contents$goog$html$SafeHtml_SafeHtml.htmlEscapePreservingNewlinesAndSpace
         return module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
             goog.string.internal.whitespaceEscape(
                 module$contents$goog$html$SafeHtml_SafeHtml.unwrap(html)
-            ),
-            html.getDirection()
+            )
         )
     }
 module$contents$goog$html$SafeHtml_SafeHtml.comment = function (text) {
     return module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
-        '\x3c!--' + goog.string.internal.htmlEscape(text) + '--\x3e',
-        null
+        '\x3c!--' + goog.string.internal.htmlEscape(text) + '--\x3e'
     )
 }
 module$contents$goog$html$SafeHtml_SafeHtml.create = function (
@@ -11468,8 +11556,7 @@ module$contents$goog$html$SafeHtml_SafeHtml.createScript = function (
             if (
                 'language' == attrLower ||
                 'src' == attrLower ||
-                'text' == attrLower ||
-                'type' == attrLower
+                'text' == attrLower
             ) {
                 throw Error(
                     module$contents$goog$html$SafeHtml_SafeHtml.ENABLE_ERROR_MESSAGES
@@ -11488,8 +11575,7 @@ module$contents$goog$html$SafeHtml_SafeHtml.createScript = function (
     }
     var htmlContent =
         module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
-            content,
-            goog.i18n.bidi.Dir.NEUTRAL
+            content
         )
     return module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse(
         'script',
@@ -11517,8 +11603,7 @@ module$contents$goog$html$SafeHtml_SafeHtml.createStyle = function (
     }
     var htmlContent =
         module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
-            content,
-            goog.i18n.bidi.Dir.NEUTRAL
+            content
         )
     return module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse(
         'style',
@@ -11543,24 +11628,9 @@ module$contents$goog$html$SafeHtml_SafeHtml.createMetaRefresh = function (
         }
     )
 }
-module$contents$goog$html$SafeHtml_SafeHtml.createWithDir = function (
-    dir,
-    tagName,
-    attributes,
-    content
-) {
-    var html = module$contents$goog$html$SafeHtml_SafeHtml.create(
-        tagName,
-        attributes,
-        content
-    )
-    html.dir_ = dir
-    return html
-}
 module$contents$goog$html$SafeHtml_SafeHtml.join = function (separator, parts) {
     var separatorHtml =
             module$contents$goog$html$SafeHtml_SafeHtml.htmlEscape(separator),
-        dir = separatorHtml.getDirection(),
         content = [],
         addArgument = function (argument) {
             if (Array.isArray(argument)) {
@@ -11573,20 +11643,13 @@ module$contents$goog$html$SafeHtml_SafeHtml.join = function (separator, parts) {
                 content.push(
                     module$contents$goog$html$SafeHtml_SafeHtml.unwrap(html)
                 )
-                var htmlDir = html.getDirection()
-                dir == goog.i18n.bidi.Dir.NEUTRAL
-                    ? (dir = htmlDir)
-                    : htmlDir != goog.i18n.bidi.Dir.NEUTRAL &&
-                      dir != htmlDir &&
-                      (dir = null)
             }
         }
     parts.forEach(addArgument)
     return module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
         content.join(
             module$contents$goog$html$SafeHtml_SafeHtml.unwrap(separatorHtml)
-        ),
-        dir
+        )
     )
 }
 module$contents$goog$html$SafeHtml_SafeHtml.concat = function (var_args) {
@@ -11595,29 +11658,20 @@ module$contents$goog$html$SafeHtml_SafeHtml.concat = function (var_args) {
         Array.prototype.slice.call(arguments)
     )
 }
-module$contents$goog$html$SafeHtml_SafeHtml.concatWithDir = function (
-    dir,
-    var_args
-) {
-    var html = module$contents$goog$html$SafeHtml_SafeHtml.concat(
-        Array.prototype.slice.call(arguments, 1)
-    )
-    html.dir_ = dir
-    return html
-}
 module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse =
-    function (html, dir) {
-        var policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse(),
-            trustedHtml = policy ? policy.createHTML(html) : html
+    function (html) {
+        var noinlineHtml = html,
+            policy = goog.html.trustedtypes.getPolicyPrivateDoNotAccessOrElse(),
+            trustedHtml = policy
+                ? policy.createHTML(noinlineHtml)
+                : noinlineHtml
         return new module$contents$goog$html$SafeHtml_SafeHtml(
             trustedHtml,
-            dir,
             module$contents$goog$html$SafeHtml_CONSTRUCTOR_TOKEN_PRIVATE
         )
     }
 module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlTagSecurityPrivateDoNotAccessOrElse =
     function (tagName, attributes, content) {
-        var dir = null
         var result =
             '<' +
             tagName +
@@ -11643,16 +11697,9 @@ module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlTagSecurityPrivateDoNo
                 '</' +
                 tagName +
                 '>'
-            dir = html.getDirection()
         }
-        var dirAttribute = attributes && attributes.dir
-        dirAttribute &&
-            (dir = /^(ltr|rtl|auto)$/i.test(dirAttribute)
-                ? goog.i18n.bidi.Dir.NEUTRAL
-                : null)
         return module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
-            result,
-            dir
+            result
         )
     }
 module$contents$goog$html$SafeHtml_SafeHtml.stringifyAttributes = function (
@@ -11703,34 +11750,34 @@ module$contents$goog$html$SafeHtml_SafeHtml.combineAttributes = function (
             ),
             (combinedAttributes[name] = fixedAttributes[name]))
     }
-    for (var name$42 in defaultAttributes) {
-        Object.prototype.hasOwnProperty.call(defaultAttributes, name$42) &&
+    for (var name$48 in defaultAttributes) {
+        Object.prototype.hasOwnProperty.call(defaultAttributes, name$48) &&
             (goog.asserts.assert(
-                name$42.toLowerCase() == name$42,
+                name$48.toLowerCase() == name$48,
                 'Must be lower case'
             ),
-            (combinedAttributes[name$42] = defaultAttributes[name$42]))
+            (combinedAttributes[name$48] = defaultAttributes[name$48]))
     }
     if (attributes) {
-        for (var name$43 in attributes) {
-            if (Object.prototype.hasOwnProperty.call(attributes, name$43)) {
-                var nameLower = name$43.toLowerCase()
+        for (var name$49 in attributes) {
+            if (Object.prototype.hasOwnProperty.call(attributes, name$49)) {
+                var nameLower = name$49.toLowerCase()
                 if (nameLower in fixedAttributes) {
                     throw Error(
                         module$contents$goog$html$SafeHtml_SafeHtml.ENABLE_ERROR_MESSAGES
                             ? 'Cannot override "' +
                                   nameLower +
                                   '" attribute, got "' +
-                                  name$43 +
+                                  name$49 +
                                   '" with value "' +
-                                  attributes[name$43] +
+                                  attributes[name$49] +
                                   '"'
                             : ''
                     )
                 }
                 nameLower in defaultAttributes &&
                     delete combinedAttributes[nameLower]
-                combinedAttributes[name$43] = attributes[name$43]
+                combinedAttributes[name$49] = attributes[name$49]
             }
         }
     }
@@ -11773,61 +11820,52 @@ function module$contents$goog$html$SafeHtml_getAttrNameAndValue(
 ) {
     if (value instanceof goog.string.Const) {
         value = goog.string.Const.unwrap(value)
-    } else {
-        if ('style' == name.toLowerCase()) {
-            if (
-                module$contents$goog$html$SafeHtml_SafeHtml.SUPPORT_STYLE_ATTRIBUTE
-            ) {
-                value = module$contents$goog$html$SafeHtml_getStyleValue(value)
-            } else {
-                throw Error(
-                    module$contents$goog$html$SafeHtml_SafeHtml.ENABLE_ERROR_MESSAGES
-                        ? 'Attribute "style" not supported.'
-                        : ''
-                )
-            }
+    } else if ('style' == name.toLowerCase()) {
+        if (
+            module$contents$goog$html$SafeHtml_SafeHtml.SUPPORT_STYLE_ATTRIBUTE
+        ) {
+            value = module$contents$goog$html$SafeHtml_getStyleValue(value)
         } else {
-            if (/^on/i.test(name)) {
+            throw Error(
+                module$contents$goog$html$SafeHtml_SafeHtml.ENABLE_ERROR_MESSAGES
+                    ? 'Attribute "style" not supported.'
+                    : ''
+            )
+        }
+    } else {
+        if (/^on/i.test(name)) {
+            throw Error(
+                module$contents$goog$html$SafeHtml_SafeHtml.ENABLE_ERROR_MESSAGES
+                    ? 'Attribute "' +
+                          name +
+                          '" requires goog.string.Const value, "' +
+                          value +
+                          '" given.'
+                    : ''
+            )
+        }
+        if (
+            name.toLowerCase() in
+            module$contents$goog$html$SafeHtml_URL_ATTRIBUTES
+        ) {
+            if (value instanceof goog.html.TrustedResourceUrl) {
+                value = goog.html.TrustedResourceUrl.unwrap(value)
+            } else if (value instanceof goog.html.SafeUrl) {
+                value = goog.html.SafeUrl.unwrap(value)
+            } else if ('string' === typeof value) {
+                value = goog.html.SafeUrl.sanitize(value).getTypedStringValue()
+            } else {
                 throw Error(
                     module$contents$goog$html$SafeHtml_SafeHtml.ENABLE_ERROR_MESSAGES
                         ? 'Attribute "' +
                               name +
-                              '" requires goog.string.Const value, "' +
+                              '" on tag "' +
+                              tagName +
+                              '" requires goog.html.SafeUrl, goog.string.Const, or string, value "' +
                               value +
                               '" given.'
                         : ''
                 )
-            }
-            if (
-                name.toLowerCase() in
-                module$contents$goog$html$SafeHtml_URL_ATTRIBUTES
-            ) {
-                if (value instanceof goog.html.TrustedResourceUrl) {
-                    value = goog.html.TrustedResourceUrl.unwrap(value)
-                } else {
-                    if (value instanceof goog.html.SafeUrl) {
-                        value = goog.html.SafeUrl.unwrap(value)
-                    } else {
-                        if ('string' === typeof value) {
-                            value =
-                                goog.html.SafeUrl.sanitize(
-                                    value
-                                ).getTypedStringValue()
-                        } else {
-                            throw Error(
-                                module$contents$goog$html$SafeHtml_SafeHtml.ENABLE_ERROR_MESSAGES
-                                    ? 'Attribute "' +
-                                          name +
-                                          '" on tag "' +
-                                          tagName +
-                                          '" requires goog.html.SafeUrl, goog.string.Const, or string, value "' +
-                                          value +
-                                          '" given.'
-                                    : ''
-                            )
-                        }
-                    }
-                }
             }
         }
     }
@@ -11859,26 +11897,23 @@ function module$contents$goog$html$SafeHtml_getStyleValue(value) {
 }
 module$contents$goog$html$SafeHtml_SafeHtml.DOCTYPE_HTML = (function () {
     return module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
-        '<!DOCTYPE html>',
-        goog.i18n.bidi.Dir.NEUTRAL
+        '<!DOCTYPE html>'
     )
 })()
 module$contents$goog$html$SafeHtml_SafeHtml.EMPTY =
     new module$contents$goog$html$SafeHtml_SafeHtml(
         (goog.global.trustedTypes && goog.global.trustedTypes.emptyHTML) || '',
-        goog.i18n.bidi.Dir.NEUTRAL,
         module$contents$goog$html$SafeHtml_CONSTRUCTOR_TOKEN_PRIVATE
     )
 module$contents$goog$html$SafeHtml_SafeHtml.BR = (function () {
     return module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
-        '<br>',
-        goog.i18n.bidi.Dir.NEUTRAL
+        '<br>'
     )
 })()
 goog.html.SafeHtml = module$contents$goog$html$SafeHtml_SafeHtml
 goog.html.uncheckedconversions = {}
 goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract =
-    function (justification, html, opt_dir) {
+    function (justification, html) {
         goog.asserts.assertString(
             goog.string.Const.unwrap(justification),
             'must provide justification'
@@ -11890,8 +11925,7 @@ goog.html.uncheckedconversions.safeHtmlFromStringKnownToSatisfyTypeContract =
             'must provide non-empty justification'
         )
         return module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse(
-            html,
-            opt_dir || null
+            html
         )
     }
 goog.html.uncheckedconversions.safeScriptFromStringKnownToSatisfyTypeContract =
@@ -12056,25 +12090,27 @@ goog.dom.safe.setFormElementAction = function (form, url) {
     var safeUrl =
         url instanceof goog.html.SafeUrl
             ? url
-            : goog.html.SafeUrl.sanitizeAssertUnchanged(url)
-    goog.dom.asserts.assertIsHTMLFormElement(form).action =
+            : goog.html.SafeUrl.sanitizeJavascriptUrlAssertUnchanged(url)
+    module$contents$goog$asserts$dom_assertIsHtmlFormElement(form).action =
         goog.html.SafeUrl.unwrap(safeUrl)
 }
 goog.dom.safe.setButtonFormAction = function (button, url) {
     var safeUrl =
         url instanceof goog.html.SafeUrl
             ? url
-            : goog.html.SafeUrl.sanitizeAssertUnchanged(url)
-    goog.dom.asserts.assertIsHTMLButtonElement(button).formAction =
-        goog.html.SafeUrl.unwrap(safeUrl)
+            : goog.html.SafeUrl.sanitizeJavascriptUrlAssertUnchanged(url)
+    module$contents$goog$asserts$dom_assertIsHtmlButtonElement(
+        button
+    ).formAction = goog.html.SafeUrl.unwrap(safeUrl)
 }
 goog.dom.safe.setInputFormAction = function (input, url) {
     var safeUrl =
         url instanceof goog.html.SafeUrl
             ? url
-            : goog.html.SafeUrl.sanitizeAssertUnchanged(url)
-    goog.dom.asserts.assertIsHTMLInputElement(input).formAction =
-        goog.html.SafeUrl.unwrap(safeUrl)
+            : goog.html.SafeUrl.sanitizeJavascriptUrlAssertUnchanged(url)
+    module$contents$goog$asserts$dom_assertIsHtmlInputElement(
+        input
+    ).formAction = goog.html.SafeUrl.unwrap(safeUrl)
 }
 goog.dom.safe.setStyle = function (elem, style) {
     elem.style.cssText =
@@ -12086,65 +12122,48 @@ goog.dom.safe.documentWrite = function (doc, html) {
     )
 }
 goog.dom.safe.setAnchorHref = function (anchor, url) {
-    goog.dom.asserts.assertIsHTMLAnchorElement(anchor)
+    module$contents$goog$asserts$dom_assertIsHtmlAnchorElement(anchor)
     var safeUrl =
         url instanceof goog.html.SafeUrl
             ? url
-            : goog.html.SafeUrl.sanitizeAssertUnchanged(url)
+            : goog.html.SafeUrl.sanitizeJavascriptUrlAssertUnchanged(url)
     anchor.href = goog.html.SafeUrl.unwrap(safeUrl)
 }
-goog.dom.safe.setImageSrc = function (imageElement, url) {
-    goog.dom.asserts.assertIsHTMLImageElement(imageElement)
-    var safeUrl =
-        url instanceof goog.html.SafeUrl
-            ? url
-            : goog.html.SafeUrl.sanitizeAssertUnchanged(
-                  url,
-                  /^data:image\//i.test(url)
-              )
-    imageElement.src = goog.html.SafeUrl.unwrap(safeUrl)
-}
 goog.dom.safe.setAudioSrc = function (audioElement, url) {
-    goog.dom.asserts.assertIsHTMLAudioElement(audioElement)
+    module$contents$goog$asserts$dom_assertIsHtmlAudioElement(audioElement)
     var safeUrl =
         url instanceof goog.html.SafeUrl
             ? url
-            : goog.html.SafeUrl.sanitizeAssertUnchanged(
-                  url,
-                  /^data:audio\//i.test(url)
-              )
+            : goog.html.SafeUrl.sanitizeJavascriptUrlAssertUnchanged(url)
     audioElement.src = goog.html.SafeUrl.unwrap(safeUrl)
 }
 goog.dom.safe.setVideoSrc = function (videoElement, url) {
-    goog.dom.asserts.assertIsHTMLVideoElement(videoElement)
+    module$contents$goog$asserts$dom_assertIsHtmlVideoElement(videoElement)
     var safeUrl =
         url instanceof goog.html.SafeUrl
             ? url
-            : goog.html.SafeUrl.sanitizeAssertUnchanged(
-                  url,
-                  /^data:video\//i.test(url)
-              )
+            : goog.html.SafeUrl.sanitizeJavascriptUrlAssertUnchanged(url)
     videoElement.src = goog.html.SafeUrl.unwrap(safeUrl)
 }
 goog.dom.safe.setEmbedSrc = function (embed, url) {
-    goog.dom.asserts.assertIsHTMLEmbedElement(embed)
+    module$contents$goog$asserts$dom_assertIsHtmlEmbedElement(embed)
     embed.src = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url)
 }
 goog.dom.safe.setFrameSrc = function (frame, url) {
-    goog.dom.asserts.assertIsHTMLFrameElement(frame)
+    module$contents$goog$asserts$dom_assertIsHtmlFrameElement(frame)
     frame.src = goog.html.TrustedResourceUrl.unwrap(url)
 }
 goog.dom.safe.setIframeSrc = function (iframe, url) {
-    goog.dom.asserts.assertIsHTMLIFrameElement(iframe)
+    module$contents$goog$asserts$dom_assertIsHtmlIFrameElement(iframe)
     iframe.src = goog.html.TrustedResourceUrl.unwrap(url)
 }
 goog.dom.safe.setIframeSrcdoc = function (iframe, html) {
-    goog.dom.asserts.assertIsHTMLIFrameElement(iframe)
+    module$contents$goog$asserts$dom_assertIsHtmlIFrameElement(iframe)
     iframe.srcdoc =
         module$contents$goog$html$SafeHtml_SafeHtml.unwrapTrustedHTML(html)
 }
 goog.dom.safe.setLinkHrefAndRel = function (link, url, rel) {
-    goog.dom.asserts.assertIsHTMLLinkElement(link)
+    module$contents$goog$asserts$dom_assertIsHtmlLinkElement(link)
     link.rel = rel
     if (goog.string.internal.caseInsensitiveContains(rel, 'stylesheet')) {
         goog.asserts.assert(
@@ -12163,26 +12182,28 @@ goog.dom.safe.setLinkHrefAndRel = function (link, url, rel) {
                 : url instanceof goog.html.SafeUrl
                 ? goog.html.SafeUrl.unwrap(url)
                 : goog.html.SafeUrl.unwrap(
-                      goog.html.SafeUrl.sanitizeAssertUnchanged(url)
+                      goog.html.SafeUrl.sanitizeJavascriptUrlAssertUnchanged(
+                          url
+                      )
                   )
     }
 }
 goog.dom.safe.setObjectData = function (object, url) {
-    goog.dom.asserts.assertIsHTMLObjectElement(object)
+    module$contents$goog$asserts$dom_assertIsHtmlObjectElement(object)
     object.data = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url)
 }
 goog.dom.safe.setScriptSrc = function (script, url) {
-    goog.dom.asserts.assertIsHTMLScriptElement(script)
-    script.src = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url)
+    module$contents$goog$asserts$dom_assertIsHtmlScriptElement(script)
     goog.dom.safe.setNonceForScriptElement_(script)
+    script.src = goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(url)
 }
 goog.dom.safe.setScriptContent = function (script, content) {
-    goog.dom.asserts.assertIsHTMLScriptElement(script)
+    module$contents$goog$asserts$dom_assertIsHtmlScriptElement(script)
+    goog.dom.safe.setNonceForScriptElement_(script)
     script.textContent =
         module$contents$goog$html$SafeScript_SafeScript.unwrapTrustedScript(
             content
         )
-    goog.dom.safe.setNonceForScriptElement_(script)
 }
 goog.dom.safe.setNonceForScriptElement_ = function (script) {
     var nonce = goog.dom.safe.getScriptNonce(
@@ -12195,7 +12216,7 @@ goog.dom.safe.setLocationHref = function (loc, url) {
     var safeUrl =
         url instanceof goog.html.SafeUrl
             ? url
-            : goog.html.SafeUrl.sanitizeAssertUnchanged(url)
+            : goog.html.SafeUrl.sanitizeJavascriptUrlAssertUnchanged(url)
     loc.href = goog.html.SafeUrl.unwrap(safeUrl)
 }
 goog.dom.safe.assignLocation = function (loc, url) {
@@ -12203,14 +12224,14 @@ goog.dom.safe.assignLocation = function (loc, url) {
     var safeUrl =
         url instanceof goog.html.SafeUrl
             ? url
-            : goog.html.SafeUrl.sanitizeAssertUnchanged(url)
+            : goog.html.SafeUrl.sanitizeJavascriptUrlAssertUnchanged(url)
     loc.assign(goog.html.SafeUrl.unwrap(safeUrl))
 }
 goog.dom.safe.replaceLocation = function (loc, url) {
     var safeUrl =
         url instanceof goog.html.SafeUrl
             ? url
-            : goog.html.SafeUrl.sanitizeAssertUnchanged(url)
+            : goog.html.SafeUrl.sanitizeJavascriptUrlAssertUnchanged(url)
     loc.replace(goog.html.SafeUrl.unwrap(safeUrl))
 }
 goog.dom.safe.openInWindow = function (
@@ -12222,7 +12243,7 @@ goog.dom.safe.openInWindow = function (
     var safeUrl =
         url instanceof goog.html.SafeUrl
             ? url
-            : goog.html.SafeUrl.sanitizeAssertUnchanged(url)
+            : goog.html.SafeUrl.sanitizeJavascriptUrlAssertUnchanged(url)
     var win = opt_openerWin || goog.global,
         name =
             opt_name instanceof goog.string.Const
@@ -12252,13 +12273,7 @@ goog.dom.safe.createImageFromBlob = function (blob) {
     image.onload = function () {
         goog.global.URL.revokeObjectURL(objectUrl)
     }
-    goog.dom.safe.setImageSrc(
-        image,
-        goog.html.uncheckedconversions.safeUrlFromStringKnownToSatisfyTypeContract(
-            goog.string.Const.from('Image blob URL.'),
-            objectUrl
-        )
-    )
+    image.src = objectUrl
     return image
 }
 goog.dom.safe.createContextualFragment = function (range, html) {
@@ -12292,7 +12307,7 @@ goog.dom.safe.getNonce_ = function (selector, win) {
 }
 goog.string.DETECT_DOUBLE_ESCAPING = !1
 goog.string.FORCE_NON_DOM_HTML_UNESCAPING = !1
-goog.string.Unicode = { NBSP: '\u00a0' }
+goog.string.Unicode = { NBSP: '\u00a0', ZERO_WIDTH_SPACE: '\u200b' }
 goog.string.startsWith = goog.string.internal.startsWith
 goog.string.endsWith = goog.string.internal.endsWith
 goog.string.caseInsensitiveStartsWith =
@@ -12452,7 +12467,7 @@ goog.string.unescapeEntitiesUsingDom_ = function (str, opt_document) {
             return value
         }
         if ('#' == entity.charAt(0)) {
-            var n = Number('0' + entity.substr(1))
+            var n = Number('0' + entity.slice(1))
             isNaN(n) || (value = String.fromCharCode(n))
         }
         value ||
@@ -12480,7 +12495,7 @@ goog.string.unescapePureXmlEntities_ = function (str) {
                 return '"'
             default:
                 if ('#' == entity.charAt(0)) {
-                    var n = Number('0' + entity.substr(1))
+                    var n = Number('0' + entity.slice(1))
                     if (!isNaN(n)) {
                         return String.fromCharCode(n)
                     }
@@ -12527,14 +12542,12 @@ goog.string.truncateMiddle = function (
                 str.substring(0, chars - opt_trailingChars) +
                 '...' +
                 str.substring(str.length - opt_trailingChars))
-    } else {
-        if (str.length > chars) {
-            var half = Math.floor(chars / 2)
-            str =
-                str.substring(0, half + (chars % 2)) +
-                '...' +
-                str.substring(str.length - half)
-        }
+    } else if (str.length > chars) {
+        var half = Math.floor(chars / 2)
+        str =
+            str.substring(0, half + (chars % 2)) +
+            '...' +
+            str.substring(str.length - half)
     }
     opt_protectEscapedCharacters && (str = goog.string.htmlEscape(str))
     return str
@@ -12546,7 +12559,7 @@ goog.string.specialEscapeChars_ = {
     '\n': '\\n',
     '\r': '\\r',
     '\t': '\\t',
-    '\x0B': '\\x0B',
+    '\v': '\\x0B',
     '"': '\\"',
     '\\': '\\\\',
     '<': '\\u003C',
@@ -12605,9 +12618,7 @@ goog.string.removeAt = function (s, index, stringLength) {
     0 <= index &&
         index < s.length &&
         0 < stringLength &&
-        (resultStr =
-            s.substr(0, index) +
-            s.substr(index + stringLength, s.length - index - stringLength))
+        (resultStr = s.slice(0, index) + s.slice(index + stringLength))
     return resultStr
 }
 goog.string.remove = function (str, substr) {
@@ -12634,6 +12645,9 @@ goog.string.repeat = String.prototype.repeat
           return Array(length + 1).join(string)
       }
 goog.string.padNumber = function (num, length, opt_precision) {
+    if (!Number.isFinite(num)) {
+        return String(num)
+    }
     var s = void 0 !== opt_precision ? num.toFixed(opt_precision) : String(num),
         index = s.indexOf('.')
     ;-1 === index && (index = s.length)
@@ -12643,9 +12657,6 @@ goog.string.padNumber = function (num, length, opt_precision) {
 }
 goog.string.makeSafe = function (obj) {
     return null == obj ? '' : String(obj)
-}
-goog.string.buildString = function (var_args) {
-    return Array.prototype.join.call(arguments, '')
 }
 goog.string.getRandomString = function () {
     return (
@@ -12703,8 +12714,7 @@ goog.string.toTitleCase = function (str, opt_delimiters) {
 }
 goog.string.capitalize = function (str) {
     return (
-        String(str.charAt(0)).toUpperCase() +
-        String(str.substr(1)).toLowerCase()
+        String(str.charAt(0)).toUpperCase() + String(str.slice(1)).toLowerCase()
     )
 }
 goog.string.parseInt = function (value) {
@@ -12753,17 +12763,17 @@ goog.string.editDistance = function (a, b) {
     for (var i = 0; i < b.length + 1; i++) {
         v0[i] = i
     }
-    for (var i$44 = 0; i$44 < a.length; i$44++) {
-        v1[0] = i$44 + 1
+    for (var i$50 = 0; i$50 < a.length; i$50++) {
+        v1[0] = i$50 + 1
         for (var j = 0; j < b.length; j++) {
             v1[j + 1] = Math.min(
                 v1[j] + 1,
                 v0[j + 1] + 1,
-                v0[j] + Number(a[i$44] != b[j])
+                v0[j] + Number(a[i$50] != b[j])
             )
         }
-        for (var j$45 = 0; j$45 < v0.length; j$45++) {
-            v0[j$45] = v1[j$45]
+        for (var j$51 = 0; j$51 < v0.length; j$51++) {
+            v0[j$51] = v1[j$51]
         }
     }
     return v1[b.length]
@@ -12783,16 +12793,16 @@ goog.collections.maps.setAll =
     function module$contents$goog$collections$maps_setAll(map, entries) {
         if (entries) {
             for (
-                var $jscomp$iter$10 = $jscomp.makeIterator(entries),
-                    $jscomp$key$ = $jscomp$iter$10.next();
+                var $jscomp$iter$16 = $jscomp.makeIterator(entries),
+                    $jscomp$key$ = $jscomp$iter$16.next();
                 !$jscomp$key$.done;
-                $jscomp$key$ = $jscomp$iter$10.next()
+                $jscomp$key$ = $jscomp$iter$16.next()
             ) {
-                var $jscomp$destructuring$var13 = $jscomp.makeIterator(
+                var $jscomp$destructuring$var25 = $jscomp.makeIterator(
                         $jscomp$key$.value
                     ),
-                    k = $jscomp$destructuring$var13.next().value,
-                    v = $jscomp$destructuring$var13.next().value
+                    k = $jscomp$destructuring$var25.next().value,
+                    v = $jscomp$destructuring$var25.next().value
                 map.set(k, v)
             }
         }
@@ -12808,10 +12818,10 @@ goog.collections.maps.hasValue =
                 ? module$contents$goog$collections$maps_defaultEqualityFn
                 : valueEqualityFn
         for (
-            var $jscomp$iter$11 = $jscomp.makeIterator(map.values()),
-                $jscomp$key$v = $jscomp$iter$11.next();
+            var $jscomp$iter$17 = $jscomp.makeIterator(map.values()),
+                $jscomp$key$v = $jscomp$iter$17.next();
             !$jscomp$key$v.done;
-            $jscomp$key$v = $jscomp$iter$11.next()
+            $jscomp$key$v = $jscomp$iter$17.next()
         ) {
             if (valueEqualityFn($jscomp$key$v.value, val)) {
                 return !0
@@ -12839,10 +12849,10 @@ goog.collections.maps.equals =
             return !1
         }
         for (
-            var $jscomp$iter$12 = $jscomp.makeIterator(map.keys()),
-                $jscomp$key$key = $jscomp$iter$12.next();
+            var $jscomp$iter$18 = $jscomp.makeIterator(map.keys()),
+                $jscomp$key$key = $jscomp$iter$18.next();
             !$jscomp$key$key.done;
-            $jscomp$key$key = $jscomp$iter$12.next()
+            $jscomp$key$key = $jscomp$iter$18.next()
         ) {
             var key = $jscomp$key$key.value
             if (
@@ -12858,10 +12868,10 @@ goog.collections.maps.transpose =
     function module$contents$goog$collections$maps_transpose(map) {
         for (
             var transposed = new Map(),
-                $jscomp$iter$13 = $jscomp.makeIterator(map.keys()),
-                $jscomp$key$key = $jscomp$iter$13.next();
+                $jscomp$iter$19 = $jscomp.makeIterator(map.keys()),
+                $jscomp$key$key = $jscomp$iter$19.next();
             !$jscomp$key$key.done;
-            $jscomp$key$key = $jscomp$iter$13.next()
+            $jscomp$key$key = $jscomp$iter$19.next()
         ) {
             var key = $jscomp$key$key.value,
                 val = map.get(key)
@@ -12873,10 +12883,10 @@ goog.collections.maps.toObject =
     function module$contents$goog$collections$maps_toObject(map) {
         for (
             var obj = {},
-                $jscomp$iter$14 = $jscomp.makeIterator(map.keys()),
-                $jscomp$key$key = $jscomp$iter$14.next();
+                $jscomp$iter$20 = $jscomp.makeIterator(map.keys()),
+                $jscomp$key$key = $jscomp$iter$20.next();
             !$jscomp$key$key.done;
-            $jscomp$key$key = $jscomp$iter$14.next()
+            $jscomp$key$key = $jscomp$iter$20.next()
         ) {
             var key = $jscomp$key$key.value
             obj[key] = map.get(key)
@@ -12953,10 +12963,10 @@ goog.uri.utils.getScheme = function (uri) {
 }
 goog.uri.utils.getEffectiveScheme = function (uri) {
     var scheme = goog.uri.utils.getScheme(uri)
-    if (!scheme && goog.global.self && goog.global.self.location) {
-        var protocol = goog.global.self.location.protocol
-        scheme = protocol.substr(0, protocol.length - 1)
-    }
+    !scheme &&
+        goog.global.self &&
+        goog.global.self.location &&
+        (scheme = goog.global.self.location.protocol.slice(0, -1))
     return scheme ? scheme.toLowerCase() : ''
 }
 goog.uri.utils.getUserInfoEncoded = function (uri) {
@@ -13012,7 +13022,7 @@ goog.uri.utils.getQueryData = function (uri) {
 }
 goog.uri.utils.getFragmentEncoded = function (uri) {
     var hashIndex = uri.indexOf('#')
-    return 0 > hashIndex ? null : uri.substr(hashIndex + 1)
+    return 0 > hashIndex ? null : uri.slice(hashIndex + 1)
 }
 goog.uri.utils.setFragmentEncoded = function (uri, fragment) {
     return goog.uri.utils.removeFragment(uri) + (fragment ? '#' + fragment : '')
@@ -13054,7 +13064,7 @@ goog.uri.utils.getPathAndAfter = function (uri) {
 }
 goog.uri.utils.removeFragment = function (uri) {
     var hashIndex = uri.indexOf('#')
-    return 0 > hashIndex ? uri : uri.substr(0, hashIndex)
+    return 0 > hashIndex ? uri : uri.slice(0, hashIndex)
 }
 goog.uri.utils.haveSameDomain = function (uri1, uri2) {
     var pieces1 = goog.uri.utils.split(uri1),
@@ -13103,7 +13113,7 @@ goog.uri.utils.splitQueryData_ = function (uri) {
     } else {
         queryData = uri.substring(questionIndex + 1, hashIndex)
     }
-    return [uri.substr(0, questionIndex), queryData, uri.substr(hashIndex)]
+    return [uri.slice(0, questionIndex), queryData, uri.slice(hashIndex)]
 }
 goog.uri.utils.joinQueryData_ = function (parts) {
     return parts[0] + (parts[1] ? '?' + parts[1] : '') + parts[2]
@@ -13237,7 +13247,7 @@ goog.uri.utils.getParamValue = function (uri, keyEncoded) {
     }
     foundIndex += keyEncoded.length + 1
     return goog.string.urlDecode(
-        uri.substr(foundIndex, endPosition - foundIndex)
+        uri.slice(foundIndex, -1 !== endPosition ? endPosition : 0)
     )
 }
 goog.uri.utils.getParamValues = function (uri, keyEncoded) {
@@ -13261,7 +13271,7 @@ goog.uri.utils.getParamValues = function (uri, keyEncoded) {
         }
         foundIndex += keyEncoded.length + 1
         result.push(
-            goog.string.urlDecode(uri.substr(foundIndex, position - foundIndex))
+            goog.string.urlDecode(uri.slice(foundIndex, Math.max(position, 0)))
         )
     }
     return result
@@ -13288,7 +13298,7 @@ goog.uri.utils.removeParam = function (uri, keyEncoded) {
                 hashOrEndIndex
             ))
     }
-    buffer.push(uri.substr(position))
+    buffer.push(uri.slice(position))
     return buffer
         .join('')
         .replace(goog.uri.utils.trailingQueryPunctuationRe_, '$1')
@@ -13306,10 +13316,9 @@ goog.uri.utils.setParamsFromMap = function (uri, params) {
         buffer = []
     queryData &&
         queryData.split('&').forEach(function (pair) {
-            var indexOfEquals = pair.indexOf('=')
-            params.hasOwnProperty(
-                0 <= indexOfEquals ? pair.substr(0, indexOfEquals) : pair
-            ) || buffer.push(pair)
+            var indexOfEquals = pair.indexOf('='),
+                name = 0 <= indexOfEquals ? pair.slice(0, indexOfEquals) : pair
+            params.hasOwnProperty(name) || buffer.push(pair)
         })
     parts[1] = goog.uri.utils.appendQueryData_(
         buffer.join('&'),
@@ -13319,9 +13328,8 @@ goog.uri.utils.setParamsFromMap = function (uri, params) {
 }
 goog.uri.utils.appendPath = function (baseUri, path) {
     goog.uri.utils.assertNoFragmentsOrQueries_(baseUri)
-    goog.string.endsWith(baseUri, '/') &&
-        (baseUri = baseUri.substr(0, baseUri.length - 1))
-    goog.string.startsWith(path, '/') && (path = path.substr(1))
+    goog.string.endsWith(baseUri, '/') && (baseUri = baseUri.slice(0, -1))
+    goog.string.startsWith(path, '/') && (path = path.slice(1))
     return '' + baseUri + '/' + path
 }
 goog.uri.utils.setPath = function (uri, path) {
@@ -13460,9 +13468,8 @@ goog.Uri.prototype.resolve = function (relativeUri) {
                     var lastSlashIndex = absoluteUri.getPath().lastIndexOf('/')
                     ;-1 != lastSlashIndex &&
                         (path =
-                            absoluteUri
-                                .getPath()
-                                .substr(0, lastSlashIndex + 1) + path)
+                            absoluteUri.getPath().slice(0, lastSlashIndex + 1) +
+                            path)
                 }
             }
             path = goog.Uri.removeDotSegments(path)
@@ -14087,18 +14094,18 @@ function module$contents$eeapiclient$request_params_buildQueryParams(
     for (
         var urlQueryParams = (passthroughParams =
                 void 0 === passthroughParams ? {} : passthroughParams),
-            $jscomp$iter$15 = $jscomp.makeIterator(Object.entries(mapping)),
-            $jscomp$key$ = $jscomp$iter$15.next();
+            $jscomp$iter$21 = $jscomp.makeIterator(Object.entries(mapping)),
+            $jscomp$key$ = $jscomp$iter$21.next();
         !$jscomp$key$.done;
-        $jscomp$key$ = $jscomp$iter$15.next()
+        $jscomp$key$ = $jscomp$iter$21.next()
     ) {
-        var $jscomp$destructuring$var15 = $jscomp.makeIterator(
+        var $jscomp$destructuring$var27 = $jscomp.makeIterator(
                 $jscomp$key$.value
             ),
             jsName__tsickle_destructured_1 =
-                $jscomp$destructuring$var15.next().value,
+                $jscomp$destructuring$var27.next().value,
             urlQueryParamName__tsickle_destructured_2 =
-                $jscomp$destructuring$var15.next().value,
+                $jscomp$destructuring$var27.next().value,
             jsName = jsName__tsickle_destructured_1,
             urlQueryParamName = urlQueryParamName__tsickle_destructured_2
         jsName in params && (urlQueryParams[urlQueryParamName] = params[jsName])
@@ -14129,20 +14136,20 @@ module$exports$eeapiclient$request_params.bypassCorsPreflight =
         if (params.headers) {
             hasContentType = null != params.headers['Content-Type']
             for (
-                var $jscomp$iter$16 = $jscomp.makeIterator(
+                var $jscomp$iter$22 = $jscomp.makeIterator(
                         Object.entries(params.headers)
                     ),
-                    $jscomp$key$ = $jscomp$iter$16.next();
+                    $jscomp$key$ = $jscomp$iter$22.next();
                 !$jscomp$key$.done;
-                $jscomp$key$ = $jscomp$iter$16.next()
+                $jscomp$key$ = $jscomp$iter$22.next()
             ) {
-                var $jscomp$destructuring$var17 = $jscomp.makeIterator(
+                var $jscomp$destructuring$var29 = $jscomp.makeIterator(
                         $jscomp$key$.value
                     ),
                     key__tsickle_destructured_3 =
-                        $jscomp$destructuring$var17.next().value,
+                        $jscomp$destructuring$var29.next().value,
                     value__tsickle_destructured_4 =
-                        $jscomp$destructuring$var17.next().value,
+                        $jscomp$destructuring$var29.next().value,
                     key = key__tsickle_destructured_3,
                     value = value__tsickle_destructured_4
                 module$contents$eeapiclient$request_params_simpleCorsAllowedHeaders.includes(
@@ -14193,9 +14200,9 @@ function module$contents$eeapiclient$request_params_addQueryParameter(
     if (params.queryParams) {
         params.queryParams[key] = value
     } else {
-        var $jscomp$compprop0 = {}
+        var $jscomp$compprop7 = {}
         params.queryParams =
-            (($jscomp$compprop0[key] = value), $jscomp$compprop0)
+            (($jscomp$compprop7[key] = value), $jscomp$compprop7)
     }
 }
 var module$exports$eeapiclient$multipart_request = {},
@@ -14249,10 +14256,10 @@ module$exports$eeapiclient$multipart_request.MultipartRequest.prototype.build =
             })
         ).then(function (filePayloads) {
             for (
-                var $jscomp$iter$17 = $jscomp.makeIterator(filePayloads),
-                    $jscomp$key$filePayload = $jscomp$iter$17.next();
+                var $jscomp$iter$23 = $jscomp.makeIterator(filePayloads),
+                    $jscomp$key$filePayload = $jscomp$iter$23.next();
                 !$jscomp$key$filePayload.done;
-                $jscomp$key$filePayload = $jscomp$iter$17.next()
+                $jscomp$key$filePayload = $jscomp$iter$23.next()
             ) {
                 payload += $jscomp$key$filePayload.value
             }
@@ -14278,8 +14285,8 @@ module$exports$eeapiclient$multipart_request.MultipartRequest.prototype.base64En
             var reader = new FileReader()
             reader.onload = function (ev) {
                 try {
-                    var file$46 = ev.target.result,
-                        toResolve = file$46.substr(file$46.indexOf(',') + 1)
+                    var file$52 = ev.target.result,
+                        toResolve = file$52.substr(file$52.indexOf(',') + 1)
                     resolve(toResolve)
                 } catch (e) {
                     reject(e)
@@ -14342,16 +14349,16 @@ function module$contents$eeapiclient$api_client_toMultipartMakeRequestParams(
     }
     var multipartRequest = requestParams.body
     return multipartRequest.payloadPromise().then(function (body) {
-        var _a,
+        var $jscomp$nullish$tmp0,
             queryParams =
-                null !== (_a = requestParams.queryParams) && void 0 !== _a
-                    ? _a
+                null != ($jscomp$nullish$tmp0 = requestParams.queryParams)
+                    ? $jscomp$nullish$tmp0
                     : {}
         return {
             path: requestParams.path,
             httpMethod: requestParams.httpMethod,
             methodId: requestParams.methodId,
-            queryParams: Object.assign(Object.assign({}, queryParams), {
+            queryParams: Object.assign({}, queryParams, {
                 uploadType: 'multipart',
             }),
             headers: {
@@ -14511,6 +14518,7 @@ module$exports$eeapiclient$ee_api_client.AuthorizationLoggingOptionsPermissionTy
 module$exports$eeapiclient$ee_api_client.ICapabilitiesCapabilitiesEnum =
     function module$contents$eeapiclient$ee_api_client_ICapabilitiesCapabilitiesEnum() {}
 module$exports$eeapiclient$ee_api_client.CapabilitiesCapabilitiesEnum = {
+    AUTO_APPEAL_ELIGIBLE: 'AUTO_APPEAL_ELIGIBLE',
     CAPABILITY_GROUP_UNSPECIFIED: 'CAPABILITY_GROUP_UNSPECIFIED',
     CLOUD_ALPHA: 'CLOUD_ALPHA',
     EXTERNAL: 'EXTERNAL',
@@ -14519,6 +14527,7 @@ module$exports$eeapiclient$ee_api_client.CapabilitiesCapabilitiesEnum = {
     PREAUTHORIZED: 'PREAUTHORIZED',
     PREVIEW: 'PREVIEW',
     PUBLIC: 'PUBLIC',
+    RESTRICTED: 'RESTRICTED',
     values: function () {
         return [
             module$exports$eeapiclient$ee_api_client
@@ -14537,9 +14546,57 @@ module$exports$eeapiclient$ee_api_client.CapabilitiesCapabilitiesEnum = {
                 .CapabilitiesCapabilitiesEnum.PREVIEW,
             module$exports$eeapiclient$ee_api_client
                 .CapabilitiesCapabilitiesEnum.CLOUD_ALPHA,
+            module$exports$eeapiclient$ee_api_client
+                .CapabilitiesCapabilitiesEnum.RESTRICTED,
+            module$exports$eeapiclient$ee_api_client
+                .CapabilitiesCapabilitiesEnum.AUTO_APPEAL_ELIGIBLE,
         ]
     },
 }
+module$exports$eeapiclient$ee_api_client.IChangeSubscriptionTypeRequestChangeTimeEnum =
+    function module$contents$eeapiclient$ee_api_client_IChangeSubscriptionTypeRequestChangeTimeEnum() {}
+module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequestChangeTimeEnum =
+    {
+        CHANGE_TIME_TYPE_UNSPECIFIED: 'CHANGE_TIME_TYPE_UNSPECIFIED',
+        EARLIEST_POSSIBLE: 'EARLIEST_POSSIBLE',
+        END_OF_PERIOD: 'END_OF_PERIOD',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .ChangeSubscriptionTypeRequestChangeTimeEnum
+                    .CHANGE_TIME_TYPE_UNSPECIFIED,
+                module$exports$eeapiclient$ee_api_client
+                    .ChangeSubscriptionTypeRequestChangeTimeEnum.END_OF_PERIOD,
+                module$exports$eeapiclient$ee_api_client
+                    .ChangeSubscriptionTypeRequestChangeTimeEnum
+                    .EARLIEST_POSSIBLE,
+            ]
+        },
+    }
+module$exports$eeapiclient$ee_api_client.IChangeSubscriptionTypeRequestTypeEnum =
+    function module$contents$eeapiclient$ee_api_client_IChangeSubscriptionTypeRequestTypeEnum() {}
+module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequestTypeEnum =
+    {
+        BASIC: 'BASIC',
+        NO_SUBSCRIPTION: 'NO_SUBSCRIPTION',
+        PREMIUM: 'PREMIUM',
+        PROFESSIONAL: 'PROFESSIONAL',
+        TYPE_UNSPECIFIED: 'TYPE_UNSPECIFIED',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .ChangeSubscriptionTypeRequestTypeEnum.TYPE_UNSPECIFIED,
+                module$exports$eeapiclient$ee_api_client
+                    .ChangeSubscriptionTypeRequestTypeEnum.NO_SUBSCRIPTION,
+                module$exports$eeapiclient$ee_api_client
+                    .ChangeSubscriptionTypeRequestTypeEnum.BASIC,
+                module$exports$eeapiclient$ee_api_client
+                    .ChangeSubscriptionTypeRequestTypeEnum.PROFESSIONAL,
+                module$exports$eeapiclient$ee_api_client
+                    .ChangeSubscriptionTypeRequestTypeEnum.PREMIUM,
+            ]
+        },
+    }
 module$exports$eeapiclient$ee_api_client.ICloudAuditOptionsLogNameEnum =
     function module$contents$eeapiclient$ee_api_client_ICloudAuditOptionsLogNameEnum() {}
 module$exports$eeapiclient$ee_api_client.CloudAuditOptionsLogNameEnum = {
@@ -14700,7 +14757,7 @@ module$exports$eeapiclient$ee_api_client.IEarthEngineAssetTypeEnum =
     function module$contents$eeapiclient$ee_api_client_IEarthEngineAssetTypeEnum() {}
 module$exports$eeapiclient$ee_api_client.EarthEngineAssetTypeEnum = {
     CLASSIFIER: 'CLASSIFIER',
-    DATA_MAPPING_SERVICE: 'DATA_MAPPING_SERVICE',
+    FEATURE_VIEW: 'FEATURE_VIEW',
     FOLDER: 'FOLDER',
     IMAGE: 'IMAGE',
     IMAGE_COLLECTION: 'IMAGE_COLLECTION',
@@ -14721,7 +14778,7 @@ module$exports$eeapiclient$ee_api_client.EarthEngineAssetTypeEnum = {
             module$exports$eeapiclient$ee_api_client.EarthEngineAssetTypeEnum
                 .CLASSIFIER,
             module$exports$eeapiclient$ee_api_client.EarthEngineAssetTypeEnum
-                .DATA_MAPPING_SERVICE,
+                .FEATURE_VIEW,
         ]
     },
 }
@@ -14780,6 +14837,49 @@ module$exports$eeapiclient$ee_api_client.ExportVideoMapRequestVersionEnum = {
         ]
     },
 }
+module$exports$eeapiclient$ee_api_client.IFeatureViewAttributeTypeEnum =
+    function module$contents$eeapiclient$ee_api_client_IFeatureViewAttributeTypeEnum() {}
+module$exports$eeapiclient$ee_api_client.FeatureViewAttributeTypeEnum = {
+    BOOLEAN: 'BOOLEAN',
+    DATE_TIME: 'DATE_TIME',
+    DOUBLE: 'DOUBLE',
+    INTEGER: 'INTEGER',
+    STRING: 'STRING',
+    TYPE_UNSPECIFIED: 'TYPE_UNSPECIFIED',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client
+                .FeatureViewAttributeTypeEnum.TYPE_UNSPECIFIED,
+            module$exports$eeapiclient$ee_api_client
+                .FeatureViewAttributeTypeEnum.INTEGER,
+            module$exports$eeapiclient$ee_api_client
+                .FeatureViewAttributeTypeEnum.BOOLEAN,
+            module$exports$eeapiclient$ee_api_client
+                .FeatureViewAttributeTypeEnum.DOUBLE,
+            module$exports$eeapiclient$ee_api_client
+                .FeatureViewAttributeTypeEnum.STRING,
+            module$exports$eeapiclient$ee_api_client
+                .FeatureViewAttributeTypeEnum.DATE_TIME,
+        ]
+    },
+}
+module$exports$eeapiclient$ee_api_client.IFeatureViewDestinationPermissionsEnum =
+    function module$contents$eeapiclient$ee_api_client_IFeatureViewDestinationPermissionsEnum() {}
+module$exports$eeapiclient$ee_api_client.FeatureViewDestinationPermissionsEnum =
+    {
+        FEATURE_VIEW_ASSET_PERMISSIONS_UNSPECIFIED:
+            'FEATURE_VIEW_ASSET_PERMISSIONS_UNSPECIFIED',
+        PUBLIC: 'PUBLIC',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .FeatureViewDestinationPermissionsEnum
+                    .FEATURE_VIEW_ASSET_PERMISSIONS_UNSPECIFIED,
+                module$exports$eeapiclient$ee_api_client
+                    .FeatureViewDestinationPermissionsEnum.PUBLIC,
+            ]
+        },
+    }
 module$exports$eeapiclient$ee_api_client.IFilmstripThumbnailFileFormatEnum =
     function module$contents$eeapiclient$ee_api_client_IFilmstripThumbnailFileFormatEnum() {}
 module$exports$eeapiclient$ee_api_client.FilmstripThumbnailFileFormatEnum = {
@@ -15083,6 +15183,23 @@ module$exports$eeapiclient$ee_api_client.OperationMetadataStateEnum = {
         ]
     },
 }
+module$exports$eeapiclient$ee_api_client.IOperationNotificationSeverityEnum =
+    function module$contents$eeapiclient$ee_api_client_IOperationNotificationSeverityEnum() {}
+module$exports$eeapiclient$ee_api_client.OperationNotificationSeverityEnum = {
+    SEVERE: 'SEVERE',
+    SEVERITY_UNSPECIFIED: 'SEVERITY_UNSPECIFIED',
+    WARNING: 'WARNING',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client
+                .OperationNotificationSeverityEnum.SEVERITY_UNSPECIFIED,
+            module$exports$eeapiclient$ee_api_client
+                .OperationNotificationSeverityEnum.WARNING,
+            module$exports$eeapiclient$ee_api_client
+                .OperationNotificationSeverityEnum.SEVERE,
+        ]
+    },
+}
 module$exports$eeapiclient$ee_api_client.IPixelDataTypePrecisionEnum =
     function module$contents$eeapiclient$ee_api_client_IPixelDataTypePrecisionEnum() {}
 module$exports$eeapiclient$ee_api_client.PixelDataTypePrecisionEnum = {
@@ -15100,6 +15217,42 @@ module$exports$eeapiclient$ee_api_client.PixelDataTypePrecisionEnum = {
                 .FLOAT,
             module$exports$eeapiclient$ee_api_client.PixelDataTypePrecisionEnum
                 .DOUBLE,
+        ]
+    },
+}
+module$exports$eeapiclient$ee_api_client.IProjectRegistrationBillingConsentEnum =
+    function module$contents$eeapiclient$ee_api_client_IProjectRegistrationBillingConsentEnum() {}
+module$exports$eeapiclient$ee_api_client.ProjectRegistrationBillingConsentEnum =
+    {
+        BILLING_CONSENT_FULL: 'BILLING_CONSENT_FULL',
+        BILLING_CONSENT_NONE: 'BILLING_CONSENT_NONE',
+        BILLING_CONSENT_UNSPECIFIED: 'BILLING_CONSENT_UNSPECIFIED',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectRegistrationBillingConsentEnum
+                    .BILLING_CONSENT_UNSPECIFIED,
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectRegistrationBillingConsentEnum.BILLING_CONSENT_NONE,
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectRegistrationBillingConsentEnum.BILLING_CONSENT_FULL,
+            ]
+        },
+    }
+module$exports$eeapiclient$ee_api_client.IProjectRegistrationFreeQuotaEnum =
+    function module$contents$eeapiclient$ee_api_client_IProjectRegistrationFreeQuotaEnum() {}
+module$exports$eeapiclient$ee_api_client.ProjectRegistrationFreeQuotaEnum = {
+    FREE_QUOTA_FULL: 'FREE_QUOTA_FULL',
+    FREE_QUOTA_NONE: 'FREE_QUOTA_NONE',
+    FREE_QUOTA_UNSPECIFIED: 'FREE_QUOTA_UNSPECIFIED',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client
+                .ProjectRegistrationFreeQuotaEnum.FREE_QUOTA_UNSPECIFIED,
+            module$exports$eeapiclient$ee_api_client
+                .ProjectRegistrationFreeQuotaEnum.FREE_QUOTA_NONE,
+            module$exports$eeapiclient$ee_api_client
+                .ProjectRegistrationFreeQuotaEnum.FREE_QUOTA_FULL,
         ]
     },
 }
@@ -15139,6 +15292,110 @@ module$exports$eeapiclient$ee_api_client.RuleActionEnum = {
             module$exports$eeapiclient$ee_api_client.RuleActionEnum
                 .DENY_WITH_LOG,
             module$exports$eeapiclient$ee_api_client.RuleActionEnum.LOG,
+        ]
+    },
+}
+module$exports$eeapiclient$ee_api_client.IScheduledUpdateSubscriptionUpdateTypeEnum =
+    function module$contents$eeapiclient$ee_api_client_IScheduledUpdateSubscriptionUpdateTypeEnum() {}
+module$exports$eeapiclient$ee_api_client.ScheduledUpdateSubscriptionUpdateTypeEnum =
+    {
+        BASIC: 'BASIC',
+        NO_SUBSCRIPTION: 'NO_SUBSCRIPTION',
+        PREMIUM: 'PREMIUM',
+        PROFESSIONAL: 'PROFESSIONAL',
+        TYPE_UNSPECIFIED: 'TYPE_UNSPECIFIED',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .ScheduledUpdateSubscriptionUpdateTypeEnum.TYPE_UNSPECIFIED,
+                module$exports$eeapiclient$ee_api_client
+                    .ScheduledUpdateSubscriptionUpdateTypeEnum.NO_SUBSCRIPTION,
+                module$exports$eeapiclient$ee_api_client
+                    .ScheduledUpdateSubscriptionUpdateTypeEnum.BASIC,
+                module$exports$eeapiclient$ee_api_client
+                    .ScheduledUpdateSubscriptionUpdateTypeEnum.PROFESSIONAL,
+                module$exports$eeapiclient$ee_api_client
+                    .ScheduledUpdateSubscriptionUpdateTypeEnum.PREMIUM,
+            ]
+        },
+    }
+module$exports$eeapiclient$ee_api_client.IScheduledUpdateUpdateChangeTypeEnum =
+    function module$contents$eeapiclient$ee_api_client_IScheduledUpdateUpdateChangeTypeEnum() {}
+module$exports$eeapiclient$ee_api_client.ScheduledUpdateUpdateChangeTypeEnum = {
+    CHANGE_TIME_TYPE_UNSPECIFIED: 'CHANGE_TIME_TYPE_UNSPECIFIED',
+    EARLIEST_POSSIBLE: 'EARLIEST_POSSIBLE',
+    END_OF_PERIOD: 'END_OF_PERIOD',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client
+                .ScheduledUpdateUpdateChangeTypeEnum
+                .CHANGE_TIME_TYPE_UNSPECIFIED,
+            module$exports$eeapiclient$ee_api_client
+                .ScheduledUpdateUpdateChangeTypeEnum.END_OF_PERIOD,
+            module$exports$eeapiclient$ee_api_client
+                .ScheduledUpdateUpdateChangeTypeEnum.EARLIEST_POSSIBLE,
+        ]
+    },
+}
+module$exports$eeapiclient$ee_api_client.ISubscriptionStateEnum =
+    function module$contents$eeapiclient$ee_api_client_ISubscriptionStateEnum() {}
+module$exports$eeapiclient$ee_api_client.SubscriptionStateEnum = {
+    ACTIVE: 'ACTIVE',
+    COMPLETED: 'COMPLETED',
+    ERROR: 'ERROR',
+    INACTIVE: 'INACTIVE',
+    STATE_UNSPECIFIED: 'STATE_UNSPECIFIED',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client.SubscriptionStateEnum
+                .STATE_UNSPECIFIED,
+            module$exports$eeapiclient$ee_api_client.SubscriptionStateEnum
+                .INACTIVE,
+            module$exports$eeapiclient$ee_api_client.SubscriptionStateEnum
+                .ACTIVE,
+            module$exports$eeapiclient$ee_api_client.SubscriptionStateEnum
+                .COMPLETED,
+            module$exports$eeapiclient$ee_api_client.SubscriptionStateEnum
+                .ERROR,
+        ]
+    },
+}
+module$exports$eeapiclient$ee_api_client.ISubscriptionTrialStateEnum =
+    function module$contents$eeapiclient$ee_api_client_ISubscriptionTrialStateEnum() {}
+module$exports$eeapiclient$ee_api_client.SubscriptionTrialStateEnum = {
+    ACTIVE: 'ACTIVE',
+    EXPIRED: 'EXPIRED',
+    STATE_UNSPECIFIED: 'STATE_UNSPECIFIED',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client.SubscriptionTrialStateEnum
+                .STATE_UNSPECIFIED,
+            module$exports$eeapiclient$ee_api_client.SubscriptionTrialStateEnum
+                .ACTIVE,
+            module$exports$eeapiclient$ee_api_client.SubscriptionTrialStateEnum
+                .EXPIRED,
+        ]
+    },
+}
+module$exports$eeapiclient$ee_api_client.ISubscriptionTypeEnum =
+    function module$contents$eeapiclient$ee_api_client_ISubscriptionTypeEnum() {}
+module$exports$eeapiclient$ee_api_client.SubscriptionTypeEnum = {
+    BASIC: 'BASIC',
+    NO_SUBSCRIPTION: 'NO_SUBSCRIPTION',
+    PREMIUM: 'PREMIUM',
+    PROFESSIONAL: 'PROFESSIONAL',
+    TYPE_UNSPECIFIED: 'TYPE_UNSPECIFIED',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client.SubscriptionTypeEnum
+                .TYPE_UNSPECIFIED,
+            module$exports$eeapiclient$ee_api_client.SubscriptionTypeEnum
+                .NO_SUBSCRIPTION,
+            module$exports$eeapiclient$ee_api_client.SubscriptionTypeEnum.BASIC,
+            module$exports$eeapiclient$ee_api_client.SubscriptionTypeEnum
+                .PROFESSIONAL,
+            module$exports$eeapiclient$ee_api_client.SubscriptionTypeEnum
+                .PREMIUM,
         ]
     },
 }
@@ -15198,24 +15455,74 @@ module$exports$eeapiclient$ee_api_client.TableFileFormatEnum = {
         ]
     },
 }
-module$exports$eeapiclient$ee_api_client.ITableSourceCsvColumnDataTypeOverridesEnum =
-    function module$contents$eeapiclient$ee_api_client_ITableSourceCsvColumnDataTypeOverridesEnum() {}
-module$exports$eeapiclient$ee_api_client.TableSourceCsvColumnDataTypeOverridesEnum =
+module$exports$eeapiclient$ee_api_client.ITableManifestColumnDataTypeOverridesEnum =
+    function module$contents$eeapiclient$ee_api_client_ITableManifestColumnDataTypeOverridesEnum() {}
+module$exports$eeapiclient$ee_api_client.TableManifestColumnDataTypeOverridesEnum =
     {
+        COLUMN_DATA_TYPE_LONG: 'COLUMN_DATA_TYPE_LONG',
+        COLUMN_DATA_TYPE_NUMERIC: 'COLUMN_DATA_TYPE_NUMERIC',
+        COLUMN_DATA_TYPE_STRING: 'COLUMN_DATA_TYPE_STRING',
+        COLUMN_DATA_TYPE_UNSPECIFIED: 'COLUMN_DATA_TYPE_UNSPECIFIED',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .TableManifestColumnDataTypeOverridesEnum
+                    .COLUMN_DATA_TYPE_UNSPECIFIED,
+                module$exports$eeapiclient$ee_api_client
+                    .TableManifestColumnDataTypeOverridesEnum
+                    .COLUMN_DATA_TYPE_STRING,
+                module$exports$eeapiclient$ee_api_client
+                    .TableManifestColumnDataTypeOverridesEnum
+                    .COLUMN_DATA_TYPE_NUMERIC,
+                module$exports$eeapiclient$ee_api_client
+                    .TableManifestColumnDataTypeOverridesEnum
+                    .COLUMN_DATA_TYPE_LONG,
+            ]
+        },
+    }
+module$exports$eeapiclient$ee_api_client.ITableManifestCsvColumnDataTypeOverridesEnum =
+    function module$contents$eeapiclient$ee_api_client_ITableManifestCsvColumnDataTypeOverridesEnum() {}
+module$exports$eeapiclient$ee_api_client.TableManifestCsvColumnDataTypeOverridesEnum =
+    {
+        CSV_COLUMN_DATA_TYPE_LONG: 'CSV_COLUMN_DATA_TYPE_LONG',
         CSV_COLUMN_DATA_TYPE_NUMERIC: 'CSV_COLUMN_DATA_TYPE_NUMERIC',
         CSV_COLUMN_DATA_TYPE_STRING: 'CSV_COLUMN_DATA_TYPE_STRING',
         CSV_COLUMN_DATA_TYPE_UNSPECIFIED: 'CSV_COLUMN_DATA_TYPE_UNSPECIFIED',
         values: function () {
             return [
                 module$exports$eeapiclient$ee_api_client
-                    .TableSourceCsvColumnDataTypeOverridesEnum
+                    .TableManifestCsvColumnDataTypeOverridesEnum
                     .CSV_COLUMN_DATA_TYPE_UNSPECIFIED,
                 module$exports$eeapiclient$ee_api_client
-                    .TableSourceCsvColumnDataTypeOverridesEnum
+                    .TableManifestCsvColumnDataTypeOverridesEnum
                     .CSV_COLUMN_DATA_TYPE_STRING,
                 module$exports$eeapiclient$ee_api_client
-                    .TableSourceCsvColumnDataTypeOverridesEnum
+                    .TableManifestCsvColumnDataTypeOverridesEnum
                     .CSV_COLUMN_DATA_TYPE_NUMERIC,
+                module$exports$eeapiclient$ee_api_client
+                    .TableManifestCsvColumnDataTypeOverridesEnum
+                    .CSV_COLUMN_DATA_TYPE_LONG,
+            ]
+        },
+    }
+module$exports$eeapiclient$ee_api_client.ITerminateSubscriptionRequestTerminationTypeEnum =
+    function module$contents$eeapiclient$ee_api_client_ITerminateSubscriptionRequestTerminationTypeEnum() {}
+module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequestTerminationTypeEnum =
+    {
+        CHANGE_TIME_TYPE_UNSPECIFIED: 'CHANGE_TIME_TYPE_UNSPECIFIED',
+        EARLIEST_POSSIBLE: 'EARLIEST_POSSIBLE',
+        END_OF_PERIOD: 'END_OF_PERIOD',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .TerminateSubscriptionRequestTerminationTypeEnum
+                    .CHANGE_TIME_TYPE_UNSPECIFIED,
+                module$exports$eeapiclient$ee_api_client
+                    .TerminateSubscriptionRequestTerminationTypeEnum
+                    .END_OF_PERIOD,
+                module$exports$eeapiclient$ee_api_client
+                    .TerminateSubscriptionRequestTerminationTypeEnum
+                    .EARLIEST_POSSIBLE,
             ]
         },
     }
@@ -15327,6 +15634,49 @@ module$exports$eeapiclient$ee_api_client.TilesetDataTypeEnum = {
             module$exports$eeapiclient$ee_api_client.TilesetDataTypeEnum.UINT32,
             module$exports$eeapiclient$ee_api_client.TilesetDataTypeEnum.FLOAT,
             module$exports$eeapiclient$ee_api_client.TilesetDataTypeEnum.DOUBLE,
+        ]
+    },
+}
+module$exports$eeapiclient$ee_api_client.ITrialStatusEligibilityEnum =
+    function module$contents$eeapiclient$ee_api_client_ITrialStatusEligibilityEnum() {}
+module$exports$eeapiclient$ee_api_client.TrialStatusEligibilityEnum = {
+    ACCOUNT_INELIGIBLE: 'ACCOUNT_INELIGIBLE',
+    ALREADY_EVALUATED: 'ALREADY_EVALUATED',
+    ELIGIBILITY_UNSPECIFIED: 'ELIGIBILITY_UNSPECIFIED',
+    ELIGIBLE: 'ELIGIBLE',
+    NO_BILLING_ACCOUNT: 'NO_BILLING_ACCOUNT',
+    REDEEMED: 'REDEEMED',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client.TrialStatusEligibilityEnum
+                .ELIGIBILITY_UNSPECIFIED,
+            module$exports$eeapiclient$ee_api_client.TrialStatusEligibilityEnum
+                .ELIGIBLE,
+            module$exports$eeapiclient$ee_api_client.TrialStatusEligibilityEnum
+                .REDEEMED,
+            module$exports$eeapiclient$ee_api_client.TrialStatusEligibilityEnum
+                .ALREADY_EVALUATED,
+            module$exports$eeapiclient$ee_api_client.TrialStatusEligibilityEnum
+                .NO_BILLING_ACCOUNT,
+            module$exports$eeapiclient$ee_api_client.TrialStatusEligibilityEnum
+                .ACCOUNT_INELIGIBLE,
+        ]
+    },
+}
+module$exports$eeapiclient$ee_api_client.ITrialStatusStateEnum =
+    function module$contents$eeapiclient$ee_api_client_ITrialStatusStateEnum() {}
+module$exports$eeapiclient$ee_api_client.TrialStatusStateEnum = {
+    ACTIVE: 'ACTIVE',
+    EXPIRED: 'EXPIRED',
+    STATE_UNSPECIFIED: 'STATE_UNSPECIFIED',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client.TrialStatusStateEnum
+                .STATE_UNSPECIFIED,
+            module$exports$eeapiclient$ee_api_client.TrialStatusStateEnum
+                .ACTIVE,
+            module$exports$eeapiclient$ee_api_client.TrialStatusStateEnum
+                .EXPIRED,
         ]
     },
 }
@@ -15787,6 +16137,26 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
+module$exports$eeapiclient$ee_api_client.AppealRestrictionRequestParameters =
+    function module$contents$eeapiclient$ee_api_client_AppealRestrictionRequestParameters() {}
+module$exports$eeapiclient$ee_api_client.AppealRestrictionRequest = function (
+    parameters
+) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.AppealRestrictionRequest,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.AppealRestrictionRequest.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.AppealRestrictionRequest
+    }
+module$exports$eeapiclient$ee_api_client.AppealRestrictionRequest.prototype.getPartialClassMetadata =
+    function () {
+        return { keys: [] }
+    }
 module$exports$eeapiclient$ee_api_client.ArrayValueParameters =
     function module$contents$eeapiclient$ee_api_client_ArrayValueParameters() {}
 module$exports$eeapiclient$ee_api_client.ArrayValue = function (parameters) {
@@ -15841,10 +16211,6 @@ module$exports$eeapiclient$ee_api_client.AuditConfig = function (parameters) {
         null == parameters.service ? null : parameters.service
     )
     this.Serializable$set(
-        'exemptedMembers',
-        null == parameters.exemptedMembers ? null : parameters.exemptedMembers
-    )
-    this.Serializable$set(
         'auditLogConfigs',
         null == parameters.auditLogConfigs ? null : parameters.auditLogConfigs
     )
@@ -15864,7 +16230,7 @@ module$exports$eeapiclient$ee_api_client.AuditConfig.prototype.getPartialClassMe
                 auditLogConfigs:
                     module$exports$eeapiclient$ee_api_client.AuditLogConfig,
             },
-            keys: ['auditLogConfigs', 'exemptedMembers', 'service'],
+            keys: ['auditLogConfigs', 'service'],
         }
     }
 $jscomp.global.Object.defineProperties(
@@ -15880,18 +16246,6 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('auditLogConfigs', value)
-            },
-        },
-        exemptedMembers: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('exemptedMembers')
-                    ? this.Serializable$get('exemptedMembers')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('exemptedMembers', value)
             },
         },
         service: {
@@ -16056,6 +16410,112 @@ $jscomp.global.Object.defineProperties(
             enumerable: !0,
             get: function () {
                 return module$exports$eeapiclient$ee_api_client.AuthorizationLoggingOptionsPermissionTypeEnum
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.BigQueryDestinationParameters =
+    function module$contents$eeapiclient$ee_api_client_BigQueryDestinationParameters() {}
+module$exports$eeapiclient$ee_api_client.BigQueryDestination = function (
+    parameters
+) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'table',
+        null == parameters.table ? null : parameters.table
+    )
+    this.Serializable$set(
+        'overwrite',
+        null == parameters.overwrite ? null : parameters.overwrite
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.BigQueryDestination,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.BigQueryDestination.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.BigQueryDestination
+    }
+module$exports$eeapiclient$ee_api_client.BigQueryDestination.prototype.getPartialClassMetadata =
+    function () {
+        return { keys: ['overwrite', 'table'] }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.BigQueryDestination.prototype,
+    {
+        overwrite: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('overwrite')
+                    ? this.Serializable$get('overwrite')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('overwrite', value)
+            },
+        },
+        table: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('table')
+                    ? this.Serializable$get('table')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('table', value)
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.BigQueryExportOptionsParameters =
+    function module$contents$eeapiclient$ee_api_client_BigQueryExportOptionsParameters() {}
+module$exports$eeapiclient$ee_api_client.BigQueryExportOptions = function (
+    parameters
+) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'bigqueryDestination',
+        null == parameters.bigqueryDestination
+            ? null
+            : parameters.bigqueryDestination
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.BigQueryExportOptions,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.BigQueryExportOptions.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.BigQueryExportOptions
+    }
+module$exports$eeapiclient$ee_api_client.BigQueryExportOptions.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            keys: ['bigqueryDestination'],
+            objects: {
+                bigqueryDestination:
+                    module$exports$eeapiclient$ee_api_client.BigQueryDestination,
+            },
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.BigQueryExportOptions.prototype,
+    {
+        bigqueryDestination: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('bigqueryDestination')
+                    ? this.Serializable$get('bigqueryDestination')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('bigqueryDestination', value)
             },
         },
     }
@@ -16225,6 +16685,105 @@ $jscomp.global.Object.defineProperties(
             enumerable: !0,
             get: function () {
                 return module$exports$eeapiclient$ee_api_client.CapabilitiesCapabilitiesEnum
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequestParameters =
+    function module$contents$eeapiclient$ee_api_client_ChangeSubscriptionTypeRequestParameters() {}
+module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequest =
+    function (parameters) {
+        parameters = void 0 === parameters ? {} : parameters
+        module$exports$eeapiclient$domain_object.Serializable.call(this)
+        this.Serializable$set(
+            'type',
+            null == parameters.type ? null : parameters.type
+        )
+        this.Serializable$set(
+            'changeTime',
+            null == parameters.changeTime ? null : parameters.changeTime
+        )
+        this.Serializable$set(
+            'etag',
+            null == parameters.etag ? null : parameters.etag
+        )
+    }
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequest,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequest.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequest
+    }
+module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequest.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            enums: {
+                changeTime:
+                    module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequestChangeTimeEnum,
+                type: module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequestTypeEnum,
+            },
+            keys: ['changeTime', 'etag', 'type'],
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequest
+        .prototype,
+    {
+        changeTime: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('changeTime')
+                    ? this.Serializable$get('changeTime')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('changeTime', value)
+            },
+        },
+        etag: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('etag')
+                    ? this.Serializable$get('etag')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('etag', value)
+            },
+        },
+        type: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('type')
+                    ? this.Serializable$get('type')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('type', value)
+            },
+        },
+    }
+)
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequest,
+    {
+        ChangeTime: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequestChangeTimeEnum
+            },
+        },
+        Type: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequestTypeEnum
             },
         },
     }
@@ -16526,6 +17085,10 @@ module$exports$eeapiclient$ee_api_client.ComputeFeaturesRequest = function (
         'pageToken',
         null == parameters.pageToken ? null : parameters.pageToken
     )
+    this.Serializable$set(
+        'workloadTag',
+        null == parameters.workloadTag ? null : parameters.workloadTag
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ComputeFeaturesRequest,
@@ -16538,7 +17101,7 @@ module$exports$eeapiclient$ee_api_client.ComputeFeaturesRequest.prototype.getCon
 module$exports$eeapiclient$ee_api_client.ComputeFeaturesRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: ['expression', 'pageSize', 'pageToken'],
+            keys: ['expression', 'pageSize', 'pageToken', 'workloadTag'],
             objects: {
                 expression: module$exports$eeapiclient$ee_api_client.Expression,
             },
@@ -16581,6 +17144,18 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('pageToken', value)
+            },
+        },
+        workloadTag: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('workloadTag')
+                    ? this.Serializable$get('workloadTag')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('workloadTag', value)
             },
         },
     }
@@ -16682,6 +17257,10 @@ module$exports$eeapiclient$ee_api_client.ComputeImagesRequest = function (
         'pageToken',
         null == parameters.pageToken ? null : parameters.pageToken
     )
+    this.Serializable$set(
+        'workloadTag',
+        null == parameters.workloadTag ? null : parameters.workloadTag
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ComputeImagesRequest,
@@ -16694,7 +17273,7 @@ module$exports$eeapiclient$ee_api_client.ComputeImagesRequest.prototype.getConst
 module$exports$eeapiclient$ee_api_client.ComputeImagesRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: ['expression', 'pageSize', 'pageToken'],
+            keys: ['expression', 'pageSize', 'pageToken', 'workloadTag'],
             objects: {
                 expression: module$exports$eeapiclient$ee_api_client.Expression,
             },
@@ -16737,6 +17316,18 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('pageToken', value)
+            },
+        },
+        workloadTag: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('workloadTag')
+                    ? this.Serializable$get('workloadTag')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('workloadTag', value)
             },
         },
     }
@@ -16832,6 +17423,10 @@ module$exports$eeapiclient$ee_api_client.ComputePixelsRequest = function (
             ? null
             : parameters.visualizationOptions
     )
+    this.Serializable$set(
+        'workloadTag',
+        null == parameters.workloadTag ? null : parameters.workloadTag
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ComputePixelsRequest,
@@ -16848,13 +17443,9 @@ module$exports$eeapiclient$ee_api_client.ComputePixelsRequest.prototype.getParti
                 fileFormat:
                     module$exports$eeapiclient$ee_api_client.ComputePixelsRequestFileFormatEnum,
             },
-            keys: [
-                'bandIds',
-                'expression',
-                'fileFormat',
-                'grid',
-                'visualizationOptions',
-            ],
+            keys: 'bandIds expression fileFormat grid visualizationOptions workloadTag'.split(
+                ' '
+            ),
             objects: {
                 expression: module$exports$eeapiclient$ee_api_client.Expression,
                 grid: module$exports$eeapiclient$ee_api_client.PixelGrid,
@@ -16926,6 +17517,18 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('visualizationOptions', value)
             },
         },
+        workloadTag: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('workloadTag')
+                    ? this.Serializable$get('workloadTag')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('workloadTag', value)
+            },
+        },
     }
 )
 $jscomp.global.Object.defineProperties(
@@ -16951,6 +17554,10 @@ module$exports$eeapiclient$ee_api_client.ComputeValueRequest = function (
         'expression',
         null == parameters.expression ? null : parameters.expression
     )
+    this.Serializable$set(
+        'workloadTag',
+        null == parameters.workloadTag ? null : parameters.workloadTag
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ComputeValueRequest,
@@ -16963,7 +17570,7 @@ module$exports$eeapiclient$ee_api_client.ComputeValueRequest.prototype.getConstr
 module$exports$eeapiclient$ee_api_client.ComputeValueRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: ['expression'],
+            keys: ['expression', 'workloadTag'],
             objects: {
                 expression: module$exports$eeapiclient$ee_api_client.Expression,
             },
@@ -16982,6 +17589,18 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('expression', value)
+            },
+        },
+        workloadTag: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('workloadTag')
+                    ? this.Serializable$get('workloadTag')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('workloadTag', value)
             },
         },
     }
@@ -17358,125 +17977,6 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.DMSMapParameters =
-    function module$contents$eeapiclient$ee_api_client_DMSMapParameters() {}
-module$exports$eeapiclient$ee_api_client.DMSMap = function (parameters) {
-    parameters = void 0 === parameters ? {} : parameters
-    module$exports$eeapiclient$domain_object.Serializable.call(this)
-    this.Serializable$set(
-        'asset',
-        null == parameters.asset ? null : parameters.asset
-    )
-    this.Serializable$set(
-        'dmsName',
-        null == parameters.dmsName ? null : parameters.dmsName
-    )
-    this.Serializable$set(
-        'name',
-        null == parameters.name ? null : parameters.name
-    )
-    this.Serializable$set(
-        'visualizationOptions',
-        null == parameters.visualizationOptions
-            ? null
-            : parameters.visualizationOptions
-    )
-    this.Serializable$set(
-        'visualizationExpression',
-        null == parameters.visualizationExpression
-            ? null
-            : parameters.visualizationExpression
-    )
-}
-$jscomp.inherits(
-    module$exports$eeapiclient$ee_api_client.DMSMap,
-    module$exports$eeapiclient$domain_object.Serializable
-)
-module$exports$eeapiclient$ee_api_client.DMSMap.prototype.getConstructor =
-    function () {
-        return module$exports$eeapiclient$ee_api_client.DMSMap
-    }
-module$exports$eeapiclient$ee_api_client.DMSMap.prototype.getPartialClassMetadata =
-    function () {
-        return {
-            keys: [
-                'asset',
-                'dmsName',
-                'name',
-                'visualizationExpression',
-                'visualizationOptions',
-            ],
-            objects: {
-                visualizationExpression:
-                    module$exports$eeapiclient$ee_api_client.Expression,
-            },
-        }
-    }
-$jscomp.global.Object.defineProperties(
-    module$exports$eeapiclient$ee_api_client.DMSMap.prototype,
-    {
-        asset: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('asset')
-                    ? this.Serializable$get('asset')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('asset', value)
-            },
-        },
-        dmsName: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('dmsName')
-                    ? this.Serializable$get('dmsName')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('dmsName', value)
-            },
-        },
-        name: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('name')
-                    ? this.Serializable$get('name')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('name', value)
-            },
-        },
-        visualizationExpression: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('visualizationExpression')
-                    ? this.Serializable$get('visualizationExpression')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('visualizationExpression', value)
-            },
-        },
-        visualizationOptions: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('visualizationOptions')
-                    ? this.Serializable$get('visualizationOptions')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('visualizationOptions', value)
-            },
-        },
-    }
-)
 module$exports$eeapiclient$ee_api_client.DataAccessOptionsParameters =
     function module$contents$eeapiclient$ee_api_client_DataAccessOptionsParameters() {}
 module$exports$eeapiclient$ee_api_client.DataAccessOptions = function (
@@ -17583,320 +18083,6 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('values', value)
-            },
-        },
-    }
-)
-module$exports$eeapiclient$ee_api_client.DmsAssetExportOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_DmsAssetExportOptionsParameters() {}
-module$exports$eeapiclient$ee_api_client.DmsAssetExportOptions = function (
-    parameters
-) {
-    parameters = void 0 === parameters ? {} : parameters
-    module$exports$eeapiclient$domain_object.Serializable.call(this)
-    this.Serializable$set(
-        'dmsDestination',
-        null == parameters.dmsDestination ? null : parameters.dmsDestination
-    )
-    this.Serializable$set(
-        'ingestionTimeParameters',
-        null == parameters.ingestionTimeParameters
-            ? null
-            : parameters.ingestionTimeParameters
-    )
-}
-$jscomp.inherits(
-    module$exports$eeapiclient$ee_api_client.DmsAssetExportOptions,
-    module$exports$eeapiclient$domain_object.Serializable
-)
-module$exports$eeapiclient$ee_api_client.DmsAssetExportOptions.prototype.getConstructor =
-    function () {
-        return module$exports$eeapiclient$ee_api_client.DmsAssetExportOptions
-    }
-module$exports$eeapiclient$ee_api_client.DmsAssetExportOptions.prototype.getPartialClassMetadata =
-    function () {
-        return {
-            keys: ['dmsDestination', 'ingestionTimeParameters'],
-            objects: {
-                dmsDestination:
-                    module$exports$eeapiclient$ee_api_client.DmsDestination,
-                ingestionTimeParameters:
-                    module$exports$eeapiclient$ee_api_client.DmsIngestionTimeParameters,
-            },
-        }
-    }
-$jscomp.global.Object.defineProperties(
-    module$exports$eeapiclient$ee_api_client.DmsAssetExportOptions.prototype,
-    {
-        dmsDestination: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('dmsDestination')
-                    ? this.Serializable$get('dmsDestination')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('dmsDestination', value)
-            },
-        },
-        ingestionTimeParameters: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('ingestionTimeParameters')
-                    ? this.Serializable$get('ingestionTimeParameters')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('ingestionTimeParameters', value)
-            },
-        },
-    }
-)
-module$exports$eeapiclient$ee_api_client.DmsDestinationParameters =
-    function module$contents$eeapiclient$ee_api_client_DmsDestinationParameters() {}
-module$exports$eeapiclient$ee_api_client.DmsDestination = function (
-    parameters
-) {
-    parameters = void 0 === parameters ? {} : parameters
-    module$exports$eeapiclient$domain_object.Serializable.call(this)
-    this.Serializable$set(
-        'dmsName',
-        null == parameters.dmsName ? null : parameters.dmsName
-    )
-    this.Serializable$set(
-        'assetVersion',
-        null == parameters.assetVersion ? null : parameters.assetVersion
-    )
-}
-$jscomp.inherits(
-    module$exports$eeapiclient$ee_api_client.DmsDestination,
-    module$exports$eeapiclient$domain_object.Serializable
-)
-module$exports$eeapiclient$ee_api_client.DmsDestination.prototype.getConstructor =
-    function () {
-        return module$exports$eeapiclient$ee_api_client.DmsDestination
-    }
-module$exports$eeapiclient$ee_api_client.DmsDestination.prototype.getPartialClassMetadata =
-    function () {
-        return { keys: ['assetVersion', 'dmsName'] }
-    }
-$jscomp.global.Object.defineProperties(
-    module$exports$eeapiclient$ee_api_client.DmsDestination.prototype,
-    {
-        assetVersion: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('assetVersion')
-                    ? this.Serializable$get('assetVersion')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('assetVersion', value)
-            },
-        },
-        dmsName: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('dmsName')
-                    ? this.Serializable$get('dmsName')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('dmsName', value)
-            },
-        },
-    }
-)
-module$exports$eeapiclient$ee_api_client.DmsIngestionTimeParametersParameters =
-    function module$contents$eeapiclient$ee_api_client_DmsIngestionTimeParametersParameters() {}
-module$exports$eeapiclient$ee_api_client.DmsIngestionTimeParameters = function (
-    parameters
-) {
-    parameters = void 0 === parameters ? {} : parameters
-    module$exports$eeapiclient$domain_object.Serializable.call(this)
-    this.Serializable$set(
-        'thinningOptions',
-        null == parameters.thinningOptions ? null : parameters.thinningOptions
-    )
-    this.Serializable$set(
-        'rankingOptions',
-        null == parameters.rankingOptions ? null : parameters.rankingOptions
-    )
-}
-$jscomp.inherits(
-    module$exports$eeapiclient$ee_api_client.DmsIngestionTimeParameters,
-    module$exports$eeapiclient$domain_object.Serializable
-)
-module$exports$eeapiclient$ee_api_client.DmsIngestionTimeParameters.prototype.getConstructor =
-    function () {
-        return module$exports$eeapiclient$ee_api_client.DmsIngestionTimeParameters
-    }
-module$exports$eeapiclient$ee_api_client.DmsIngestionTimeParameters.prototype.getPartialClassMetadata =
-    function () {
-        return {
-            keys: ['rankingOptions', 'thinningOptions'],
-            objects: {
-                rankingOptions:
-                    module$exports$eeapiclient$ee_api_client.RankingOptions,
-                thinningOptions:
-                    module$exports$eeapiclient$ee_api_client.ThinningOptions,
-            },
-        }
-    }
-$jscomp.global.Object.defineProperties(
-    module$exports$eeapiclient$ee_api_client.DmsIngestionTimeParameters
-        .prototype,
-    {
-        rankingOptions: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('rankingOptions')
-                    ? this.Serializable$get('rankingOptions')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('rankingOptions', value)
-            },
-        },
-        thinningOptions: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('thinningOptions')
-                    ? this.Serializable$get('thinningOptions')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('thinningOptions', value)
-            },
-        },
-    }
-)
-module$exports$eeapiclient$ee_api_client.DmsLocationParameters =
-    function module$contents$eeapiclient$ee_api_client_DmsLocationParameters() {}
-module$exports$eeapiclient$ee_api_client.DmsLocation = function (parameters) {
-    parameters = void 0 === parameters ? {} : parameters
-    module$exports$eeapiclient$domain_object.Serializable.call(this)
-    this.Serializable$set(
-        'location',
-        null == parameters.location ? null : parameters.location
-    )
-    this.Serializable$set(
-        'dmsAssetOptions',
-        null == parameters.dmsAssetOptions ? null : parameters.dmsAssetOptions
-    )
-}
-$jscomp.inherits(
-    module$exports$eeapiclient$ee_api_client.DmsLocation,
-    module$exports$eeapiclient$domain_object.Serializable
-)
-module$exports$eeapiclient$ee_api_client.DmsLocation.prototype.getConstructor =
-    function () {
-        return module$exports$eeapiclient$ee_api_client.DmsLocation
-    }
-module$exports$eeapiclient$ee_api_client.DmsLocation.prototype.getPartialClassMetadata =
-    function () {
-        return {
-            keys: ['dmsAssetOptions', 'location'],
-            objects: {
-                dmsAssetOptions:
-                    module$exports$eeapiclient$ee_api_client.DmsOptions,
-            },
-        }
-    }
-$jscomp.global.Object.defineProperties(
-    module$exports$eeapiclient$ee_api_client.DmsLocation.prototype,
-    {
-        dmsAssetOptions: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('dmsAssetOptions')
-                    ? this.Serializable$get('dmsAssetOptions')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('dmsAssetOptions', value)
-            },
-        },
-        location: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('location')
-                    ? this.Serializable$get('location')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('location', value)
-            },
-        },
-    }
-)
-module$exports$eeapiclient$ee_api_client.DmsOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_DmsOptionsParameters() {}
-module$exports$eeapiclient$ee_api_client.DmsOptions = function (parameters) {
-    parameters = void 0 === parameters ? {} : parameters
-    module$exports$eeapiclient$domain_object.Serializable.call(this)
-    this.Serializable$set(
-        'attributes',
-        null == parameters.attributes ? null : parameters.attributes
-    )
-    this.Serializable$set(
-        'ingestionTimeParameters',
-        null == parameters.ingestionTimeParameters
-            ? null
-            : parameters.ingestionTimeParameters
-    )
-}
-$jscomp.inherits(
-    module$exports$eeapiclient$ee_api_client.DmsOptions,
-    module$exports$eeapiclient$domain_object.Serializable
-)
-module$exports$eeapiclient$ee_api_client.DmsOptions.prototype.getConstructor =
-    function () {
-        return module$exports$eeapiclient$ee_api_client.DmsOptions
-    }
-module$exports$eeapiclient$ee_api_client.DmsOptions.prototype.getPartialClassMetadata =
-    function () {
-        return {
-            keys: ['attributes', 'ingestionTimeParameters'],
-            objects: {
-                ingestionTimeParameters:
-                    module$exports$eeapiclient$ee_api_client.DmsIngestionTimeParameters,
-            },
-        }
-    }
-$jscomp.global.Object.defineProperties(
-    module$exports$eeapiclient$ee_api_client.DmsOptions.prototype,
-    {
-        attributes: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('attributes')
-                    ? this.Serializable$get('attributes')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('attributes', value)
-            },
-        },
-        ingestionTimeParameters: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('ingestionTimeParameters')
-                    ? this.Serializable$get('ingestionTimeParameters')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('ingestionTimeParameters', value)
             },
         },
     }
@@ -18035,8 +18221,14 @@ module$exports$eeapiclient$ee_api_client.EarthEngineAsset = function (
         null == parameters.gcsLocation ? null : parameters.gcsLocation
     )
     this.Serializable$set(
-        'dmsAssetLocation',
-        null == parameters.dmsAssetLocation ? null : parameters.dmsAssetLocation
+        'featureViewAssetLocation',
+        null == parameters.featureViewAssetLocation
+            ? null
+            : parameters.featureViewAssetLocation
+    )
+    this.Serializable$set(
+        'tableLocation',
+        null == parameters.tableLocation ? null : parameters.tableLocation
     )
     this.Serializable$set(
         'type',
@@ -18084,6 +18276,10 @@ module$exports$eeapiclient$ee_api_client.EarthEngineAsset = function (
         null == parameters.sizeBytes ? null : parameters.sizeBytes
     )
     this.Serializable$set(
+        'featureCount',
+        null == parameters.featureCount ? null : parameters.featureCount
+    )
+    this.Serializable$set(
         'quota',
         null == parameters.quota ? null : parameters.quota
     )
@@ -18109,7 +18305,7 @@ module$exports$eeapiclient$ee_api_client.EarthEngineAsset.prototype.getPartialCl
             enums: {
                 type: module$exports$eeapiclient$ee_api_client.EarthEngineAssetTypeEnum,
             },
-            keys: 'bands cloudStorageLocation description dmsAssetLocation endTime expression gcsLocation geometry id name properties quota sizeBytes startTime tilestoreEntry tilestoreLocation title type updateTime'.split(
+            keys: 'bands cloudStorageLocation description endTime expression featureCount featureViewAssetLocation gcsLocation geometry id name properties quota sizeBytes startTime tableLocation tilestoreEntry tilestoreLocation title type updateTime'.split(
                 ' '
             ),
             objectMaps: {
@@ -18129,12 +18325,14 @@ module$exports$eeapiclient$ee_api_client.EarthEngineAsset.prototype.getPartialCl
             objects: {
                 cloudStorageLocation:
                     module$exports$eeapiclient$ee_api_client.CloudStorageLocation,
-                dmsAssetLocation:
-                    module$exports$eeapiclient$ee_api_client.DmsLocation,
                 expression: module$exports$eeapiclient$ee_api_client.Expression,
+                featureViewAssetLocation:
+                    module$exports$eeapiclient$ee_api_client.FeatureViewLocation,
                 gcsLocation:
                     module$exports$eeapiclient$ee_api_client.GcsLocation,
                 quota: module$exports$eeapiclient$ee_api_client.FolderQuota,
+                tableLocation:
+                    module$exports$eeapiclient$ee_api_client.TableLocation,
                 tilestoreEntry:
                     module$exports$eeapiclient$ee_api_client.TilestoreEntry,
                 tilestoreLocation:
@@ -18181,18 +18379,6 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('description', value)
             },
         },
-        dmsAssetLocation: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('dmsAssetLocation')
-                    ? this.Serializable$get('dmsAssetLocation')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('dmsAssetLocation', value)
-            },
-        },
         endTime: {
             configurable: !0,
             enumerable: !0,
@@ -18215,6 +18401,30 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('expression', value)
+            },
+        },
+        featureCount: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('featureCount')
+                    ? this.Serializable$get('featureCount')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('featureCount', value)
+            },
+        },
+        featureViewAssetLocation: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('featureViewAssetLocation')
+                    ? this.Serializable$get('featureViewAssetLocation')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('featureViewAssetLocation', value)
             },
         },
         gcsLocation: {
@@ -18313,6 +18523,18 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('startTime', value)
             },
         },
+        tableLocation: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('tableLocation')
+                    ? this.Serializable$get('tableLocation')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('tableLocation', value)
+            },
+        },
         tilestoreEntry: {
             configurable: !0,
             enumerable: !0,
@@ -18398,6 +18620,10 @@ module$exports$eeapiclient$ee_api_client.EarthEngineDestination = function (
         'name',
         null == parameters.name ? null : parameters.name
     )
+    this.Serializable$set(
+        'overwrite',
+        null == parameters.overwrite ? null : parameters.overwrite
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.EarthEngineDestination,
@@ -18409,7 +18635,7 @@ module$exports$eeapiclient$ee_api_client.EarthEngineDestination.prototype.getCon
     }
 module$exports$eeapiclient$ee_api_client.EarthEngineDestination.prototype.getPartialClassMetadata =
     function () {
-        return { keys: ['name'] }
+        return { keys: ['name', 'overwrite'] }
     }
 $jscomp.global.Object.defineProperties(
     module$exports$eeapiclient$ee_api_client.EarthEngineDestination.prototype,
@@ -18424,6 +18650,18 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('name', value)
+            },
+        },
+        overwrite: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('overwrite')
+                    ? this.Serializable$get('overwrite')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('overwrite', value)
             },
         },
     }
@@ -18615,6 +18853,10 @@ module$exports$eeapiclient$ee_api_client.ExportClassifierRequest = function (
         'maxWorkerCount',
         null == parameters.maxWorkerCount ? null : parameters.maxWorkerCount
     )
+    this.Serializable$set(
+        'workloadTag',
+        null == parameters.workloadTag ? null : parameters.workloadTag
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ExportClassifierRequest,
@@ -18627,7 +18869,7 @@ module$exports$eeapiclient$ee_api_client.ExportClassifierRequest.prototype.getCo
 module$exports$eeapiclient$ee_api_client.ExportClassifierRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: 'assetExportOptions description expression maxWorkerCount maxWorkers requestId'.split(
+            keys: 'assetExportOptions description expression maxWorkerCount maxWorkers requestId workloadTag'.split(
                 ' '
             ),
             objects: {
@@ -18712,6 +18954,18 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('requestId', value)
             },
         },
+        workloadTag: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('workloadTag')
+                    ? this.Serializable$get('workloadTag')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('workloadTag', value)
+            },
+        },
     }
 )
 module$exports$eeapiclient$ee_api_client.ExportImageRequestParameters =
@@ -18761,6 +19015,10 @@ module$exports$eeapiclient$ee_api_client.ExportImageRequest = function (
         'maxWorkerCount',
         null == parameters.maxWorkerCount ? null : parameters.maxWorkerCount
     )
+    this.Serializable$set(
+        'workloadTag',
+        null == parameters.workloadTag ? null : parameters.workloadTag
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ExportImageRequest,
@@ -18773,7 +19031,7 @@ module$exports$eeapiclient$ee_api_client.ExportImageRequest.prototype.getConstru
 module$exports$eeapiclient$ee_api_client.ExportImageRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: 'assetExportOptions description expression fileExportOptions grid maxPixels maxWorkerCount maxWorkers requestId'.split(
+            keys: 'assetExportOptions description expression fileExportOptions grid maxPixels maxWorkerCount maxWorkers requestId workloadTag'.split(
                 ' '
             ),
             objects: {
@@ -18897,6 +19155,18 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('requestId', value)
             },
         },
+        workloadTag: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('workloadTag')
+                    ? this.Serializable$get('workloadTag')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('workloadTag', value)
+            },
+        },
     }
 )
 module$exports$eeapiclient$ee_api_client.ExportMapRequestParameters =
@@ -18936,6 +19206,10 @@ module$exports$eeapiclient$ee_api_client.ExportMapRequest = function (
         'maxWorkerCount',
         null == parameters.maxWorkerCount ? null : parameters.maxWorkerCount
     )
+    this.Serializable$set(
+        'workloadTag',
+        null == parameters.workloadTag ? null : parameters.workloadTag
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ExportMapRequest,
@@ -18948,7 +19222,7 @@ module$exports$eeapiclient$ee_api_client.ExportMapRequest.prototype.getConstruct
 module$exports$eeapiclient$ee_api_client.ExportMapRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: 'description expression maxWorkerCount maxWorkers requestId tileExportOptions tileOptions'.split(
+            keys: 'description expression maxWorkerCount maxWorkers requestId tileExportOptions tileOptions workloadTag'.split(
                 ' '
             ),
             objects: {
@@ -19047,6 +19321,18 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('tileOptions', value)
             },
         },
+        workloadTag: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('workloadTag')
+                    ? this.Serializable$get('workloadTag')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('workloadTag', value)
+            },
+        },
     }
 )
 module$exports$eeapiclient$ee_api_client.ExportTableRequestParameters =
@@ -19069,8 +19355,16 @@ module$exports$eeapiclient$ee_api_client.ExportTableRequest = function (
             : parameters.assetExportOptions
     )
     this.Serializable$set(
-        'dmsExportOptions',
-        null == parameters.dmsExportOptions ? null : parameters.dmsExportOptions
+        'featureViewExportOptions',
+        null == parameters.featureViewExportOptions
+            ? null
+            : parameters.featureViewExportOptions
+    )
+    this.Serializable$set(
+        'bigqueryExportOptions',
+        null == parameters.bigqueryExportOptions
+            ? null
+            : parameters.bigqueryExportOptions
     )
     this.Serializable$set(
         'expression',
@@ -19104,6 +19398,14 @@ module$exports$eeapiclient$ee_api_client.ExportTableRequest = function (
         'maxVertices',
         null == parameters.maxVertices ? null : parameters.maxVertices
     )
+    this.Serializable$set(
+        'workloadTag',
+        null == parameters.workloadTag ? null : parameters.workloadTag
+    )
+    this.Serializable$set(
+        'policy',
+        null == parameters.policy ? null : parameters.policy
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ExportTableRequest,
@@ -19116,17 +19418,20 @@ module$exports$eeapiclient$ee_api_client.ExportTableRequest.prototype.getConstru
 module$exports$eeapiclient$ee_api_client.ExportTableRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: 'assetExportOptions description dmsExportOptions expression fileExportOptions maxErrorMeters maxVertices maxWorkerCount maxWorkers requestId selectors'.split(
+            keys: 'assetExportOptions bigqueryExportOptions description expression featureViewExportOptions fileExportOptions maxErrorMeters maxVertices maxWorkerCount maxWorkers policy requestId selectors workloadTag'.split(
                 ' '
             ),
             objects: {
                 assetExportOptions:
                     module$exports$eeapiclient$ee_api_client.TableAssetExportOptions,
-                dmsExportOptions:
-                    module$exports$eeapiclient$ee_api_client.DmsAssetExportOptions,
+                bigqueryExportOptions:
+                    module$exports$eeapiclient$ee_api_client.BigQueryExportOptions,
                 expression: module$exports$eeapiclient$ee_api_client.Expression,
+                featureViewExportOptions:
+                    module$exports$eeapiclient$ee_api_client.FeatureViewAssetExportOptions,
                 fileExportOptions:
                     module$exports$eeapiclient$ee_api_client.TableFileExportOptions,
+                policy: module$exports$eeapiclient$ee_api_client.Policy,
             },
         }
     }
@@ -19145,6 +19450,18 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('assetExportOptions', value)
             },
         },
+        bigqueryExportOptions: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('bigqueryExportOptions')
+                    ? this.Serializable$get('bigqueryExportOptions')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('bigqueryExportOptions', value)
+            },
+        },
         description: {
             configurable: !0,
             enumerable: !0,
@@ -19157,18 +19474,6 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('description', value)
             },
         },
-        dmsExportOptions: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('dmsExportOptions')
-                    ? this.Serializable$get('dmsExportOptions')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('dmsExportOptions', value)
-            },
-        },
         expression: {
             configurable: !0,
             enumerable: !0,
@@ -19179,6 +19484,18 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('expression', value)
+            },
+        },
+        featureViewExportOptions: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('featureViewExportOptions')
+                    ? this.Serializable$get('featureViewExportOptions')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('featureViewExportOptions', value)
             },
         },
         fileExportOptions: {
@@ -19241,6 +19558,18 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('maxWorkers', value)
             },
         },
+        policy: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('policy')
+                    ? this.Serializable$get('policy')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('policy', value)
+            },
+        },
         requestId: {
             configurable: !0,
             enumerable: !0,
@@ -19263,6 +19592,18 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('selectors', value)
+            },
+        },
+        workloadTag: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('workloadTag')
+                    ? this.Serializable$get('workloadTag')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('workloadTag', value)
             },
         },
     }
@@ -19312,6 +19653,10 @@ module$exports$eeapiclient$ee_api_client.ExportVideoMapRequest = function (
         'maxWorkerCount',
         null == parameters.maxWorkerCount ? null : parameters.maxWorkerCount
     )
+    this.Serializable$set(
+        'workloadTag',
+        null == parameters.workloadTag ? null : parameters.workloadTag
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ExportVideoMapRequest,
@@ -19328,7 +19673,7 @@ module$exports$eeapiclient$ee_api_client.ExportVideoMapRequest.prototype.getPart
                 version:
                     module$exports$eeapiclient$ee_api_client.ExportVideoMapRequestVersionEnum,
             },
-            keys: 'description expression maxWorkerCount maxWorkers requestId tileExportOptions tileOptions version videoOptions'.split(
+            keys: 'description expression maxWorkerCount maxWorkers requestId tileExportOptions tileOptions version videoOptions workloadTag'.split(
                 ' '
             ),
             objects: {
@@ -19453,6 +19798,18 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('videoOptions', value)
             },
         },
+        workloadTag: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('workloadTag')
+                    ? this.Serializable$get('workloadTag')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('workloadTag', value)
+            },
+        },
     }
 )
 $jscomp.global.Object.defineProperties(
@@ -19504,6 +19861,10 @@ module$exports$eeapiclient$ee_api_client.ExportVideoRequest = function (
         'maxWorkerCount',
         null == parameters.maxWorkerCount ? null : parameters.maxWorkerCount
     )
+    this.Serializable$set(
+        'workloadTag',
+        null == parameters.workloadTag ? null : parameters.workloadTag
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ExportVideoRequest,
@@ -19516,7 +19877,7 @@ module$exports$eeapiclient$ee_api_client.ExportVideoRequest.prototype.getConstru
 module$exports$eeapiclient$ee_api_client.ExportVideoRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: 'description expression fileExportOptions maxWorkerCount maxWorkers requestId videoOptions'.split(
+            keys: 'description expression fileExportOptions maxWorkerCount maxWorkers requestId videoOptions workloadTag'.split(
                 ' '
             ),
             objects: {
@@ -19613,6 +19974,18 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('videoOptions', value)
+            },
+        },
+        workloadTag: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('workloadTag')
+                    ? this.Serializable$get('workloadTag')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('workloadTag', value)
             },
         },
     }
@@ -19836,6 +20209,556 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('type', value)
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.FeatureViewParameters =
+    function module$contents$eeapiclient$ee_api_client_FeatureViewParameters() {}
+module$exports$eeapiclient$ee_api_client.FeatureView = function (parameters) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'asset',
+        null == parameters.asset ? null : parameters.asset
+    )
+    this.Serializable$set(
+        'mapName',
+        null == parameters.mapName ? null : parameters.mapName
+    )
+    this.Serializable$set(
+        'name',
+        null == parameters.name ? null : parameters.name
+    )
+    this.Serializable$set(
+        'visualizationExpression',
+        null == parameters.visualizationExpression
+            ? null
+            : parameters.visualizationExpression
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.FeatureView,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.FeatureView.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.FeatureView
+    }
+module$exports$eeapiclient$ee_api_client.FeatureView.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            keys: ['asset', 'mapName', 'name', 'visualizationExpression'],
+            objects: {
+                visualizationExpression:
+                    module$exports$eeapiclient$ee_api_client.Expression,
+            },
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.FeatureView.prototype,
+    {
+        asset: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('asset')
+                    ? this.Serializable$get('asset')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('asset', value)
+            },
+        },
+        mapName: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('mapName')
+                    ? this.Serializable$get('mapName')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('mapName', value)
+            },
+        },
+        name: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('name')
+                    ? this.Serializable$get('name')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('name', value)
+            },
+        },
+        visualizationExpression: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('visualizationExpression')
+                    ? this.Serializable$get('visualizationExpression')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('visualizationExpression', value)
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.FeatureViewAssetExportOptionsParameters =
+    function module$contents$eeapiclient$ee_api_client_FeatureViewAssetExportOptionsParameters() {}
+module$exports$eeapiclient$ee_api_client.FeatureViewAssetExportOptions =
+    function (parameters) {
+        parameters = void 0 === parameters ? {} : parameters
+        module$exports$eeapiclient$domain_object.Serializable.call(this)
+        this.Serializable$set(
+            'featureViewDestination',
+            null == parameters.featureViewDestination
+                ? null
+                : parameters.featureViewDestination
+        )
+        this.Serializable$set(
+            'ingestionTimeParameters',
+            null == parameters.ingestionTimeParameters
+                ? null
+                : parameters.ingestionTimeParameters
+        )
+    }
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.FeatureViewAssetExportOptions,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.FeatureViewAssetExportOptions.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.FeatureViewAssetExportOptions
+    }
+module$exports$eeapiclient$ee_api_client.FeatureViewAssetExportOptions.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            keys: ['featureViewDestination', 'ingestionTimeParameters'],
+            objects: {
+                featureViewDestination:
+                    module$exports$eeapiclient$ee_api_client.FeatureViewDestination,
+                ingestionTimeParameters:
+                    module$exports$eeapiclient$ee_api_client.FeatureViewIngestionTimeParameters,
+            },
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.FeatureViewAssetExportOptions
+        .prototype,
+    {
+        featureViewDestination: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('featureViewDestination')
+                    ? this.Serializable$get('featureViewDestination')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('featureViewDestination', value)
+            },
+        },
+        ingestionTimeParameters: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('ingestionTimeParameters')
+                    ? this.Serializable$get('ingestionTimeParameters')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('ingestionTimeParameters', value)
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.FeatureViewAttributeParameters =
+    function module$contents$eeapiclient$ee_api_client_FeatureViewAttributeParameters() {}
+module$exports$eeapiclient$ee_api_client.FeatureViewAttribute = function (
+    parameters
+) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'name',
+        null == parameters.name ? null : parameters.name
+    )
+    this.Serializable$set(
+        'type',
+        null == parameters.type ? null : parameters.type
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.FeatureViewAttribute,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.FeatureViewAttribute.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.FeatureViewAttribute
+    }
+module$exports$eeapiclient$ee_api_client.FeatureViewAttribute.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            enums: {
+                type: module$exports$eeapiclient$ee_api_client.FeatureViewAttributeTypeEnum,
+            },
+            keys: ['name', 'type'],
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.FeatureViewAttribute.prototype,
+    {
+        name: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('name')
+                    ? this.Serializable$get('name')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('name', value)
+            },
+        },
+        type: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('type')
+                    ? this.Serializable$get('type')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('type', value)
+            },
+        },
+    }
+)
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.FeatureViewAttribute,
+    {
+        Type: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.FeatureViewAttributeTypeEnum
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.FeatureViewDestinationParameters =
+    function module$contents$eeapiclient$ee_api_client_FeatureViewDestinationParameters() {}
+module$exports$eeapiclient$ee_api_client.FeatureViewDestination = function (
+    parameters
+) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'name',
+        null == parameters.name ? null : parameters.name
+    )
+    this.Serializable$set(
+        'assetVersion',
+        null == parameters.assetVersion ? null : parameters.assetVersion
+    )
+    this.Serializable$set(
+        'permissions',
+        null == parameters.permissions ? null : parameters.permissions
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.FeatureViewDestination,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.FeatureViewDestination.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.FeatureViewDestination
+    }
+module$exports$eeapiclient$ee_api_client.FeatureViewDestination.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            enums: {
+                permissions:
+                    module$exports$eeapiclient$ee_api_client.FeatureViewDestinationPermissionsEnum,
+            },
+            keys: ['assetVersion', 'name', 'permissions'],
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.FeatureViewDestination.prototype,
+    {
+        assetVersion: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('assetVersion')
+                    ? this.Serializable$get('assetVersion')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('assetVersion', value)
+            },
+        },
+        name: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('name')
+                    ? this.Serializable$get('name')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('name', value)
+            },
+        },
+        permissions: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('permissions')
+                    ? this.Serializable$get('permissions')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('permissions', value)
+            },
+        },
+    }
+)
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.FeatureViewDestination,
+    {
+        Permissions: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.FeatureViewDestinationPermissionsEnum
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.FeatureViewIngestionTimeParametersParameters =
+    function module$contents$eeapiclient$ee_api_client_FeatureViewIngestionTimeParametersParameters() {}
+module$exports$eeapiclient$ee_api_client.FeatureViewIngestionTimeParameters =
+    function (parameters) {
+        parameters = void 0 === parameters ? {} : parameters
+        module$exports$eeapiclient$domain_object.Serializable.call(this)
+        this.Serializable$set(
+            'thinningOptions',
+            null == parameters.thinningOptions
+                ? null
+                : parameters.thinningOptions
+        )
+        this.Serializable$set(
+            'rankingOptions',
+            null == parameters.rankingOptions ? null : parameters.rankingOptions
+        )
+        this.Serializable$set(
+            'prerenderingOptions',
+            null == parameters.prerenderingOptions
+                ? null
+                : parameters.prerenderingOptions
+        )
+    }
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.FeatureViewIngestionTimeParameters,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.FeatureViewIngestionTimeParameters.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.FeatureViewIngestionTimeParameters
+    }
+module$exports$eeapiclient$ee_api_client.FeatureViewIngestionTimeParameters.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            keys: ['prerenderingOptions', 'rankingOptions', 'thinningOptions'],
+            objects: {
+                prerenderingOptions:
+                    module$exports$eeapiclient$ee_api_client.PrerenderingOptions,
+                rankingOptions:
+                    module$exports$eeapiclient$ee_api_client.RankingOptions,
+                thinningOptions:
+                    module$exports$eeapiclient$ee_api_client.ThinningOptions,
+            },
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.FeatureViewIngestionTimeParameters
+        .prototype,
+    {
+        prerenderingOptions: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('prerenderingOptions')
+                    ? this.Serializable$get('prerenderingOptions')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('prerenderingOptions', value)
+            },
+        },
+        rankingOptions: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('rankingOptions')
+                    ? this.Serializable$get('rankingOptions')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('rankingOptions', value)
+            },
+        },
+        thinningOptions: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('thinningOptions')
+                    ? this.Serializable$get('thinningOptions')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('thinningOptions', value)
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.FeatureViewLocationParameters =
+    function module$contents$eeapiclient$ee_api_client_FeatureViewLocationParameters() {}
+module$exports$eeapiclient$ee_api_client.FeatureViewLocation = function (
+    parameters
+) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'location',
+        null == parameters.location ? null : parameters.location
+    )
+    this.Serializable$set(
+        'assetOptions',
+        null == parameters.assetOptions ? null : parameters.assetOptions
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.FeatureViewLocation,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.FeatureViewLocation.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.FeatureViewLocation
+    }
+module$exports$eeapiclient$ee_api_client.FeatureViewLocation.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            keys: ['assetOptions', 'location'],
+            objects: {
+                assetOptions:
+                    module$exports$eeapiclient$ee_api_client.FeatureViewOptions,
+            },
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.FeatureViewLocation.prototype,
+    {
+        assetOptions: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('assetOptions')
+                    ? this.Serializable$get('assetOptions')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('assetOptions', value)
+            },
+        },
+        location: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('location')
+                    ? this.Serializable$get('location')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('location', value)
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.FeatureViewOptionsParameters =
+    function module$contents$eeapiclient$ee_api_client_FeatureViewOptionsParameters() {}
+module$exports$eeapiclient$ee_api_client.FeatureViewOptions = function (
+    parameters
+) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'featureViewAttributes',
+        null == parameters.featureViewAttributes
+            ? null
+            : parameters.featureViewAttributes
+    )
+    this.Serializable$set(
+        'ingestionTimeParameters',
+        null == parameters.ingestionTimeParameters
+            ? null
+            : parameters.ingestionTimeParameters
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.FeatureViewOptions,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.FeatureViewOptions.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.FeatureViewOptions
+    }
+module$exports$eeapiclient$ee_api_client.FeatureViewOptions.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            arrays: {
+                featureViewAttributes:
+                    module$exports$eeapiclient$ee_api_client.FeatureViewAttribute,
+            },
+            keys: ['featureViewAttributes', 'ingestionTimeParameters'],
+            objects: {
+                ingestionTimeParameters:
+                    module$exports$eeapiclient$ee_api_client.FeatureViewIngestionTimeParameters,
+            },
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.FeatureViewOptions.prototype,
+    {
+        featureViewAttributes: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('featureViewAttributes')
+                    ? this.Serializable$get('featureViewAttributes')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('featureViewAttributes', value)
+            },
+        },
+        ingestionTimeParameters: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('ingestionTimeParameters')
+                    ? this.Serializable$get('ingestionTimeParameters')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('ingestionTimeParameters', value)
             },
         },
     }
@@ -21297,6 +22220,12 @@ module$exports$eeapiclient$ee_api_client.ImageBand = function (parameters) {
         'missingData',
         null == parameters.missingData ? null : parameters.missingData
     )
+    this.Serializable$set(
+        'cloudStorageLocation',
+        null == parameters.cloudStorageLocation
+            ? null
+            : parameters.cloudStorageLocation
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ImageBand,
@@ -21317,10 +22246,12 @@ module$exports$eeapiclient$ee_api_client.ImageBand.prototype.getPartialClassMeta
                 pyramidingPolicy:
                     module$exports$eeapiclient$ee_api_client.ImageBandPyramidingPolicyEnum,
             },
-            keys: 'dataType grid id missingData pyramidingPolicy tilesets'.split(
+            keys: 'cloudStorageLocation dataType grid id missingData pyramidingPolicy tilesets'.split(
                 ' '
             ),
             objects: {
+                cloudStorageLocation:
+                    module$exports$eeapiclient$ee_api_client.CloudStorageLocation,
                 dataType:
                     module$exports$eeapiclient$ee_api_client.PixelDataType,
                 grid: module$exports$eeapiclient$ee_api_client.PixelGrid,
@@ -21332,6 +22263,18 @@ module$exports$eeapiclient$ee_api_client.ImageBand.prototype.getPartialClassMeta
 $jscomp.global.Object.defineProperties(
     module$exports$eeapiclient$ee_api_client.ImageBand.prototype,
     {
+        cloudStorageLocation: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('cloudStorageLocation')
+                    ? this.Serializable$get('cloudStorageLocation')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('cloudStorageLocation', value)
+            },
+        },
         dataType: {
             configurable: !0,
             enumerable: !0,
@@ -21626,6 +22569,10 @@ module$exports$eeapiclient$ee_api_client.ImageManifest = function (parameters) {
         'minTileAreaRatio',
         null == parameters.minTileAreaRatio ? null : parameters.minTileAreaRatio
     )
+    this.Serializable$set(
+        'skipMetadataRead',
+        null == parameters.skipMetadataRead ? null : parameters.skipMetadataRead
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ImageManifest,
@@ -21648,7 +22595,7 @@ module$exports$eeapiclient$ee_api_client.ImageManifest.prototype.getPartialClass
                 pyramidingPolicy:
                     module$exports$eeapiclient$ee_api_client.ImageManifestPyramidingPolicyEnum,
             },
-            keys: 'bands endTime footprint maskBands minTileAreaRatio missingData name properties pyramidingPolicy startTime tilesets uriPrefix'.split(
+            keys: 'bands endTime footprint maskBands minTileAreaRatio missingData name properties pyramidingPolicy skipMetadataRead startTime tilesets uriPrefix'.split(
                 ' '
             ),
             objectMaps: {
@@ -21778,6 +22725,18 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('pyramidingPolicy', value)
             },
         },
+        skipMetadataRead: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('skipMetadataRead')
+                    ? this.Serializable$get('skipMetadataRead')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('skipMetadataRead', value)
+            },
+        },
         startTime: {
             configurable: !0,
             enumerable: !0,
@@ -21841,6 +22800,10 @@ module$exports$eeapiclient$ee_api_client.ImageSource = function (parameters) {
         'affineTransform',
         null == parameters.affineTransform ? null : parameters.affineTransform
     )
+    this.Serializable$set(
+        'dimensions',
+        null == parameters.dimensions ? null : parameters.dimensions
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ImageSource,
@@ -21853,10 +22816,12 @@ module$exports$eeapiclient$ee_api_client.ImageSource.prototype.getConstructor =
 module$exports$eeapiclient$ee_api_client.ImageSource.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: ['affineTransform', 'uris'],
+            keys: ['affineTransform', 'dimensions', 'uris'],
             objects: {
                 affineTransform:
                     module$exports$eeapiclient$ee_api_client.AffineTransform,
+                dimensions:
+                    module$exports$eeapiclient$ee_api_client.GridDimensions,
             },
         }
     }
@@ -21873,6 +22838,18 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('affineTransform', value)
+            },
+        },
+        dimensions: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('dimensions')
+                    ? this.Serializable$get('dimensions')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('dimensions', value)
             },
         },
         uris: {
@@ -22428,6 +23405,70 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
+module$exports$eeapiclient$ee_api_client.ListSubscriptionsResponseParameters =
+    function module$contents$eeapiclient$ee_api_client_ListSubscriptionsResponseParameters() {}
+module$exports$eeapiclient$ee_api_client.ListSubscriptionsResponse = function (
+    parameters
+) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'subscriptions',
+        null == parameters.subscriptions ? null : parameters.subscriptions
+    )
+    this.Serializable$set(
+        'nextPageToken',
+        null == parameters.nextPageToken ? null : parameters.nextPageToken
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.ListSubscriptionsResponse,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.ListSubscriptionsResponse.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.ListSubscriptionsResponse
+    }
+module$exports$eeapiclient$ee_api_client.ListSubscriptionsResponse.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            arrays: {
+                subscriptions:
+                    module$exports$eeapiclient$ee_api_client.Subscription,
+            },
+            keys: ['nextPageToken', 'subscriptions'],
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.ListSubscriptionsResponse
+        .prototype,
+    {
+        nextPageToken: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('nextPageToken')
+                    ? this.Serializable$get('nextPageToken')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('nextPageToken', value)
+            },
+        },
+        subscriptions: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('subscriptions')
+                    ? this.Serializable$get('subscriptions')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('subscriptions', value)
+            },
+        },
+    }
+)
 module$exports$eeapiclient$ee_api_client.LogConfigParameters =
     function module$contents$eeapiclient$ee_api_client_LogConfigParameters() {}
 module$exports$eeapiclient$ee_api_client.LogConfig = function (parameters) {
@@ -22768,6 +23809,16 @@ module$exports$eeapiclient$ee_api_client.OperationMetadata = function (
         'destinationUris',
         null == parameters.destinationUris ? null : parameters.destinationUris
     )
+    this.Serializable$set(
+        'notifications',
+        null == parameters.notifications ? null : parameters.notifications
+    )
+    this.Serializable$set(
+        'batchEecuUsageSeconds',
+        null == parameters.batchEecuUsageSeconds
+            ? null
+            : parameters.batchEecuUsageSeconds
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.OperationMetadata,
@@ -22781,12 +23832,14 @@ module$exports$eeapiclient$ee_api_client.OperationMetadata.prototype.getPartialC
     function () {
         return {
             arrays: {
+                notifications:
+                    module$exports$eeapiclient$ee_api_client.OperationNotification,
                 stages: module$exports$eeapiclient$ee_api_client.OperationStage,
             },
             enums: {
                 state: module$exports$eeapiclient$ee_api_client.OperationMetadataStateEnum,
             },
-            keys: 'attempt createTime description destinationUris endTime priority progress scriptUri stages startTime state type updateTime'.split(
+            keys: 'attempt batchEecuUsageSeconds createTime description destinationUris endTime notifications priority progress scriptUri stages startTime state type updateTime'.split(
                 ' '
             ),
         }
@@ -22804,6 +23857,18 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('attempt', value)
+            },
+        },
+        batchEecuUsageSeconds: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('batchEecuUsageSeconds')
+                    ? this.Serializable$get('batchEecuUsageSeconds')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('batchEecuUsageSeconds', value)
             },
         },
         createTime: {
@@ -22852,6 +23917,18 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('endTime', value)
+            },
+        },
+        notifications: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('notifications')
+                    ? this.Serializable$get('notifications')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('notifications', value)
             },
         },
         priority: {
@@ -22960,6 +24037,97 @@ $jscomp.global.Object.defineProperties(
             enumerable: !0,
             get: function () {
                 return module$exports$eeapiclient$ee_api_client.OperationMetadataStateEnum
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.OperationNotificationParameters =
+    function module$contents$eeapiclient$ee_api_client_OperationNotificationParameters() {}
+module$exports$eeapiclient$ee_api_client.OperationNotification = function (
+    parameters
+) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'severity',
+        null == parameters.severity ? null : parameters.severity
+    )
+    this.Serializable$set(
+        'topic',
+        null == parameters.topic ? null : parameters.topic
+    )
+    this.Serializable$set(
+        'detail',
+        null == parameters.detail ? null : parameters.detail
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.OperationNotification,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.OperationNotification.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.OperationNotification
+    }
+module$exports$eeapiclient$ee_api_client.OperationNotification.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            enums: {
+                severity:
+                    module$exports$eeapiclient$ee_api_client.OperationNotificationSeverityEnum,
+            },
+            keys: ['detail', 'severity', 'topic'],
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.OperationNotification.prototype,
+    {
+        detail: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('detail')
+                    ? this.Serializable$get('detail')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('detail', value)
+            },
+        },
+        severity: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('severity')
+                    ? this.Serializable$get('severity')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('severity', value)
+            },
+        },
+        topic: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('topic')
+                    ? this.Serializable$get('topic')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('topic', value)
+            },
+        },
+    }
+)
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.OperationNotification,
+    {
+        Severity: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.OperationNotificationSeverityEnum
             },
         },
     }
@@ -23422,6 +24590,232 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
+module$exports$eeapiclient$ee_api_client.PrerenderingOptionsParameters =
+    function module$contents$eeapiclient$ee_api_client_PrerenderingOptionsParameters() {}
+module$exports$eeapiclient$ee_api_client.PrerenderingOptions = function (
+    parameters
+) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'prerenderTiles',
+        null == parameters.prerenderTiles ? null : parameters.prerenderTiles
+    )
+    this.Serializable$set(
+        'tileLimiting',
+        null == parameters.tileLimiting ? null : parameters.tileLimiting
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.PrerenderingOptions,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.PrerenderingOptions.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.PrerenderingOptions
+    }
+module$exports$eeapiclient$ee_api_client.PrerenderingOptions.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            keys: ['prerenderTiles', 'tileLimiting'],
+            objects: {
+                tileLimiting:
+                    module$exports$eeapiclient$ee_api_client.TileLimiting,
+            },
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.PrerenderingOptions.prototype,
+    {
+        prerenderTiles: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('prerenderTiles')
+                    ? this.Serializable$get('prerenderTiles')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('prerenderTiles', value)
+            },
+        },
+        tileLimiting: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('tileLimiting')
+                    ? this.Serializable$get('tileLimiting')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('tileLimiting', value)
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.ProjectConfigParameters =
+    function module$contents$eeapiclient$ee_api_client_ProjectConfigParameters() {}
+module$exports$eeapiclient$ee_api_client.ProjectConfig = function (parameters) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'name',
+        null == parameters.name ? null : parameters.name
+    )
+    this.Serializable$set(
+        'registration',
+        null == parameters.registration ? null : parameters.registration
+    )
+    this.Serializable$set(
+        'trialStatus',
+        null == parameters.trialStatus ? null : parameters.trialStatus
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.ProjectConfig,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.ProjectConfig.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.ProjectConfig
+    }
+module$exports$eeapiclient$ee_api_client.ProjectConfig.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            keys: ['name', 'registration', 'trialStatus'],
+            objects: {
+                registration:
+                    module$exports$eeapiclient$ee_api_client.ProjectRegistration,
+                trialStatus:
+                    module$exports$eeapiclient$ee_api_client.TrialStatus,
+            },
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.ProjectConfig.prototype,
+    {
+        name: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('name')
+                    ? this.Serializable$get('name')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('name', value)
+            },
+        },
+        registration: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('registration')
+                    ? this.Serializable$get('registration')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('registration', value)
+            },
+        },
+        trialStatus: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('trialStatus')
+                    ? this.Serializable$get('trialStatus')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('trialStatus', value)
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.ProjectRegistrationParameters =
+    function module$contents$eeapiclient$ee_api_client_ProjectRegistrationParameters() {}
+module$exports$eeapiclient$ee_api_client.ProjectRegistration = function (
+    parameters
+) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'billingConsent',
+        null == parameters.billingConsent ? null : parameters.billingConsent
+    )
+    this.Serializable$set(
+        'freeQuota',
+        null == parameters.freeQuota ? null : parameters.freeQuota
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.ProjectRegistration,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.ProjectRegistration.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.ProjectRegistration
+    }
+module$exports$eeapiclient$ee_api_client.ProjectRegistration.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            enums: {
+                billingConsent:
+                    module$exports$eeapiclient$ee_api_client.ProjectRegistrationBillingConsentEnum,
+                freeQuota:
+                    module$exports$eeapiclient$ee_api_client.ProjectRegistrationFreeQuotaEnum,
+            },
+            keys: ['billingConsent', 'freeQuota'],
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.ProjectRegistration.prototype,
+    {
+        billingConsent: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('billingConsent')
+                    ? this.Serializable$get('billingConsent')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('billingConsent', value)
+            },
+        },
+        freeQuota: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('freeQuota')
+                    ? this.Serializable$get('freeQuota')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('freeQuota', value)
+            },
+        },
+    }
+)
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.ProjectRegistration,
+    {
+        BillingConsent: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.ProjectRegistrationBillingConsentEnum
+            },
+        },
+        FreeQuota: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.ProjectRegistrationFreeQuotaEnum
+            },
+        },
+    }
+)
 module$exports$eeapiclient$ee_api_client.RankByAttributeRuleParameters =
     function module$contents$eeapiclient$ee_api_client_RankByAttributeRuleParameters() {}
 module$exports$eeapiclient$ee_api_client.RankByAttributeRule = function (
@@ -23503,23 +24897,23 @@ module$exports$eeapiclient$ee_api_client.RankByMinVisibleLodRule.prototype.getPa
     function () {
         return { keys: [] }
     }
-module$exports$eeapiclient$ee_api_client.RankByNaturalOrderParameters =
-    function module$contents$eeapiclient$ee_api_client_RankByNaturalOrderParameters() {}
-module$exports$eeapiclient$ee_api_client.RankByNaturalOrder = function (
+module$exports$eeapiclient$ee_api_client.RankByMinZoomLevelRuleParameters =
+    function module$contents$eeapiclient$ee_api_client_RankByMinZoomLevelRuleParameters() {}
+module$exports$eeapiclient$ee_api_client.RankByMinZoomLevelRule = function (
     parameters
 ) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
 }
 $jscomp.inherits(
-    module$exports$eeapiclient$ee_api_client.RankByNaturalOrder,
+    module$exports$eeapiclient$ee_api_client.RankByMinZoomLevelRule,
     module$exports$eeapiclient$domain_object.Serializable
 )
-module$exports$eeapiclient$ee_api_client.RankByNaturalOrder.prototype.getConstructor =
+module$exports$eeapiclient$ee_api_client.RankByMinZoomLevelRule.prototype.getConstructor =
     function () {
-        return module$exports$eeapiclient$ee_api_client.RankByNaturalOrder
+        return module$exports$eeapiclient$ee_api_client.RankByMinZoomLevelRule
     }
-module$exports$eeapiclient$ee_api_client.RankByNaturalOrder.prototype.getPartialClassMetadata =
+module$exports$eeapiclient$ee_api_client.RankByMinZoomLevelRule.prototype.getPartialClassMetadata =
     function () {
         return { keys: [] }
     }
@@ -23549,10 +24943,10 @@ module$exports$eeapiclient$ee_api_client.RankByOneThingRule = function (
             : parameters.rankByGeometryTypeRule
     )
     this.Serializable$set(
-        'rankByNaturalOrderRule',
-        null == parameters.rankByNaturalOrderRule
+        'rankByMinZoomLevelRule',
+        null == parameters.rankByMinZoomLevelRule
             ? null
-            : parameters.rankByNaturalOrderRule
+            : parameters.rankByMinZoomLevelRule
     )
     this.Serializable$set(
         'direction',
@@ -23579,7 +24973,7 @@ module$exports$eeapiclient$ee_api_client.RankByOneThingRule.prototype.getPartial
                 'rankByAttributeRule',
                 'rankByGeometryTypeRule',
                 'rankByMinVisibleLodRule',
-                'rankByNaturalOrderRule',
+                'rankByMinZoomLevelRule',
             ],
             objects: {
                 rankByAttributeRule:
@@ -23588,8 +24982,8 @@ module$exports$eeapiclient$ee_api_client.RankByOneThingRule.prototype.getPartial
                     module$exports$eeapiclient$ee_api_client.RankByGeometryTypeRule,
                 rankByMinVisibleLodRule:
                     module$exports$eeapiclient$ee_api_client.RankByMinVisibleLodRule,
-                rankByNaturalOrderRule:
-                    module$exports$eeapiclient$ee_api_client.RankByNaturalOrder,
+                rankByMinZoomLevelRule:
+                    module$exports$eeapiclient$ee_api_client.RankByMinZoomLevelRule,
             },
         }
     }
@@ -23644,16 +25038,16 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('rankByMinVisibleLodRule', value)
             },
         },
-        rankByNaturalOrderRule: {
+        rankByMinZoomLevelRule: {
             configurable: !0,
             enumerable: !0,
             get: function () {
-                return this.Serializable$has('rankByNaturalOrderRule')
-                    ? this.Serializable$get('rankByNaturalOrderRule')
+                return this.Serializable$has('rankByMinZoomLevelRule')
+                    ? this.Serializable$get('rankByMinZoomLevelRule')
                     : null
             },
             set: function (value) {
-                this.Serializable$set('rankByNaturalOrderRule', value)
+                this.Serializable$set('rankByMinZoomLevelRule', value)
             },
         },
     }
@@ -23959,6 +25353,108 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
+module$exports$eeapiclient$ee_api_client.ScheduledUpdateParameters =
+    function module$contents$eeapiclient$ee_api_client_ScheduledUpdateParameters() {}
+module$exports$eeapiclient$ee_api_client.ScheduledUpdate = function (
+    parameters
+) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'subscriptionUpdateType',
+        null == parameters.subscriptionUpdateType
+            ? null
+            : parameters.subscriptionUpdateType
+    )
+    this.Serializable$set(
+        'updateChangeType',
+        null == parameters.updateChangeType ? null : parameters.updateChangeType
+    )
+    this.Serializable$set(
+        'updateTime',
+        null == parameters.updateTime ? null : parameters.updateTime
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.ScheduledUpdate,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.ScheduledUpdate.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.ScheduledUpdate
+    }
+module$exports$eeapiclient$ee_api_client.ScheduledUpdate.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            enums: {
+                subscriptionUpdateType:
+                    module$exports$eeapiclient$ee_api_client.ScheduledUpdateSubscriptionUpdateTypeEnum,
+                updateChangeType:
+                    module$exports$eeapiclient$ee_api_client.ScheduledUpdateUpdateChangeTypeEnum,
+            },
+            keys: ['subscriptionUpdateType', 'updateChangeType', 'updateTime'],
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.ScheduledUpdate.prototype,
+    {
+        subscriptionUpdateType: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('subscriptionUpdateType')
+                    ? this.Serializable$get('subscriptionUpdateType')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('subscriptionUpdateType', value)
+            },
+        },
+        updateChangeType: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('updateChangeType')
+                    ? this.Serializable$get('updateChangeType')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('updateChangeType', value)
+            },
+        },
+        updateTime: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('updateTime')
+                    ? this.Serializable$get('updateTime')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('updateTime', value)
+            },
+        },
+    }
+)
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.ScheduledUpdate,
+    {
+        SubscriptionUpdateType: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.ScheduledUpdateSubscriptionUpdateTypeEnum
+            },
+        },
+        UpdateChangeType: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.ScheduledUpdateUpdateChangeTypeEnum
+            },
+        },
+    }
+)
 module$exports$eeapiclient$ee_api_client.SetIamPolicyRequestParameters =
     function module$contents$eeapiclient$ee_api_client_SetIamPolicyRequestParameters() {}
 module$exports$eeapiclient$ee_api_client.SetIamPolicyRequest = function (
@@ -24098,6 +25594,245 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('message', value)
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.SubscriptionParameters =
+    function module$contents$eeapiclient$ee_api_client_SubscriptionParameters() {}
+module$exports$eeapiclient$ee_api_client.Subscription = function (parameters) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'name',
+        null == parameters.name ? null : parameters.name
+    )
+    this.Serializable$set(
+        'etag',
+        null == parameters.etag ? null : parameters.etag
+    )
+    this.Serializable$set(
+        'type',
+        null == parameters.type ? null : parameters.type
+    )
+    this.Serializable$set(
+        'state',
+        null == parameters.state ? null : parameters.state
+    )
+    this.Serializable$set(
+        'creationTime',
+        null == parameters.creationTime ? null : parameters.creationTime
+    )
+    this.Serializable$set(
+        'startTime',
+        null == parameters.startTime ? null : parameters.startTime
+    )
+    this.Serializable$set(
+        'periodEndTime',
+        null == parameters.periodEndTime ? null : parameters.periodEndTime
+    )
+    this.Serializable$set(
+        'endTime',
+        null == parameters.endTime ? null : parameters.endTime
+    )
+    this.Serializable$set(
+        'scheduledUpdate',
+        null == parameters.scheduledUpdate ? null : parameters.scheduledUpdate
+    )
+    this.Serializable$set(
+        'trialState',
+        null == parameters.trialState ? null : parameters.trialState
+    )
+    this.Serializable$set(
+        'errorDetail',
+        null == parameters.errorDetail ? null : parameters.errorDetail
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.Subscription,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.Subscription.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.Subscription
+    }
+module$exports$eeapiclient$ee_api_client.Subscription.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            enums: {
+                state: module$exports$eeapiclient$ee_api_client.SubscriptionStateEnum,
+                trialState:
+                    module$exports$eeapiclient$ee_api_client.SubscriptionTrialStateEnum,
+                type: module$exports$eeapiclient$ee_api_client.SubscriptionTypeEnum,
+            },
+            keys: 'creationTime endTime errorDetail etag name periodEndTime scheduledUpdate startTime state trialState type'.split(
+                ' '
+            ),
+            objects: {
+                scheduledUpdate:
+                    module$exports$eeapiclient$ee_api_client.ScheduledUpdate,
+            },
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.Subscription.prototype,
+    {
+        creationTime: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('creationTime')
+                    ? this.Serializable$get('creationTime')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('creationTime', value)
+            },
+        },
+        endTime: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('endTime')
+                    ? this.Serializable$get('endTime')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('endTime', value)
+            },
+        },
+        errorDetail: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('errorDetail')
+                    ? this.Serializable$get('errorDetail')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('errorDetail', value)
+            },
+        },
+        etag: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('etag')
+                    ? this.Serializable$get('etag')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('etag', value)
+            },
+        },
+        name: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('name')
+                    ? this.Serializable$get('name')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('name', value)
+            },
+        },
+        periodEndTime: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('periodEndTime')
+                    ? this.Serializable$get('periodEndTime')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('periodEndTime', value)
+            },
+        },
+        scheduledUpdate: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('scheduledUpdate')
+                    ? this.Serializable$get('scheduledUpdate')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('scheduledUpdate', value)
+            },
+        },
+        startTime: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('startTime')
+                    ? this.Serializable$get('startTime')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('startTime', value)
+            },
+        },
+        state: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('state')
+                    ? this.Serializable$get('state')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('state', value)
+            },
+        },
+        trialState: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('trialState')
+                    ? this.Serializable$get('trialState')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('trialState', value)
+            },
+        },
+        type: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('type')
+                    ? this.Serializable$get('type')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('type', value)
+            },
+        },
+    }
+)
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.Subscription,
+    {
+        State: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.SubscriptionStateEnum
+            },
+        },
+        TrialState: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.SubscriptionTrialStateEnum
+            },
+        },
+        Type: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.SubscriptionTypeEnum
             },
         },
     }
@@ -24397,6 +26132,97 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
+module$exports$eeapiclient$ee_api_client.TableLocationParameters =
+    function module$contents$eeapiclient$ee_api_client_TableLocationParameters() {}
+module$exports$eeapiclient$ee_api_client.TableLocation = function (parameters) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'paths',
+        null == parameters.paths ? null : parameters.paths
+    )
+    this.Serializable$set(
+        'sizeBytes',
+        null == parameters.sizeBytes ? null : parameters.sizeBytes
+    )
+    this.Serializable$set(
+        'shardCount',
+        null == parameters.shardCount ? null : parameters.shardCount
+    )
+    this.Serializable$set(
+        'primaryGeometryColumn',
+        null == parameters.primaryGeometryColumn
+            ? null
+            : parameters.primaryGeometryColumn
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.TableLocation,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.TableLocation.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.TableLocation
+    }
+module$exports$eeapiclient$ee_api_client.TableLocation.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            keys: ['paths', 'primaryGeometryColumn', 'shardCount', 'sizeBytes'],
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.TableLocation.prototype,
+    {
+        paths: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('paths')
+                    ? this.Serializable$get('paths')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('paths', value)
+            },
+        },
+        primaryGeometryColumn: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('primaryGeometryColumn')
+                    ? this.Serializable$get('primaryGeometryColumn')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('primaryGeometryColumn', value)
+            },
+        },
+        shardCount: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('shardCount')
+                    ? this.Serializable$get('shardCount')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('shardCount', value)
+            },
+        },
+        sizeBytes: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('sizeBytes')
+                    ? this.Serializable$get('sizeBytes')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('sizeBytes', value)
+            },
+        },
+    }
+)
 module$exports$eeapiclient$ee_api_client.TableManifestParameters =
     function module$contents$eeapiclient$ee_api_client_TableManifestParameters() {}
 module$exports$eeapiclient$ee_api_client.TableManifest = function (parameters) {
@@ -24426,6 +26252,22 @@ module$exports$eeapiclient$ee_api_client.TableManifest = function (parameters) {
         'endTime',
         null == parameters.endTime ? null : parameters.endTime
     )
+    this.Serializable$set(
+        'csvColumnDataTypeOverrides',
+        null == parameters.csvColumnDataTypeOverrides
+            ? null
+            : parameters.csvColumnDataTypeOverrides
+    )
+    this.Serializable$set(
+        'policy',
+        null == parameters.policy ? null : parameters.policy
+    )
+    this.Serializable$set(
+        'columnDataTypeOverrides',
+        null == parameters.columnDataTypeOverrides
+            ? null
+            : parameters.columnDataTypeOverrides
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.TableManifest,
@@ -24441,10 +26283,28 @@ module$exports$eeapiclient$ee_api_client.TableManifest.prototype.getPartialClass
             arrays: {
                 sources: module$exports$eeapiclient$ee_api_client.TableSource,
             },
-            keys: 'endTime name properties sources startTime uriPrefix'.split(
+            enums: {
+                columnDataTypeOverrides:
+                    module$exports$eeapiclient$ee_api_client.TableManifestColumnDataTypeOverridesEnum,
+                csvColumnDataTypeOverrides:
+                    module$exports$eeapiclient$ee_api_client.TableManifestCsvColumnDataTypeOverridesEnum,
+            },
+            keys: 'columnDataTypeOverrides csvColumnDataTypeOverrides endTime name policy properties sources startTime uriPrefix'.split(
                 ' '
             ),
             objectMaps: {
+                columnDataTypeOverrides: {
+                    ctor: null,
+                    isPropertyArray: !1,
+                    isSerializable: !1,
+                    isValueArray: !1,
+                },
+                csvColumnDataTypeOverrides: {
+                    ctor: null,
+                    isPropertyArray: !1,
+                    isSerializable: !1,
+                    isValueArray: !1,
+                },
                 properties: {
                     ctor: null,
                     isPropertyArray: !1,
@@ -24452,11 +26312,38 @@ module$exports$eeapiclient$ee_api_client.TableManifest.prototype.getPartialClass
                     isValueArray: !1,
                 },
             },
+            objects: {
+                policy: module$exports$eeapiclient$ee_api_client.Policy,
+            },
         }
     }
 $jscomp.global.Object.defineProperties(
     module$exports$eeapiclient$ee_api_client.TableManifest.prototype,
     {
+        columnDataTypeOverrides: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('columnDataTypeOverrides')
+                    ? this.Serializable$get('columnDataTypeOverrides')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('columnDataTypeOverrides', value)
+            },
+        },
+        csvColumnDataTypeOverrides: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('csvColumnDataTypeOverrides')
+                    ? this.Serializable$get('csvColumnDataTypeOverrides')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('csvColumnDataTypeOverrides', value)
+            },
+        },
         endTime: {
             configurable: !0,
             enumerable: !0,
@@ -24479,6 +26366,18 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('name', value)
+            },
+        },
+        policy: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('policy')
+                    ? this.Serializable$get('policy')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('policy', value)
             },
         },
         properties: {
@@ -24527,6 +26426,25 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('uriPrefix', value)
+            },
+        },
+    }
+)
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.TableManifest,
+    {
+        ColumnDataTypeOverrides: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.TableManifestColumnDataTypeOverridesEnum
+            },
+        },
+        CsvColumnDataTypeOverrides: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.TableManifestCsvColumnDataTypeOverridesEnum
             },
         },
     }
@@ -24583,12 +26501,6 @@ module$exports$eeapiclient$ee_api_client.TableSource = function (parameters) {
         'csvQualifier',
         null == parameters.csvQualifier ? null : parameters.csvQualifier
     )
-    this.Serializable$set(
-        'csvColumnDataTypeOverrides',
-        null == parameters.csvColumnDataTypeOverrides
-            ? null
-            : parameters.csvColumnDataTypeOverrides
-    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.TableSource,
@@ -24601,21 +26513,9 @@ module$exports$eeapiclient$ee_api_client.TableSource.prototype.getConstructor =
 module$exports$eeapiclient$ee_api_client.TableSource.prototype.getPartialClassMetadata =
     function () {
         return {
-            enums: {
-                csvColumnDataTypeOverrides:
-                    module$exports$eeapiclient$ee_api_client.TableSourceCsvColumnDataTypeOverridesEnum,
-            },
-            keys: 'charset crs csvColumnDataTypeOverrides csvDelimiter csvQualifier dateFormat geodesic maxErrorMeters maxVertices primaryGeometryColumn uris xColumn yColumn'.split(
+            keys: 'charset crs csvDelimiter csvQualifier dateFormat geodesic maxErrorMeters maxVertices primaryGeometryColumn uris xColumn yColumn'.split(
                 ' '
             ),
-            objectMaps: {
-                csvColumnDataTypeOverrides: {
-                    ctor: null,
-                    isPropertyArray: !1,
-                    isSerializable: !1,
-                    isValueArray: !1,
-                },
-            },
         }
     }
 $jscomp.global.Object.defineProperties(
@@ -24643,18 +26543,6 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('crs', value)
-            },
-        },
-        csvColumnDataTypeOverrides: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('csvColumnDataTypeOverrides')
-                    ? this.Serializable$get('csvColumnDataTypeOverrides')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('csvColumnDataTypeOverrides', value)
             },
         },
         csvDelimiter: {
@@ -24779,14 +26667,79 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
+module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequestParameters =
+    function module$contents$eeapiclient$ee_api_client_TerminateSubscriptionRequestParameters() {}
+module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequest =
+    function (parameters) {
+        parameters = void 0 === parameters ? {} : parameters
+        module$exports$eeapiclient$domain_object.Serializable.call(this)
+        this.Serializable$set(
+            'terminationType',
+            null == parameters.terminationType
+                ? null
+                : parameters.terminationType
+        )
+        this.Serializable$set(
+            'etag',
+            null == parameters.etag ? null : parameters.etag
+        )
+    }
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequest,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequest.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequest
+    }
+module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequest.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            enums: {
+                terminationType:
+                    module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequestTerminationTypeEnum,
+            },
+            keys: ['etag', 'terminationType'],
+        }
+    }
 $jscomp.global.Object.defineProperties(
-    module$exports$eeapiclient$ee_api_client.TableSource,
+    module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequest
+        .prototype,
     {
-        CsvColumnDataTypeOverrides: {
+        etag: {
             configurable: !0,
             enumerable: !0,
             get: function () {
-                return module$exports$eeapiclient$ee_api_client.TableSourceCsvColumnDataTypeOverridesEnum
+                return this.Serializable$has('etag')
+                    ? this.Serializable$get('etag')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('etag', value)
+            },
+        },
+        terminationType: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('terminationType')
+                    ? this.Serializable$get('terminationType')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('terminationType', value)
+            },
+        },
+    }
+)
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequest,
+    {
+        TerminationType: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequestTerminationTypeEnum
             },
         },
     }
@@ -25299,6 +27252,104 @@ $jscomp.global.Object.defineProperties(
             enumerable: !0,
             get: function () {
                 return module$exports$eeapiclient$ee_api_client.ThumbnailFileFormatEnum
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.TileLimitingParameters =
+    function module$contents$eeapiclient$ee_api_client_TileLimitingParameters() {}
+module$exports$eeapiclient$ee_api_client.TileLimiting = function (parameters) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'maxPrerenderZoom',
+        null == parameters.maxPrerenderZoom ? null : parameters.maxPrerenderZoom
+    )
+    this.Serializable$set(
+        'minVerticesPerTile',
+        null == parameters.minVerticesPerTile
+            ? null
+            : parameters.minVerticesPerTile
+    )
+    this.Serializable$set(
+        'neighborDepth',
+        null == parameters.neighborDepth ? null : parameters.neighborDepth
+    )
+    this.Serializable$set(
+        'minFeaturesPerTile',
+        null == parameters.minFeaturesPerTile
+            ? null
+            : parameters.minFeaturesPerTile
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.TileLimiting,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.TileLimiting.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.TileLimiting
+    }
+module$exports$eeapiclient$ee_api_client.TileLimiting.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            keys: [
+                'maxPrerenderZoom',
+                'minFeaturesPerTile',
+                'minVerticesPerTile',
+                'neighborDepth',
+            ],
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.TileLimiting.prototype,
+    {
+        maxPrerenderZoom: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('maxPrerenderZoom')
+                    ? this.Serializable$get('maxPrerenderZoom')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('maxPrerenderZoom', value)
+            },
+        },
+        minFeaturesPerTile: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('minFeaturesPerTile')
+                    ? this.Serializable$get('minFeaturesPerTile')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('minFeaturesPerTile', value)
+            },
+        },
+        minVerticesPerTile: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('minVerticesPerTile')
+                    ? this.Serializable$get('minVerticesPerTile')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('minVerticesPerTile', value)
+            },
+        },
+        neighborDepth: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('neighborDepth')
+                    ? this.Serializable$get('neighborDepth')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('neighborDepth', value)
             },
         },
     }
@@ -26106,6 +28157,153 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
+module$exports$eeapiclient$ee_api_client.TrialStatusParameters =
+    function module$contents$eeapiclient$ee_api_client_TrialStatusParameters() {}
+module$exports$eeapiclient$ee_api_client.TrialStatus = function (parameters) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'billingAccount',
+        null == parameters.billingAccount ? null : parameters.billingAccount
+    )
+    this.Serializable$set(
+        'eligibility',
+        null == parameters.eligibility ? null : parameters.eligibility
+    )
+    this.Serializable$set(
+        'state',
+        null == parameters.state ? null : parameters.state
+    )
+    this.Serializable$set(
+        'startTime',
+        null == parameters.startTime ? null : parameters.startTime
+    )
+    this.Serializable$set(
+        'expiryTime',
+        null == parameters.expiryTime ? null : parameters.expiryTime
+    )
+    this.Serializable$set(
+        'subscription',
+        null == parameters.subscription ? null : parameters.subscription
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.TrialStatus,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.TrialStatus.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.TrialStatus
+    }
+module$exports$eeapiclient$ee_api_client.TrialStatus.prototype.getPartialClassMetadata =
+    function () {
+        return {
+            enums: {
+                eligibility:
+                    module$exports$eeapiclient$ee_api_client.TrialStatusEligibilityEnum,
+                state: module$exports$eeapiclient$ee_api_client.TrialStatusStateEnum,
+            },
+            keys: 'billingAccount eligibility expiryTime startTime state subscription'.split(
+                ' '
+            ),
+        }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.TrialStatus.prototype,
+    {
+        billingAccount: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('billingAccount')
+                    ? this.Serializable$get('billingAccount')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('billingAccount', value)
+            },
+        },
+        eligibility: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('eligibility')
+                    ? this.Serializable$get('eligibility')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('eligibility', value)
+            },
+        },
+        expiryTime: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('expiryTime')
+                    ? this.Serializable$get('expiryTime')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('expiryTime', value)
+            },
+        },
+        startTime: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('startTime')
+                    ? this.Serializable$get('startTime')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('startTime', value)
+            },
+        },
+        state: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('state')
+                    ? this.Serializable$get('state')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('state', value)
+            },
+        },
+        subscription: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('subscription')
+                    ? this.Serializable$get('subscription')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('subscription', value)
+            },
+        },
+    }
+)
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.TrialStatus,
+    {
+        Eligibility: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.TrialStatusEligibilityEnum
+            },
+        },
+        State: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.TrialStatusStateEnum
+            },
+        },
+    }
+)
 module$exports$eeapiclient$ee_api_client.UpdateAssetRequestParameters =
     function module$contents$eeapiclient$ee_api_client_UpdateAssetRequestParameters() {}
 module$exports$eeapiclient$ee_api_client.UpdateAssetRequest = function (
@@ -26896,6 +29094,7 @@ var module$contents$eeapiclient$ee_api_client_PARAM_MAP_0 = {
     access_token: 'access_token',
     alt: 'alt',
     assetId: 'assetId',
+    billingAccount: 'billingAccount',
     callback: 'callback',
     endTime: 'endTime',
     fields: 'fields',
@@ -26905,14 +29104,232 @@ var module$contents$eeapiclient$ee_api_client_PARAM_MAP_0 = {
     overwrite: 'overwrite',
     pageSize: 'pageSize',
     pageToken: 'pageToken',
+    parent: 'parent',
     prettyPrint: 'prettyPrint',
     quotaUser: 'quotaUser',
     region: 'region',
     startTime: 'startTime',
+    updateMask: 'updateMask',
     uploadType: 'uploadType',
     upload_protocol: 'upload_protocol',
     view: 'view',
+    workloadTag: 'workloadTag',
 }
+module$exports$eeapiclient$ee_api_client.IBillingAccountsSubscriptionsApiClient$XgafvEnum =
+    function module$contents$eeapiclient$ee_api_client_IBillingAccountsSubscriptionsApiClient$XgafvEnum() {}
+module$exports$eeapiclient$ee_api_client.BillingAccountsSubscriptionsApiClient$XgafvEnum =
+    {
+        1: '1',
+        2: '2',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .BillingAccountsSubscriptionsApiClient$XgafvEnum[1],
+                module$exports$eeapiclient$ee_api_client
+                    .BillingAccountsSubscriptionsApiClient$XgafvEnum[2],
+            ]
+        },
+    }
+module$exports$eeapiclient$ee_api_client.IBillingAccountsSubscriptionsApiClientAltEnum =
+    function module$contents$eeapiclient$ee_api_client_IBillingAccountsSubscriptionsApiClientAltEnum() {}
+module$exports$eeapiclient$ee_api_client.BillingAccountsSubscriptionsApiClientAltEnum =
+    {
+        JSON: 'json',
+        MEDIA: 'media',
+        PROTO: 'proto',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .BillingAccountsSubscriptionsApiClientAltEnum.JSON,
+                module$exports$eeapiclient$ee_api_client
+                    .BillingAccountsSubscriptionsApiClientAltEnum.MEDIA,
+                module$exports$eeapiclient$ee_api_client
+                    .BillingAccountsSubscriptionsApiClientAltEnum.PROTO,
+            ]
+        },
+    }
+module$exports$eeapiclient$ee_api_client.BillingAccountsSubscriptionsApiClientImpl =
+    function (gapiVersion, gapiRequestService, apiClientHookFactory) {
+        this.gapiVersion = gapiVersion
+        this.$apiClient =
+            new module$exports$eeapiclient$promise_api_client.PromiseApiClient(
+                gapiRequestService,
+                void 0 === apiClientHookFactory ? null : apiClientHookFactory
+            )
+    }
+module$exports$eeapiclient$ee_api_client.BillingAccountsSubscriptionsApiClientImpl.prototype.changeType =
+    function (name, $requestBody, namedParameters, passthroughNamedParameters) {
+        namedParameters = void 0 === namedParameters ? {} : namedParameters
+        passthroughNamedParameters =
+            void 0 === passthroughNamedParameters
+                ? {}
+                : passthroughNamedParameters
+        this.$apiClient.$validateParameter(
+            name,
+            RegExp('^billingAccounts/[^/]+/subscriptions/[^/]+$')
+        )
+        return this.$apiClient.$request({
+            body: $requestBody,
+            httpMethod: 'POST',
+            methodId: 'earthengine.billingAccounts.subscriptions.changeType',
+            path: '/' + this.gapiVersion + '/' + name + ':changeType',
+            queryParams:
+                module$contents$eeapiclient$request_params_buildQueryParams(
+                    namedParameters,
+                    module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
+                    passthroughNamedParameters
+                ),
+            responseCtor: module$exports$eeapiclient$ee_api_client.Subscription,
+        })
+    }
+module$exports$eeapiclient$ee_api_client.BillingAccountsSubscriptionsApiClientImpl.prototype.create =
+    function (
+        parent,
+        $requestBody,
+        namedParameters,
+        passthroughNamedParameters
+    ) {
+        namedParameters = void 0 === namedParameters ? {} : namedParameters
+        passthroughNamedParameters =
+            void 0 === passthroughNamedParameters
+                ? {}
+                : passthroughNamedParameters
+        this.$apiClient.$validateParameter(
+            parent,
+            RegExp('^billingAccounts/[^/]+$')
+        )
+        return this.$apiClient.$request({
+            body: $requestBody,
+            httpMethod: 'POST',
+            methodId: 'earthengine.billingAccounts.subscriptions.create',
+            path: '/' + this.gapiVersion + '/' + parent + '/subscriptions',
+            queryParams:
+                module$contents$eeapiclient$request_params_buildQueryParams(
+                    namedParameters,
+                    module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
+                    passthroughNamedParameters
+                ),
+            responseCtor: module$exports$eeapiclient$ee_api_client.Subscription,
+        })
+    }
+module$exports$eeapiclient$ee_api_client.BillingAccountsSubscriptionsApiClientImpl.prototype.list =
+    function (parent, namedParameters, passthroughNamedParameters) {
+        namedParameters = void 0 === namedParameters ? {} : namedParameters
+        passthroughNamedParameters =
+            void 0 === passthroughNamedParameters
+                ? {}
+                : passthroughNamedParameters
+        this.$apiClient.$validateParameter(
+            parent,
+            RegExp('^billingAccounts/[^/]+$')
+        )
+        return this.$apiClient.$request({
+            body: null,
+            httpMethod: 'GET',
+            methodId: 'earthengine.billingAccounts.subscriptions.list',
+            path: '/' + this.gapiVersion + '/' + parent + '/subscriptions',
+            queryParams:
+                module$contents$eeapiclient$request_params_buildQueryParams(
+                    namedParameters,
+                    module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
+                    passthroughNamedParameters
+                ),
+            responseCtor:
+                module$exports$eeapiclient$ee_api_client.ListSubscriptionsResponse,
+        })
+    }
+module$exports$eeapiclient$ee_api_client.BillingAccountsSubscriptionsApiClientImpl.prototype.terminate =
+    function (name, $requestBody, namedParameters, passthroughNamedParameters) {
+        namedParameters = void 0 === namedParameters ? {} : namedParameters
+        passthroughNamedParameters =
+            void 0 === passthroughNamedParameters
+                ? {}
+                : passthroughNamedParameters
+        this.$apiClient.$validateParameter(
+            name,
+            RegExp('^billingAccounts/[^/]+/subscriptions/[^/]+$')
+        )
+        return this.$apiClient.$request({
+            body: $requestBody,
+            httpMethod: 'POST',
+            methodId: 'earthengine.billingAccounts.subscriptions.terminate',
+            path: '/' + this.gapiVersion + '/' + name + ':terminate',
+            queryParams:
+                module$contents$eeapiclient$request_params_buildQueryParams(
+                    namedParameters,
+                    module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
+                    passthroughNamedParameters
+                ),
+            responseCtor: module$exports$eeapiclient$ee_api_client.Subscription,
+        })
+    }
+module$exports$eeapiclient$ee_api_client.BillingAccountsSubscriptionsApiClient =
+    function () {}
+module$exports$eeapiclient$ee_api_client.ICapabilitiesApiClient$XgafvEnum =
+    function module$contents$eeapiclient$ee_api_client_ICapabilitiesApiClient$XgafvEnum() {}
+module$exports$eeapiclient$ee_api_client.CapabilitiesApiClient$XgafvEnum = {
+    1: '1',
+    2: '2',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client
+                .CapabilitiesApiClient$XgafvEnum[1],
+            module$exports$eeapiclient$ee_api_client
+                .CapabilitiesApiClient$XgafvEnum[2],
+        ]
+    },
+}
+module$exports$eeapiclient$ee_api_client.ICapabilitiesApiClientAltEnum =
+    function module$contents$eeapiclient$ee_api_client_ICapabilitiesApiClientAltEnum() {}
+module$exports$eeapiclient$ee_api_client.CapabilitiesApiClientAltEnum = {
+    JSON: 'json',
+    MEDIA: 'media',
+    PROTO: 'proto',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client
+                .CapabilitiesApiClientAltEnum.JSON,
+            module$exports$eeapiclient$ee_api_client
+                .CapabilitiesApiClientAltEnum.MEDIA,
+            module$exports$eeapiclient$ee_api_client
+                .CapabilitiesApiClientAltEnum.PROTO,
+        ]
+    },
+}
+module$exports$eeapiclient$ee_api_client.CapabilitiesApiClientImpl = function (
+    gapiVersion,
+    gapiRequestService,
+    apiClientHookFactory
+) {
+    this.gapiVersion = gapiVersion
+    this.$apiClient =
+        new module$exports$eeapiclient$promise_api_client.PromiseApiClient(
+            gapiRequestService,
+            void 0 === apiClientHookFactory ? null : apiClientHookFactory
+        )
+}
+module$exports$eeapiclient$ee_api_client.CapabilitiesApiClientImpl.prototype.appealRestriction =
+    function ($requestBody, namedParameters, passthroughNamedParameters) {
+        namedParameters = void 0 === namedParameters ? {} : namedParameters
+        passthroughNamedParameters =
+            void 0 === passthroughNamedParameters
+                ? {}
+                : passthroughNamedParameters
+        return this.$apiClient.$request({
+            body: $requestBody,
+            httpMethod: 'POST',
+            methodId: 'earthengine.capabilities.appealRestriction',
+            path: '/' + this.gapiVersion + '/capabilities:appealRestriction',
+            queryParams:
+                module$contents$eeapiclient$request_params_buildQueryParams(
+                    namedParameters,
+                    module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
+                    passthroughNamedParameters
+                ),
+            responseCtor: module$exports$eeapiclient$ee_api_client.Empty,
+        })
+    }
+module$exports$eeapiclient$ee_api_client.CapabilitiesApiClient = function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsAlgorithmsApiClient$XgafvEnum =
     function module$contents$eeapiclient$ee_api_client_IProjectsAlgorithmsApiClient$XgafvEnum() {}
 module$exports$eeapiclient$ee_api_client.ProjectsAlgorithmsApiClient$XgafvEnum =
@@ -27061,6 +29478,32 @@ module$exports$eeapiclient$ee_api_client.ProjectsApiClientImpl.prototype.getCapa
             responseCtor: module$exports$eeapiclient$ee_api_client.Capabilities,
         })
     }
+module$exports$eeapiclient$ee_api_client.ProjectsApiClientImpl.prototype.getConfig =
+    function (name, namedParameters, passthroughNamedParameters) {
+        namedParameters = void 0 === namedParameters ? {} : namedParameters
+        passthroughNamedParameters =
+            void 0 === passthroughNamedParameters
+                ? {}
+                : passthroughNamedParameters
+        this.$apiClient.$validateParameter(
+            name,
+            RegExp('^projects/[^/]+/config$')
+        )
+        return this.$apiClient.$request({
+            body: null,
+            httpMethod: 'GET',
+            methodId: 'earthengine.projects.getConfig',
+            path: '/' + this.gapiVersion + '/' + name,
+            queryParams:
+                module$contents$eeapiclient$request_params_buildQueryParams(
+                    namedParameters,
+                    module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
+                    passthroughNamedParameters
+                ),
+            responseCtor:
+                module$exports$eeapiclient$ee_api_client.ProjectConfig,
+        })
+    }
 module$exports$eeapiclient$ee_api_client.ProjectsApiClientImpl.prototype.listAssets =
     function (parent, namedParameters, passthroughNamedParameters) {
         namedParameters = void 0 === namedParameters ? {} : namedParameters
@@ -27082,6 +29525,32 @@ module$exports$eeapiclient$ee_api_client.ProjectsApiClientImpl.prototype.listAss
                 ),
             responseCtor:
                 module$exports$eeapiclient$ee_api_client.ListAssetsResponse,
+        })
+    }
+module$exports$eeapiclient$ee_api_client.ProjectsApiClientImpl.prototype.updateConfig =
+    function (name, $requestBody, namedParameters, passthroughNamedParameters) {
+        namedParameters = void 0 === namedParameters ? {} : namedParameters
+        passthroughNamedParameters =
+            void 0 === passthroughNamedParameters
+                ? {}
+                : passthroughNamedParameters
+        this.$apiClient.$validateParameter(
+            name,
+            RegExp('^projects/[^/]+/config$')
+        )
+        return this.$apiClient.$request({
+            body: $requestBody,
+            httpMethod: 'PATCH',
+            methodId: 'earthengine.projects.updateConfig',
+            path: '/' + this.gapiVersion + '/' + name,
+            queryParams:
+                module$contents$eeapiclient$request_params_buildQueryParams(
+                    namedParameters,
+                    module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
+                    passthroughNamedParameters
+                ),
+            responseCtor:
+                module$exports$eeapiclient$ee_api_client.ProjectConfig,
         })
     }
 module$exports$eeapiclient$ee_api_client.ProjectsApiClient = function () {}
@@ -27192,6 +29661,39 @@ module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClientImpl.prototype.c
             httpMethod: 'POST',
             methodId: 'earthengine.projects.assets.create',
             path: '/' + this.gapiVersion + '/' + parent + '/assets',
+            queryParams:
+                module$contents$eeapiclient$request_params_buildQueryParams(
+                    namedParameters,
+                    module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
+                    passthroughNamedParameters
+                ),
+            responseCtor:
+                module$exports$eeapiclient$ee_api_client.EarthEngineAsset,
+        })
+    }
+module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClientImpl.prototype.createInternal =
+    function (
+        parent,
+        $requestBody,
+        namedParameters,
+        passthroughNamedParameters
+    ) {
+        namedParameters = void 0 === namedParameters ? {} : namedParameters
+        passthroughNamedParameters =
+            void 0 === passthroughNamedParameters
+                ? {}
+                : passthroughNamedParameters
+        this.$apiClient.$validateParameter(parent, RegExp('^projects/[^/]+$'))
+        return this.$apiClient.$request({
+            body: $requestBody,
+            httpMethod: 'POST',
+            methodId: 'earthengine.projects.assets.createInternal',
+            path:
+                '/' +
+                this.gapiVersion +
+                '/' +
+                parent +
+                '/assets:createInternal',
             queryParams:
                 module$contents$eeapiclient$request_params_buildQueryParams(
                     namedParameters,
@@ -27634,38 +30136,39 @@ module$exports$eeapiclient$ee_api_client.ProjectsClassifierApiClientImpl.prototy
     }
 module$exports$eeapiclient$ee_api_client.ProjectsClassifierApiClient =
     function () {}
-module$exports$eeapiclient$ee_api_client.IProjectsDmsMapsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsDmsMapsApiClient$XgafvEnum() {}
-module$exports$eeapiclient$ee_api_client.ProjectsDmsMapsApiClient$XgafvEnum = {
-    1: '1',
-    2: '2',
-    values: function () {
-        return [
-            module$exports$eeapiclient$ee_api_client
-                .ProjectsDmsMapsApiClient$XgafvEnum[1],
-            module$exports$eeapiclient$ee_api_client
-                .ProjectsDmsMapsApiClient$XgafvEnum[2],
-        ]
-    },
-}
-module$exports$eeapiclient$ee_api_client.IProjectsDmsMapsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsDmsMapsApiClientAltEnum() {}
-module$exports$eeapiclient$ee_api_client.ProjectsDmsMapsApiClientAltEnum = {
+module$exports$eeapiclient$ee_api_client.IProjectsFeatureViewApiClient$XgafvEnum =
+    function module$contents$eeapiclient$ee_api_client_IProjectsFeatureViewApiClient$XgafvEnum() {}
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewApiClient$XgafvEnum =
+    {
+        1: '1',
+        2: '2',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectsFeatureViewApiClient$XgafvEnum[1],
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectsFeatureViewApiClient$XgafvEnum[2],
+            ]
+        },
+    }
+module$exports$eeapiclient$ee_api_client.IProjectsFeatureViewApiClientAltEnum =
+    function module$contents$eeapiclient$ee_api_client_IProjectsFeatureViewApiClientAltEnum() {}
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
     PROTO: 'proto',
     values: function () {
         return [
             module$exports$eeapiclient$ee_api_client
-                .ProjectsDmsMapsApiClientAltEnum.JSON,
+                .ProjectsFeatureViewApiClientAltEnum.JSON,
             module$exports$eeapiclient$ee_api_client
-                .ProjectsDmsMapsApiClientAltEnum.MEDIA,
+                .ProjectsFeatureViewApiClientAltEnum.MEDIA,
             module$exports$eeapiclient$ee_api_client
-                .ProjectsDmsMapsApiClientAltEnum.PROTO,
+                .ProjectsFeatureViewApiClientAltEnum.PROTO,
         ]
     },
 }
-module$exports$eeapiclient$ee_api_client.ProjectsDmsMapsApiClientImpl =
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewApiClientImpl =
     function (gapiVersion, gapiRequestService, apiClientHookFactory) {
         this.gapiVersion = gapiVersion
         this.$apiClient =
@@ -27674,7 +30177,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsDmsMapsApiClientImpl =
                 void 0 === apiClientHookFactory ? null : apiClientHookFactory
             )
     }
-module$exports$eeapiclient$ee_api_client.ProjectsDmsMapsApiClientImpl.prototype.create =
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewApiClientImpl.prototype.create =
     function (
         parent,
         $requestBody,
@@ -27690,18 +30193,168 @@ module$exports$eeapiclient$ee_api_client.ProjectsDmsMapsApiClientImpl.prototype.
         return this.$apiClient.$request({
             body: $requestBody,
             httpMethod: 'POST',
-            methodId: 'earthengine.projects.dmsMaps.create',
-            path: '/' + this.gapiVersion + '/' + parent + '/dmsMaps',
+            methodId: 'earthengine.projects.featureView.create',
+            path: '/' + this.gapiVersion + '/' + parent + '/featureView',
             queryParams:
                 module$contents$eeapiclient$request_params_buildQueryParams(
                     namedParameters,
                     module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
                     passthroughNamedParameters
                 ),
-            responseCtor: module$exports$eeapiclient$ee_api_client.DMSMap,
+            responseCtor: module$exports$eeapiclient$ee_api_client.FeatureView,
         })
     }
-module$exports$eeapiclient$ee_api_client.ProjectsDmsMapsApiClient =
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewApiClient =
+    function () {}
+module$exports$eeapiclient$ee_api_client.IProjectsFeatureViewsApiClient$XgafvEnum =
+    function module$contents$eeapiclient$ee_api_client_IProjectsFeatureViewsApiClient$XgafvEnum() {}
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsApiClient$XgafvEnum =
+    {
+        1: '1',
+        2: '2',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectsFeatureViewsApiClient$XgafvEnum[1],
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectsFeatureViewsApiClient$XgafvEnum[2],
+            ]
+        },
+    }
+module$exports$eeapiclient$ee_api_client.IProjectsFeatureViewsApiClientAltEnum =
+    function module$contents$eeapiclient$ee_api_client_IProjectsFeatureViewsApiClientAltEnum() {}
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsApiClientAltEnum =
+    {
+        JSON: 'json',
+        MEDIA: 'media',
+        PROTO: 'proto',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectsFeatureViewsApiClientAltEnum.JSON,
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectsFeatureViewsApiClientAltEnum.MEDIA,
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectsFeatureViewsApiClientAltEnum.PROTO,
+            ]
+        },
+    }
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsApiClientImpl =
+    function (gapiVersion, gapiRequestService, apiClientHookFactory) {
+        this.gapiVersion = gapiVersion
+        this.$apiClient =
+            new module$exports$eeapiclient$promise_api_client.PromiseApiClient(
+                gapiRequestService,
+                void 0 === apiClientHookFactory ? null : apiClientHookFactory
+            )
+    }
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsApiClientImpl.prototype.create =
+    function (
+        parent,
+        $requestBody,
+        namedParameters,
+        passthroughNamedParameters
+    ) {
+        namedParameters = void 0 === namedParameters ? {} : namedParameters
+        passthroughNamedParameters =
+            void 0 === passthroughNamedParameters
+                ? {}
+                : passthroughNamedParameters
+        this.$apiClient.$validateParameter(parent, RegExp('^projects/[^/]+$'))
+        return this.$apiClient.$request({
+            body: $requestBody,
+            httpMethod: 'POST',
+            methodId: 'earthengine.projects.featureViews.create',
+            path: '/' + this.gapiVersion + '/' + parent + '/featureViews',
+            queryParams:
+                module$contents$eeapiclient$request_params_buildQueryParams(
+                    namedParameters,
+                    module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
+                    passthroughNamedParameters
+                ),
+            responseCtor: module$exports$eeapiclient$ee_api_client.FeatureView,
+        })
+    }
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsApiClient =
+    function () {}
+module$exports$eeapiclient$ee_api_client.IProjectsFeatureViewsTilesApiClient$XgafvEnum =
+    function module$contents$eeapiclient$ee_api_client_IProjectsFeatureViewsTilesApiClient$XgafvEnum() {}
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsTilesApiClient$XgafvEnum =
+    {
+        1: '1',
+        2: '2',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectsFeatureViewsTilesApiClient$XgafvEnum[1],
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectsFeatureViewsTilesApiClient$XgafvEnum[2],
+            ]
+        },
+    }
+module$exports$eeapiclient$ee_api_client.IProjectsFeatureViewsTilesApiClientAltEnum =
+    function module$contents$eeapiclient$ee_api_client_IProjectsFeatureViewsTilesApiClientAltEnum() {}
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsTilesApiClientAltEnum =
+    {
+        JSON: 'json',
+        MEDIA: 'media',
+        PROTO: 'proto',
+        values: function () {
+            return [
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectsFeatureViewsTilesApiClientAltEnum.JSON,
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectsFeatureViewsTilesApiClientAltEnum.MEDIA,
+                module$exports$eeapiclient$ee_api_client
+                    .ProjectsFeatureViewsTilesApiClientAltEnum.PROTO,
+            ]
+        },
+    }
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsTilesApiClientImpl =
+    function (gapiVersion, gapiRequestService, apiClientHookFactory) {
+        this.gapiVersion = gapiVersion
+        this.$apiClient =
+            new module$exports$eeapiclient$promise_api_client.PromiseApiClient(
+                gapiRequestService,
+                void 0 === apiClientHookFactory ? null : apiClientHookFactory
+            )
+    }
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsTilesApiClientImpl.prototype.get =
+    function (parent, zoom, x, y, namedParameters, passthroughNamedParameters) {
+        namedParameters = void 0 === namedParameters ? {} : namedParameters
+        passthroughNamedParameters =
+            void 0 === passthroughNamedParameters
+                ? {}
+                : passthroughNamedParameters
+        this.$apiClient.$validateParameter(
+            parent,
+            RegExp('^projects/[^/]+/featureViews/[^/]+$')
+        )
+        return this.$apiClient.$request({
+            body: null,
+            httpMethod: 'GET',
+            methodId: 'earthengine.projects.featureViews.tiles.get',
+            path:
+                '/' +
+                this.gapiVersion +
+                '/' +
+                parent +
+                '/tiles/' +
+                zoom +
+                '/' +
+                x +
+                '/' +
+                y,
+            queryParams:
+                module$contents$eeapiclient$request_params_buildQueryParams(
+                    namedParameters,
+                    module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
+                    passthroughNamedParameters
+                ),
+            responseCtor: module$exports$eeapiclient$ee_api_client.HttpBody,
+        })
+    }
+module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsTilesApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsFilmstripThumbnailsApiClient$XgafvEnum =
     function module$contents$eeapiclient$ee_api_client_IProjectsFilmstripThumbnailsApiClient$XgafvEnum() {}
@@ -28067,6 +30720,38 @@ module$exports$eeapiclient$ee_api_client.ProjectsLocationsAssetsApiClientImpl.pr
             httpMethod: 'POST',
             methodId: 'earthengine.projects.locations.assets.create',
             path: '/' + this.gapiVersion + '/' + parent + '/assets',
+            queryParams:
+                module$contents$eeapiclient$request_params_buildQueryParams(
+                    namedParameters,
+                    module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
+                    passthroughNamedParameters
+                ),
+            responseCtor:
+                module$exports$eeapiclient$ee_api_client.EarthEngineAsset,
+        })
+    }
+module$exports$eeapiclient$ee_api_client.ProjectsLocationsAssetsApiClientImpl.prototype.createInernal =
+    function (
+        parent,
+        $requestBody,
+        namedParameters,
+        passthroughNamedParameters
+    ) {
+        namedParameters = void 0 === namedParameters ? {} : namedParameters
+        passthroughNamedParameters =
+            void 0 === passthroughNamedParameters
+                ? {}
+                : passthroughNamedParameters
+        this.$apiClient.$validateParameter(
+            parent,
+            RegExp('^projects/[^/]+/locations/[^/]+$')
+        )
+        return this.$apiClient.$request({
+            body: $requestBody,
+            httpMethod: 'POST',
+            methodId: 'earthengine.projects.locations.assets.createInernal',
+            path:
+                '/' + this.gapiVersion + '/' + parent + '/assets:createInernal',
             queryParams:
                 module$contents$eeapiclient$request_params_buildQueryParams(
                     namedParameters,
@@ -29470,8 +32155,73 @@ module$exports$eeapiclient$ee_api_client.ProjectsVideoThumbnailsApiClientImpl.pr
     }
 module$exports$eeapiclient$ee_api_client.ProjectsVideoThumbnailsApiClient =
     function () {}
+module$exports$eeapiclient$ee_api_client.IV1alphaApiClient$XgafvEnum =
+    function module$contents$eeapiclient$ee_api_client_IV1alphaApiClient$XgafvEnum() {}
+module$exports$eeapiclient$ee_api_client.V1alphaApiClient$XgafvEnum = {
+    1: '1',
+    2: '2',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client
+                .V1alphaApiClient$XgafvEnum[1],
+            module$exports$eeapiclient$ee_api_client
+                .V1alphaApiClient$XgafvEnum[2],
+        ]
+    },
+}
+module$exports$eeapiclient$ee_api_client.IV1alphaApiClientAltEnum =
+    function module$contents$eeapiclient$ee_api_client_IV1alphaApiClientAltEnum() {}
+module$exports$eeapiclient$ee_api_client.V1alphaApiClientAltEnum = {
+    JSON: 'json',
+    MEDIA: 'media',
+    PROTO: 'proto',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client.V1alphaApiClientAltEnum
+                .JSON,
+            module$exports$eeapiclient$ee_api_client.V1alphaApiClientAltEnum
+                .MEDIA,
+            module$exports$eeapiclient$ee_api_client.V1alphaApiClientAltEnum
+                .PROTO,
+        ]
+    },
+}
+module$exports$eeapiclient$ee_api_client.V1alphaApiClientImpl = function (
+    gapiVersion,
+    gapiRequestService,
+    apiClientHookFactory
+) {
+    this.gapiVersion = gapiVersion
+    this.$apiClient =
+        new module$exports$eeapiclient$promise_api_client.PromiseApiClient(
+            gapiRequestService,
+            void 0 === apiClientHookFactory ? null : apiClientHookFactory
+        )
+}
+module$exports$eeapiclient$ee_api_client.V1alphaApiClientImpl.prototype.getCapabilities =
+    function (namedParameters, passthroughNamedParameters) {
+        namedParameters = void 0 === namedParameters ? {} : namedParameters
+        passthroughNamedParameters =
+            void 0 === passthroughNamedParameters
+                ? {}
+                : passthroughNamedParameters
+        return this.$apiClient.$request({
+            body: null,
+            httpMethod: 'GET',
+            methodId: 'earthengine.getCapabilities',
+            path: '/' + this.gapiVersion + '/capabilities',
+            queryParams:
+                module$contents$eeapiclient$request_params_buildQueryParams(
+                    namedParameters,
+                    module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
+                    passthroughNamedParameters
+                ),
+            responseCtor: module$exports$eeapiclient$ee_api_client.Capabilities,
+        })
+    }
+module$exports$eeapiclient$ee_api_client.V1alphaApiClient = function () {}
 ee.api = module$exports$eeapiclient$ee_api_client
-var module$exports$ee$apiVersion = { V1ALPHA: 'v1alpha' }
+var module$exports$ee$apiVersion = { V1ALPHA: 'v1alpha', V1: 'v1' }
 module$exports$ee$apiVersion.VERSION = module$exports$ee$apiVersion.V1ALPHA
 var module$exports$eeapiclient$promise_request_service = {},
     module$contents$eeapiclient$promise_request_service_module =
@@ -29493,14 +32243,18 @@ module$exports$eeapiclient$promise_request_service.PromiseRequestService.prototy
         })
     }
 goog.async = {}
-goog.async.FreeList = function (create, reset, limit) {
+var module$contents$goog$async$FreeList_FreeList = function (
+    create,
+    reset,
+    limit
+) {
     this.limit_ = limit
     this.create_ = create
     this.reset_ = reset
     this.occupants_ = 0
     this.head_ = null
 }
-goog.async.FreeList.prototype.get = function () {
+module$contents$goog$async$FreeList_FreeList.prototype.get = function () {
     if (0 < this.occupants_) {
         this.occupants_--
         var item = this.head_
@@ -29511,14 +32265,15 @@ goog.async.FreeList.prototype.get = function () {
     }
     return item
 }
-goog.async.FreeList.prototype.put = function (item) {
+module$contents$goog$async$FreeList_FreeList.prototype.put = function (item) {
     this.reset_(item)
     this.occupants_ < this.limit_ &&
         (this.occupants_++, (item.next = this.head_), (this.head_ = item))
 }
-goog.async.FreeList.prototype.occupants = function () {
+module$contents$goog$async$FreeList_FreeList.prototype.occupants = function () {
     return this.occupants_
 }
+goog.async.FreeList = module$contents$goog$async$FreeList_FreeList
 goog.dom.BrowserFeature = {}
 goog.dom.BrowserFeature.ASSUME_NO_OFFSCREEN_CANVAS = !1
 goog.dom.BrowserFeature.ASSUME_OFFSCREEN_CANVAS = !1
@@ -29713,7 +32468,9 @@ goog.dom.getElement = function (element) {
 }
 goog.dom.getHTMLElement = function (id) {
     var element = goog.dom.getElement(id)
-    return element ? goog.asserts.assertInstanceof(element, HTMLElement) : null
+    return element
+        ? module$contents$goog$asserts$dom_assertIsHtmlElement(element)
+        : null
 }
 goog.dom.getElementHelper_ = function (doc, element) {
     return 'string' === typeof element ? doc.getElementById(element) : element
@@ -29722,18 +32479,14 @@ goog.dom.getRequiredElement = function (id) {
     return goog.dom.getRequiredElementHelper_(document, id)
 }
 goog.dom.getRequiredHTMLElement = function (id) {
-    return goog.asserts.assertInstanceof(
-        goog.dom.getRequiredElementHelper_(document, id),
-        HTMLElement
+    return module$contents$goog$asserts$dom_assertIsHtmlElement(
+        goog.dom.getRequiredElementHelper_(document, id)
     )
 }
 goog.dom.getRequiredElementHelper_ = function (doc, id) {
     goog.asserts.assertString(id)
     var element = goog.dom.getElementHelper_(doc, id)
-    return (element = goog.asserts.assertElement(
-        element,
-        'No element found with id: ' + id
-    ))
+    return goog.asserts.assert(element, 'No element found with id: ' + id)
 }
 goog.dom.$ = goog.dom.getElement
 goog.dom.getElementsByTagName = function (tagName, opt_parent) {
@@ -29782,7 +32535,9 @@ goog.dom.getElementByClass = function (className, opt_el) {
 }
 goog.dom.getHTMLElementByClass = function (className, opt_parent) {
     var element = goog.dom.getElementByClass(className, opt_parent)
-    return element ? goog.asserts.assertInstanceof(element, HTMLElement) : null
+    return element
+        ? module$contents$goog$asserts$dom_assertIsHtmlElement(element)
+        : null
 }
 goog.dom.getRequiredElementByClass = function (className, opt_root) {
     var retValue = goog.dom.getElementByClass(className, opt_root)
@@ -29793,11 +32548,11 @@ goog.dom.getRequiredElementByClass = function (className, opt_root) {
 }
 goog.dom.getRequiredHTMLElementByClass = function (className, opt_parent) {
     var retValue = goog.dom.getElementByClass(className, opt_parent)
-    return goog.asserts.assertInstanceof(
+    goog.asserts.assert(
         retValue,
-        HTMLElement,
         'No HTMLElement found with className: ' + className
     )
+    return module$contents$goog$asserts$dom_assertIsHtmlElement(retValue)
 }
 goog.dom.canUseQuerySelector_ = function (parent) {
     return !(!parent.querySelectorAll || !parent.querySelector)
@@ -29946,9 +32701,7 @@ goog.dom.getDocumentScroll = function () {
 goog.dom.getDocumentScroll_ = function (doc) {
     var el = goog.dom.getDocumentScrollElement_(doc),
         win = goog.dom.getWindow_(doc)
-    return goog.userAgent.IE &&
-        goog.userAgent.isVersionOrHigher('10') &&
-        win.pageYOffset != el.scrollTop
+    return goog.userAgent.IE && win.pageYOffset != el.scrollTop
         ? new goog.math.Coordinate(el.scrollLeft, el.scrollTop)
         : new goog.math.Coordinate(
               win.pageXOffset || el.scrollLeft,
@@ -30267,13 +33020,6 @@ goog.dom.getParentElement = function (element) {
     var parent
     if (
         goog.dom.BrowserFeature.CAN_USE_PARENT_ELEMENT_PROPERTY &&
-        !(
-            goog.userAgent.IE &&
-            goog.userAgent.isVersionOrHigher('9') &&
-            !goog.userAgent.isVersionOrHigher('10') &&
-            goog.global.SVGElement &&
-            element instanceof goog.global.SVGElement
-        ) &&
         (parent = element.parentElement)
     ) {
         return parent
@@ -30420,24 +33166,20 @@ goog.dom.setTextContent = function (node, text) {
     )
     if ('textContent' in node) {
         node.textContent = text
-    } else {
-        if (node.nodeType == goog.dom.NodeType.TEXT) {
-            node.data = String(text)
-        } else {
-            if (
-                node.firstChild &&
-                node.firstChild.nodeType == goog.dom.NodeType.TEXT
-            ) {
-                for (; node.lastChild != node.firstChild; ) {
-                    node.removeChild(goog.asserts.assert(node.lastChild))
-                }
-                node.firstChild.data = String(text)
-            } else {
-                goog.dom.removeChildren(node)
-                var doc = goog.dom.getOwnerDocument(node)
-                node.appendChild(doc.createTextNode(String(text)))
-            }
+    } else if (node.nodeType == goog.dom.NodeType.TEXT) {
+        node.data = String(text)
+    } else if (
+        node.firstChild &&
+        node.firstChild.nodeType == goog.dom.NodeType.TEXT
+    ) {
+        for (; node.lastChild != node.firstChild; ) {
+            node.removeChild(goog.asserts.assert(node.lastChild))
         }
+        node.firstChild.data = String(text)
+    } else {
+        goog.dom.removeChildren(node)
+        var doc = goog.dom.getOwnerDocument(node)
+        node.appendChild(doc.createTextNode(String(text)))
     }
 }
 goog.dom.getOuterHtml = function (element) {
@@ -30590,14 +33332,12 @@ goog.dom.getTextContent_ = function (node, buf, normalizeWhitespace) {
             normalizeWhitespace
                 ? buf.push(String(node.nodeValue).replace(/(\r\n|\r|\n)/g, ''))
                 : buf.push(node.nodeValue)
+        } else if (node.nodeName in goog.dom.PREDEFINED_TAG_VALUES_) {
+            buf.push(goog.dom.PREDEFINED_TAG_VALUES_[node.nodeName])
         } else {
-            if (node.nodeName in goog.dom.PREDEFINED_TAG_VALUES_) {
-                buf.push(goog.dom.PREDEFINED_TAG_VALUES_[node.nodeName])
-            } else {
-                for (var child = node.firstChild; child; ) {
-                    goog.dom.getTextContent_(child, buf, normalizeWhitespace),
-                        (child = child.nextSibling)
-                }
+            for (var child = node.firstChild; child; ) {
+                goog.dom.getTextContent_(child, buf, normalizeWhitespace),
+                    (child = child.nextSibling)
             }
         }
     }
@@ -30633,13 +33373,11 @@ goog.dom.getNodeAtOffset = function (parent, offset, opt_result) {
                     .replace(/(\r\n|\r|\n)/g, '')
                     .replace(/ +/g, ' ')
                 pos += text.length
+            } else if (cur.nodeName in goog.dom.PREDEFINED_TAG_VALUES_) {
+                pos += goog.dom.PREDEFINED_TAG_VALUES_[cur.nodeName].length
             } else {
-                if (cur.nodeName in goog.dom.PREDEFINED_TAG_VALUES_) {
-                    pos += goog.dom.PREDEFINED_TAG_VALUES_[cur.nodeName].length
-                } else {
-                    for (var i = cur.childNodes.length - 1; 0 <= i; i--) {
-                        stack.push(cur.childNodes[i])
-                    }
+                for (var i = cur.childNodes.length - 1; 0 <= i; i--) {
+                    stack.push(cur.childNodes[i])
                 }
             }
         }
@@ -30933,10 +33671,10 @@ goog.async.nextTick = function (callback, opt_context, opt_useSetImmediate) {
     'function' === typeof goog.global.setImmediate &&
     (opt_useSetImmediate || goog.async.nextTick.useSetImmediate_())
         ? goog.global.setImmediate(cb)
-        : (goog.async.nextTick.setImmediate_ ||
-              (goog.async.nextTick.setImmediate_ =
-                  goog.async.nextTick.getSetImmediateEmulator_()),
-          goog.async.nextTick.setImmediate_(cb))
+        : (goog.async.nextTick.nextTickImpl ||
+              (goog.async.nextTick.nextTickImpl =
+                  goog.async.nextTick.getNextTickImpl_()),
+          goog.async.nextTick.nextTickImpl(cb))
 }
 goog.async.nextTick.useSetImmediate_ = function () {
     return goog.global.Window &&
@@ -30946,7 +33684,7 @@ goog.async.nextTick.useSetImmediate_ = function () {
         ? !1
         : !0
 }
-goog.async.nextTick.getSetImmediateEmulator_ = function () {
+goog.async.nextTick.getNextTickImpl_ = function () {
     var Channel = goog.global.MessageChannel
     'undefined' === typeof Channel &&
         'undefined' !== typeof window &&
@@ -31051,7 +33789,7 @@ module$contents$goog$async$WorkQueue_WorkQueue.prototype.getUnusedItem_ =
     }
 module$contents$goog$async$WorkQueue_WorkQueue.DEFAULT_MAX_UNUSED = 100
 module$contents$goog$async$WorkQueue_WorkQueue.freelist_ =
-    new goog.async.FreeList(
+    new module$contents$goog$async$FreeList_FreeList(
         function () {
             return new module$contents$goog$async$WorkQueue_WorkItem()
         },
@@ -31075,80 +33813,146 @@ module$contents$goog$async$WorkQueue_WorkItem.prototype.reset = function () {
     this.next = this.scope = this.fn = null
 }
 goog.async.WorkQueue = module$contents$goog$async$WorkQueue_WorkQueue
-goog.ASSUME_NATIVE_PROMISE = !1
-goog.async.run = function (callback, opt_context) {
-    goog.async.run.schedule_ || goog.async.run.initializeRunner_()
-    goog.async.run.workQueueScheduled_ ||
-        (goog.async.run.schedule_(), (goog.async.run.workQueueScheduled_ = !0))
-    goog.async.run.workQueue_.add(callback, opt_context)
-}
-goog.async.run.initializeRunner_ = function () {
+goog.debug.asyncStackTag = {}
+var module$contents$goog$debug$asyncStackTag_createTask =
+        goog.DEBUG && goog.global.console && goog.global.console.createTask
+            ? goog.global.console.createTask.bind(goog.global.console)
+            : void 0,
+    module$contents$goog$debug$asyncStackTag_CONSOLE_TASK_SYMBOL =
+        module$contents$goog$debug$asyncStackTag_createTask
+            ? Symbol('consoleTask')
+            : void 0
+function module$contents$goog$debug$asyncStackTag_wrap(fn, name) {
+    function wrappedFn() {
+        var args = $jscomp.getRestArguments.apply(0, arguments),
+            $jscomp$this = this
+        return consoleTask.run(function () {
+            return fn.call.apply(
+                fn,
+                [$jscomp$this].concat($jscomp.arrayFromIterable(args))
+            )
+        })
+    }
+    name = void 0 === name ? 'anonymous' : name
     if (
-        goog.ASSUME_NATIVE_PROMISE ||
-        (goog.global.Promise && goog.global.Promise.resolve)
+        !goog.DEBUG ||
+        !module$contents$goog$debug$asyncStackTag_createTask ||
+        fn[
+            (0, goog.asserts.assertExists)(
+                module$contents$goog$debug$asyncStackTag_CONSOLE_TASK_SYMBOL
+            )
+        ]
     ) {
-        var promise = goog.global.Promise.resolve(void 0)
-        goog.async.run.schedule_ = function () {
-            promise.then(goog.async.run.processWorkQueue)
-        }
-    } else {
-        goog.async.run.schedule_ = function () {
-            goog.async.nextTick(goog.async.run.processWorkQueue)
+        return fn
+    }
+    var consoleTask = module$contents$goog$debug$asyncStackTag_createTask(
+        fn.name || name
+    )
+    wrappedFn[
+        (0, goog.asserts.assertExists)(
+            module$contents$goog$debug$asyncStackTag_CONSOLE_TASK_SYMBOL
+        )
+    ] = consoleTask
+    return wrappedFn
+}
+goog.debug.asyncStackTag.wrap = module$contents$goog$debug$asyncStackTag_wrap
+goog.ASSUME_NATIVE_PROMISE = !1
+var module$contents$goog$async$run_schedule,
+    module$contents$goog$async$run_workQueueScheduled = !1,
+    module$contents$goog$async$run_workQueue =
+        new module$contents$goog$async$WorkQueue_WorkQueue(),
+    module$contents$goog$async$run_run = function (callback, context) {
+        module$contents$goog$async$run_schedule ||
+            module$contents$goog$async$run_initializeRunner()
+        module$contents$goog$async$run_workQueueScheduled ||
+            (module$contents$goog$async$run_schedule(),
+            (module$contents$goog$async$run_workQueueScheduled = !0))
+        callback = module$contents$goog$debug$asyncStackTag_wrap(
+            callback,
+            'goog.async.run'
+        )
+        module$contents$goog$async$run_workQueue.add(callback, context)
+    },
+    module$contents$goog$async$run_initializeRunner = function () {
+        if (
+            goog.ASSUME_NATIVE_PROMISE ||
+            (goog.global.Promise && goog.global.Promise.resolve)
+        ) {
+            var promise = goog.global.Promise.resolve(void 0)
+            module$contents$goog$async$run_schedule = function () {
+                promise.then(
+                    module$contents$goog$async$run_run.processWorkQueue
+                )
+            }
+        } else {
+            module$contents$goog$async$run_schedule = function () {
+                ;(0, goog.async.nextTick)(
+                    module$contents$goog$async$run_run.processWorkQueue
+                )
+            }
         }
     }
-}
-goog.async.run.forceNextTick = function (opt_realSetTimeout) {
-    goog.async.run.schedule_ = function () {
-        goog.async.nextTick(goog.async.run.processWorkQueue)
-        opt_realSetTimeout &&
-            opt_realSetTimeout(goog.async.run.processWorkQueue)
+module$contents$goog$async$run_run.forceNextTick = function (realSetTimeout) {
+    module$contents$goog$async$run_schedule = function () {
+        ;(0, goog.async.nextTick)(
+            module$contents$goog$async$run_run.processWorkQueue
+        )
+        realSetTimeout &&
+            realSetTimeout(module$contents$goog$async$run_run.processWorkQueue)
     }
 }
-goog.async.run.workQueueScheduled_ = !1
-goog.async.run.workQueue_ = new module$contents$goog$async$WorkQueue_WorkQueue()
 goog.DEBUG &&
-    ((goog.async.run.resetQueue = function () {
-        goog.async.run.workQueueScheduled_ = !1
-        goog.async.run.workQueue_ =
+    ((module$contents$goog$async$run_run.resetQueue = function () {
+        module$contents$goog$async$run_workQueueScheduled = !1
+        module$contents$goog$async$run_workQueue =
             new module$contents$goog$async$WorkQueue_WorkQueue()
     }),
-    (goog.async.run.resetSchedulerForTest = function () {
-        goog.async.run.initializeRunner_()
+    (module$contents$goog$async$run_run.resetSchedulerForTest = function () {
+        module$contents$goog$async$run_initializeRunner()
     }))
-goog.async.run.processWorkQueue = function () {
-    for (var item = null; (item = goog.async.run.workQueue_.remove()); ) {
+module$contents$goog$async$run_run.processWorkQueue = function () {
+    for (
+        var item = null;
+        (item = module$contents$goog$async$run_workQueue.remove());
+
+    ) {
         try {
             item.fn.call(item.scope)
         } catch (e) {
             module$contents$goog$async$throwException_throwException(e)
         }
-        goog.async.run.workQueue_.returnUnused(item)
+        module$contents$goog$async$run_workQueue.returnUnused(item)
     }
-    goog.async.run.workQueueScheduled_ = !1
+    module$contents$goog$async$run_workQueueScheduled = !1
 }
+goog.async.run = module$contents$goog$async$run_run
 goog.promise = {}
 goog.promise.Resolver = function () {}
-goog.Thenable = function () {}
-goog.Thenable.prototype.then = function (
+function module$contents$goog$Thenable_Thenable() {}
+module$contents$goog$Thenable_Thenable.prototype.then = function (
     opt_onFulfilled,
     opt_onRejected,
     opt_context
 ) {}
-goog.Thenable.IMPLEMENTED_BY_PROP = '$goog_Thenable'
-goog.Thenable.addImplementation = function (ctor) {
-    ctor.prototype[goog.Thenable.IMPLEMENTED_BY_PROP] = !0
+module$contents$goog$Thenable_Thenable.IMPLEMENTED_BY_PROP = '$goog_Thenable'
+module$contents$goog$Thenable_Thenable.addImplementation = function (ctor) {
+    ctor.prototype[module$contents$goog$Thenable_Thenable.IMPLEMENTED_BY_PROP] =
+        !0
 }
-goog.Thenable.isImplementedBy = function (object) {
+module$contents$goog$Thenable_Thenable.isImplementedBy = function (object) {
     if (!object) {
         return !1
     }
     try {
-        return !!object[goog.Thenable.IMPLEMENTED_BY_PROP]
+        return !!object[
+            module$contents$goog$Thenable_Thenable.IMPLEMENTED_BY_PROP
+        ]
         return !!object.$goog_Thenable
     } catch (e) {
         return !1
     }
 }
+goog.Thenable = module$contents$goog$Thenable_Thenable
 goog.Promise = function (resolver, opt_context) {
     this.state_ = goog.Promise.State_.PENDING
     this.result_ = void 0
@@ -31162,7 +33966,7 @@ goog.Promise = function (resolver, opt_context) {
         ((this.stack_ = []),
         this.addStackTrace_(Error('created')),
         (this.currentStep_ = 0))
-    if (resolver != goog.nullFunction) {
+    if (resolver != goog.functions.UNDEFINED) {
         try {
             var self = this
             resolver.call(
@@ -31207,7 +34011,7 @@ goog.Promise.CallbackEntry_.prototype.reset = function () {
     this.always = !1
 }
 goog.Promise.DEFAULT_MAX_UNUSED = 100
-goog.Promise.freelist_ = new goog.async.FreeList(
+goog.Promise.freelist_ = new module$contents$goog$async$FreeList_FreeList(
     function () {
         return new goog.Promise.CallbackEntry_()
     },
@@ -31230,7 +34034,7 @@ goog.Promise.resolve = function (opt_value) {
     if (opt_value instanceof goog.Promise) {
         return opt_value
     }
-    var promise = new goog.Promise(goog.nullFunction)
+    var promise = new goog.Promise(goog.functions.UNDEFINED)
     promise.resolve_(goog.Promise.State_.FULFILLED, opt_value)
     return promise
 }
@@ -31241,7 +34045,7 @@ goog.Promise.reject = function (opt_reason) {
 }
 goog.Promise.resolveThen_ = function (value, onFulfilled, onRejected) {
     goog.Promise.maybeThen_(value, onFulfilled, onRejected, null) ||
-        goog.async.run(goog.partial(onFulfilled, value))
+        module$contents$goog$async$run_run(goog.partial(onFulfilled, value))
 }
 goog.Promise.race = function (promises) {
     return new goog.Promise(function (resolve, reject) {
@@ -31375,7 +34179,7 @@ goog.Promise.prototype.then = function (
         opt_context
     )
 }
-goog.Thenable.addImplementation(goog.Promise)
+module$contents$goog$Thenable_Thenable.addImplementation(goog.Promise)
 goog.Promise.prototype.thenVoid = function (
     opt_onFulfilled,
     opt_onRejected,
@@ -31394,7 +34198,7 @@ goog.Promise.prototype.thenVoid = function (
     goog.Promise.LONG_STACK_TRACES && this.addStackTrace_(Error('then'))
     this.addCallbackEntry_(
         goog.Promise.getCallbackEntry_(
-            opt_onFulfilled || goog.nullFunction,
+            opt_onFulfilled || goog.functions.UNDEFINED,
             opt_onRejected || null,
             opt_context
         )
@@ -31415,10 +34219,11 @@ goog.Promise.prototype.thenCatch = function (onRejected, opt_context) {
     goog.Promise.LONG_STACK_TRACES && this.addStackTrace_(Error('thenCatch'))
     return this.addChildPromise_(null, onRejected, opt_context)
 }
+goog.Promise.prototype.catch = goog.Promise.prototype.thenCatch
 goog.Promise.prototype.cancel = function (opt_message) {
     if (this.state_ == goog.Promise.State_.PENDING) {
         var err = new goog.Promise.CancellationError(opt_message)
-        goog.async.run(function () {
+        module$contents$goog$async$run_run(function () {
             this.cancelInternal_(err)
         }, this)
     }
@@ -31470,6 +34275,16 @@ goog.Promise.prototype.addChildPromise_ = function (
     onRejected,
     opt_context
 ) {
+    onFulfilled &&
+        (onFulfilled = module$contents$goog$debug$asyncStackTag_wrap(
+            onFulfilled,
+            'goog.Promise.then'
+        ))
+    onRejected &&
+        (onRejected = module$contents$goog$debug$asyncStackTag_wrap(
+            onRejected,
+            'goog.Promise.then'
+        ))
     var callbackEntry = goog.Promise.getCallbackEntry_(null, null, null)
     callbackEntry.child = new goog.Promise(function (resolve, reject) {
         callbackEntry.onFulfilled = onFulfilled
@@ -31477,8 +34292,8 @@ goog.Promise.prototype.addChildPromise_ = function (
                   try {
                       var result = onFulfilled.call(opt_context, value)
                       resolve(result)
-                  } catch (err$47) {
-                      reject(err$47)
+                  } catch (err$53) {
+                      reject(err$53)
                   }
               }
             : resolve
@@ -31490,8 +34305,8 @@ goog.Promise.prototype.addChildPromise_ = function (
                       reason instanceof goog.Promise.CancellationError
                           ? reject(reason)
                           : resolve(result)
-                  } catch (err$48) {
-                      reject(err$48)
+                  } catch (err$54) {
+                      reject(err$54)
                   }
               }
             : reject
@@ -31534,7 +34349,7 @@ goog.Promise.maybeThen_ = function (value, onFulfilled, onRejected, context) {
     if (value instanceof goog.Promise) {
         return value.thenVoid(onFulfilled, onRejected, context), !0
     }
-    if (goog.Thenable.isImplementedBy(value)) {
+    if (module$contents$goog$Thenable_Thenable.isImplementedBy(value)) {
         return value.then(onFulfilled, onRejected, context), !0
     }
     if (goog.isObject(value)) {
@@ -31580,7 +34395,8 @@ goog.Promise.tryThen_ = function (
 }
 goog.Promise.prototype.scheduleCallbacks_ = function () {
     this.executing_ ||
-        ((this.executing_ = !0), goog.async.run(this.executeCallbacks_, this))
+        ((this.executing_ = !0),
+        module$contents$goog$async$run_run(this.executeCallbacks_, this))
 }
 goog.Promise.prototype.hasEntry_ = function () {
     return !!this.callbackEntries_
@@ -31633,8 +34449,8 @@ goog.Promise.prototype.executeCallback_ = function (
             callbackEntry.always
                 ? callbackEntry.onFulfilled.call(callbackEntry.context)
                 : goog.Promise.invokeCallback_(callbackEntry, state, result)
-        } catch (err$49) {
-            goog.Promise.handleRejection_.call(null, err$49)
+        } catch (err$55) {
+            goog.Promise.handleRejection_.call(null, err$55)
         }
     }
     goog.Promise.returnEntry_(callbackEntry)
@@ -31687,11 +34503,9 @@ goog.Promise.prototype.removeUnhandledRejection_ = function () {
             goog.global.clearTimeout(p.unhandledRejectionId_),
                 (p.unhandledRejectionId_ = 0)
         }
-    } else {
-        if (0 == goog.Promise.UNHANDLED_REJECTION_DELAY) {
-            for (p = this; p && p.hadUnhandledRejection_; p = p.parent_) {
-                p.hadUnhandledRejection_ = !1
-            }
+    } else if (0 == goog.Promise.UNHANDLED_REJECTION_DELAY) {
+        for (p = this; p && p.hadUnhandledRejection_; p = p.parent_) {
+            p.hadUnhandledRejection_ = !1
         }
     }
 }
@@ -31703,7 +34517,7 @@ goog.Promise.addUnhandledRejection_ = function (promise, reason) {
           }, goog.Promise.UNHANDLED_REJECTION_DELAY))
         : 0 == goog.Promise.UNHANDLED_REJECTION_DELAY &&
           ((promise.hadUnhandledRejection_ = !0),
-          goog.async.run(function () {
+          module$contents$goog$async$run_run(function () {
               promise.hadUnhandledRejection_ &&
                   (promise.appendLongStack_(reason),
                   goog.Promise.handleRejection_.call(null, reason))
@@ -31792,12 +34606,10 @@ goog.Timer.TICK = 'tick'
 goog.Timer.callOnce = function (listener, opt_delay, opt_handler) {
     if ('function' === typeof listener) {
         opt_handler && (listener = goog.bind(listener, opt_handler))
+    } else if (listener && 'function' == typeof listener.handleEvent) {
+        listener = goog.bind(listener.handleEvent, listener)
     } else {
-        if (listener && 'function' == typeof listener.handleEvent) {
-            listener = goog.bind(listener.handleEvent, listener)
-        } else {
-            throw Error('Invalid listener argument')
-        }
+        throw Error('Invalid listener argument')
     }
     return Number(opt_delay) > goog.Timer.MAX_TIMEOUT_
         ? goog.Timer.INVALID_TIMEOUT_ID_
@@ -31877,6 +34689,10 @@ module$contents$goog$async$Throttle_Throttle.prototype.doAction_ = function () {
     this.listener_.apply(null, args)
 }
 goog.async.Throttle = module$contents$goog$async$Throttle_Throttle
+goog.promise.deferredBase = {}
+function module$contents$goog$promise$deferredBase_DeferredBaseDoNotUse() {}
+goog.promise.deferredBase.DeferredBaseDoNotUse =
+    module$contents$goog$promise$deferredBase_DeferredBaseDoNotUse
 /*
 
  Copyright 2005, 2007 Bob Ippolito. All Rights Reserved.
@@ -31903,6 +34719,10 @@ goog.async.Deferred = function (opt_onCancelFunction, opt_defaultScope) {
             (this.constructorStack_ = target.stack.replace(/^[^\n]*\n/, ''))
     }
 }
+goog.inherits(
+    goog.async.Deferred,
+    module$contents$goog$promise$deferredBase_DeferredBaseDoNotUse
+)
 goog.async.Deferred.STRICT_ERRORS = !1
 goog.async.Deferred.LONG_STACK_TRACES = !1
 goog.async.Deferred.prototype.cancel = function (opt_deepCancel) {
@@ -32019,14 +34839,19 @@ goog.async.Deferred.prototype.then = function (
             resolve = res
             reject = rej
         })
-    this.addCallbacks(resolve, function (reason) {
-        reason instanceof goog.async.Deferred.CanceledError
-            ? promise.cancel()
-            : reject(reason)
-    })
+    this.addCallbacks(
+        resolve,
+        function (reason) {
+            reason instanceof goog.async.Deferred.CanceledError
+                ? promise.cancel()
+                : reject(reason)
+            return goog.async.Deferred.CONVERTED_TO_PROMISE_
+        },
+        this
+    )
     return promise.then(opt_onFulfilled, opt_onRejected, opt_context)
 }
-goog.Thenable.addImplementation(goog.async.Deferred)
+module$contents$goog$Thenable_Thenable.addImplementation(goog.async.Deferred)
 goog.async.Deferred.prototype.chainDeferred = function (otherDeferred) {
     this.addCallbacks(
         otherDeferred.callback,
@@ -32065,6 +34890,7 @@ goog.async.Deferred.prototype.hasErrback_ = function () {
 goog.async.Deferred.prototype.getLastValueForMigration = function () {
     return this.hasFired() && !this.hadError_ ? this.result_ : void 0
 }
+goog.async.Deferred.CONVERTED_TO_PROMISE_ = {}
 goog.async.Deferred.prototype.fire_ = function () {
     this.unhandledErrorId_ &&
         this.hasFired() &&
@@ -32073,10 +34899,14 @@ goog.async.Deferred.prototype.fire_ = function () {
         (this.unhandledErrorId_ = 0))
     this.parent_ && (this.parent_.branches_--, delete this.parent_)
     for (
-        var res = this.result_, unhandledException = !1, isNewlyBlocked = !1;
+        var res = this.result_,
+            unhandledException = !1,
+            isNewlyBlocked = !1,
+            wasConvertedToPromise = !1;
         this.sequence_.length && !this.blocked_;
 
     ) {
+        wasConvertedToPromise = !1
         var sequenceEntry = this.sequence_.shift(),
             callback = sequenceEntry[0],
             errback = sequenceEntry[1],
@@ -32085,12 +34915,16 @@ goog.async.Deferred.prototype.fire_ = function () {
         if (f) {
             try {
                 var ret = f.call(scope || this.defaultScope_, res)
+                ret === goog.async.Deferred.CONVERTED_TO_PROMISE_ &&
+                    ((wasConvertedToPromise = !0), (ret = void 0))
                 void 0 !== ret &&
                     ((this.hadError_ =
                         this.hadError_ && (ret == res || this.isError(ret))),
                     (this.result_ = res = ret))
                 if (
-                    goog.Thenable.isImplementedBy(res) ||
+                    module$contents$goog$Thenable_Thenable.isImplementedBy(
+                        res
+                    ) ||
                     ('function' === typeof goog.global.Promise &&
                         res instanceof goog.global.Promise)
                 ) {
@@ -32113,6 +34947,7 @@ goog.async.Deferred.prototype.fire_ = function () {
             : res.then(onCallback, onErrback)
     } else {
         !goog.async.Deferred.STRICT_ERRORS ||
+            wasConvertedToPromise ||
             !this.isError(res) ||
             res instanceof goog.async.Deferred.CanceledError ||
             (unhandledException = this.hadError_ = !0)
@@ -32211,7 +35046,7 @@ goog.net = {}
 goog.net.jsloader = {}
 goog.net.jsloader.Options = {}
 goog.net.jsloader.GLOBAL_VERIFY_OBJS_ = 'closure_verification'
-goog.net.jsloader.DEFAULT_TIMEOUT = 5000
+goog.net.jsloader.DEFAULT_TIMEOUT = 5e3
 goog.net.jsloader.scriptsToLoad_ = []
 goog.net.jsloader.safeLoadMany = function (trustedUris, opt_options) {
     if (!trustedUris.length) {
@@ -32356,9 +35191,9 @@ goog.net.jsloader.cleanup_ = function (
     opt_timeout
 ) {
     null != opt_timeout && goog.global.clearTimeout(opt_timeout)
-    scriptNode.onload = goog.nullFunction
-    scriptNode.onerror = goog.nullFunction
-    scriptNode.onreadystatechange = goog.nullFunction
+    scriptNode.onload = function () {}
+    scriptNode.onerror = function () {}
+    scriptNode.onreadystatechange = function () {}
     removeScriptNode &&
         window.setTimeout(function () {
             goog.dom.removeNode(scriptNode)
@@ -32384,7 +35219,6 @@ goog.json = {}
 goog.json.Replacer = {}
 goog.json.Reviver = {}
 goog.json.USE_NATIVE_JSON = !1
-goog.json.TRY_NATIVE_JSON = !0
 goog.json.isValid = function (s) {
     return /^\s*$/.test(s)
         ? !1
@@ -32398,19 +35232,17 @@ goog.json.isValid = function (s) {
                   .replace(/(?:^|:|,)(?:[\s\u2028\u2029]*\[)+/g, '')
           )
 }
-goog.json.errorLogger_ = goog.nullFunction
+goog.json.errorLogger_ = function () {}
 goog.json.setErrorLogger = function (errorLogger) {
     goog.json.errorLogger_ = errorLogger
 }
 goog.json.parse = goog.json.USE_NATIVE_JSON
     ? goog.global.JSON.parse
     : function (s) {
-          if (goog.json.TRY_NATIVE_JSON) {
-              try {
-                  return goog.global.JSON.parse(s)
-              } catch (ex) {
-                  var error = ex
-              }
+          try {
+              return goog.global.JSON.parse(s)
+          } catch (ex) {
+              var error = ex
           }
           var o = String(s)
           if (goog.json.isValid(o)) {
@@ -32418,7 +35250,7 @@ goog.json.parse = goog.json.USE_NATIVE_JSON
                   var result = eval('(' + o + ')')
                   error && goog.json.errorLogger_('Invalid JSON: ' + o, error)
                   return result
-              } catch (ex$50) {}
+              } catch (ex$56) {}
           }
           throw Error('Invalid JSON string: ' + o)
       }
@@ -32482,7 +35314,7 @@ goog.json.Serializer.charToJsonCharCache_ = {
     '\n': '\\n',
     '\r': '\\r',
     '\t': '\\t',
-    '\x0B': '\\u000b',
+    '\v': '\\u000b',
 }
 goog.json.Serializer.charsToReplace_ = /\uffff/.test('\uffff')
     ? /[\\"\x00-\x1f\x7f-\uffff]/g
@@ -32493,8 +35325,7 @@ goog.json.Serializer.prototype.serializeString_ = function (s, sb) {
         s.replace(goog.json.Serializer.charsToReplace_, function (c) {
             var rv = goog.json.Serializer.charToJsonCharCache_[c]
             rv ||
-                ((rv =
-                    '\\u' + (c.charCodeAt(0) | 65536).toString(16).substr(1)),
+                ((rv = '\\u' + (c.charCodeAt(0) | 65536).toString(16).slice(1)),
                 (goog.json.Serializer.charToJsonCharCache_[c] = rv))
             return rv
         }),
@@ -32583,7 +35414,7 @@ third_party$javascript$closure$log$log$classdecl$var0.prototype.toString =
 goog.log.Level = third_party$javascript$closure$log$log$classdecl$var0
 goog.log.Level.OFF = new goog.log.Level('OFF', Infinity)
 goog.log.Level.SHOUT = new goog.log.Level('SHOUT', 1200)
-goog.log.Level.SEVERE = new goog.log.Level('SEVERE', 1000)
+goog.log.Level.SEVERE = new goog.log.Level('SEVERE', 1e3)
 goog.log.Level.WARNING = new goog.log.Level('WARNING', 900)
 goog.log.Level.INFO = new goog.log.Level('INFO', 800)
 goog.log.Level.CONFIG = new goog.log.Level('CONFIG', 700)
@@ -32827,9 +35658,8 @@ third_party$javascript$closure$log$log$classdecl$var5.prototype.getLogRegistryEn
             return void 0 !== level && (entry.level = level), entry
         }
         var lastDotIndex = name.lastIndexOf('.'),
-            parentLogRegistryEntry = this.getLogRegistryEntry(
-                name.substr(0, lastDotIndex)
-            ),
+            parentName = name.slice(0, Math.max(lastDotIndex, 0)),
+            parentLogRegistryEntry = this.getLogRegistryEntry(parentName),
             logRegistryEntry = new goog.log.LogRegistryEntry_(
                 name,
                 parentLogRegistryEntry
@@ -33337,12 +36167,12 @@ goog.net.XhrIo.prototype.send = function (
             (this.inOpen_ = !0),
             this.xhr_.open(method, String(url), !0),
             (this.inOpen_ = !1)
-    } catch (err$51) {
+    } catch (err$57) {
         goog.log.fine(
             this.logger_,
-            this.formatMsg_('Error opening Xhr: ' + err$51.message)
+            this.formatMsg_('Error opening Xhr: ' + err$57.message)
         )
-        this.error_(goog.net.ErrorCode.EXCEPTION, err$51)
+        this.error_(goog.net.ErrorCode.EXCEPTION, err$57)
         return
     }
     var content = opt_content || '',
@@ -33352,27 +36182,23 @@ goog.net.XhrIo.prototype.send = function (
             for (var key in opt_headers) {
                 headers.set(key, opt_headers[key])
             }
-        } else {
-            if (
-                'function' === typeof opt_headers.keys &&
-                'function' === typeof opt_headers.get
+        } else if (
+            'function' === typeof opt_headers.keys &&
+            'function' === typeof opt_headers.get
+        ) {
+            for (
+                var $jscomp$iter$24 = $jscomp.makeIterator(opt_headers.keys()),
+                    $jscomp$key$key = $jscomp$iter$24.next();
+                !$jscomp$key$key.done;
+                $jscomp$key$key = $jscomp$iter$24.next()
             ) {
-                for (
-                    var $jscomp$iter$18 = $jscomp.makeIterator(
-                            opt_headers.keys()
-                        ),
-                        $jscomp$key$key = $jscomp$iter$18.next();
-                    !$jscomp$key$key.done;
-                    $jscomp$key$key = $jscomp$iter$18.next()
-                ) {
-                    var key$52 = $jscomp$key$key.value
-                    headers.set(key$52, opt_headers.get(key$52))
-                }
-            } else {
-                throw Error(
-                    'Unknown input type for opt_headers: ' + String(opt_headers)
-                )
+                var key$58 = $jscomp$key$key.value
+                headers.set(key$58, opt_headers.get(key$58))
             }
+        } else {
+            throw Error(
+                'Unknown input type for opt_headers: ' + String(opt_headers)
+            )
         }
     }
     var contentTypeKey = Array.from(headers.keys()).find(function (header) {
@@ -33394,17 +36220,17 @@ goog.net.XhrIo.prototype.send = function (
             goog.net.XhrIo.FORM_CONTENT_TYPE
         )
     for (
-        var $jscomp$iter$19 = $jscomp.makeIterator(headers),
-            $jscomp$key$ = $jscomp$iter$19.next();
+        var $jscomp$iter$25 = $jscomp.makeIterator(headers),
+            $jscomp$key$ = $jscomp$iter$25.next();
         !$jscomp$key$.done;
-        $jscomp$key$ = $jscomp$iter$19.next()
+        $jscomp$key$ = $jscomp$iter$25.next()
     ) {
-        var $jscomp$destructuring$var19 = $jscomp.makeIterator(
+        var $jscomp$destructuring$var31 = $jscomp.makeIterator(
                 $jscomp$key$.value
             ),
-            key$53 = $jscomp$destructuring$var19.next().value,
-            value = $jscomp$destructuring$var19.next().value
-        this.xhr_.setRequestHeader(key$53, value)
+            key$59 = $jscomp$destructuring$var31.next().value,
+            value = $jscomp$destructuring$var31.next().value
+        this.xhr_.setRequestHeader(key$59, value)
     }
     this.responseType_ && (this.xhr_.responseType = this.responseType_)
     'withCredentials' in this.xhr_ &&
@@ -33413,10 +36239,10 @@ goog.net.XhrIo.prototype.send = function (
     if ('setTrustToken' in this.xhr_ && this.trustToken_) {
         try {
             this.xhr_.setTrustToken(this.trustToken_)
-        } catch (err$54) {
+        } catch (err$60) {
             goog.log.fine(
                 this.logger_,
-                this.formatMsg_('Error SetTrustToken: ' + err$54.message)
+                this.formatMsg_('Error SetTrustToken: ' + err$60.message)
             )
         }
     }
@@ -33451,18 +36277,17 @@ goog.net.XhrIo.prototype.send = function (
             (this.inSend_ = !0),
             this.xhr_.send(content),
             (this.inSend_ = !1)
-    } catch (err$55) {
+    } catch (err$61) {
         goog.log.fine(
             this.logger_,
-            this.formatMsg_('Send error: ' + err$55.message)
+            this.formatMsg_('Send error: ' + err$61.message)
         ),
-            this.error_(goog.net.ErrorCode.EXCEPTION, err$55)
+            this.error_(goog.net.ErrorCode.EXCEPTION, err$61)
     }
 }
 goog.net.XhrIo.shouldUseXhr2Timeout_ = function (xhr) {
     return (
         goog.userAgent.IE &&
-        goog.userAgent.isVersionOrHigher(9) &&
         'number' === typeof xhr[goog.net.XhrIo.XHR2_TIMEOUT_] &&
         void 0 !== xhr[goog.net.XhrIo.XHR2_ON_TIMEOUT_]
     )
@@ -33610,7 +36435,7 @@ goog.net.XhrIo.prototype.cleanUpXhr_ = function (opt_fromDispose) {
             clearedOnReadyStateChange = this.xhrOptions_[
                 goog.net.XmlHttp.OptionType.USE_NULL_FUNCTION
             ]
-                ? goog.nullFunction
+                ? function () {}
                 : null
         this.xhrOptions_ = this.xhr_ = null
         opt_fromDispose || this.dispatchEvent(goog.net.EventType.READY)
@@ -33759,7 +36584,8 @@ goog.net.XhrIo.prototype.getResponseHeader = function (key) {
     }
 }
 goog.net.XhrIo.prototype.getAllResponseHeaders = function () {
-    return this.xhr_ && this.isComplete()
+    return this.xhr_ &&
+        this.getReadyState() >= goog.net.XmlHttp.ReadyState.LOADED
         ? this.xhr_.getAllResponseHeaders() || ''
         : ''
 }
@@ -33821,7 +36647,7 @@ goog.debug.entryPointRegistry.register(function (transformer) {
 ee.apiclient = {}
 var module$contents$ee$apiclient_apiclient = {}
 ee.apiclient.VERSION = module$exports$ee$apiVersion.V1ALPHA
-ee.apiclient.API_CLIENT_VERSION = '0.1.288'
+ee.apiclient.API_CLIENT_VERSION = '0.1.342'
 ee.apiclient.NULL_VALUE = module$exports$eeapiclient$domain_object.NULL_VALUE
 ee.apiclient.PromiseRequestService =
     module$exports$eeapiclient$promise_request_service.PromiseRequestService
@@ -33942,8 +36768,8 @@ module$contents$ee$apiclient_Call.prototype.classifier = function () {
         this.requestService
     )
 }
-module$contents$ee$apiclient_Call.prototype.dmsMaps = function () {
-    return new module$exports$eeapiclient$ee_api_client.ProjectsDmsMapsApiClientImpl(
+module$contents$ee$apiclient_Call.prototype.featureView = function () {
+    return new module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewApiClientImpl(
         module$exports$ee$apiVersion.V1ALPHA,
         this.requestService
     )
@@ -34000,7 +36826,7 @@ module$contents$ee$apiclient_EERequestService.prototype.send = function (
                 body,
                 this.retries
             ),
-            value$56 = responseCtor
+            value$62 = responseCtor
                 ? module$contents$eeapiclient$domain_object_deserialize(
                       responseCtor,
                       raw
@@ -34013,7 +36839,7 @@ module$contents$ee$apiclient_EERequestService.prototype.send = function (
                     },
                 }
             }
-        return thenable(value$56)
+        return thenable(value$62)
     }
     return new Promise(function (resolve, reject) {
         module$contents$ee$apiclient_apiclient.send(
@@ -34055,16 +36881,16 @@ module$contents$ee$apiclient_BatchCall.prototype.send = function (
             module$contents$ee$apiclient_apiclient.getSafeApiUrl() + '/batch',
         body =
             parts
-                .map(function ($jscomp$destructuring$var20) {
-                    var $jscomp$destructuring$var21 = $jscomp.makeIterator(
-                            $jscomp$destructuring$var20
+                .map(function ($jscomp$destructuring$var32) {
+                    var $jscomp$destructuring$var33 = $jscomp.makeIterator(
+                            $jscomp$destructuring$var32
                         ),
-                        id = $jscomp$destructuring$var21.next().value,
-                        $jscomp$destructuring$var22 = $jscomp.makeIterator(
-                            $jscomp$destructuring$var21.next().value
+                        id = $jscomp$destructuring$var33.next().value,
+                        $jscomp$destructuring$var34 = $jscomp.makeIterator(
+                            $jscomp$destructuring$var33.next().value
                         ),
-                        partBody = $jscomp$destructuring$var22.next().value,
-                        ctor = $jscomp$destructuring$var22.next().value
+                        partBody = $jscomp$destructuring$var34.next().value,
+                        ctor = $jscomp$destructuring$var34.next().value
                     return (
                         '--batch_EARTHENGINE_batch\r\nContent-Type: application/http\r\nContent-Transfer-Encoding: binary\r\nMIME-Version: 1.0\r\nContent-ID: <' +
                         id +
@@ -34076,16 +36902,16 @@ module$contents$ee$apiclient_BatchCall.prototype.send = function (
                 .join('') + '--batch_EARTHENGINE_batch--\r\n',
         deserializeResponses = function (response) {
             var result = {}
-            parts.forEach(function ($jscomp$destructuring$var23) {
-                var $jscomp$destructuring$var24 = $jscomp.makeIterator(
-                        $jscomp$destructuring$var23
+            parts.forEach(function ($jscomp$destructuring$var35) {
+                var $jscomp$destructuring$var36 = $jscomp.makeIterator(
+                        $jscomp$destructuring$var35
                     ),
-                    id = $jscomp$destructuring$var24.next().value,
-                    $jscomp$destructuring$var25 = $jscomp.makeIterator(
-                        $jscomp$destructuring$var24.next().value
+                    id = $jscomp$destructuring$var36.next().value,
+                    $jscomp$destructuring$var37 = $jscomp.makeIterator(
+                        $jscomp$destructuring$var36.next().value
                     ),
-                    partBody = $jscomp$destructuring$var25.next().value,
-                    ctor = $jscomp$destructuring$var25.next().value
+                    partBody = $jscomp$destructuring$var37.next().value,
+                    ctor = $jscomp$destructuring$var37.next().value
                 null != response[id] &&
                     (result[id] =
                         module$contents$eeapiclient$domain_object_deserialize(
@@ -34144,12 +36970,12 @@ module$contents$ee$apiclient_apiclient.parseBatchReply = function (
 ) {
     for (
         var boundary = contentType.split('; boundary=')[1],
-            $jscomp$iter$20 = $jscomp.makeIterator(
+            $jscomp$iter$26 = $jscomp.makeIterator(
                 responseText.split('--' + boundary)
             ),
-            $jscomp$key$part = $jscomp$iter$20.next();
+            $jscomp$key$part = $jscomp$iter$26.next();
         !$jscomp$key$part.done;
-        $jscomp$key$part = $jscomp$iter$20.next()
+        $jscomp$key$part = $jscomp$iter$26.next()
     ) {
         var groups = $jscomp$key$part.value.split('\r\n\r\n')
         if (!(3 > groups.length)) {
@@ -34392,37 +37218,35 @@ module$contents$ee$apiclient_apiclient.send = function (
             ((contentType = method), (method = 'POST')))
     method = method || 'POST'
     var headers = { 'Content-Type': contentType },
-        version = '0.1.288'
-    '0.1.288' === version && (version = 'latest')
+        version = '0.1.342'
+    '0.1.342' === version && (version = 'latest')
     headers[module$contents$ee$apiclient_apiclient.API_CLIENT_VERSION_HEADER] =
         'ee-js/' + version
     var authToken = module$contents$ee$apiclient_apiclient.getAuthToken()
     if (null != authToken) {
         headers.Authorization = authToken
-    } else {
-        if (
-            callback &&
-            module$contents$ee$apiclient_apiclient.isAuthTokenRefreshingEnabled_()
-        ) {
-            return (
-                module$contents$ee$apiclient_apiclient.refreshAuthToken(
-                    function () {
-                        module$contents$ee$apiclient_apiclient.withProfiling(
-                            profileHookAtCallTime,
-                            function () {
-                                module$contents$ee$apiclient_apiclient.send(
-                                    path,
-                                    params,
-                                    callback,
-                                    method
-                                )
-                            }
-                        )
-                    }
-                ),
-                null
-            )
-        }
+    } else if (
+        callback &&
+        module$contents$ee$apiclient_apiclient.isAuthTokenRefreshingEnabled_()
+    ) {
+        return (
+            module$contents$ee$apiclient_apiclient.refreshAuthToken(
+                function () {
+                    module$contents$ee$apiclient_apiclient.withProfiling(
+                        profileHookAtCallTime,
+                        function () {
+                            module$contents$ee$apiclient_apiclient.send(
+                                path,
+                                params,
+                                callback,
+                                method
+                            )
+                        }
+                    )
+                }
+            ),
+            null
+        )
     }
     params = params ? params.clone() : new goog.Uri.QueryData()
     null != module$contents$ee$apiclient_apiclient.cloudApiKey_ &&
@@ -34626,26 +37450,23 @@ module$contents$ee$apiclient_apiclient.handleResponse_ = function (
         } else {
             errorMessage = response$jscomp$0
         }
+    } else if ('multipart/mixed' === contentType) {
+        data = {}
+        var errors = []
+        module$contents$ee$apiclient_apiclient.parseBatchReply(
+            typeHeader,
+            responseText,
+            function (id, status, text) {
+                var response = parseJson(text)
+                response.parsed && (data[id] = response.parsed)
+                var error =
+                    (response.parsed ? '' : response) || statusError(status)
+                error && errors.push(id + ': ' + error)
+            }
+        )
+        errors.length && (errorMessage = errors.join('\n'))
     } else {
-        if ('multipart/mixed' === contentType) {
-            data = {}
-            var errors = []
-            module$contents$ee$apiclient_apiclient.parseBatchReply(
-                typeHeader,
-                responseText,
-                function (id, status, text) {
-                    var response = parseJson(text)
-                    response.parsed && (data[id] = response.parsed)
-                    var error =
-                        (response.parsed ? '' : response) || statusError(status)
-                    error && errors.push(id + ': ' + error)
-                }
-            )
-            errors.length && (errorMessage = errors.join('\n'))
-        } else {
-            var typeError =
-                'Response was unexpectedly not JSON, but ' + contentType
-        }
+        var typeError = 'Response was unexpectedly not JSON, but ' + contentType
     }
     errorMessage = errorMessage || statusError(status$jscomp$0) || typeError
     if (callback) {
@@ -34719,16 +37540,16 @@ module$contents$ee$apiclient_apiclient.handleAuthResult_ = function (
 module$contents$ee$apiclient_apiclient.makeRequest_ = function (params) {
     for (
         var request = new goog.Uri.QueryData(),
-            $jscomp$iter$21 = $jscomp.makeIterator(Object.entries(params)),
-            $jscomp$key$ = $jscomp$iter$21.next();
+            $jscomp$iter$27 = $jscomp.makeIterator(Object.entries(params)),
+            $jscomp$key$ = $jscomp$iter$27.next();
         !$jscomp$key$.done;
-        $jscomp$key$ = $jscomp$iter$21.next()
+        $jscomp$key$ = $jscomp$iter$27.next()
     ) {
-        var $jscomp$destructuring$var27 = $jscomp.makeIterator(
+        var $jscomp$destructuring$var39 = $jscomp.makeIterator(
                 $jscomp$key$.value
             ),
-            name = $jscomp$destructuring$var27.next().value,
-            item = $jscomp$destructuring$var27.next().value
+            name = $jscomp$destructuring$var39.next().value,
+            item = $jscomp$destructuring$var39.next().value
         request.set(name, item)
     }
     return request
@@ -34894,8 +37715,8 @@ module$contents$ee$apiclient_apiclient.cloudApiKey_ = null
 module$contents$ee$apiclient_apiclient.initialized_ = !1
 module$contents$ee$apiclient_apiclient.deadlineMs_ = 0
 module$contents$ee$apiclient_apiclient.profileHook_ = null
-module$contents$ee$apiclient_apiclient.BASE_RETRY_WAIT_ = 1000
-module$contents$ee$apiclient_apiclient.MAX_RETRY_WAIT_ = 120000
+module$contents$ee$apiclient_apiclient.BASE_RETRY_WAIT_ = 1e3
+module$contents$ee$apiclient_apiclient.MAX_RETRY_WAIT_ = 12e4
 module$contents$ee$apiclient_apiclient.MAX_ASYNC_RETRIES_ = 10
 module$contents$ee$apiclient_apiclient.MAX_SYNC_RETRIES_ = 5
 module$contents$ee$apiclient_apiclient.APP_ID_TOKEN_HEADER_ =
@@ -34997,16 +37818,16 @@ goog.exportSymbol(
     module$exports$eeapiclient$ee_api_client.EarthEngineAsset
 )
 goog.exportSymbol(
-    'ee.api.ListImagesResponse',
-    module$exports$eeapiclient$ee_api_client.ListImagesResponse
-)
-goog.exportSymbol(
-    'ee.api.Image',
-    module$exports$eeapiclient$ee_api_client.Image
-)
-goog.exportSymbol(
     'ee.api.Operation',
     module$exports$eeapiclient$ee_api_client.Operation
+)
+goog.exportSymbol(
+    'ee.api.ListFeaturesResponse',
+    module$exports$eeapiclient$ee_api_client.ListFeaturesResponse
+)
+goog.exportSymbol(
+    'ee.api.FeatureViewLocation',
+    module$exports$eeapiclient$ee_api_client.FeatureViewLocation
 )
 ee.Encodable = function () {}
 ee.rpc_node = {}
@@ -35126,7 +37947,7 @@ ee.rpc_convert.orientation = function (orientation) {
         return 'VERTICAL'
     }
     var upper = orientation.toUpperCase()
-    if ('HORIZONTAL' !== upper || 'VERTICAL' !== upper) {
+    if ('HORIZONTAL' !== upper && 'VERTICAL' !== upper) {
         throw Error('Orientation must be "horizontal" or "vertical"')
     }
     return upper
@@ -35166,10 +37987,8 @@ ee.rpc_convert.visualizationOptions = function (params) {
                 var min = -pair.bias / pair.gain
                 return { min: min, max: valueRange / pair.gain + min }
             })
-    } else {
-        if ('min' in params || 'max' in params) {
-            ranges = ee.rpc_convert.pairedValues(params, 'min', 'max')
-        }
+    } else if ('min' in params || 'max' in params) {
+        ranges = ee.rpc_convert.pairedValues(params, 'min', 'max')
     }
     0 !== ranges.length &&
         ((result.ranges = ranges.map(function (range) {
@@ -35193,21 +38012,21 @@ ee.rpc_convert.pairedValues = function (obj, a, b) {
         bValues = ee.rpc_convert.csvToNumbers(obj[b])
     if (0 === aValues.length) {
         return bValues.map(function (value) {
-            var $jscomp$compprop1 = {}
+            var $jscomp$compprop8 = {}
             return (
-                ($jscomp$compprop1[a] = 0),
-                ($jscomp$compprop1[b] = value),
-                $jscomp$compprop1
+                ($jscomp$compprop8[a] = 0),
+                ($jscomp$compprop8[b] = value),
+                $jscomp$compprop8
             )
         })
     }
     if (0 === bValues.length) {
         return aValues.map(function (value) {
-            var $jscomp$compprop2 = {}
+            var $jscomp$compprop9 = {}
             return (
-                ($jscomp$compprop2[a] = value),
-                ($jscomp$compprop2[b] = 1),
-                $jscomp$compprop2
+                ($jscomp$compprop9[a] = value),
+                ($jscomp$compprop9[b] = 1),
+                $jscomp$compprop9
             )
         })
     }
@@ -35215,11 +38034,11 @@ ee.rpc_convert.pairedValues = function (obj, a, b) {
         throw Error('Length of ' + a + ' and ' + b + ' must match.')
     }
     return aValues.map(function (value, index) {
-        var $jscomp$compprop3 = {}
+        var $jscomp$compprop10 = {}
         return (
-            ($jscomp$compprop3[a] = value),
-            ($jscomp$compprop3[b] = bValues[index]),
-            $jscomp$compprop3
+            ($jscomp$compprop10[a] = value),
+            ($jscomp$compprop10[b] = bValues[index]),
+            $jscomp$compprop10
         )
     })
 }
@@ -35255,10 +38074,10 @@ ee.rpc_convert.algorithms = function (result) {
                 return internalAlgorithm
             },
             internalAlgorithms = {},
-            $jscomp$iter$22 = $jscomp.makeIterator(result.algorithms || []),
-            $jscomp$key$algorithm = $jscomp$iter$22.next();
+            $jscomp$iter$28 = $jscomp.makeIterator(result.algorithms || []),
+            $jscomp$key$algorithm = $jscomp$iter$28.next();
         !$jscomp$key$algorithm.done;
-        $jscomp$key$algorithm = $jscomp$iter$22.next()
+        $jscomp$key$algorithm = $jscomp$iter$28.next()
     ) {
         var algorithm$jscomp$0 = $jscomp$key$algorithm.value,
             name = algorithm$jscomp$0.name.replace(/^algorithms\//, '')
@@ -35315,9 +38134,6 @@ ee.rpc_convert.assetTypeForCreate = function (param) {
 ee.rpc_convert.listAssetsToGetList = function (result) {
     return (result.assets || []).map(ee.rpc_convert.assetToLegacyResult)
 }
-ee.rpc_convert.listImagesToGetList = function (result) {
-    return (result.images || []).map(ee.rpc_convert.imageToLegacyResult)
-}
 ee.rpc_convert.assetTypeToLegacyAssetType = function (type) {
     switch (type) {
         case 'ALGORITHM':
@@ -35332,8 +38148,8 @@ ee.rpc_convert.assetTypeToLegacyAssetType = function (type) {
             return 'Table'
         case 'CLASSIFIER':
             return 'Classifier'
-        case 'DATA_MAPPING_SERVICE':
-            return 'DmsAsset'
+        case 'FEATURE_VIEW':
+            return 'FeatureView'
         default:
             return 'Unknown'
     }
@@ -35371,7 +38187,7 @@ ee.rpc_convert.assetToLegacyResult = function (result) {
         (properties['system:title'] = result.title)
     'string' === typeof result.description &&
         (properties['system:description'] = result.description)
-    result.updateTime && (asset.version = 1000 * Date.parse(result.updateTime))
+    result.updateTime && (asset.version = 1e3 * Date.parse(result.updateTime))
     asset.properties = properties
     result.bands &&
         (asset.bands = result.bands.map(function (band) {
@@ -35411,8 +38227,9 @@ ee.rpc_convert.assetToLegacyResult = function (result) {
             }
             return legacyBand
         }))
-    result.dmsAssetLocation &&
-        (asset.dmsAssetLocation = result.dmsAssetLocation)
+    result.featureViewAssetLocation &&
+        (asset.mapLocation = result.featureViewAssetLocation)
+    result.featureCount && (asset.featureCount = result.featureCount)
     return asset
 }
 ee.rpc_convert.legacyPropertiesToAssetUpdate = function (legacyProperties) {
@@ -35449,19 +38266,16 @@ ee.rpc_convert.legacyPropertiesToAssetUpdate = function (legacyProperties) {
     ;('string' !== typeof value$jscomp$0 && null !== value$jscomp$0) ||
         null != properties.description ||
         (properties.description = asNull(value$jscomp$0) || value$jscomp$0)
-    Object.entries(properties).forEach(function ($jscomp$destructuring$var28) {
-        var $jscomp$destructuring$var29 = $jscomp.makeIterator(
-                $jscomp$destructuring$var28
+    Object.entries(properties).forEach(function ($jscomp$destructuring$var40) {
+        var $jscomp$destructuring$var41 = $jscomp.makeIterator(
+                $jscomp$destructuring$var40
             ),
-            key = $jscomp$destructuring$var29.next().value,
-            value = $jscomp$destructuring$var29.next().value
+            key = $jscomp$destructuring$var41.next().value,
+            value = $jscomp$destructuring$var41.next().value
         properties[key] = asNull(value) || value
     })
     asset.properties = properties
     return asset
-}
-ee.rpc_convert.imageToLegacyResult = function (result) {
-    return ee.rpc_convert.makeLegacyAsset_('Image', result.name)
 }
 ee.rpc_convert.makeLegacyAsset_ = function (type, name) {
     var legacyAsset = {}
@@ -35469,35 +38283,34 @@ ee.rpc_convert.makeLegacyAsset_ = function (type, name) {
     null != name && (legacyAsset.id = ee.rpc_convert.assetNameToAssetId(name))
     return legacyAsset
 }
-ee.rpc_convert.getListToListImages = function (param) {
-    var imagesRequest = {},
+ee.rpc_convert.getListToListAssets = function (param) {
+    var assetsRequest = {},
         toTimestamp = function (msec) {
             return new Date(msec).toISOString()
         }
-    param.num && (imagesRequest.pageSize = param.num)
-    param.starttime && (imagesRequest.startTime = toTimestamp(param.starttime))
-    param.endtime && (imagesRequest.endTime = toTimestamp(param.endtime))
+    param.num && (assetsRequest.pageSize = param.num)
+    param.starttime && (assetsRequest.startTime = toTimestamp(param.starttime))
+    param.endtime && (assetsRequest.endTime = toTimestamp(param.endtime))
     param.bbox &&
-        (imagesRequest.region = ee.rpc_convert.boundingBoxToGeoJson(param.bbox))
-    param.region && (imagesRequest.region = param.region)
+        (assetsRequest.region = ee.rpc_convert.boundingBoxToGeoJson(param.bbox))
+    param.region && (assetsRequest.region = param.region)
     param.bbox &&
         param.region &&
         console.warn('Multiple request parameters converted to region')
     for (
         var allKeys = 'id num starttime endtime bbox region'.split(' '),
-            $jscomp$iter$23 = $jscomp.makeIterator(
+            $jscomp$iter$29 = $jscomp.makeIterator(
                 Object.keys(param).filter(function (k) {
                     return !allKeys.includes(k)
                 })
             ),
-            $jscomp$key$key = $jscomp$iter$23.next();
+            $jscomp$key$key = $jscomp$iter$29.next();
         !$jscomp$key$key.done;
-        $jscomp$key$key = $jscomp$iter$23.next()
+        $jscomp$key$key = $jscomp$iter$29.next()
     ) {
         console.warn('Unrecognized key ' + $jscomp$key$key.value + ' ignored')
     }
-    imagesRequest.fields = 'assets(type,path)'
-    return imagesRequest
+    return ee.rpc_convert.processListImagesParams(assetsRequest)
 }
 ee.rpc_convert.boundingBoxToGeoJson = function (bbox) {
     return (
@@ -35523,7 +38336,10 @@ ee.rpc_convert.iamPolicyToAcl = function (result) {
     })
     var groups = new Set(),
         toAcl = function (member) {
-            var email = member.replace(/^group:|^user:|^serviceAccount:/, '')
+            var email = member.replace(
+                /^domain:|^group:|^serviceAccount:|^user:/,
+                ''
+            )
             member.startsWith('group:') && groups.add(email)
             return email
         },
@@ -35542,7 +38358,13 @@ ee.rpc_convert.iamPolicyToAcl = function (result) {
     return internalAcl
 }
 ee.rpc_convert.aclToIamPolicy = function (acls) {
-    var isGroup = function (email) {
+    var hasPrefix = function (email) {
+            return email.includes(':')
+        },
+        isDomain = function (email) {
+            return !email.includes('@')
+        },
+        isGroup = function (email) {
             return acls.groups && acls.groups.has(email)
         },
         isServiceAccount = function (email) {
@@ -35550,8 +38372,13 @@ ee.rpc_convert.aclToIamPolicy = function (acls) {
         },
         asMembers = function (aclName) {
             return (acls[aclName] || []).map(function (email) {
+                if (hasPrefix(email)) {
+                    return email
+                }
                 var prefix = 'user:'
-                isGroup(email)
+                isDomain(email)
+                    ? (prefix = 'domain:')
+                    : isGroup(email)
                     ? (prefix = 'group:')
                     : isServiceAccount(email) && (prefix = 'serviceAccount:')
                 return prefix + email
@@ -35792,13 +38619,81 @@ ee.rpc_convert.folderQuotaToAssetQuotaDetails = function (quota) {
     return {
         asset_count: {
             usage: toNumber(quota.assetCount),
-            limit: toNumber(quota.maxAssetCount),
+            limit: toNumber(quota.maxAssets),
         },
         asset_size: {
             usage: toNumber(quota.sizeBytes),
             limit: toNumber(quota.maxSizeBytes),
         },
     }
+}
+ee.rpc_convert.parseFilterParamsFromListImages_ = function (params) {
+    var queryStrings = [],
+        toISOString = function (dateStr) {
+            return new Date(dateStr).toISOString()
+        }
+    'startTime' in params &&
+        (queryStrings.push(
+            'startTime >= "' + toISOString(params.startTime) + '"'
+        ),
+        delete params.startTime)
+    'endTime' in params &&
+        (queryStrings.push('endTime < "' + toISOString(params.endTime) + '"'),
+        delete params.endTime)
+    if ('region' in params) {
+        var region = params.region
+        if ('object' === typeof region) {
+            try {
+                region = JSON.stringify(region)
+            } catch (x) {
+                throw Error(
+                    'Filter parameter "region" must be a GeoJSON or WKT string.'
+                )
+            }
+        } else if ('string' !== typeof region) {
+            throw Error(
+                'Filter parameter "region" must be a GeoJSON or WKT string.'
+            )
+        }
+        region = region.replace(/"/g, "'")
+        queryStrings.push('intersects("' + region + '")')
+        delete params.region
+    }
+    if ('properties' in params) {
+        if (
+            !Array.isArray(params.properties) &&
+            params.properties.some(function (property) {
+                return 'string' !== typeof property
+            })
+        ) {
+            throw Error(
+                'Filter parameter "properties" must be an array of strings'
+            )
+        }
+        for (
+            var $jscomp$iter$30 = $jscomp.makeIterator(params.properties),
+                $jscomp$key$propertyQuery = $jscomp$iter$30.next();
+            !$jscomp$key$propertyQuery.done;
+            $jscomp$key$propertyQuery = $jscomp$iter$30.next()
+        ) {
+            queryStrings.push(
+                $jscomp$key$propertyQuery.value
+                    .trim()
+                    .replace(/^(properties\.)?/, 'properties.')
+            )
+        }
+        delete params.properties
+    }
+    return queryStrings.join(' AND ')
+}
+ee.rpc_convert.processListImagesParams = function (params) {
+    params = Object.assign({}, params)
+    var extraFilters = ee.rpc_convert.parseFilterParamsFromListImages_(params)
+    extraFilters &&
+        (params.filter = params.filter
+            ? params.filter + ' AND ' + extraFilters
+            : extraFilters)
+    return params
 }
 goog.crypt = {}
 goog.crypt.Hash = function () {
@@ -36128,32 +39023,28 @@ ee.Serializer.prototype.encodeValue_ = function (object) {
         ) {
             return result
         }
-    } else {
-        if (Array.isArray(object)) {
-            result = module$contents$goog$array_map(
-                object,
-                function (element) {
+    } else if (Array.isArray(object)) {
+        result = module$contents$goog$array_map(
+            object,
+            function (element) {
+                return this.encodeValue_(element)
+            },
+            this
+        )
+    } else if (goog.isObject(object) && 'function' !== typeof object) {
+        var encodedObject = module$contents$goog$object_map(
+            object,
+            function (element) {
+                if ('function' !== typeof element) {
                     return this.encodeValue_(element)
-                },
-                this
-            )
-        } else {
-            if (goog.isObject(object) && 'function' !== typeof object) {
-                var encodedObject = module$contents$goog$object_map(
-                    object,
-                    function (element) {
-                        if ('function' !== typeof element) {
-                            return this.encodeValue_(element)
-                        }
-                    },
-                    this
-                )
-                module$contents$goog$object_remove(encodedObject, this.HASH_KEY)
-                result = { type: 'Dictionary', value: encodedObject }
-            } else {
-                throw Error("Can't encode object: " + object)
-            }
-        }
+                }
+            },
+            this
+        )
+        module$contents$goog$object_remove(encodedObject, this.HASH_KEY)
+        result = { type: 'Dictionary', value: encodedObject }
+    } else {
+        throw Error("Can't encode object: " + object)
     }
     if (this.isCompound_) {
         hash = ee.Serializer.computeHash(result)
@@ -36200,20 +39091,20 @@ ee.Serializer.encodeCloudApiPretty = function (obj) {
                         Object.getPrototypeOf(
                             module$exports$eeapiclient$ee_api_client.ValueNode
                         ),
-                    $jscomp$iter$24 = $jscomp.makeIterator(
+                    $jscomp$iter$31 = $jscomp.makeIterator(
                         Object.entries(
                             isNode ? object.Serializable$values : object
                         )
                     ),
-                    $jscomp$key$ = $jscomp$iter$24.next();
+                    $jscomp$key$ = $jscomp$iter$31.next();
                 !$jscomp$key$.done;
-                $jscomp$key$ = $jscomp$iter$24.next()
+                $jscomp$key$ = $jscomp$iter$31.next()
             ) {
-                var $jscomp$destructuring$var31 = $jscomp.makeIterator(
+                var $jscomp$destructuring$var43 = $jscomp.makeIterator(
                         $jscomp$key$.value
                     ),
-                    key = $jscomp$destructuring$var31.next().value,
-                    val = $jscomp$destructuring$var31.next().value
+                    key = $jscomp$destructuring$var43.next().value,
+                    val = $jscomp$destructuring$var43.next().value
                 isNode
                     ? null !== val &&
                       (ret[key] =
@@ -36404,18 +39295,18 @@ ExpressionOptimizer.prototype.optimizeValue = function (value, depth) {
         for (
             var values = {},
                 constantValues = {},
-                $jscomp$iter$25 = $jscomp.makeIterator(
+                $jscomp$iter$32 = $jscomp.makeIterator(
                     Object.entries(value.dictionaryValue.values || {})
                 ),
-                $jscomp$key$ = $jscomp$iter$25.next();
+                $jscomp$key$ = $jscomp$iter$32.next();
             !$jscomp$key$.done;
-            $jscomp$key$ = $jscomp$iter$25.next()
+            $jscomp$key$ = $jscomp$iter$32.next()
         ) {
-            var $jscomp$destructuring$var33 = $jscomp.makeIterator(
+            var $jscomp$destructuring$var45 = $jscomp.makeIterator(
                     $jscomp$key$.value
                 ),
-                k = $jscomp$destructuring$var33.next().value,
-                v$jscomp$0 = $jscomp$destructuring$var33.next().value
+                k = $jscomp$destructuring$var45.next().value,
+                v$jscomp$0 = $jscomp$destructuring$var45.next().value
             values[k] = this.optimizeValue(v$jscomp$0, depth + 3)
             null !== constantValues && isConst(values[k])
                 ? (constantValues[k] = serializeConst(values[k].constantValue))
@@ -36436,15 +39327,15 @@ ExpressionOptimizer.prototype.optimizeValue = function (value, depth) {
         for (
             var inv = value.functionInvocationValue,
                 args = {},
-                $jscomp$iter$26 = $jscomp.makeIterator(
+                $jscomp$iter$33 = $jscomp.makeIterator(
                     Object.keys(inv.arguments || {})
                 ),
-                $jscomp$key$k = $jscomp$iter$26.next();
+                $jscomp$key$k = $jscomp$iter$33.next();
             !$jscomp$key$k.done;
-            $jscomp$key$k = $jscomp$iter$26.next()
+            $jscomp$key$k = $jscomp$iter$33.next()
         ) {
-            var k$57 = $jscomp$key$k.value
-            args[k$57] = this.optimizeValue(inv.arguments[k$57], depth + 3)
+            var k$63 = $jscomp$key$k.value
+            args[k$63] = this.optimizeValue(inv.arguments[k$63], depth + 3)
         }
         return inv.functionName
             ? ee.rpc_node.functionByName(inv.functionName, args)
@@ -36475,26 +39366,18 @@ ExpressionOptimizer.prototype.countReferences = function () {
         visitValue = function (value) {
             if (null != value.arrayValue) {
                 value.arrayValue.values.forEach(visitValue)
+            } else if (null != value.dictionaryValue) {
+                Object.values(value.dictionaryValue.values).forEach(visitValue)
+            } else if (null != value.functionDefinitionValue) {
+                visitReference(value.functionDefinitionValue.body)
+            } else if (null != value.functionInvocationValue) {
+                var inv = value.functionInvocationValue
+                null != inv.functionReference &&
+                    visitReference(inv.functionReference)
+                Object.values(inv.arguments).forEach(visitValue)
             } else {
-                if (null != value.dictionaryValue) {
-                    Object.values(value.dictionaryValue.values).forEach(
-                        visitValue
-                    )
-                } else {
-                    if (null != value.functionDefinitionValue) {
-                        visitReference(value.functionDefinitionValue.body)
-                    } else {
-                        if (null != value.functionInvocationValue) {
-                            var inv = value.functionInvocationValue
-                            null != inv.functionReference &&
-                                visitReference(inv.functionReference)
-                            Object.values(inv.arguments).forEach(visitValue)
-                        } else {
-                            null != value.valueReference &&
-                                visitReference(value.valueReference)
-                        }
-                    }
-                }
+                null != value.valueReference &&
+                    visitReference(value.valueReference)
             }
         }
     visitReference(this.rootReference)
@@ -36505,7 +39388,8 @@ ee.rpc_convert_batch.ExportDestination = {
     DRIVE: 'DRIVE',
     GCS: 'GOOGLE_CLOUD_STORAGE',
     ASSET: 'ASSET',
-    DMS: 'DMS',
+    FEATURE_VIEW: 'FEATURE_VIEW',
+    BIGQUERY: 'BIGQUERY',
 }
 ee.rpc_convert_batch.taskToExportImageRequest = function (params) {
     if (null == params.element) {
@@ -36522,7 +39406,7 @@ ee.rpc_convert_batch.taskToExportImageRequest = function (params) {
                 grid: null,
                 maxPixels: stringOrNull_(params.maxPixels),
                 requestId: stringOrNull_(params.id),
-                maxWorkerCount: numberOrNull_(params.maxWorkers),
+                maxWorkers: numberOrNull_(params.maxWorkers),
             }),
         destination = ee.rpc_convert_batch.guessDestination_(params)
     switch (destination) {
@@ -36559,12 +39443,13 @@ ee.rpc_convert_batch.taskToExportTableRequest = function (params) {
                 description: stringOrNull_(params.description),
                 fileExportOptions: null,
                 assetExportOptions: null,
-                dmsExportOptions: null,
+                featureViewExportOptions: null,
+                bigqueryExportOptions: null,
                 selectors: selectors,
                 maxErrorMeters: numberOrNull_(params.maxErrorMeters),
                 requestId: stringOrNull_(params.id),
                 maxVertices: numberOrNull_(params.maxVertices),
-                maxWorkerCount: numberOrNull_(params.maxWorkers),
+                maxWorkers: numberOrNull_(params.maxWorkers),
             }),
         destination = ee.rpc_convert_batch.guessDestination_(params)
     switch (destination) {
@@ -36580,13 +39465,18 @@ ee.rpc_convert_batch.taskToExportTableRequest = function (params) {
             result.assetExportOptions =
                 ee.rpc_convert_batch.buildTableAssetExportOptions_(params)
             break
-        case ee.rpc_convert_batch.ExportDestination.DMS:
-            result.dmsExportOptions =
-                ee.rpc_convert_batch.buildDmsAssetExportOptions_(params)
+        case ee.rpc_convert_batch.ExportDestination.FEATURE_VIEW:
+            result.featureViewExportOptions =
+                ee.rpc_convert_batch.buildFeatureViewExportOptions_(params)
+            break
+        case ee.rpc_convert_batch.ExportDestination.BIGQUERY:
+            result.bigqueryExportOptions =
+                ee.rpc_convert_batch.buildBigQueryExportOptions_(params)
             break
         default:
             throw Error('Export destination "' + destination + '" unknown')
     }
+    params.workloadTag && (result.workloadTag = params.workloadTag)
     return result
 }
 ee.rpc_convert_batch.taskToExportVideoRequest = function (params) {
@@ -36600,7 +39490,7 @@ ee.rpc_convert_batch.taskToExportVideoRequest = function (params) {
             videoOptions: ee.rpc_convert_batch.buildVideoOptions_(params),
             fileExportOptions: null,
             requestId: stringOrNull_(params.id),
-            maxWorkerCount: numberOrNull_(params.maxWorkers),
+            maxWorkers: numberOrNull_(params.maxWorkers),
         })
     result.fileExportOptions =
         ee.rpc_convert_batch.buildVideoFileExportOptions_(
@@ -36622,7 +39512,7 @@ ee.rpc_convert_batch.taskToExportMapRequest = function (params) {
             ee.rpc_convert_batch.ExportDestination.GCS
         ),
         requestId: stringOrNull_(params.id),
-        maxWorkerCount: numberOrNull_(params.maxWorkers),
+        maxWorkers: numberOrNull_(params.maxWorkers),
     })
 }
 ee.rpc_convert_batch.taskToExportVideoMapRequest = function (params) {
@@ -36640,7 +39530,7 @@ ee.rpc_convert_batch.taskToExportVideoMapRequest = function (params) {
         ),
         requestId: stringOrNull_(params.id),
         version: stringOrNull_(params.version),
-        maxWorkerCount: numberOrNull_(params.maxWorkers),
+        maxWorkers: numberOrNull_(params.maxWorkers),
     })
 }
 ee.rpc_convert_batch.taskToExportClassifierRequest = function (params) {
@@ -36665,7 +39555,7 @@ ee.rpc_convert_batch.taskToExportClassifierRequest = function (params) {
                             ),
                     }
                 ),
-            maxWorkerCount: numberOrNull_(params.maxWorkers),
+            maxWorkers: numberOrNull_(params.maxWorkers),
         }
     )
 }
@@ -36684,8 +39574,10 @@ ee.rpc_convert_batch.guessDestination_ = function (params) {
         ? (destination = ee.rpc_convert_batch.ExportDestination.GCS)
         : null != params.assetId
         ? (destination = ee.rpc_convert_batch.ExportDestination.ASSET)
-        : null != params.dmsName &&
-          (destination = ee.rpc_convert_batch.ExportDestination.DMS)
+        : null != params.mapName &&
+          (destination = ee.rpc_convert_batch.ExportDestination.FEATURE_VIEW)
+    null != params.table &&
+        (destination = ee.rpc_convert_batch.ExportDestination.BIGQUERY)
     return destination
 }
 ee.rpc_convert_batch.buildGeoTiffFormatOptions_ = function (params) {
@@ -36756,7 +39648,7 @@ ee.rpc_convert_batch.buildImageFileExportOptions_ = function (
 ) {
     var result =
         new module$exports$eeapiclient$ee_api_client.ImageFileExportOptions({
-            gcsDestination: null,
+            cloudStorageDestination: null,
             driveDestination: null,
             geoTiffOptions: null,
             tfRecordOptions: null,
@@ -36769,8 +39661,8 @@ ee.rpc_convert_batch.buildImageFileExportOptions_ = function (
           (result.tfRecordOptions =
               ee.rpc_convert_batch.buildTfRecordFormatOptions_(params))
     destination === ee.rpc_convert_batch.ExportDestination.GCS
-        ? (result.gcsDestination =
-              ee.rpc_convert_batch.buildGcsDestination_(params))
+        ? (result.cloudStorageDestination =
+              ee.rpc_convert_batch.buildCloudStorageDestination_(params))
         : (result.driveDestination =
               ee.rpc_convert_batch.buildDriveDestination_(params))
     return result
@@ -36806,13 +39698,13 @@ ee.rpc_convert_batch.buildTableFileExportOptions_ = function (
 ) {
     var result =
         new module$exports$eeapiclient$ee_api_client.TableFileExportOptions({
-            gcsDestination: null,
+            cloudStorageDestination: null,
             driveDestination: null,
             fileFormat: ee.rpc_convert.tableFileFormat(params.fileFormat),
         })
     destination === ee.rpc_convert_batch.ExportDestination.GCS
-        ? (result.gcsDestination =
-              ee.rpc_convert_batch.buildGcsDestination_(params))
+        ? (result.cloudStorageDestination =
+              ee.rpc_convert_batch.buildCloudStorageDestination_(params))
         : (result.driveDestination =
               ee.rpc_convert_batch.buildDriveDestination_(params))
     return result
@@ -36825,13 +39717,22 @@ ee.rpc_convert_batch.buildTableAssetExportOptions_ = function (params) {
         }
     )
 }
-ee.rpc_convert_batch.buildDmsAssetExportOptions_ = function (params) {
-    return new module$exports$eeapiclient$ee_api_client.DmsAssetExportOptions({
-        dmsDestination: ee.rpc_convert_batch.buildDmsDestination_(params),
-        ingestionTimeParameters:
-            ee.rpc_convert_batch.buildDmsIngestionTimeParameters_(
-                params.dmsIngestionTimeParameters
-            ),
+ee.rpc_convert_batch.buildFeatureViewExportOptions_ = function (params) {
+    return new module$exports$eeapiclient$ee_api_client.FeatureViewAssetExportOptions(
+        {
+            featureViewDestination:
+                ee.rpc_convert_batch.buildFeatureViewDestination_(params),
+            ingestionTimeParameters:
+                ee.rpc_convert_batch.buildFeatureViewIngestionTimeParameters_(
+                    params
+                ),
+        }
+    )
+}
+ee.rpc_convert_batch.buildBigQueryExportOptions_ = function (params) {
+    return new module$exports$eeapiclient$ee_api_client.BigQueryExportOptions({
+        bigqueryDestination:
+            ee.rpc_convert_batch.buildBigQueryDestination_(params),
     })
 }
 ee.rpc_convert_batch.buildVideoFileExportOptions_ = function (
@@ -36840,13 +39741,13 @@ ee.rpc_convert_batch.buildVideoFileExportOptions_ = function (
 ) {
     var result =
         new module$exports$eeapiclient$ee_api_client.VideoFileExportOptions({
-            gcsDestination: null,
+            cloudStorageDestination: null,
             driveDestination: null,
             fileFormat: 'MP4',
         })
     destination === ee.rpc_convert_batch.ExportDestination.GCS
-        ? (result.gcsDestination =
-              ee.rpc_convert_batch.buildGcsDestination_(params))
+        ? (result.cloudStorageDestination =
+              ee.rpc_convert_batch.buildCloudStorageDestination_(params))
         : (result.driveDestination =
               ee.rpc_convert_batch.buildDriveDestination_(params))
     return result
@@ -36866,14 +39767,30 @@ ee.rpc_convert_batch.buildVideoMapOptions_ = function (params) {
     })
 }
 ee.rpc_convert_batch.buildTileOptions_ = function (params) {
+    var $jscomp$nullish$tmp1,
+        $jscomp$nullish$tmp2,
+        $jscomp$nullish$tmp3,
+        $jscomp$nullish$tmp4
     return new module$exports$eeapiclient$ee_api_client.TileOptions({
-        maxZoom: numberOrNull_(params.maxZoom),
+        endZoom: numberOrNull_(
+            null != ($jscomp$nullish$tmp1 = params.endZoom)
+                ? $jscomp$nullish$tmp1
+                : params.maxZoom
+        ),
+        startZoom: numberOrNull_(
+            null != ($jscomp$nullish$tmp2 = params.startZoom)
+                ? $jscomp$nullish$tmp2
+                : params.minZoom
+        ),
         scale: numberOrNull_(params.scale),
-        minZoom: numberOrNull_(params.minZoom),
-        skipEmptyTiles: !!params.skipEmptyTiles,
+        skipEmpty: !(null != ($jscomp$nullish$tmp3 = params.skipEmpty)
+            ? !$jscomp$nullish$tmp3
+            : !params.skipEmptyTiles),
         mapsApiKey: stringOrNull_(params.mapsApiKey),
-        tileDimensions: ee.rpc_convert_batch.buildGridDimensions_(
-            params.tileDimensions
+        dimensions: ee.rpc_convert_batch.buildGridDimensions_(
+            null != ($jscomp$nullish$tmp4 = params.dimensions)
+                ? $jscomp$nullish$tmp4
+                : params.tileDimensions
         ),
         stride: numberOrNull_(params.stride),
         zoomSubset: ee.rpc_convert_batch.buildZoomSubset_(
@@ -36882,17 +39799,13 @@ ee.rpc_convert_batch.buildTileOptions_ = function (params) {
         ),
     })
 }
-ee.rpc_convert_batch.buildZoomSubset_ = function (min, max) {
-    if (null == min && null == max) {
-        return null
-    }
-    var result = new module$exports$eeapiclient$ee_api_client.ZoomSubset({
-        min: 0,
-        max: null,
-    })
-    null != min && (result.min = min)
-    result.max = max
-    return result
+ee.rpc_convert_batch.buildZoomSubset_ = function (start, end) {
+    return null == start && null == end
+        ? null
+        : new module$exports$eeapiclient$ee_api_client.ZoomSubset({
+              start: null != start ? start : 0,
+              end: end,
+          })
 }
 ee.rpc_convert_batch.buildGridDimensions_ = function (dimensions) {
     if (null == dimensions) {
@@ -36910,47 +39823,45 @@ ee.rpc_convert_batch.buildGridDimensions_ = function (dimensions) {
     if (Array.isArray(dimensions)) {
         if (2 === dimensions.length) {
             ;(result.height = dimensions[0]), (result.width = dimensions[1])
+        } else if (1 === dimensions.length) {
+            ;(result.height = dimensions[0]), (result.width = dimensions[0])
         } else {
-            if (1 === dimensions.length) {
-                ;(result.height = dimensions[0]), (result.width = dimensions[0])
-            } else {
-                throw Error(
-                    'Unable to construct grid from dimensions: ' + dimensions
-                )
-            }
+            throw Error(
+                'Unable to construct grid from dimensions: ' + dimensions
+            )
+        }
+    } else if ('number' !== typeof dimensions || isNaN(dimensions)) {
+        if (
+            goog.isObject(dimensions) &&
+            null != dimensions.height &&
+            null != dimensions.width
+        ) {
+            ;(result.height = dimensions.height),
+                (result.width = dimensions.width)
+        } else {
+            throw Error(
+                'Unable to construct grid from dimensions: ' + dimensions
+            )
         }
     } else {
-        if ('number' !== typeof dimensions || isNaN(dimensions)) {
-            if (
-                goog.isObject(dimensions) &&
-                null != dimensions.height &&
-                null != dimensions.width
-            ) {
-                ;(result.height = dimensions.height),
-                    (result.width = dimensions.width)
-            } else {
-                throw Error(
-                    'Unable to construct grid from dimensions: ' + dimensions
-                )
-            }
-        } else {
-            ;(result.height = dimensions), (result.width = dimensions)
-        }
+        ;(result.height = dimensions), (result.width = dimensions)
     }
     return result
 }
-ee.rpc_convert_batch.buildGcsDestination_ = function (params) {
+ee.rpc_convert_batch.buildCloudStorageDestination_ = function (params) {
     var permissions = null
     null != params.writePublicTiles &&
         (permissions = params.writePublicTiles
             ? 'PUBLIC'
             : 'DEFAULT_OBJECT_ACL')
-    return new module$exports$eeapiclient$ee_api_client.GcsDestination({
-        bucket: stringOrNull_(params.outputBucket),
-        filenamePrefix: stringOrNull_(params.outputPrefix),
-        bucketCorsUris: params.bucketCorsUris || null,
-        permissions: permissions,
-    })
+    return new module$exports$eeapiclient$ee_api_client.CloudStorageDestination(
+        {
+            bucket: stringOrNull_(params.outputBucket),
+            filenamePrefix: stringOrNull_(params.outputPrefix),
+            bucketCorsUris: params.bucketCorsUris || null,
+            permissions: permissions,
+        }
+    )
 }
 ee.rpc_convert_batch.buildDriveDestination_ = function (params) {
     return new module$exports$eeapiclient$ee_api_client.DriveDestination({
@@ -36963,20 +39874,24 @@ ee.rpc_convert_batch.buildEarthEngineDestination_ = function (params) {
         name: ee.rpc_convert.assetIdToAssetName(params.assetId),
     })
 }
-ee.rpc_convert_batch.buildDmsDestination_ = function (params) {
-    return new module$exports$eeapiclient$ee_api_client.DmsDestination({
-        dmsName: ee.rpc_convert.assetIdToAssetName(params.dmsName),
+ee.rpc_convert_batch.buildFeatureViewDestination_ = function (params) {
+    return new module$exports$eeapiclient$ee_api_client.FeatureViewDestination({
+        name: ee.rpc_convert.assetIdToAssetName(params.mapName),
     })
 }
-ee.rpc_convert_batch.buildDmsIngestionTimeParameters_ = function (params) {
-    return new module$exports$eeapiclient$ee_api_client.DmsIngestionTimeParameters(
+ee.rpc_convert_batch.buildBigQueryDestination_ = function (params) {
+    return new module$exports$eeapiclient$ee_api_client.BigQueryDestination({
+        table: stringOrNull_(params.table),
+        overwrite: !!params.overwrite,
+    })
+}
+ee.rpc_convert_batch.buildFeatureViewIngestionTimeParameters_ = function (
+    params
+) {
+    return new module$exports$eeapiclient$ee_api_client.FeatureViewIngestionTimeParameters(
         {
-            thinningOptions: ee.rpc_convert_batch.buildThinningOptions_(
-                params.thinningOptions
-            ),
-            rankingOptions: ee.rpc_convert_batch.buildRankingOptions_(
-                params.rankingOptions
-            ),
+            thinningOptions: ee.rpc_convert_batch.buildThinningOptions_(params),
+            rankingOptions: ee.rpc_convert_batch.buildRankingOptions_(params),
         }
     )
 }
@@ -36993,75 +39908,118 @@ ee.rpc_convert_batch.buildRankingOptions_ = function (params) {
         ? null
         : new module$exports$eeapiclient$ee_api_client.RankingOptions({
               zOrderRankingRule: ee.rpc_convert_batch.buildRankingRule_(
-                  params.zOrderRankingRule
+                  params.zOrderRanking
               ),
               thinningRankingRule: ee.rpc_convert_batch.buildRankingRule_(
-                  params.thinningRankingRule
+                  params.thinningRanking
               ),
           })
 }
-ee.rpc_convert_batch.buildRankingRule_ = function (params) {
-    if (null == params) {
+ee.rpc_convert_batch.buildRankingRule_ = function (rules) {
+    if (!rules) {
         return null
     }
-    if (
-        params.rankByOneThingRule &&
-        !Array.isArray(params.rankByOneThingRule)
-    ) {
+    var originalRules = rules
+    'string' === typeof rules && (rules = rules.split(','))
+    if (Array.isArray(rules)) {
+        return new module$exports$eeapiclient$ee_api_client.RankingRule({
+            rankByOneThingRule: (rules || []).map(
+                ee.rpc_convert_batch.buildRankByOneThingRule_
+            ),
+        })
+    }
+    throw Error(
+        'Unable to build ranking rule from rules: ' +
+            JSON.stringify(originalRules) +
+            '. Rules should either be a comma-separated string or list of strings.'
+    )
+}
+ee.rpc_convert_batch.buildRankByOneThingRule_ = function (ruleString) {
+    var rankByOneThingRule =
+        new module$exports$eeapiclient$ee_api_client.RankByOneThingRule({
+            direction: null,
+            rankByAttributeRule: null,
+            rankByMinZoomLevelRule: null,
+            rankByGeometryTypeRule: null,
+        })
+    ruleString = ruleString.trim()
+    var matches = ruleString.match(/^([\S]+.*)\s+(ASC|DESC)$/)
+    if (null == matches) {
         throw Error(
-            'Parameter "rankByOneThingRule" should be an array, got ' +
-                typeof params.rankByOneThingRule
+            'Ranking rule format is invalid. Each rule should be defined by a rule type and a direction (ASC or DESC), separated by a space. Valid rule types are: .geometryType, .minZoomLevel, or a feature property name.'
         )
     }
-    return new module$exports$eeapiclient$ee_api_client.RankingRule({
-        rankByOneThingRule: (params.rankByOneThingRule || []).map(
-            ee.rpc_convert_batch.buildRankByOneThingRule_
-        ),
-        pseudoRandomTiebreaking: params.pseudoRandomTiebreaking || null,
-    })
+    var $jscomp$destructuring$var46 = $jscomp.makeIterator(matches)
+    $jscomp$destructuring$var46.next()
+    var ruleType = $jscomp$destructuring$var46.next().value,
+        direction = $jscomp$destructuring$var46.next().value
+    switch (direction.toUpperCase()) {
+        case 'ASC':
+            rankByOneThingRule.direction = 'ASCENDING'
+            break
+        case 'DESC':
+            rankByOneThingRule.direction = 'DESCENDING'
+            break
+        default:
+            throw Error(
+                "Ranking rule direction '" +
+                    direction +
+                    "' is invalid. Directions are: ASC, DESC."
+            )
+    }
+    switch (ruleType.trim()) {
+        case '.geometryType':
+            rankByOneThingRule.rankByGeometryTypeRule =
+                new module$exports$eeapiclient$ee_api_client.RankByGeometryTypeRule(
+                    {}
+                )
+            break
+        case '.minZoomLevel':
+            rankByOneThingRule.rankByMinZoomLevelRule =
+                new module$exports$eeapiclient$ee_api_client.RankByMinZoomLevelRule(
+                    {}
+                )
+            break
+        default:
+            rankByOneThingRule.rankByAttributeRule =
+                new module$exports$eeapiclient$ee_api_client.RankByAttributeRule(
+                    { attributeName: stringOrNull_(ruleType) }
+                )
+    }
+    return rankByOneThingRule
 }
-ee.rpc_convert_batch.buildRankByOneThingRule_ = function (params) {
-    var result =
-        new module$exports$eeapiclient$ee_api_client.RankByOneThingRule({
-            direction: stringOrNull_(params.direction),
-            rankByAttributeRule: null,
-            rankByMinVisibleLodRule: null,
-            rankByGeometryTypeRule: null,
-            rankByNaturalOrderRule: null,
-        })
-    params.rankByAttributeRule
-        ? (result.rankByAttributeRule =
-              ee.rpc_convert_batch.buildRankByAttributeRule(params))
-        : params.rankByMinVisibleLodRule
-        ? (result.rankByMinVisibleLodRule =
-              new module$exports$eeapiclient$ee_api_client.RankByMinVisibleLodRule(
-                  {}
-              ))
-        : params.rankByGeometryTypeRule
-        ? (result.rankByGeometryTypeRule =
-              new module$exports$eeapiclient$ee_api_client.RankByGeometryTypeRule(
-                  {}
-              ))
-        : params.rankByNaturalOrderRule &&
-          (result.rankByNaturalOrderRule =
-              new module$exports$eeapiclient$ee_api_client.RankByNaturalOrder(
-                  {}
-              ))
-    return result
+goog.singleton = {}
+var module$contents$goog$singleton_instantiatedSingletons = [],
+    module$contents$goog$singleton_Singleton = function () {}
+goog.singleton.getInstance = function (ctor) {
+    ;(0, goog.asserts.assert)(
+        !Object.isSealed(ctor),
+        'Cannot use getInstance() with a sealed constructor.'
+    )
+    if (ctor.instance_ && ctor.hasOwnProperty('instance_')) {
+        return ctor.instance_
+    }
+    goog.DEBUG &&
+        module$contents$goog$singleton_instantiatedSingletons.push(ctor)
+    var instance = new ctor()
+    ctor.instance_ = instance
+    ;(0, goog.asserts.assert)(
+        ctor.hasOwnProperty('instance_'),
+        'Could not instantiate singleton.'
+    )
+    return instance
 }
-ee.rpc_convert_batch.buildRankByAttributeRule = function (params) {
-    return new module$exports$eeapiclient$ee_api_client.RankByAttributeRule({
-        attributeName: stringOrNull_(params.attributeName),
-    })
-}
+goog.singleton.instantiatedSingletons =
+    module$contents$goog$singleton_instantiatedSingletons
 ee.data = {}
 ee.data.AbstractTaskConfig = {}
 ee.data.AlgorithmsRegistry = {}
 ee.data.AssetList = {}
+ee.data.BigQueryTaskConfig = {}
 ee.data.ClassifierTaskConfig = {}
+ee.data.FeatureViewTaskConfig = {}
 ee.data.ImageTaskConfig = {}
 ee.data.MapTaskConfig = {}
-ee.data.TableDmsTaskConfig = {}
 ee.data.TableTaskConfig = {}
 ee.data.VideoMapTaskConfig = {}
 ee.data.VideoTaskConfig = {}
@@ -37167,7 +40125,7 @@ ee.data.authenticateViaPrivateKey = function (
                 : callback({
                       access_token: token.access_token,
                       token_type: token.token_type,
-                      expires_in: (token.expiry_date - Date.now()) / 1000,
+                      expires_in: (token.expiry_date - Date.now()) / 1e3,
                   })
         })
     })
@@ -37246,11 +40204,14 @@ ee.data.getMapId = function (params, opt_callback) {
             bandIds: ee.rpc_convert.bandList(params.bands),
             visualizationOptions: ee.rpc_convert.visualizationOptions(params),
         }),
-        call = new module$contents$ee$apiclient_Call(opt_callback)
+        queryParams = { fields: 'name' },
+        workloadTag = ee.data.getWorkloadTag()
+    workloadTag && (queryParams.workloadTag = workloadTag)
+    var call = new module$contents$ee$apiclient_Call(opt_callback)
     return call.handle(
         call
             .maps()
-            .create(call.projectsPath(), map, { fields: ['name'] })
+            .create(call.projectsPath(), map, queryParams)
             .then(function (response) {
                 return ee.data.makeMapId_(response.name, '')
             })
@@ -37295,41 +40256,74 @@ ee.data.makeMapId_ = function (mapid, token, opt_urlFormat) {
         urlFormat: urlFormat,
     }
 }
-ee.data.getDmsTilesKey = function (params, opt_callback) {
+ee.data.getFeatureViewTilesKey = function (params, opt_callback) {
     var visualizationExpression = params.visParams
             ? ee.data.expressionAugmenter_(
                   ee.Serializer.encodeCloudApiExpression(params.visParams)
               )
             : null,
-        map = new module$exports$eeapiclient$ee_api_client.DMSMap({
+        map = new module$exports$eeapiclient$ee_api_client.FeatureView({
             name: null,
-            asset: params.assetName,
-            dmsName: params.mapName,
+            asset: params.assetId,
+            mapName: params.mapName,
             visualizationExpression: visualizationExpression,
         }),
         call = new module$contents$ee$apiclient_Call(opt_callback)
     return call.handle(
         call
-            .dmsMaps()
+            .featureView()
             .create(call.projectsPath(), map, { fields: ['name'] })
             .then(function (response) {
-                return { token: response.name }
+                var token = response.name.split('/').pop(),
+                    rawTilesKey = token.substring(0, token.lastIndexOf('-'))
+                return {
+                    token: token,
+                    formatTileUrl: function (x, y, z) {
+                        return (
+                            module$contents$ee$apiclient_apiclient.getTileBaseUrl() +
+                            '/' +
+                            module$exports$ee$apiVersion.V1ALPHA +
+                            '/' +
+                            response.name +
+                            '/tiles/' +
+                            z +
+                            '/' +
+                            x +
+                            '/' +
+                            y
+                        )
+                    },
+                    rawTilesKey: rawTilesKey,
+                }
             })
     )
 }
-goog.exportSymbol('ee.data.getDmsTilesKey', ee.data.getDmsTilesKey)
+goog.exportSymbol(
+    'ee.data.getFeatureViewTilesKey',
+    ee.data.getFeatureViewTilesKey
+)
+ee.data.listFeatures = function (asset, params, opt_callback) {
+    var call = new module$contents$ee$apiclient_Call(opt_callback),
+        name = ee.rpc_convert.assetIdToAssetName(asset)
+    return call.handle(call.assets().listFeatures(name, params))
+}
+goog.exportSymbol('ee.data.listFeatures', ee.data.listFeatures)
 ee.data.computeValue = function (obj, opt_callback) {
-    var expression = ee.data.expressionAugmenter_(
-            ee.Serializer.encodeCloudApiExpression(obj)
-        ),
-        call = new module$contents$ee$apiclient_Call(opt_callback)
+    var request = {
+            expression: ee.data.expressionAugmenter_(
+                ee.Serializer.encodeCloudApiExpression(obj)
+            ),
+        },
+        workloadTag = ee.data.getWorkloadTag()
+    workloadTag && (request.workloadTag = workloadTag)
+    var call = new module$contents$ee$apiclient_Call(opt_callback)
     return call.handle(
         call
             .value()
             .compute(
                 call.projectsPath(),
                 new module$exports$eeapiclient$ee_api_client.ComputeValueRequest(
-                    { expression: expression }
+                    request
                 )
             )
             .then(function (x) {
@@ -37366,11 +40360,14 @@ ee.data.getThumbId = function (params, opt_callback) {
             visualizationOptions: ee.rpc_convert.visualizationOptions(params),
             grid: null,
         }),
-        call = new module$contents$ee$apiclient_Call(opt_callback)
+        queryParams = { fields: 'name' },
+        workloadTag = ee.data.getWorkloadTag()
+    workloadTag && (queryParams.workloadTag = workloadTag)
+    var call = new module$contents$ee$apiclient_Call(opt_callback)
     return call.handle(
         call
             .thumbnails()
-            .create(call.projectsPath(), thumbnail, { fields: ['name'] })
+            .create(call.projectsPath(), thumbnail, queryParams)
             .then(function (response) {
                 return { thumbid: response.name, token: '' }
             })
@@ -37393,11 +40390,14 @@ ee.data.getVideoThumbId = function (params, opt_callback) {
             videoOptions: videoOptions,
             grid: null,
         }),
-        call = new module$contents$ee$apiclient_Call(opt_callback)
+        queryParams = { fields: 'name' },
+        workloadTag = ee.data.getWorkloadTag()
+    workloadTag && (queryParams.workloadTag = workloadTag)
+    var call = new module$contents$ee$apiclient_Call(opt_callback)
     return call.handle(
         call
             .videoThumbnails()
-            .create(call.projectsPath(), request, { fields: ['name'] })
+            .create(call.projectsPath(), request, queryParams)
             .then(function (response) {
                 return { thumbid: response.name, token: '' }
             })
@@ -37417,11 +40417,14 @@ ee.data.getFilmstripThumbId = function (params, opt_callback) {
                 orientation: ee.rpc_convert.orientation(params.orientation),
                 grid: null,
             }),
-        call = new module$contents$ee$apiclient_Call(opt_callback)
+        queryParams = { fields: 'name' },
+        workloadTag = ee.data.getWorkloadTag()
+    workloadTag && (queryParams.workloadTag = workloadTag)
+    var call = new module$contents$ee$apiclient_Call(opt_callback)
     return call.handle(
         call
             .filmstripThumbnails()
-            .create(call.projectsPath(), request, { fields: ['name'] })
+            .create(call.projectsPath(), request, queryParams)
             .then(function (response) {
                 return { thumbid: response.name, token: '' }
             })
@@ -37480,8 +40483,8 @@ ee.data.getDownloadId = function (params, opt_callback) {
         }))
     if (
         params.bands &&
-        params.bands.some(function ($jscomp$destructuring$var34) {
-            return null == $jscomp$destructuring$var34.id
+        params.bands.some(function ($jscomp$destructuring$var47) {
+            return null == $jscomp$destructuring$var47.id
         })
     ) {
         throw Error('Each band dictionary must have an id.')
@@ -37491,7 +40494,7 @@ ee.data.getDownloadId = function (params, opt_callback) {
     if ('string' === typeof params.crs_transform) {
         try {
             params.crs_transform = JSON.parse(params.crs_transform)
-        } catch (e$58) {}
+        } catch (e$64) {}
     }
     var image = ee.data.images.buildDownloadIdImage(params.image, params),
         thumbnail = new module$exports$eeapiclient$ee_api_client.Thumbnail({
@@ -37510,11 +40513,14 @@ ee.data.getDownloadId = function (params, opt_callback) {
                 ),
             grid: null,
         }),
-        call = new module$contents$ee$apiclient_Call(opt_callback)
+        queryParams = { fields: 'name' },
+        workloadTag = ee.data.getWorkloadTag()
+    workloadTag && (queryParams.workloadTag = workloadTag)
+    var call = new module$contents$ee$apiclient_Call(opt_callback)
     return call.handle(
         call
             .thumbnails()
-            .create(call.projectsPath(), thumbnail, { fields: ['name'] })
+            .create(call.projectsPath(), thumbnail, queryParams)
             .then(function (response) {
                 return { docid: response.name, token: '' }
             })
@@ -37543,32 +40549,31 @@ ee.data.getTableDownloadId = function (params, opt_callback) {
     if (null != params.selectors) {
         if ('string' === typeof params.selectors) {
             selectors = params.selectors.split(',')
+        } else if (
+            Array.isArray(params.selectors) &&
+            params.selectors.every(function (x) {
+                return 'string' === typeof x
+            })
+        ) {
+            selectors = params.selectors
         } else {
-            if (
-                Array.isArray(params.selectors) &&
-                params.selectors.every(function (x) {
-                    return 'string' === typeof x
-                })
-            ) {
-                selectors = params.selectors
-            } else {
-                throw Error(
-                    "'selectors' parameter must be an array of strings."
-                )
-            }
+            throw Error("'selectors' parameter must be an array of strings.")
         }
     }
     var table = new module$exports$eeapiclient$ee_api_client.Table({
-        name: null,
-        expression: expression,
-        fileFormat: fileFormat,
-        selectors: selectors,
-        filename: params.filename || null,
-    })
+            name: null,
+            expression: expression,
+            fileFormat: fileFormat,
+            selectors: selectors,
+            filename: params.filename || null,
+        }),
+        queryParams = { fields: 'name' },
+        workloadTag = ee.data.getWorkloadTag()
+    workloadTag && (queryParams.workloadTag = workloadTag)
     return call.handle(
         call
             .tables()
-            .create(call.projectsPath(), table, { fields: ['name'] })
+            .create(call.projectsPath(), table, queryParams)
             .then(function (res) {
                 return { docid: res.name || '', token: '' }
             })
@@ -37617,9 +40622,9 @@ ee.data.getTaskStatus = function (taskId, opt_callback) {
         .makeStringArray_(taskId)
         .map(ee.rpc_convert.taskIdToOperationName)
     if (1 === opNames.length) {
-        var call$60 = new module$contents$ee$apiclient_Call(opt_callback)
-        return call$60.handle(
-            call$60
+        var call$66 = new module$contents$ee$apiclient_Call(opt_callback)
+        return call$66.handle(
+            call$66
                 .operations()
                 .get(opNames[0])
                 .then(function (op) {
@@ -37702,8 +40707,8 @@ ee.data.cancelOperation = function (operationName, opt_callback) {
         request =
             new module$exports$eeapiclient$ee_api_client.CancelOperationRequest()
     if (1 === opNames.length) {
-        var call$61 = new module$contents$ee$apiclient_Call(opt_callback)
-        call$61.handle(call$61.operations().cancel(opNames[0], request))
+        var call$67 = new module$contents$ee$apiclient_Call(opt_callback)
+        call$67.handle(call$67.operations().cancel(opNames[0], request))
     } else {
         var call = new module$contents$ee$apiclient_BatchCall(opt_callback),
             operations = call.operations()
@@ -37720,8 +40725,8 @@ ee.data.getOperation = function (operationName, opt_callback) {
         .makeStringArray_(operationName)
         .map(ee.rpc_convert.taskIdToOperationName)
     if (!Array.isArray(operationName)) {
-        var call$62 = new module$contents$ee$apiclient_Call(opt_callback)
-        return call$62.handle(call$62.operations().get(opNames[0]))
+        var call$68 = new module$contents$ee$apiclient_Call(opt_callback)
+        return call$68.handle(call$68.operations().get(opNames[0]))
     }
     var call = new module$contents$ee$apiclient_BatchCall(opt_callback),
         operations = call.operations()
@@ -37759,10 +40764,14 @@ ee.data.startProcessing = function (taskId, params, opt_callback) {
     params.id = taskId
     var taskType = params.type,
         metadata =
-            null != params.sourceUrl
-                ? { __source_url__: params.sourceUrl }
-                : {},
-        call = new module$contents$ee$apiclient_Call(opt_callback),
+            null != params.sourceUrl ? { __source_url__: params.sourceUrl } : {}
+    if ('workloadTag' in params) {
+        params.workloadTag || delete params.workloadTag
+    } else {
+        var workloadTag = ee.data.getWorkloadTag()
+        workloadTag && (params.workloadTag = workloadTag)
+    }
+    var call = new module$contents$ee$apiclient_Call(opt_callback),
         handle = function (response) {
             return call.handle(
                 response.then(ee.rpc_convert.operationToProcessingResponse)
@@ -37828,6 +40837,8 @@ ee.data.prepareExportImageRequest_ = function (taskConfig, metadata) {
         imageRequest.expression,
         metadata
     )
+    taskConfig.workloadTag &&
+        (imageRequest.workloadTag = taskConfig.workloadTag)
     return imageRequest
 }
 ee.data.prepareExportVideoRequest_ = function (taskConfig, metadata) {
@@ -37837,6 +40848,8 @@ ee.data.prepareExportVideoRequest_ = function (taskConfig, metadata) {
         videoRequest.expression,
         metadata
     )
+    taskConfig.workloadTag &&
+        (videoRequest.workloadTag = taskConfig.workloadTag)
     return videoRequest
 }
 ee.data.prepareExportMapRequest_ = function (taskConfig, metadata) {
@@ -37849,6 +40862,7 @@ ee.data.prepareExportMapRequest_ = function (taskConfig, metadata) {
         mapRequest.expression,
         metadata
     )
+    taskConfig.workloadTag && (mapRequest.workloadTag = taskConfig.workloadTag)
     return mapRequest
 }
 ee.data.prepareExportVideoMapRequest_ = function (taskConfig, metadata) {
@@ -37861,6 +40875,8 @@ ee.data.prepareExportVideoMapRequest_ = function (taskConfig, metadata) {
     videoMapRequest.expression = ee.data.expressionAugmenter_(
         videoMapRequest.expression
     )
+    taskConfig.workloadTag &&
+        (videoMapRequest.workloadTag = taskConfig.workloadTag)
     return videoMapRequest
 }
 ee.data.prepareExportClassifierRequest_ = function (taskConfig, metadata) {
@@ -37869,6 +40885,8 @@ ee.data.prepareExportClassifierRequest_ = function (taskConfig, metadata) {
     classifierRequest.expression = ee.data.expressionAugmenter_(
         classifierRequest.expression
     )
+    taskConfig.workloadTag &&
+        (classifierRequest.workloadTag = taskConfig.workloadTag)
     return classifierRequest
 }
 ee.data.startIngestion = function (taskId, request, opt_callback) {
@@ -37950,54 +40968,61 @@ ee.data.getAsset = function (id, opt_callback) {
 goog.exportSymbol('ee.data.getAsset', ee.data.getAsset)
 ee.data.getInfo = ee.data.getAsset
 goog.exportSymbol('ee.data.getInfo', ee.data.getInfo)
-ee.data.getList = function (params, opt_callback) {
-    var call = new module$contents$ee$apiclient_Call(opt_callback),
-        methodRoot = call.assets(),
-        parent = ee.rpc_convert.assetIdToAssetName(params.id),
-        isProjectAssetRoot = ee.rpc_convert.CLOUD_ASSET_ROOT_RE.test(params.id)
-    isProjectAssetRoot &&
-        ((methodRoot = call.projects()),
-        (parent = ee.rpc_convert.projectParentFromPath(params.id)))
-    if (
-        Object.keys(params).every(function (k) {
-            return 'id' === k || 'num' === k
-        })
-    ) {
-        return call.handle(
-            methodRoot
-                .listAssets(parent, { pageSize: params.num })
-                .then(ee.rpc_convert.listAssetsToGetList)
-        )
-    }
-    if (isProjectAssetRoot) {
-        throw Error(
-            'getList on a project does not support filtering options. Please provide a full asset path. Got: ' +
-                params.id
-        )
-    }
-    var body = ee.rpc_convert.getListToListImages(params)
-    return call.handle(
-        methodRoot
-            .listImages(parent, body)
-            .then(ee.rpc_convert.listImagesToGetList)
-    )
-}
-goog.exportSymbol('ee.data.getList', ee.data.getList)
-ee.data.listAssets = function (parent, params, opt_callback) {
-    params = void 0 === params ? {} : params
+ee.data.makeListAssetsCall_ = function (
+    parent,
+    opt_params,
+    opt_callback,
+    opt_postProcessing
+) {
+    opt_params = void 0 === opt_params ? {} : opt_params
+    opt_postProcessing =
+        void 0 === opt_postProcessing
+            ? goog.functions.identity
+            : opt_postProcessing
     var isProjectAssetRoot = ee.rpc_convert.CLOUD_ASSET_ROOT_RE.test(parent),
         call = new module$contents$ee$apiclient_Call(opt_callback),
         methodRoot = isProjectAssetRoot ? call.projects() : call.assets()
     parent = isProjectAssetRoot
         ? ee.rpc_convert.projectParentFromPath(parent)
         : ee.rpc_convert.assetIdToAssetName(parent)
-    return call.handle(methodRoot.listAssets(parent, params))
+    return call.handle(
+        methodRoot.listAssets(parent, opt_params).then(opt_postProcessing)
+    )
+}
+ee.data.getList = function (params, opt_callback) {
+    return ee.data.makeListAssetsCall_(
+        params.id,
+        ee.rpc_convert.getListToListAssets(params),
+        opt_callback,
+        function (r) {
+            return null == r ? null : ee.rpc_convert.listAssetsToGetList(r)
+        }
+    )
+}
+goog.exportSymbol('ee.data.getList', ee.data.getList)
+ee.data.listAssets = function (parent, opt_params, opt_callback) {
+    opt_params = void 0 === opt_params ? {} : opt_params
+    return ee.data.makeListAssetsCall_(parent, opt_params, opt_callback)
 }
 goog.exportSymbol('ee.data.listAssets', ee.data.listAssets)
-ee.data.listImages = function (parent, params, opt_callback) {
-    params = void 0 === params ? {} : params
-    var call = new module$contents$ee$apiclient_Call(opt_callback)
-    return call.handle(call.assets().listImages(parent, params))
+ee.data.listImages = function (parent, opt_params, opt_callback) {
+    opt_params = void 0 === opt_params ? {} : opt_params
+    var params = ee.rpc_convert.processListImagesParams(opt_params)
+    return ee.data.makeListAssetsCall_(
+        parent,
+        params,
+        opt_callback,
+        function (r) {
+            if (null == r) {
+                return null
+            }
+            var listImagesResponse = {}
+            r.assets && (listImagesResponse.images = r.assets)
+            r.nextPageToken &&
+                (listImagesResponse.nextPageToken = r.nextPageToken)
+            return listImagesResponse
+        }
+    )
 }
 goog.exportSymbol('ee.data.listImages', ee.data.listImages)
 ee.data.listBuckets = function (project, opt_callback) {
@@ -38241,10 +41266,63 @@ ee.data.getAssetRootQuota = function (rootId, opt_callback) {
     )
 }
 goog.exportSymbol('ee.data.getAssetRootQuota', ee.data.getAssetRootQuota)
+ee.data.WorkloadTag = function () {
+    this.default = this.tag = ''
+}
+ee.data.WorkloadTag.prototype.get = function () {
+    return this.tag
+}
+ee.data.WorkloadTag.prototype.set = function (tag) {
+    this.tag = this.validate(tag)
+}
+ee.data.WorkloadTag.prototype.setDefault = function (newDefault) {
+    this.default = this.validate(newDefault)
+}
+ee.data.WorkloadTag.prototype.reset = function () {
+    this.tag = this.default
+}
+ee.data.WorkloadTag.prototype.validate = function (tag) {
+    if (null == tag || '' === tag) {
+        return ''
+    }
+    tag = String(tag)
+    if (!/^([a-z0-9]|[a-z0-9][-_\.a-z0-9]{0,61}[a-z0-9])$/g.test(tag)) {
+        throw Error(
+            'Invalid tag, "' +
+                tag +
+                '". Tags must be 1-63 characters, beginning and ending with a lowercase alphanumeric character([a-z0-9]) with dashes (-), underscores (_), dots (.), andlowercase alphanumerics between.'
+        )
+    }
+    return tag
+}
+ee.data.WorkloadTag.getInstance = function () {
+    return goog.singleton.getInstance(ee.data.WorkloadTag)
+}
+ee.data.getWorkloadTag = function () {
+    return ee.data.WorkloadTag.getInstance().get()
+}
+goog.exportSymbol('ee.data.getWorkloadTag', ee.data.getWorkloadTag)
+ee.data.setWorkloadTag = function (tag) {
+    ee.data.WorkloadTag.getInstance().set(tag)
+}
+goog.exportSymbol('ee.data.setWorkloadTag', ee.data.setWorkloadTag)
+ee.data.setDefaultWorkloadTag = function (tag) {
+    ee.data.WorkloadTag.getInstance().setDefault(tag)
+    ee.data.WorkloadTag.getInstance().set(tag)
+}
+goog.exportSymbol(
+    'ee.data.setDefaultWorkloadTag',
+    ee.data.setDefaultWorkloadTag
+)
+ee.data.resetWorkloadTag = function (opt_resetDefault) {
+    opt_resetDefault && ee.data.WorkloadTag.getInstance().setDefault('')
+    ee.data.WorkloadTag.getInstance().reset()
+}
+goog.exportSymbol('ee.data.resetWorkloadTag', ee.data.resetWorkloadTag)
 ee.data.AssetType = {
     ALGORITHM: 'Algorithm',
     CLASSIFIER: 'Classifier',
-    DATA_MAPPING_SERVICE: 'DmsAsset',
+    FEATURE_VIEW: 'FeatureView',
     FOLDER: 'Folder',
     FEATURE_COLLECTION: 'FeatureCollection',
     IMAGE: 'Image',
@@ -38273,13 +41351,13 @@ ee.data.ExportDestination = {
     DRIVE: 'DRIVE',
     GCS: 'GOOGLE_CLOUD_STORAGE',
     ASSET: 'ASSET',
-    DMS: 'DMS',
+    FEATURE_VIEW: 'FEATURE_VIEW',
+    BIGQUERY: 'BIGQUERY',
 }
 ee.data.ThinningStrategy = {
     GLOBALLY_CONSISTENT: 'GLOBALLY_CONSISTENT',
     HIGHER_DENSITY: 'HIGHER_DENSITY',
 }
-ee.data.Direction = { ASCENDING: 'ASCENDING', DESCENDING: 'DESCENDING' }
 ee.data.SystemPropertyPrefix = 'system:'
 ee.data.SystemTimeProperty = {
     START: 'system:time_start',
@@ -38298,11 +41376,12 @@ ee.data.ALLOWED_DESCRIPTION_HTML_ELEMENTS =
         'a code em i li ol p strong sub sup ul'.split(' ')
     )
 ee.data.ShortAssetDescription = function () {}
+ee.data.ListImagesResponse = function () {}
 ee.data.AssetAcl = function () {}
 ee.data.AssetAclUpdate = function () {}
 ee.data.AssetQuotaEntry = function () {}
 ee.data.AssetQuotaDetails = function () {}
-ee.data.DmsAssetDescription = function () {}
+ee.data.FeatureViewDescription = function () {}
 ee.data.FolderDescription = function () {}
 ee.data.FeatureCollectionDescription = function () {}
 ee.data.FeatureVisualizationParameters = function () {}
@@ -38315,7 +41394,7 @@ ee.data.ImageDescription = function () {}
 ee.data.TableDescription = function () {}
 ee.data.TableDownloadParameters = function () {}
 ee.data.ImageVisualizationParameters = function () {}
-ee.data.DmsMapVisualizationParameters = function () {}
+ee.data.FeatureViewVisualizationParameters = function () {}
 ee.data.ThumbnailOptions = function () {}
 $jscomp.inherits(ee.data.ThumbnailOptions, ee.data.ImageVisualizationParameters)
 ee.data.VideoThumbnailOptions = function () {}
@@ -38331,7 +41410,7 @@ ee.data.DownloadId = function () {}
 ee.data.RawMapId = function () {}
 ee.data.MapId = function () {}
 $jscomp.inherits(ee.data.MapId, ee.data.RawMapId)
-ee.data.DmsTilesKey = function () {}
+ee.data.FeatureViewTilesKey = function () {}
 ee.data.MapZoomRange = { MIN: 0, MAX: 24 }
 ee.data.TaskStatus = function () {}
 ee.data.ProcessingResponse = function () {}
@@ -38418,11 +41497,11 @@ ee.ComputedObject.prototype.encodeCloudValue = function (serializer) {
         return ee.rpc_node.argumentReference(name)
     }
     var encodedArgs = {},
-        name$63
-    for (name$63 in this.args) {
-        void 0 !== this.args[name$63] &&
-            (encodedArgs[name$63] = ee.rpc_node.reference(
-                serializer.makeReference(this.args[name$63])
+        name$69
+    for (name$69 in this.args) {
+        void 0 !== this.args[name$69] &&
+            (encodedArgs[name$69] = ee.rpc_node.reference(
+                serializer.makeReference(this.args[name$69])
             ))
     }
     return 'string' === typeof this.func
@@ -38628,15 +41707,10 @@ ee.Function.prototype.promoteArgs = function (args) {
                 args[name],
                 specs[i].type
             )
-        } else {
-            if (!specs[i].optional) {
-                throw Error(
-                    'Required argument (' +
-                        name +
-                        ') missing to function: ' +
-                        this
-                )
-            }
+        } else if (!specs[i].optional) {
+            throw Error(
+                'Required argument (' + name + ') missing to function: ' + this
+            )
         }
         known[name] = !0
     }
@@ -39024,21 +42098,15 @@ ee.Element.prototype.set = function (var_args) {
                 var value = properties[key]
                 result = ee.ApiFunction._call('Element.set', result, key, value)
             }
+        } else if (
+            properties instanceof ee.ComputedObject &&
+            ee.ApiFunction.lookupInternal('Element.setMulti')
+        ) {
+            result = ee.ApiFunction._call('Element.setMulti', this, properties)
         } else {
-            if (
-                properties instanceof ee.ComputedObject &&
-                ee.ApiFunction.lookupInternal('Element.setMulti')
-            ) {
-                result = ee.ApiFunction._call(
-                    'Element.setMulti',
-                    this,
-                    properties
-                )
-            } else {
-                throw Error(
-                    'When Element.set() is passed one argument, it must be a dictionary.'
-                )
-            }
+            throw Error(
+                'When Element.set() is passed one argument, it must be a dictionary.'
+            )
         }
     } else {
         if (0 != arguments.length % 2) {
@@ -39104,21 +42172,19 @@ ee.Geometry = function (geoJson, opt_proj, opt_geodesic, opt_evenOdd) {
         this.geometries_ = geoJson.geometries || null
         if (null != opt_proj) {
             this.proj_ = opt_proj
-        } else {
-            if ('crs' in geoJson) {
-                if (
-                    goog.isObject(geoJson.crs) &&
-                    'name' == geoJson.crs.type &&
-                    goog.isObject(geoJson.crs.properties) &&
-                    'string' === typeof geoJson.crs.properties.name
-                ) {
-                    this.proj_ = geoJson.crs.properties.name
-                } else {
-                    throw Error(
-                        'Invalid CRS declaration in GeoJSON: ' +
-                            new goog.json.Serializer().serialize(geoJson.crs)
-                    )
-                }
+        } else if ('crs' in geoJson) {
+            if (
+                goog.isObject(geoJson.crs) &&
+                'name' == geoJson.crs.type &&
+                goog.isObject(geoJson.crs.properties) &&
+                'string' === typeof geoJson.crs.properties.name
+            ) {
+                this.proj_ = geoJson.crs.properties.name
+            } else {
+                throw Error(
+                    'Invalid CRS declaration in GeoJSON: ' +
+                        new goog.json.Serializer().serialize(geoJson.crs)
+                )
             }
         }
         this.geodesic_ = opt_geodesic
@@ -39217,8 +42283,12 @@ ee.Geometry.BBox = function (west, south, east, north) {
     }
     var coordinates = [west, south, east, north]
     if (ee.Geometry.hasServerValue_(coordinates)) {
-        return new ee.ApiFunction('GeometryConstructors.BBox').apply(
-            coordinates
+        var $jscomp$spread$args6
+        return ($jscomp$spread$args6 = new ee.ApiFunction(
+            'GeometryConstructors.BBox'
+        )).call.apply(
+            $jscomp$spread$args6,
+            $jscomp.arrayFromIterable(coordinates)
         )
     }
     if (!(Infinity > west)) {
@@ -39632,24 +42702,18 @@ ee.Filter = function (opt_filter) {
             filters: opt_filter,
         })
         this.filter_ = opt_filter
+    } else if (opt_filter instanceof ee.ComputedObject) {
+        ee.ComputedObject.call(
+            this,
+            opt_filter.func,
+            opt_filter.args,
+            opt_filter.varName
+        ),
+            (this.filter_ = [opt_filter])
+    } else if (void 0 === opt_filter) {
+        ee.ComputedObject.call(this, null, null), (this.filter_ = [])
     } else {
-        if (opt_filter instanceof ee.ComputedObject) {
-            ee.ComputedObject.call(
-                this,
-                opt_filter.func,
-                opt_filter.args,
-                opt_filter.varName
-            ),
-                (this.filter_ = [opt_filter])
-        } else {
-            if (void 0 === opt_filter) {
-                ee.ComputedObject.call(this, null, null), (this.filter_ = [])
-            } else {
-                throw Error(
-                    'Invalid argument specified for ee.Filter(): ' + opt_filter
-                )
-            }
-        }
+        throw Error('Invalid argument specified for ee.Filter(): ' + opt_filter)
     }
 }
 goog.inherits(ee.Filter, ee.ComputedObject)
@@ -39947,37 +43011,26 @@ ee.Feature = function (geometry, opt_properties) {
             geometry: geometry,
             metadata: opt_properties || null,
         })
-    } else {
-        if (geometry instanceof ee.ComputedObject) {
-            ee.Element.call(
-                this,
-                geometry.func,
-                geometry.args,
-                geometry.varName
-            )
-        } else {
-            if ('Feature' == geometry.type) {
-                var properties = geometry.properties || {}
-                if ('id' in geometry) {
-                    if ('system:index' in properties) {
-                        throw Error(
-                            'Can\'t specify both "id" and "system:index".'
-                        )
-                    }
-                    properties = module$contents$goog$object_clone(properties)
-                    properties['system:index'] = geometry.id
-                }
-                ee.Element.call(this, new ee.ApiFunction('Feature'), {
-                    geometry: new ee.Geometry(geometry.geometry),
-                    metadata: properties,
-                })
-            } else {
-                ee.Element.call(this, new ee.ApiFunction('Feature'), {
-                    geometry: new ee.Geometry(geometry),
-                    metadata: opt_properties || null,
-                })
+    } else if (geometry instanceof ee.ComputedObject) {
+        ee.Element.call(this, geometry.func, geometry.args, geometry.varName)
+    } else if ('Feature' == geometry.type) {
+        var properties = geometry.properties || {}
+        if ('id' in geometry) {
+            if ('system:index' in properties) {
+                throw Error('Can\'t specify both "id" and "system:index".')
             }
+            properties = module$contents$goog$object_clone(properties)
+            properties['system:index'] = geometry.id
         }
+        ee.Element.call(this, new ee.ApiFunction('Feature'), {
+            geometry: new ee.Geometry(geometry.geometry),
+            metadata: properties,
+        })
+    } else {
+        ee.Element.call(this, new ee.ApiFunction('Feature'), {
+            geometry: new ee.Geometry(geometry),
+            metadata: opt_properties || null,
+        })
     }
 }
 goog.inherits(ee.Feature, ee.Element)
@@ -40063,13 +43116,11 @@ ee.data.images.applySelectionAndScale = function (image, params, outParams) {
                             : []
                     if (1 === dims.length) {
                         clipParams.maxDimension = dims[0]
+                    } else if (2 === dims.length) {
+                        ;(clipParams.width = dims[0]),
+                            (clipParams.height = dims[1])
                     } else {
-                        if (2 === dims.length) {
-                            ;(clipParams.width = dims[0]),
-                                (clipParams.height = dims[1])
-                        } else {
-                            throw Error('Invalid dimensions ' + value)
-                        }
+                        throw Error('Invalid dimensions ' + value)
                     }
                     break
                 case 'dimensions_consumed':
@@ -40316,72 +43367,63 @@ ee.Image = function (opt_args) {
             image: new ee.Image(0),
             mask: new ee.Image(0),
         })
-    } else {
-        if (1 == argCount) {
-            if (ee.Types.isNumber(opt_args)) {
-                ee.Element.call(this, new ee.ApiFunction('Image.constant'), {
-                    value: opt_args,
-                })
-            } else {
-                if (ee.Types.isString(opt_args)) {
-                    ee.Element.call(this, new ee.ApiFunction('Image.load'), {
-                        id: opt_args,
-                    })
-                } else {
-                    if (Array.isArray(opt_args)) {
-                        return ee.Image.combine_(
-                            module$contents$goog$array_map(
-                                opt_args,
-                                function (elem) {
-                                    return new ee.Image(elem)
-                                }
-                            )
-                        )
-                    }
-                    if (opt_args instanceof ee.ComputedObject) {
-                        'Array' == opt_args.name()
-                            ? ee.Element.call(
-                                  this,
-                                  new ee.ApiFunction('Image.constant'),
-                                  { value: opt_args }
-                              )
-                            : ee.Element.call(
-                                  this,
-                                  opt_args.func,
-                                  opt_args.args,
-                                  opt_args.varName
-                              )
-                    } else {
-                        throw Error(
-                            'Unrecognized argument type to convert to an Image: ' +
-                                opt_args
-                        )
-                    }
-                }
-            }
+    } else if (1 == argCount) {
+        if (ee.Types.isNumber(opt_args)) {
+            ee.Element.call(this, new ee.ApiFunction('Image.constant'), {
+                value: opt_args,
+            })
+        } else if (ee.Types.isString(opt_args)) {
+            ee.Element.call(this, new ee.ApiFunction('Image.load'), {
+                id: opt_args,
+            })
         } else {
-            if (2 == argCount) {
-                var id = arguments[0],
-                    version = arguments[1]
-                if (ee.Types.isString(id) && ee.Types.isNumber(version)) {
-                    ee.Element.call(this, new ee.ApiFunction('Image.load'), {
-                        id: id,
-                        version: version,
+            if (Array.isArray(opt_args)) {
+                return ee.Image.combine_(
+                    module$contents$goog$array_map(opt_args, function (elem) {
+                        return new ee.Image(elem)
                     })
-                } else {
-                    throw Error(
-                        'Unrecognized argument types to convert to an Image: ' +
-                            arguments
-                    )
-                }
+                )
+            }
+            if (opt_args instanceof ee.ComputedObject) {
+                'Array' == opt_args.name()
+                    ? ee.Element.call(
+                          this,
+                          new ee.ApiFunction('Image.constant'),
+                          { value: opt_args }
+                      )
+                    : ee.Element.call(
+                          this,
+                          opt_args.func,
+                          opt_args.args,
+                          opt_args.varName
+                      )
             } else {
                 throw Error(
-                    'The Image constructor takes at most 2 arguments (' +
-                        argCount +
-                        ' given)'
+                    'Unrecognized argument type to convert to an Image: ' +
+                        opt_args
                 )
             }
         }
+    } else if (2 == argCount) {
+        var id = arguments[0],
+            version = arguments[1]
+        if (ee.Types.isString(id) && ee.Types.isNumber(version)) {
+            ee.Element.call(this, new ee.ApiFunction('Image.load'), {
+                id: id,
+                version: version,
+            })
+        } else {
+            throw Error(
+                'Unrecognized argument types to convert to an Image: ' +
+                    arguments
+            )
+        }
+    } else {
+        throw Error(
+            'The Image constructor takes at most 2 arguments (' +
+                argCount +
+                ' given)'
+        )
     }
 }
 goog.inherits(ee.Image, ee.Element)
@@ -40626,13 +43668,11 @@ ee.List = function (list) {
     ee.List.initialize()
     if (Array.isArray(list)) {
         ee.ComputedObject.call(this, null, null), (this.list_ = list)
+    } else if (list instanceof ee.ComputedObject) {
+        ee.ComputedObject.call(this, list.func, list.args, list.varName),
+            (this.list_ = null)
     } else {
-        if (list instanceof ee.ComputedObject) {
-            ee.ComputedObject.call(this, list.func, list.args, list.varName),
-                (this.list_ = null)
-        } else {
-            throw Error('Invalid argument specified for ee.List(): ' + list)
-        }
+        throw Error('Invalid argument specified for ee.List(): ' + list)
     }
 }
 goog.inherits(ee.List, ee.ComputedObject)
@@ -40687,46 +43727,33 @@ ee.FeatureCollection = function (args, opt_column) {
             new ee.ApiFunction('Collection.loadTable'),
             actualArgs
         )
+    } else if (Array.isArray(args)) {
+        ee.Collection.call(this, new ee.ApiFunction('Collection'), {
+            features: module$contents$goog$array_map(args, function (elem) {
+                return new ee.Feature(elem)
+            }),
+        })
+    } else if (args instanceof ee.List) {
+        ee.Collection.call(this, new ee.ApiFunction('Collection'), {
+            features: args,
+        })
+    } else if (
+        args &&
+        'object' === typeof args &&
+        'FeatureCollection' === args.type
+    ) {
+        ee.Collection.call(this, new ee.ApiFunction('Collection'), {
+            features: args.features.map(function (f) {
+                return new ee.Feature(f)
+            }),
+        })
+    } else if (args instanceof ee.ComputedObject) {
+        ee.Collection.call(this, args.func, args.args, args.varName)
     } else {
-        if (Array.isArray(args)) {
-            ee.Collection.call(this, new ee.ApiFunction('Collection'), {
-                features: module$contents$goog$array_map(args, function (elem) {
-                    return new ee.Feature(elem)
-                }),
-            })
-        } else {
-            if (args instanceof ee.List) {
-                ee.Collection.call(this, new ee.ApiFunction('Collection'), {
-                    features: args,
-                })
-            } else {
-                if (
-                    args &&
-                    'object' === typeof args &&
-                    'FeatureCollection' === args.type
-                ) {
-                    ee.Collection.call(this, new ee.ApiFunction('Collection'), {
-                        features: args.features.map(function (f) {
-                            return new ee.Feature(f)
-                        }),
-                    })
-                } else {
-                    if (args instanceof ee.ComputedObject) {
-                        ee.Collection.call(
-                            this,
-                            args.func,
-                            args.args,
-                            args.varName
-                        )
-                    } else {
-                        throw Error(
-                            'Unrecognized argument type to convert to a FeatureCollection: ' +
-                                args
-                        )
-                    }
-                }
-            }
-        }
+        throw Error(
+            'Unrecognized argument type to convert to a FeatureCollection: ' +
+                args
+        )
     }
 }
 goog.inherits(ee.FeatureCollection, ee.Collection)
@@ -40852,38 +43879,29 @@ ee.ImageCollection = function (args) {
         ee.Collection.call(this, new ee.ApiFunction('ImageCollection.load'), {
             id: args,
         })
-    } else {
-        if (Array.isArray(args)) {
-            ee.Collection.call(
-                this,
-                new ee.ApiFunction('ImageCollection.fromImages'),
-                {
-                    images: module$contents$goog$array_map(
-                        args,
-                        function (elem) {
-                            return new ee.Image(elem)
-                        }
-                    ),
-                }
-            )
-        } else {
-            if (args instanceof ee.List) {
-                ee.Collection.call(
-                    this,
-                    new ee.ApiFunction('ImageCollection.fromImages'),
-                    { images: args }
-                )
-            } else {
-                if (args instanceof ee.ComputedObject) {
-                    ee.Collection.call(this, args.func, args.args, args.varName)
-                } else {
-                    throw Error(
-                        'Unrecognized argument type to convert to an ImageCollection: ' +
-                            args
-                    )
-                }
+    } else if (Array.isArray(args)) {
+        ee.Collection.call(
+            this,
+            new ee.ApiFunction('ImageCollection.fromImages'),
+            {
+                images: module$contents$goog$array_map(args, function (elem) {
+                    return new ee.Image(elem)
+                }),
             }
-        }
+        )
+    } else if (args instanceof ee.List) {
+        ee.Collection.call(
+            this,
+            new ee.ApiFunction('ImageCollection.fromImages'),
+            { images: args }
+        )
+    } else if (args instanceof ee.ComputedObject) {
+        ee.Collection.call(this, args.func, args.args, args.varName)
+    } else {
+        throw Error(
+            'Unrecognized argument type to convert to an ImageCollection: ' +
+                args
+        )
     }
 }
 goog.inherits(ee.ImageCollection, ee.Collection)
@@ -41320,27 +44338,48 @@ goog.exportSymbol(
     'module$contents$ee$batch_Export.table.toAsset',
     module$contents$ee$batch_Export.table.toAsset
 )
-module$contents$ee$batch_Export.table.toDmsLayer = function (
+module$contents$ee$batch_Export.table.toFeatureView = function (
     collection,
     opt_description,
     opt_assetId,
-    opt_maxVertices
+    opt_maxFeaturesPerTile,
+    opt_thinningStrategy,
+    opt_thinningRanking,
+    opt_zOrderRanking
 ) {
     var clientConfig = ee.arguments.extractFromFunction(
-            module$contents$ee$batch_Export.table.toDmsLayer,
+            module$contents$ee$batch_Export.table.toFeatureView,
             arguments
         ),
         serverConfig = module$contents$ee$batch_Export.convertToServerParams(
             clientConfig,
-            ee.data.ExportDestination.DMS,
+            ee.data.ExportDestination.FEATURE_VIEW,
             ee.data.ExportType.TABLE
         )
     return module$contents$ee$batch_ExportTask.create(serverConfig)
 }
 goog.exportSymbol(
-    'module$contents$ee$batch_Export.table.toDmsLayer',
-    module$contents$ee$batch_Export.table.toDmsLayer
+    'module$contents$ee$batch_Export.table.toFeatureView',
+    module$contents$ee$batch_Export.table.toFeatureView
 )
+module$contents$ee$batch_Export.table.toBigQuery = function (
+    collection,
+    opt_description,
+    opt_table,
+    opt_selectors,
+    opt_maxVertices
+) {
+    var clientConfig = ee.arguments.extractFromFunction(
+            module$contents$ee$batch_Export.table.toBigQuery,
+            arguments
+        ),
+        serverConfig = module$contents$ee$batch_Export.convertToServerParams(
+            clientConfig,
+            ee.data.ExportDestination.BIGQUERY,
+            ee.data.ExportType.TABLE
+        )
+    return module$contents$ee$batch_ExportTask.create(serverConfig)
+}
 module$contents$ee$batch_Export.video.toCloudStorage = function (
     collection,
     opt_description,
@@ -41459,15 +44498,13 @@ goog.exportSymbol(
 module$contents$ee$batch_Export.serializeRegion = function (region) {
     if (region instanceof ee.Geometry) {
         region = region.toGeoJSON()
-    } else {
-        if ('string' === typeof region) {
-            try {
-                region = goog.asserts.assertObject(JSON.parse(region))
-            } catch (x) {
-                throw Error(
-                    'Invalid format for region property. Region must be GeoJSON LinearRing or Polygon specified as actual coordinates or serialized as a string. See Export documentation.'
-                )
-            }
+    } else if ('string' === typeof region) {
+        try {
+            region = goog.asserts.assertObject(JSON.parse(region))
+        } catch (x) {
+            throw Error(
+                'Invalid format for region property. Region must be GeoJSON LinearRing or Polygon specified as actual coordinates or serialized as a string. See Export documentation.'
+            )
         }
     }
     if (!(goog.isObject(region) && 'type' in region)) {
@@ -41532,28 +44569,20 @@ module$contents$ee$batch_Export.extractElement = function (exportArgs) {
     var element = exportArgs[eeElementKey]
     if (element instanceof ee.Image) {
         var result = element
+    } else if (element instanceof ee.FeatureCollection) {
+        result = element
+    } else if (element instanceof ee.ImageCollection) {
+        result = element
+    } else if (element instanceof ee.Element) {
+        result = element
+    } else if (element instanceof ee.ComputedObject) {
+        result = element
     } else {
-        if (element instanceof ee.FeatureCollection) {
-            result = element
-        } else {
-            if (element instanceof ee.ImageCollection) {
-                result = element
-            } else {
-                if (element instanceof ee.Element) {
-                    result = element
-                } else {
-                    if (element instanceof ee.ComputedObject) {
-                        result = element
-                    } else {
-                        throw Error(
-                            'Unknown element type provided: ' +
-                                typeof element +
-                                '. Expected:  ee.Image, ee.ImageCollection, ee.FeatureCollection,  ee.Element or ee.ComputedObject.'
-                        )
-                    }
-                }
-            }
-        }
+        throw Error(
+            'Unknown element type provided: ' +
+                typeof element +
+                '. Expected:  ee.Image, ee.ImageCollection, ee.FeatureCollection,  ee.Element or ee.ComputedObject.'
+        )
     }
     delete exportArgs[eeElementKey]
     return result
@@ -41635,8 +44664,11 @@ module$contents$ee$batch_Export.prepareDestination_ = function (
         case ee.data.ExportDestination.ASSET:
             taskConfig.assetId = taskConfig.assetId || ''
             break
-        case ee.data.ExportDestination.DMS:
-            taskConfig.dmsName = taskConfig.dmsName || ''
+        case ee.data.ExportDestination.FEATURE_VIEW:
+            taskConfig.mapName = taskConfig.mapName || ''
+            break
+        case ee.data.ExportDestination.BIGQUERY:
+            taskConfig.table = taskConfig.table || ''
             break
         default:
             var folderType = goog.typeOf(taskConfig.folder)
@@ -41778,8 +44810,8 @@ var module$contents$ee$batch_VideoFormat = {
         TF_RECORD_IMAGE: 'tfrecord',
     }
 module$contents$ee$batch_Export.reconcileVideoFormat_ = function (taskConfig) {
-    taskConfig.videoOptions = taskConfig.framesPerSecond || 5.0
-    taskConfig.maxFrames = taskConfig.maxFrames || 1000
+    taskConfig.videoOptions = taskConfig.framesPerSecond || 5
+    taskConfig.maxFrames = taskConfig.maxFrames || 1e3
     taskConfig.maxPixels = taskConfig.maxPixels || 1e8
     var formatString = taskConfig.fileFormat
     null == formatString &&
@@ -41931,18 +44963,18 @@ module$contents$ee$batch_Export.prefixImageFormatOptions_ = function (
             validOptionKeys =
                 module$contents$ee$batch_FORMAT_OPTIONS_MAP[imageFormat],
             prefixedOptions = {},
-            $jscomp$iter$27 = $jscomp.makeIterator(
+            $jscomp$iter$34 = $jscomp.makeIterator(
                 Object.entries(formatOptions)
             ),
-            $jscomp$key$ = $jscomp$iter$27.next();
+            $jscomp$key$ = $jscomp$iter$34.next();
         !$jscomp$key$.done;
-        $jscomp$key$ = $jscomp$iter$27.next()
+        $jscomp$key$ = $jscomp$iter$34.next()
     ) {
-        var $jscomp$destructuring$var37 = $jscomp.makeIterator(
+        var $jscomp$destructuring$var50 = $jscomp.makeIterator(
                 $jscomp$key$.value
             ),
-            key$jscomp$0 = $jscomp$destructuring$var37.next().value,
-            value = $jscomp$destructuring$var37.next().value
+            key$jscomp$0 = $jscomp$destructuring$var50.next().value,
+            value = $jscomp$destructuring$var50.next().value
         if (
             !module$contents$goog$array_contains(validOptionKeys, key$jscomp$0)
         ) {
@@ -41987,18 +45019,11 @@ ee.Number = function (number) {
     ee.Number.initialize()
     if ('number' === typeof number) {
         ee.ComputedObject.call(this, null, null), (this.number_ = number)
+    } else if (number instanceof ee.ComputedObject) {
+        ee.ComputedObject.call(this, number.func, number.args, number.varName),
+            (this.number_ = null)
     } else {
-        if (number instanceof ee.ComputedObject) {
-            ee.ComputedObject.call(
-                this,
-                number.func,
-                number.args,
-                number.varName
-            ),
-                (this.number_ = null)
-        } else {
-            throw Error('Invalid argument specified for ee.Number(): ' + number)
-        }
+        throw Error('Invalid argument specified for ee.Number(): ' + number)
     }
 }
 goog.inherits(ee.Number, ee.ComputedObject)
@@ -42036,25 +45061,23 @@ ee.String = function (string) {
     ee.String.initialize()
     if ('string' === typeof string) {
         ee.ComputedObject.call(this, null, null), (this.string_ = string)
+    } else if (string instanceof ee.ComputedObject) {
+        ;(this.string_ = null),
+            string.func && 'String' == string.func.getSignature().returns
+                ? ee.ComputedObject.call(
+                      this,
+                      string.func,
+                      string.args,
+                      string.varName
+                  )
+                : ee.ComputedObject.call(
+                      this,
+                      new ee.ApiFunction('String'),
+                      { input: string },
+                      null
+                  )
     } else {
-        if (string instanceof ee.ComputedObject) {
-            ;(this.string_ = null),
-                string.func && 'String' == string.func.getSignature().returns
-                    ? ee.ComputedObject.call(
-                          this,
-                          string.func,
-                          string.args,
-                          string.varName
-                      )
-                    : ee.ComputedObject.call(
-                          this,
-                          new ee.ApiFunction('String'),
-                          { input: string },
-                          null
-                      )
-        } else {
-            throw Error('Invalid argument specified for ee.String(): ' + string)
-        }
+        throw Error('Invalid argument specified for ee.String(): ' + string)
     }
 }
 goog.inherits(ee.String, ee.ComputedObject)
@@ -42139,18 +45162,14 @@ ee.CustomFunction.variable = function (type, name$jscomp$0) {
         if (type && type != Object) {
             if (type == String) {
                 type = ee.String
+            } else if (type == Number) {
+                type = ee.Number
+            } else if (type == Array) {
+                type = goog.global.ee.List
             } else {
-                if (type == Number) {
-                    type = ee.Number
-                } else {
-                    if (type == Array) {
-                        type = goog.global.ee.List
-                    } else {
-                        throw Error(
-                            'Variables must be of an EE type, e.g. ee.Image or ee.Number.'
-                        )
-                    }
-                }
+                throw Error(
+                    'Variables must be of an EE type, e.g. ee.Image or ee.Number.'
+                )
             }
         } else {
             type = ee.ComputedObject
@@ -42214,12 +45233,12 @@ ee.CustomFunction.resolveNamelessArgs_ = function (signature, vars, body) {
                     )
                 ) +
                 '_',
-            i$64 = 0;
-        i$64 < namelessArgIndices.length;
-        i$64++
+            i$70 = 0;
+        i$70 < namelessArgIndices.length;
+        i$70++
     ) {
-        var index = namelessArgIndices[i$64],
-            name = baseName + i$64
+        var index = namelessArgIndices[i$70],
+            name = baseName + i$70
         vars[index].varName = name
         signature.args[index].name = name
     }
@@ -42249,26 +45268,16 @@ ee.Date = function (date, opt_tz) {
                 )
             }
         }
+    } else if (ee.Types.isNumber(date)) {
+        args.value = date
+    } else if (goog.isDateLike(date)) {
+        args.value = Math.floor(date.getTime())
+    } else if (date instanceof ee.ComputedObject) {
+        date.func && 'Date' == date.func.getSignature().returns
+            ? ((func = date.func), (args = date.args), (varName = date.varName))
+            : (args.value = date)
     } else {
-        if (ee.Types.isNumber(date)) {
-            args.value = date
-        } else {
-            if (goog.isDateLike(date)) {
-                args.value = Math.floor(date.getTime())
-            } else {
-                if (date instanceof ee.ComputedObject) {
-                    date.func && 'Date' == date.func.getSignature().returns
-                        ? ((func = date.func),
-                          (args = date.args),
-                          (varName = date.varName))
-                        : (args.value = date)
-                } else {
-                    throw Error(
-                        'Invalid argument specified for ee.Date(): ' + date
-                    )
-                }
-            }
-        }
+        throw Error('Invalid argument specified for ee.Date(): ' + date)
     }
     ee.ComputedObject.call(this, func, args, varName)
 }
@@ -42349,7 +45358,7 @@ ee.Deserializer.decodeValue_ = function (json, namedValues) {
             if ('number' !== typeof microseconds) {
                 throw Error('Invalid date value: ' + microseconds)
             }
-            return new ee.Date(microseconds / 1000)
+            return new ee.Date(microseconds / 1e3)
         case 'Bytes':
             return ee.Deserializer.roundTrip_(
                 new module$exports$eeapiclient$ee_api_client.ValueNode({
@@ -42866,7 +45875,8 @@ ee.initializeGeneratedClasses_ = function () {
         returnTypes = {},
         sig
     for (sig in signatures) {
-        var type = -1 != sig.indexOf('.') ? sig.slice(0, sig.indexOf('.')) : sig
+        var type = void 0
+        type = -1 != sig.indexOf('.') ? sig.slice(0, sig.indexOf('.')) : sig
         names[type] = !0
         var rtype = signatures[sig].returns.replace(/<.*>/, '')
         returnTypes[rtype] = !0
@@ -43343,33 +46353,33 @@ goog.fs.Error.getNameFromCode_ = function (code) {
 goog.fs.Error.getCodeFromName_ = function (name) {
     return goog.fs.Error.NameToCodeMap_[name]
 }
-var $jscomp$compprop4 = {}
+var $jscomp$compprop11 = {}
 goog.fs.Error.NameToCodeMap_ =
-    (($jscomp$compprop4[goog.fs.Error.ErrorName.ABORT] =
+    (($jscomp$compprop11[goog.fs.Error.ErrorName.ABORT] =
         goog.fs.Error.ErrorCode.ABORT),
-    ($jscomp$compprop4[goog.fs.Error.ErrorName.ENCODING] =
+    ($jscomp$compprop11[goog.fs.Error.ErrorName.ENCODING] =
         goog.fs.Error.ErrorCode.ENCODING),
-    ($jscomp$compprop4[goog.fs.Error.ErrorName.INVALID_MODIFICATION] =
+    ($jscomp$compprop11[goog.fs.Error.ErrorName.INVALID_MODIFICATION] =
         goog.fs.Error.ErrorCode.INVALID_MODIFICATION),
-    ($jscomp$compprop4[goog.fs.Error.ErrorName.INVALID_STATE] =
+    ($jscomp$compprop11[goog.fs.Error.ErrorName.INVALID_STATE] =
         goog.fs.Error.ErrorCode.INVALID_STATE),
-    ($jscomp$compprop4[goog.fs.Error.ErrorName.NOT_FOUND] =
+    ($jscomp$compprop11[goog.fs.Error.ErrorName.NOT_FOUND] =
         goog.fs.Error.ErrorCode.NOT_FOUND),
-    ($jscomp$compprop4[goog.fs.Error.ErrorName.NOT_READABLE] =
+    ($jscomp$compprop11[goog.fs.Error.ErrorName.NOT_READABLE] =
         goog.fs.Error.ErrorCode.NOT_READABLE),
-    ($jscomp$compprop4[goog.fs.Error.ErrorName.NO_MODIFICATION_ALLOWED] =
+    ($jscomp$compprop11[goog.fs.Error.ErrorName.NO_MODIFICATION_ALLOWED] =
         goog.fs.Error.ErrorCode.NO_MODIFICATION_ALLOWED),
-    ($jscomp$compprop4[goog.fs.Error.ErrorName.PATH_EXISTS] =
+    ($jscomp$compprop11[goog.fs.Error.ErrorName.PATH_EXISTS] =
         goog.fs.Error.ErrorCode.PATH_EXISTS),
-    ($jscomp$compprop4[goog.fs.Error.ErrorName.QUOTA_EXCEEDED] =
+    ($jscomp$compprop11[goog.fs.Error.ErrorName.QUOTA_EXCEEDED] =
         goog.fs.Error.ErrorCode.QUOTA_EXCEEDED),
-    ($jscomp$compprop4[goog.fs.Error.ErrorName.SECURITY] =
+    ($jscomp$compprop11[goog.fs.Error.ErrorName.SECURITY] =
         goog.fs.Error.ErrorCode.SECURITY),
-    ($jscomp$compprop4[goog.fs.Error.ErrorName.SYNTAX] =
+    ($jscomp$compprop11[goog.fs.Error.ErrorName.SYNTAX] =
         goog.fs.Error.ErrorCode.SYNTAX),
-    ($jscomp$compprop4[goog.fs.Error.ErrorName.TYPE_MISMATCH] =
+    ($jscomp$compprop11[goog.fs.Error.ErrorName.TYPE_MISMATCH] =
         goog.fs.Error.ErrorCode.TYPE_MISMATCH),
-    $jscomp$compprop4)
+    $jscomp$compprop11)
 goog.fs.ProgressEvent = function (event, target) {
     goog.events.Event.call(this, event.type, target)
     this.event_ = event
@@ -44379,15 +47389,11 @@ goog.style.getOpacity = function (el) {
         result = ''
     if ('opacity' in style) {
         result = style.opacity
-    } else {
-        if ('MozOpacity' in style) {
-            result = style.MozOpacity
-        } else {
-            if ('filter' in style) {
-                var match = style.filter.match(/alpha\(opacity=([\d.]+)\)/)
-                match && (result = String(match[1] / 100))
-            }
-        }
+    } else if ('MozOpacity' in style) {
+        result = style.MozOpacity
+    } else if ('filter' in style) {
+        var match = style.filter.match(/alpha\(opacity=([\d.]+)\)/)
+        match && (result = String(match[1] / 100))
     }
     return '' == result ? result : Number(result)
 }
@@ -44492,16 +47498,14 @@ goog.style.setUnselectable = function (el, unselectable, opt_noRecurse) {
                 descendant.style && (descendant.style[name] = value)
             }
         }
-    } else {
-        if (
-            goog.userAgent.IE &&
-            ((value = unselectable ? 'on' : ''),
-            el.setAttribute('unselectable', value),
-            descendants)
-        ) {
-            for (i = 0; (descendant = descendants[i]); i++) {
-                descendant.setAttribute('unselectable', value)
-            }
+    } else if (
+        goog.userAgent.IE &&
+        ((value = unselectable ? 'on' : ''),
+        el.setAttribute('unselectable', value),
+        descendants)
+    ) {
+        for (i = 0; (descendant = descendants[i]); i++) {
+            descendant.setAttribute('unselectable', value)
         }
     }
 }
@@ -44509,35 +47513,7 @@ goog.style.getBorderBoxSize = function (element) {
     return new goog.math.Size(element.offsetWidth, element.offsetHeight)
 }
 goog.style.setBorderBoxSize = function (element, size) {
-    var doc = goog.dom.getOwnerDocument(element),
-        isCss1CompatMode = goog.dom.getDomHelper(doc).isCss1CompatMode()
-    if (
-        !goog.userAgent.IE ||
-        goog.userAgent.isVersionOrHigher('10') ||
-        isCss1CompatMode
-    ) {
-        goog.style.setBoxSizingSize_(element, size, 'border-box')
-    } else {
-        var style = element.style
-        if (isCss1CompatMode) {
-            var paddingBox = goog.style.getPaddingBox(element),
-                borderBox = goog.style.getBorderBox(element)
-            style.pixelWidth =
-                size.width -
-                borderBox.left -
-                paddingBox.left -
-                paddingBox.right -
-                borderBox.right
-            style.pixelHeight =
-                size.height -
-                borderBox.top -
-                paddingBox.top -
-                paddingBox.bottom -
-                borderBox.bottom
-        } else {
-            ;(style.pixelWidth = size.width), (style.pixelHeight = size.height)
-        }
-    }
+    goog.style.setBoxSizingSize_(element, size, 'border-box')
 }
 goog.style.getContentBoxSize = function (element) {
     var doc = goog.dom.getOwnerDocument(element),
@@ -44580,35 +47556,7 @@ goog.style.getContentBoxSize = function (element) {
     )
 }
 goog.style.setContentBoxSize = function (element, size) {
-    var doc = goog.dom.getOwnerDocument(element),
-        isCss1CompatMode = goog.dom.getDomHelper(doc).isCss1CompatMode()
-    if (
-        !goog.userAgent.IE ||
-        goog.userAgent.isVersionOrHigher('10') ||
-        isCss1CompatMode
-    ) {
-        goog.style.setBoxSizingSize_(element, size, 'content-box')
-    } else {
-        var style = element.style
-        if (isCss1CompatMode) {
-            ;(style.pixelWidth = size.width), (style.pixelHeight = size.height)
-        } else {
-            var paddingBox = goog.style.getPaddingBox(element),
-                borderBox = goog.style.getBorderBox(element)
-            style.pixelWidth =
-                size.width +
-                borderBox.left +
-                paddingBox.left +
-                paddingBox.right +
-                borderBox.right
-            style.pixelHeight =
-                size.height +
-                borderBox.top +
-                paddingBox.top +
-                paddingBox.bottom +
-                borderBox.bottom
-        }
-    }
+    goog.style.setBoxSizingSize_(element, size, 'content-box')
 }
 goog.style.setBoxSizingSize_ = function (element, size, boxSizing) {
     var style = element.style
@@ -44843,9 +47791,7 @@ ee.layers.AbstractOverlay = function (tileSource, opt_options) {
     this.tileCounter = 0
     this.tileSource = tileSource
     this.handler = new goog.events.EventHandler(this)
-    this.projection = null
     this.radius = 0
-    this.alt = null
 }
 $jscomp.inherits(ee.layers.AbstractOverlay, goog.events.EventTarget)
 ee.layers.AbstractOverlay.prototype.addTileCallback = function (callback) {
@@ -44877,6 +47823,9 @@ ee.layers.AbstractOverlay.prototype.setOpacity = function (opacity) {
         goog.style.setOpacity(tile.div, this.opacity)
     }, this)
 }
+ee.layers.AbstractOverlay.prototype.getTilesById = function () {
+    return this.tilesById
+}
 ee.layers.AbstractOverlay.prototype.getStats = function () {
     return this.stats
 }
@@ -44901,7 +47850,7 @@ ee.layers.AbstractOverlay.prototype.getTile = function (
     this.dispatchEvent(
         new ee.layers.TileStartEvent(this.getLoadingTilesCount())
     )
-    this.tileSource.loadTile(tile, new Date().getTime() / 1000)
+    this.tileSource.loadTile(tile, new Date().getTime() / 1e3)
     return tile.div
 }
 ee.layers.AbstractOverlay.prototype.releaseTile = function (tileDiv) {
@@ -45035,6 +47984,9 @@ ee.layers.AbstractTile = function (coord, zoom, ownerDocument, uniqueId) {
     this.isRetrying_ = !1
 }
 $jscomp.inherits(ee.layers.AbstractTile, goog.events.EventTarget)
+ee.layers.AbstractTile.prototype.getDiv = function () {
+    return this.div
+}
 ee.layers.AbstractTile.prototype.startLoad = function () {
     var $jscomp$this = this
     if (
@@ -45068,20 +48020,18 @@ ee.layers.AbstractTile.prototype.startLoad = function () {
                 $jscomp$this.sourceResponseHeaders = sourceResponseHeaders
                 $jscomp$this.sourceData = blob
                 $jscomp$this.finishLoad()
+            } else if (blob) {
+                var reader = new goog.fs.FileReader()
+                reader.listen(
+                    goog.fs.FileReader.EventType.LOAD_END,
+                    function () {
+                        $jscomp$this.retryLoad(reader.getResult())
+                    },
+                    void 0
+                )
+                reader.readAsText(blob)
             } else {
-                if (blob) {
-                    var reader = new goog.fs.FileReader()
-                    reader.listen(
-                        goog.fs.FileReader.EventType.LOAD_END,
-                        function () {
-                            $jscomp$this.retryLoad(reader.getResult())
-                        },
-                        void 0
-                    )
-                    reader.readAsText(blob)
-                } else {
-                    $jscomp$this.retryLoad('Failed to load tile.')
-                }
+                $jscomp$this.retryLoad('Failed to load tile.')
             }
         },
         !1
@@ -45129,7 +48079,7 @@ ee.layers.AbstractTile.prototype.retryLoad = function (opt_errorMessage) {
                       this.startLoad(),
                       (this.isRetrying_ = !1))
               }, this),
-              1000 * Math.pow(2, this.retryAttemptCount_++)
+              1e3 * Math.pow(2, this.retryAttemptCount_++)
           ))
 }
 ee.layers.AbstractTile.prototype.abort = function () {
@@ -45248,9 +48198,7 @@ goog.net.ImageLoader.CorsRequestType = {
     USE_CREDENTIALS: 'use-credentials',
 }
 goog.net.ImageLoader.IMAGE_LOAD_EVENTS_ = [
-    goog.userAgent.IE && !goog.userAgent.isVersionOrHigher('11')
-        ? goog.net.EventType.READY_STATE_CHANGE
-        : goog.events.EventType.LOAD,
+    goog.events.EventType.LOAD,
     goog.net.EventType.ABORT,
     goog.net.EventType.ERROR,
 ]
@@ -45422,7 +48370,7 @@ goog.string.path.dirname = function (path) {
 goog.string.path.extension = function (path) {
     var baseName = goog.string.path.baseName(path).replace(/\.+/g, '.'),
         separatorIndex = baseName.lastIndexOf('.')
-    return 0 >= separatorIndex ? '' : baseName.substr(separatorIndex + 1)
+    return 0 >= separatorIndex ? '' : baseName.slice(separatorIndex + 1)
 }
 goog.string.path.join = function (var_args) {
     for (var path = arguments[0], i = 1; i < arguments.length; i++) {
@@ -45742,18 +48690,21 @@ goog.structs.Node.prototype.getValue = function () {
 goog.structs.Node.prototype.clone = function () {
     return new goog.structs.Node(this.key_, this.value_)
 }
-goog.structs.Heap = function (opt_heap) {
+var module$contents$goog$structs$Heap_Heap = function (opt_heap) {
     this.nodes_ = []
     opt_heap && this.insertAll(opt_heap)
 }
-goog.structs.Heap.prototype.insert = function (key, value) {
+module$contents$goog$structs$Heap_Heap.prototype.insert = function (
+    key,
+    value
+) {
     var node = new goog.structs.Node(key, value),
         nodes = this.nodes_
     nodes.push(node)
     this.moveUp_(nodes.length - 1)
 }
-goog.structs.Heap.prototype.insertAll = function (heap) {
-    if (heap instanceof goog.structs.Heap) {
+module$contents$goog$structs$Heap_Heap.prototype.insertAll = function (heap) {
+    if (heap instanceof module$contents$goog$structs$Heap_Heap) {
         var keys = heap.getKeys()
         var values = heap.getValues()
         if (0 >= this.getCount()) {
@@ -45766,33 +48717,33 @@ goog.structs.Heap.prototype.insertAll = function (heap) {
         ;(keys = module$contents$goog$object_getKeys(heap)),
             (values = module$contents$goog$object_getValues(heap))
     }
-    for (i = 0; i < keys.length; i++) {
-        this.insert(keys[i], values[i])
+    for (var i$71 = 0; i$71 < keys.length; i$71++) {
+        this.insert(keys[i$71], values[i$71])
     }
 }
-goog.structs.Heap.prototype.remove = function () {
+module$contents$goog$structs$Heap_Heap.prototype.remove = function () {
     var nodes = this.nodes_,
         count = nodes.length,
         rootNode = nodes[0]
     if (!(0 >= count)) {
         return (
             1 == count
-                ? module$contents$goog$array_clear(nodes)
+                ? (nodes.length = 0)
                 : ((nodes[0] = nodes.pop()), this.moveDown_(0)),
             rootNode.getValue()
         )
     }
 }
-goog.structs.Heap.prototype.peek = function () {
+module$contents$goog$structs$Heap_Heap.prototype.peek = function () {
     var nodes = this.nodes_
     if (0 != nodes.length) {
         return nodes[0].getValue()
     }
 }
-goog.structs.Heap.prototype.peekKey = function () {
+module$contents$goog$structs$Heap_Heap.prototype.peekKey = function () {
     return this.nodes_[0] && this.nodes_[0].getKey()
 }
-goog.structs.Heap.prototype.moveDown_ = function (index) {
+module$contents$goog$structs$Heap_Heap.prototype.moveDown_ = function (index) {
     for (
         var nodes = this.nodes_, count = nodes.length, node = nodes[index];
         index < count >> 1;
@@ -45813,7 +48764,7 @@ goog.structs.Heap.prototype.moveDown_ = function (index) {
     }
     nodes[index] = node
 }
-goog.structs.Heap.prototype.moveUp_ = function (index) {
+module$contents$goog$structs$Heap_Heap.prototype.moveUp_ = function (index) {
     for (var nodes = this.nodes_, node = nodes[index]; 0 < index; ) {
         var parentIndex = this.getParentIndex_(index)
         if (nodes[parentIndex].getKey() > node.getKey()) {
@@ -45824,16 +48775,21 @@ goog.structs.Heap.prototype.moveUp_ = function (index) {
     }
     nodes[index] = node
 }
-goog.structs.Heap.prototype.getLeftChildIndex_ = function (index) {
+module$contents$goog$structs$Heap_Heap.prototype.getLeftChildIndex_ = function (
+    index
+) {
     return 2 * index + 1
 }
-goog.structs.Heap.prototype.getRightChildIndex_ = function (index) {
-    return 2 * index + 2
-}
-goog.structs.Heap.prototype.getParentIndex_ = function (index) {
+module$contents$goog$structs$Heap_Heap.prototype.getRightChildIndex_ =
+    function (index) {
+        return 2 * index + 2
+    }
+module$contents$goog$structs$Heap_Heap.prototype.getParentIndex_ = function (
+    index
+) {
     return (index - 1) >> 1
 }
-goog.structs.Heap.prototype.getValues = function () {
+module$contents$goog$structs$Heap_Heap.prototype.getValues = function () {
     for (
         var nodes = this.nodes_, rv = [], l = nodes.length, i = 0;
         i < l;
@@ -45843,7 +48799,7 @@ goog.structs.Heap.prototype.getValues = function () {
     }
     return rv
 }
-goog.structs.Heap.prototype.getKeys = function () {
+module$contents$goog$structs$Heap_Heap.prototype.getKeys = function () {
     for (
         var nodes = this.nodes_, rv = [], l = nodes.length, i = 0;
         i < l;
@@ -45853,41 +48809,52 @@ goog.structs.Heap.prototype.getKeys = function () {
     }
     return rv
 }
-goog.structs.Heap.prototype.containsValue = function (val) {
-    return module$contents$goog$array_some(this.nodes_, function (node) {
+module$contents$goog$structs$Heap_Heap.prototype.containsValue = function (
+    val
+) {
+    return this.nodes_.some(function (node) {
         return node.getValue() == val
     })
 }
-goog.structs.Heap.prototype.containsKey = function (key) {
-    return module$contents$goog$array_some(this.nodes_, function (node) {
+module$contents$goog$structs$Heap_Heap.prototype.containsKey = function (key) {
+    return this.nodes_.some(function (node) {
         return node.getKey() == key
     })
 }
-goog.structs.Heap.prototype.clone = function () {
-    return new goog.structs.Heap(this)
+module$contents$goog$structs$Heap_Heap.prototype.clone = function () {
+    return new module$contents$goog$structs$Heap_Heap(this)
 }
-goog.structs.Heap.prototype.getCount = function () {
+module$contents$goog$structs$Heap_Heap.prototype.getCount = function () {
     return this.nodes_.length
 }
-goog.structs.Heap.prototype.isEmpty = function () {
+module$contents$goog$structs$Heap_Heap.prototype.isEmpty = function () {
     return 0 === this.nodes_.length
 }
-goog.structs.Heap.prototype.clear = function () {
-    module$contents$goog$array_clear(this.nodes_)
+module$contents$goog$structs$Heap_Heap.prototype.clear = function () {
+    this.nodes_.length = 0
 }
-goog.structs.PriorityQueue = function () {
-    goog.structs.Heap.call(this)
+goog.structs.Heap = module$contents$goog$structs$Heap_Heap
+var module$contents$goog$structs$PriorityQueue_PriorityQueue = function () {
+    module$contents$goog$structs$Heap_Heap.apply(this, arguments)
 }
-goog.inherits(goog.structs.PriorityQueue, goog.structs.Heap)
-goog.structs.PriorityQueue.prototype.enqueue = function (priority, value) {
-    this.insert(priority, value)
-}
-goog.structs.PriorityQueue.prototype.dequeue = function () {
-    return this.remove()
-}
+$jscomp.inherits(
+    module$contents$goog$structs$PriorityQueue_PriorityQueue,
+    module$contents$goog$structs$Heap_Heap
+)
+module$contents$goog$structs$PriorityQueue_PriorityQueue.prototype.enqueue =
+    function (priority, value) {
+        this.insert(priority, value)
+    }
+module$contents$goog$structs$PriorityQueue_PriorityQueue.prototype.dequeue =
+    function () {
+        return this.remove()
+    }
+goog.structs.PriorityQueue =
+    module$contents$goog$structs$PriorityQueue_PriorityQueue
 goog.structs.PriorityPool = function (opt_minCount, opt_maxCount) {
     this.delayTimeout_ = void 0
-    this.requestQueue_ = new goog.structs.PriorityQueue()
+    this.requestQueue_ =
+        new module$contents$goog$structs$PriorityQueue_PriorityQueue()
     goog.structs.Pool.call(this, opt_minCount, opt_maxCount)
 }
 goog.inherits(goog.structs.PriorityPool, goog.structs.Pool)
@@ -46047,29 +49014,35 @@ module$contents$ee$layers$EarthEngineTileSource_EarthEngineTileSource.TOKEN_POOL
 module$contents$ee$layers$EarthEngineTileSource_EarthEngineTileSource.TOKEN_COUNT_ = 4
 ee.layers.EarthEngineTileSource =
     module$contents$ee$layers$EarthEngineTileSource_EarthEngineTileSource
-goog.singleton = {}
-var module$contents$goog$singleton_instantiatedSingletons = [],
-    module$contents$goog$singleton_Singleton = function () {}
-goog.singleton.getInstance = function (ctor) {
-    ;(0, goog.asserts.assert)(
-        !Object.isSealed(ctor),
-        'Cannot use getInstance() with a sealed constructor.'
-    )
-    if (ctor.instance_ && ctor.hasOwnProperty('instance_')) {
-        return ctor.instance_
+ee.layers.FeatureViewTileSource = {}
+var module$contents$ee$layers$FeatureViewTileSource_FeatureViewTileSource =
+    function (tilesKey) {
+        module$exports$ee$layers$AbstractTileSource.call(this)
+        this.tilesKey_ = tilesKey
     }
-    goog.DEBUG &&
-        module$contents$goog$singleton_instantiatedSingletons.push(ctor)
-    var instance = new ctor()
-    ctor.instance_ = instance
-    ;(0, goog.asserts.assert)(
-        ctor.hasOwnProperty('instance_'),
-        'Could not instantiate singleton.'
-    )
-    return instance
-}
-goog.singleton.instantiatedSingletons =
-    module$contents$goog$singleton_instantiatedSingletons
+$jscomp.inherits(
+    module$contents$ee$layers$FeatureViewTileSource_FeatureViewTileSource,
+    module$exports$ee$layers$AbstractTileSource
+)
+module$contents$ee$layers$FeatureViewTileSource_FeatureViewTileSource.prototype.loadTile =
+    function (tile, opt_priority) {
+        tile.sourceUrl = this.tilesKey_.formatTileUrl(
+            tile.coord.x,
+            tile.coord.y,
+            tile.zoom
+        )
+        tile.startLoad()
+    }
+module$contents$ee$layers$FeatureViewTileSource_FeatureViewTileSource.prototype.getUniqueId =
+    function () {
+        return this.tilesKey_.token
+    }
+goog.exportSymbol(
+    'ee.layers.FeatureViewTileSource',
+    module$contents$ee$layers$FeatureViewTileSource_FeatureViewTileSource
+)
+ee.layers.FeatureViewTileSource.FeatureViewTileSource =
+    module$contents$ee$layers$FeatureViewTileSource_FeatureViewTileSource
 ee.MapTileManager = function () {
     goog.events.EventTarget.call(this)
     this.tokenPool_ = new ee.MapTileManager.TokenPool_(0, 60)
@@ -46344,7 +49317,7 @@ ee.MapLayerOverlay = function (url, mapId, token, init, opt_profiler) {
     this.isPng = void 0 !== init.isPng ? init.isPng : !0
     this.name = init.name
     this.tiles_ = new goog.structs.Set()
-    this.opacity_ = 1.0
+    this.opacity_ = 1
     this.visible_ = !0
     this.profiler_ = opt_profiler || null
 }
@@ -46377,7 +49350,7 @@ ee.MapLayerOverlay.prototype.getTile = function (coord, zoom, ownerDocument) {
     var uniqueTileId = [tileId, this.tileCounter, this.token].join('/')
     this.tileCounter += 1
     var div = goog.dom.createDom(goog.dom.TagName.DIV, { id: uniqueTileId }),
-        priority = new Date().getTime() / 1000
+        priority = new Date().getTime() / 1e3
     this.tilesLoading.push(uniqueTileId)
     ee.MapTileManager.getInstance().send(
         uniqueTileId,
@@ -46423,7 +49396,7 @@ ee.MapLayerOverlay.prototype.handleImageCompleted_ = function (
         if (e.target && e.type == goog.events.EventType.LOAD) {
             var tile = e.target
             this.tiles_.add(tile)
-            1.0 != this.opacity_ && goog.style.setOpacity(tile, this.opacity_)
+            1 != this.opacity_ && goog.style.setOpacity(tile, this.opacity_)
             div.appendChild(tile)
         }
         this.dispatchTileEvent_()
@@ -46679,85 +49652,68 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
 ;(function () {
     var exportedFnInfo = {},
         orderedFnNames =
-            'ee.ApiFunction._call ee.ApiFunction._apply ee.ApiFunction.lookup ee.batch.Export.table.toDmsLayer ee.batch.Export.image.toAsset ee.batch.Export.videoMap.toCloudStorage ee.batch.Export.video.toCloudStorage ee.batch.Export.classifier.toAsset ee.batch.Export.image.toCloudStorage ee.batch.Export.video.toDrive ee.batch.Export.image.toDrive ee.batch.Export.table.toAsset ee.batch.Export.map.toCloudStorage ee.batch.Export.table.toDrive ee.batch.Export.table.toCloudStorage ee.Collection.prototype.filterDate ee.Collection.prototype.filter ee.Collection.prototype.filterMetadata ee.Collection.prototype.limit ee.Collection.prototype.map ee.Collection.prototype.filterBounds ee.Collection.prototype.sort ee.Collection.prototype.iterate ee.ComputedObject.prototype.aside ee.ComputedObject.prototype.evaluate ee.ComputedObject.prototype.serialize ee.ComputedObject.prototype.getInfo ee.data.authenticateViaPopup ee.data.makeTableDownloadUrl ee.data.newTaskId ee.data.getList ee.data.authenticateViaPrivateKey ee.data.cancelOperation ee.data.getTaskStatus ee.data.listAssets ee.data.authenticateViaOauth ee.data.getOperation ee.data.startTableIngestion ee.data.listOperations ee.data.getAssetAcl ee.data.listImages ee.data.cancelTask ee.data.getMapId ee.data.getDmsTilesKey ee.data.getAsset ee.data.getThumbId ee.data.getInfo ee.data.getTaskList ee.data.listBuckets ee.data.authenticate ee.data.createAssetHome ee.data.deleteAsset ee.data.getTileUrl ee.data.getAssetRoots ee.data.computeValue ee.data.updateTask ee.data.getTaskListWithLimit ee.data.startIngestion ee.data.getVideoThumbId ee.data.startProcessing ee.data.getFilmstripThumbId ee.data.getAssetRootQuota ee.data.createAsset ee.data.makeThumbUrl ee.data.createFolder ee.data.getDownloadId ee.data.renameAsset ee.data.updateAsset ee.data.makeDownloadUrl ee.data.getTableDownloadId ee.data.setAssetProperties ee.data.copyAsset ee.data.setAssetAcl ee.Date ee.Deserializer.fromCloudApiJSON ee.Deserializer.fromJSON ee.Deserializer.decode ee.Deserializer.decodeCloudApi ee.Dictionary ee.reset ee.call ee.TILE_SIZE ee.InitState ee.apply ee.initialize ee.Algorithms ee.Element.prototype.set ee.Feature ee.Feature.prototype.getMap ee.Feature.prototype.getInfo ee.FeatureCollection.prototype.getMap ee.FeatureCollection.prototype.getInfo ee.FeatureCollection ee.FeatureCollection.prototype.select ee.FeatureCollection.prototype.getDownloadURL ee.Filter.prototype.not ee.Filter.date ee.Filter.gte ee.Filter.neq ee.Filter.and ee.Filter.metadata ee.Filter.gt ee.Filter.lte ee.Filter.inList ee.Filter.eq ee.Filter ee.Filter.or ee.Filter.bounds ee.Filter.lt ee.Function.prototype.apply ee.Function.prototype.call ee.Geometry.MultiLineString ee.Geometry.prototype.toGeoJSON ee.Geometry.BBox ee.Geometry ee.Geometry.prototype.toGeoJSONString ee.Geometry.Rectangle ee.Geometry.Polygon ee.Geometry.MultiPolygon ee.Geometry.LinearRing ee.Geometry.LineString ee.Geometry.prototype.serialize ee.Geometry.Point ee.Geometry.MultiPoint ee.Image.cat ee.Image.prototype.select ee.Image.prototype.getInfo ee.Image.prototype.expression ee.Image.prototype.rename ee.Image.prototype.getThumbId ee.Image.prototype.clip ee.Image.prototype.getMap ee.Image.prototype.getDownloadURL ee.Image.prototype.getThumbURL ee.Image ee.Image.rgb ee.ImageCollection.prototype.getVideoThumbURL ee.ImageCollection.prototype.getInfo ee.ImageCollection.prototype.first ee.ImageCollection ee.ImageCollection.prototype.getMap ee.ImageCollection.prototype.getFilmstripThumbURL ee.ImageCollection.prototype.select ee.List ee.Number ee.Serializer.toReadableCloudApiJSON ee.Serializer.encodeCloudApi ee.Serializer.toCloudApiJSON ee.Serializer.encode ee.Serializer.encodeCloudApiPretty ee.Serializer.toReadableJSON ee.Serializer.toJSON ee.String ee.Terrain'.split(
+            'ee.ApiFunction.lookup ee.ApiFunction._apply ee.ApiFunction._call ee.batch.Export.image.toDrive ee.batch.Export.table.toAsset ee.batch.Export.classifier.toAsset ee.batch.Export.table.toDrive ee.batch.Export.video.toDrive ee.batch.Export.table.toFeatureView ee.batch.Export.videoMap.toCloudStorage ee.batch.Export.image.toAsset ee.batch.Export.image.toCloudStorage ee.batch.Export.video.toCloudStorage ee.batch.Export.map.toCloudStorage ee.batch.Export.table.toCloudStorage ee.Collection.prototype.map ee.Collection.prototype.filter ee.Collection.prototype.limit ee.Collection.prototype.iterate ee.Collection.prototype.filterMetadata ee.Collection.prototype.filterDate ee.Collection.prototype.sort ee.Collection.prototype.filterBounds ee.ComputedObject.prototype.evaluate ee.ComputedObject.prototype.aside ee.ComputedObject.prototype.getInfo ee.ComputedObject.prototype.serialize ee.data.getOperation ee.data.getList ee.data.listAssets ee.data.makeDownloadUrl ee.data.getAssetRoots ee.data.getMapId ee.data.startIngestion ee.data.createAssetHome ee.data.getAssetAcl ee.data.cancelOperation ee.data.listOperations ee.data.authenticate ee.data.listFeatures ee.data.setAssetAcl ee.data.getTaskList ee.data.createAsset ee.data.deleteAsset ee.data.makeThumbUrl ee.data.authenticateViaOauth ee.data.getFilmstripThumbId ee.data.getVideoThumbId ee.data.resetWorkloadTag ee.data.getThumbId ee.data.getFeatureViewTilesKey ee.data.setDefaultWorkloadTag ee.data.createFolder ee.data.setWorkloadTag ee.data.authenticateViaPopup ee.data.updateTask ee.data.startProcessing ee.data.copyAsset ee.data.getWorkloadTag ee.data.renameAsset ee.data.getTaskListWithLimit ee.data.getTileUrl ee.data.getTableDownloadId ee.data.computeValue ee.data.authenticateViaPrivateKey ee.data.getTaskStatus ee.data.getInfo ee.data.updateAsset ee.data.makeTableDownloadUrl ee.data.setAssetProperties ee.data.getAsset ee.data.getAssetRootQuota ee.data.startTableIngestion ee.data.listImages ee.data.newTaskId ee.data.cancelTask ee.data.listBuckets ee.data.getDownloadId ee.Date ee.Deserializer.fromCloudApiJSON ee.Deserializer.decode ee.Deserializer.fromJSON ee.Deserializer.decodeCloudApi ee.Dictionary ee.apply ee.call ee.initialize ee.TILE_SIZE ee.Algorithms ee.reset ee.InitState ee.Element.prototype.set ee.Feature ee.Feature.prototype.getMap ee.Feature.prototype.getInfo ee.FeatureCollection.prototype.select ee.FeatureCollection ee.FeatureCollection.prototype.getInfo ee.FeatureCollection.prototype.getDownloadURL ee.FeatureCollection.prototype.getMap ee.Filter.lt ee.Filter.and ee.Filter.or ee.Filter.gte ee.Filter.date ee.Filter.inList ee.Filter.prototype.not ee.Filter ee.Filter.metadata ee.Filter.eq ee.Filter.neq ee.Filter.bounds ee.Filter.gt ee.Filter.lte ee.Function.prototype.call ee.Function.prototype.apply ee.Geometry.Polygon ee.Geometry.prototype.toGeoJSON ee.Geometry.prototype.toGeoJSONString ee.Geometry.BBox ee.Geometry.LinearRing ee.Geometry.Point ee.Geometry.prototype.serialize ee.Geometry.MultiPolygon ee.Geometry ee.Geometry.MultiPoint ee.Geometry.MultiLineString ee.Geometry.Rectangle ee.Geometry.LineString ee.Image.prototype.clip ee.Image.prototype.expression ee.Image.prototype.rename ee.Image ee.Image.prototype.getMap ee.Image.prototype.getDownloadURL ee.Image.rgb ee.Image.prototype.getInfo ee.Image.prototype.getThumbURL ee.Image.prototype.getThumbId ee.Image.prototype.select ee.Image.cat ee.ImageCollection.prototype.getFilmstripThumbURL ee.ImageCollection.prototype.getVideoThumbURL ee.ImageCollection.prototype.getMap ee.ImageCollection.prototype.getInfo ee.ImageCollection.prototype.first ee.ImageCollection.prototype.select ee.ImageCollection ee.List ee.Number ee.Serializer.encode ee.Serializer.toJSON ee.Serializer.toReadableJSON ee.Serializer.encodeCloudApi ee.Serializer.toReadableCloudApiJSON ee.Serializer.encodeCloudApiPretty ee.Serializer.toCloudApiJSON ee.String ee.Terrain'.split(
                 ' '
             ),
         orderedParamLists = [
-            ['name', 'var_args'],
-            ['name', 'namedArgs'],
             ['name'],
+            ['name', 'namedArgs'],
+            ['name', 'var_args'],
+            'image opt_description opt_folder opt_fileNamePrefix opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_shardSize opt_fileDimensions opt_skipEmptyTiles opt_fileFormat opt_formatOptions'.split(
+                ' '
+            ),
             ['collection', 'opt_description', 'opt_assetId', 'opt_maxVertices'],
-            'image opt_description opt_assetId opt_pyramidingPolicy opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_shardSize'.split(
-                ' '
-            ),
-            'collection opt_description opt_bucket opt_fileNamePrefix opt_framesPerSecond opt_writePublicTiles opt_minZoom opt_maxZoom opt_scale opt_region opt_skipEmptyTiles opt_minTimeMachineZoomSubset opt_maxTimeMachineZoomSubset opt_tileWidth opt_tileHeight opt_tileStride opt_videoFormat opt_version opt_mapsApiKey opt_bucketCorsUris'.split(
-                ' '
-            ),
-            'collection opt_description opt_bucket opt_fileNamePrefix opt_framesPerSecond opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_maxFrames'.split(
-                ' '
-            ),
             ['classifier', 'opt_description', 'opt_assetId'],
-            'image opt_description opt_bucket opt_fileNamePrefix opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_shardSize opt_fileDimensions opt_skipEmptyTiles opt_fileFormat opt_formatOptions'.split(
+            'collection opt_description opt_folder opt_fileNamePrefix opt_fileFormat opt_selectors opt_maxVertices'.split(
                 ' '
             ),
             'collection opt_description opt_folder opt_fileNamePrefix opt_framesPerSecond opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_maxFrames'.split(
                 ' '
             ),
-            'image opt_description opt_folder opt_fileNamePrefix opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_shardSize opt_fileDimensions opt_skipEmptyTiles opt_fileFormat opt_formatOptions'.split(
+            'collection opt_description opt_assetId opt_maxFeaturesPerTile opt_thinningStrategy opt_thinningRanking opt_zOrderRanking'.split(
                 ' '
             ),
-            ['collection', 'opt_description', 'opt_assetId', 'opt_maxVertices'],
+            'collection opt_description opt_bucket opt_fileNamePrefix opt_framesPerSecond opt_writePublicTiles opt_minZoom opt_maxZoom opt_scale opt_region opt_skipEmptyTiles opt_minTimeMachineZoomSubset opt_maxTimeMachineZoomSubset opt_tileWidth opt_tileHeight opt_tileStride opt_videoFormat opt_version opt_mapsApiKey opt_bucketCorsUris'.split(
+                ' '
+            ),
+            'image opt_description opt_assetId opt_pyramidingPolicy opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_shardSize'.split(
+                ' '
+            ),
+            'image opt_description opt_bucket opt_fileNamePrefix opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_shardSize opt_fileDimensions opt_skipEmptyTiles opt_fileFormat opt_formatOptions'.split(
+                ' '
+            ),
+            'collection opt_description opt_bucket opt_fileNamePrefix opt_framesPerSecond opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_maxFrames'.split(
+                ' '
+            ),
             'image opt_description opt_bucket opt_fileFormat opt_path opt_writePublicTiles opt_scale opt_maxZoom opt_minZoom opt_region opt_skipEmptyTiles opt_mapsApiKey opt_bucketCorsUris'.split(
-                ' '
-            ),
-            'collection opt_description opt_folder opt_fileNamePrefix opt_fileFormat opt_selectors opt_maxVertices'.split(
                 ' '
             ),
             'collection opt_description opt_bucket opt_fileNamePrefix opt_fileFormat opt_selectors opt_maxVertices'.split(
                 ' '
             ),
-            ['start', 'opt_end'],
-            ['filter'],
-            ['name', 'operator', 'value'],
-            ['max', 'opt_property', 'opt_ascending'],
             ['algorithm', 'opt_dropNulls'],
-            ['geometry'],
-            ['property', 'opt_ascending'],
+            ['filter'],
+            ['max', 'opt_property', 'opt_ascending'],
             ['algorithm', 'opt_first'],
-            ['func', 'var_args'],
+            ['name', 'operator', 'value'],
+            ['start', 'opt_end'],
+            ['property', 'opt_ascending'],
+            ['geometry'],
             ['callback'],
+            ['func', 'var_args'],
+            ['opt_callback'],
             ['legacy'],
-            ['opt_callback'],
-            ['opt_success', 'opt_error'],
+            ['operationName', 'opt_callback'],
+            ['params', 'opt_callback'],
+            ['parent', 'opt_params', 'opt_callback'],
             ['id'],
-            ['opt_count', 'opt_callback'],
-            ['params', 'opt_callback'],
-            [
-                'privateKey',
-                'opt_success',
-                'opt_error',
-                'opt_extraScopes',
-                'opt_suppressDefaultScopes',
-            ],
-            ['operationName', 'opt_callback'],
-            ['taskId', 'opt_callback'],
-            ['parent', 'params', 'opt_callback'],
-            'clientId success opt_error opt_extraScopes opt_onImmediateFailed opt_suppressDefaultScopes'.split(
-                ' '
-            ),
-            ['operationName', 'opt_callback'],
-            ['taskId', 'request', 'opt_callback'],
-            ['opt_limit', 'opt_callback'],
-            ['assetId', 'opt_callback'],
-            ['parent', 'params', 'opt_callback'],
-            ['taskId', 'opt_callback'],
-            ['params', 'opt_callback'],
-            ['params', 'opt_callback'],
-            ['id', 'opt_callback'],
-            ['params', 'opt_callback'],
-            ['id', 'opt_callback'],
             ['opt_callback'],
-            ['project', 'opt_callback'],
+            ['params', 'opt_callback'],
+            ['taskId', 'request', 'opt_callback'],
+            ['requestedId', 'opt_callback'],
+            ['assetId', 'opt_callback'],
+            ['operationName', 'opt_callback'],
+            ['opt_limit', 'opt_callback'],
             [
                 'clientId',
                 'success',
@@ -46765,18 +49721,9 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
                 'opt_extraScopes',
                 'opt_onImmediateFailed',
             ],
-            ['requestedId', 'opt_callback'],
-            ['assetId', 'opt_callback'],
-            ['id', 'x', 'y', 'z'],
+            ['asset', 'params', 'opt_callback'],
+            ['assetId', 'aclUpdate', 'opt_callback'],
             ['opt_callback'],
-            ['obj', 'opt_callback'],
-            ['taskId', 'action', 'opt_callback'],
-            ['opt_limit', 'opt_callback'],
-            ['taskId', 'request', 'opt_callback'],
-            ['params', 'opt_callback'],
-            ['taskId', 'params', 'opt_callback'],
-            ['params', 'opt_callback'],
-            ['rootId', 'opt_callback'],
             [
                 'value',
                 'opt_path',
@@ -46784,111 +49731,144 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
                 'opt_properties',
                 'opt_callback',
             ],
+            ['assetId', 'opt_callback'],
             ['id'],
-            ['path', 'opt_force', 'opt_callback'],
+            'clientId success opt_error opt_extraScopes opt_onImmediateFailed opt_suppressDefaultScopes'.split(
+                ' '
+            ),
             ['params', 'opt_callback'],
+            ['params', 'opt_callback'],
+            ['opt_resetDefault'],
+            ['params', 'opt_callback'],
+            ['params', 'opt_callback'],
+            ['tag'],
+            ['path', 'opt_force', 'opt_callback'],
+            ['tag'],
+            ['opt_success', 'opt_error'],
+            ['taskId', 'action', 'opt_callback'],
+            ['taskId', 'params', 'opt_callback'],
+            ['sourceId', 'destinationId', 'opt_overwrite', 'opt_callback'],
+            [],
             ['sourceId', 'destinationId', 'opt_callback'],
+            ['opt_limit', 'opt_callback'],
+            ['id', 'x', 'y', 'z'],
+            ['params', 'opt_callback'],
+            ['obj', 'opt_callback'],
+            [
+                'privateKey',
+                'opt_success',
+                'opt_error',
+                'opt_extraScopes',
+                'opt_suppressDefaultScopes',
+            ],
+            ['taskId', 'opt_callback'],
+            ['id', 'opt_callback'],
             ['assetId', 'asset', 'updateFields', 'opt_callback'],
             ['id'],
-            ['params', 'opt_callback'],
             ['assetId', 'properties', 'opt_callback'],
-            ['sourceId', 'destinationId', 'opt_overwrite', 'opt_callback'],
-            ['assetId', 'aclUpdate', 'opt_callback'],
+            ['id', 'opt_callback'],
+            ['rootId', 'opt_callback'],
+            ['taskId', 'request', 'opt_callback'],
+            ['parent', 'opt_params', 'opt_callback'],
+            ['opt_count', 'opt_callback'],
+            ['taskId', 'opt_callback'],
+            ['project', 'opt_callback'],
+            ['params', 'opt_callback'],
             ['date', 'opt_tz'],
             ['json'],
             ['json'],
             ['json'],
             ['json'],
             ['opt_dict'],
-            [],
-            ['func', 'var_args'],
-            [],
-            [],
             ['func', 'namedArgs'],
+            ['func', 'var_args'],
             'opt_baseurl opt_tileurl opt_successCallback opt_errorCallback opt_xsrfToken opt_project'.split(
                 ' '
             ),
+            [],
+            [],
+            [],
             [],
             ['var_args'],
             ['geometry', 'opt_properties'],
             ['opt_visParams', 'opt_callback'],
             ['opt_callback'],
-            ['opt_visParams', 'opt_callback'],
-            ['opt_callback'],
-            ['args', 'opt_column'],
             ['propertySelectors', 'opt_newProperties', 'opt_retainGeometry'],
+            ['args', 'opt_column'],
+            ['opt_callback'],
             ['opt_format', 'opt_selectors', 'opt_filename', 'opt_callback'],
-            [],
-            ['start', 'opt_end'],
-            ['name', 'value'],
+            ['opt_visParams', 'opt_callback'],
             ['name', 'value'],
             ['var_args'],
-            ['name', 'operator', 'value'],
+            ['var_args'],
             ['name', 'value'],
-            ['name', 'value'],
+            ['start', 'opt_end'],
             [
                 'opt_leftField',
                 'opt_rightValue',
                 'opt_rightField',
                 'opt_leftValue',
             ],
-            ['name', 'value'],
+            [],
             ['opt_filter'],
-            ['var_args'],
+            ['name', 'operator', 'value'],
+            ['name', 'value'],
+            ['name', 'value'],
             ['geometry', 'opt_errorMargin'],
             ['name', 'value'],
-            ['namedArgs'],
+            ['name', 'value'],
             ['var_args'],
-            ['coords', 'opt_proj', 'opt_geodesic', 'opt_maxError'],
+            ['namedArgs'],
+            [
+                'coords',
+                'opt_proj',
+                'opt_geodesic',
+                'opt_maxError',
+                'opt_evenOdd',
+            ],
+            [],
             [],
             ['west', 'south', 'east', 'north'],
-            ['geoJson', 'opt_proj', 'opt_geodesic', 'opt_evenOdd'],
-            [],
-            ['coords', 'opt_proj', 'opt_geodesic', 'opt_evenOdd'],
-            [
-                'coords',
-                'opt_proj',
-                'opt_geodesic',
-                'opt_maxError',
-                'opt_evenOdd',
-            ],
-            [
-                'coords',
-                'opt_proj',
-                'opt_geodesic',
-                'opt_maxError',
-                'opt_evenOdd',
-            ],
             ['coords', 'opt_proj', 'opt_geodesic', 'opt_maxError'],
-            ['coords', 'opt_proj', 'opt_geodesic', 'opt_maxError'],
+            ['coords', 'opt_proj'],
             ['legacy'],
+            [
+                'coords',
+                'opt_proj',
+                'opt_geodesic',
+                'opt_maxError',
+                'opt_evenOdd',
+            ],
+            ['geoJson', 'opt_proj', 'opt_geodesic', 'opt_evenOdd'],
             ['coords', 'opt_proj'],
-            ['coords', 'opt_proj'],
-            ['var_args'],
-            ['var_args'],
-            ['opt_callback'],
+            ['coords', 'opt_proj', 'opt_geodesic', 'opt_maxError'],
+            ['coords', 'opt_proj', 'opt_geodesic', 'opt_evenOdd'],
+            ['coords', 'opt_proj', 'opt_geodesic', 'opt_maxError'],
+            ['geometry'],
             ['expression', 'opt_map'],
             ['var_args'],
-            ['params', 'opt_callback'],
-            ['geometry'],
+            ['opt_args'],
             ['opt_visParams', 'opt_callback'],
             ['params', 'opt_callback'],
-            ['params', 'opt_callback'],
-            ['opt_args'],
             ['r', 'g', 'b'],
+            ['opt_callback'],
             ['params', 'opt_callback'],
+            ['params', 'opt_callback'],
+            ['var_args'],
+            ['var_args'],
+            ['params', 'opt_callback'],
+            ['params', 'opt_callback'],
+            ['opt_visParams', 'opt_callback'],
             ['opt_callback'],
             [],
-            ['args'],
-            ['opt_visParams', 'opt_callback'],
-            ['params', 'opt_callback'],
             ['selectors', 'opt_names'],
+            ['args'],
             ['list'],
             ['number'],
-            ['obj'],
-            ['obj'],
-            ['obj'],
             ['obj', 'opt_isCompound'],
+            ['obj'],
+            ['obj'],
+            ['obj'],
             ['obj'],
             ['obj'],
             ['obj'],
@@ -46896,158 +49876,163 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
             [],
         ]
     ;[
-        ee.ApiFunction._call,
-        ee.ApiFunction._apply,
         ee.ApiFunction.lookup,
-        module$contents$ee$batch_Export.table.toDmsLayer,
-        module$contents$ee$batch_Export.image.toAsset,
-        module$contents$ee$batch_Export.videoMap.toCloudStorage,
-        module$contents$ee$batch_Export.video.toCloudStorage,
-        module$contents$ee$batch_Export.classifier.toAsset,
-        module$contents$ee$batch_Export.image.toCloudStorage,
-        module$contents$ee$batch_Export.video.toDrive,
+        ee.ApiFunction._apply,
+        ee.ApiFunction._call,
         module$contents$ee$batch_Export.image.toDrive,
         module$contents$ee$batch_Export.table.toAsset,
-        module$contents$ee$batch_Export.map.toCloudStorage,
+        module$contents$ee$batch_Export.classifier.toAsset,
         module$contents$ee$batch_Export.table.toDrive,
+        module$contents$ee$batch_Export.video.toDrive,
+        module$contents$ee$batch_Export.table.toFeatureView,
+        module$contents$ee$batch_Export.videoMap.toCloudStorage,
+        module$contents$ee$batch_Export.image.toAsset,
+        module$contents$ee$batch_Export.image.toCloudStorage,
+        module$contents$ee$batch_Export.video.toCloudStorage,
+        module$contents$ee$batch_Export.map.toCloudStorage,
         module$contents$ee$batch_Export.table.toCloudStorage,
-        ee.Collection.prototype.filterDate,
-        ee.Collection.prototype.filter,
-        ee.Collection.prototype.filterMetadata,
-        ee.Collection.prototype.limit,
         ee.Collection.prototype.map,
-        ee.Collection.prototype.filterBounds,
-        ee.Collection.prototype.sort,
+        ee.Collection.prototype.filter,
+        ee.Collection.prototype.limit,
         ee.Collection.prototype.iterate,
-        ee.ComputedObject.prototype.aside,
+        ee.Collection.prototype.filterMetadata,
+        ee.Collection.prototype.filterDate,
+        ee.Collection.prototype.sort,
+        ee.Collection.prototype.filterBounds,
         ee.ComputedObject.prototype.evaluate,
-        ee.ComputedObject.prototype.serialize,
+        ee.ComputedObject.prototype.aside,
         ee.ComputedObject.prototype.getInfo,
-        ee.data.authenticateViaPopup,
-        ee.data.makeTableDownloadUrl,
-        ee.data.newTaskId,
-        ee.data.getList,
-        ee.data.authenticateViaPrivateKey,
-        ee.data.cancelOperation,
-        ee.data.getTaskStatus,
-        ee.data.listAssets,
-        ee.data.authenticateViaOauth,
+        ee.ComputedObject.prototype.serialize,
         ee.data.getOperation,
-        ee.data.startTableIngestion,
-        ee.data.listOperations,
-        ee.data.getAssetAcl,
-        ee.data.listImages,
-        ee.data.cancelTask,
-        ee.data.getMapId,
-        ee.data.getDmsTilesKey,
-        ee.data.getAsset,
-        ee.data.getThumbId,
-        ee.data.getInfo,
-        ee.data.getTaskList,
-        ee.data.listBuckets,
-        ee.data.authenticate,
-        ee.data.createAssetHome,
-        ee.data.deleteAsset,
-        ee.data.getTileUrl,
-        ee.data.getAssetRoots,
-        ee.data.computeValue,
-        ee.data.updateTask,
-        ee.data.getTaskListWithLimit,
-        ee.data.startIngestion,
-        ee.data.getVideoThumbId,
-        ee.data.startProcessing,
-        ee.data.getFilmstripThumbId,
-        ee.data.getAssetRootQuota,
-        ee.data.createAsset,
-        ee.data.makeThumbUrl,
-        ee.data.createFolder,
-        ee.data.getDownloadId,
-        ee.data.renameAsset,
-        ee.data.updateAsset,
+        ee.data.getList,
+        ee.data.listAssets,
         ee.data.makeDownloadUrl,
-        ee.data.getTableDownloadId,
-        ee.data.setAssetProperties,
-        ee.data.copyAsset,
+        ee.data.getAssetRoots,
+        ee.data.getMapId,
+        ee.data.startIngestion,
+        ee.data.createAssetHome,
+        ee.data.getAssetAcl,
+        ee.data.cancelOperation,
+        ee.data.listOperations,
+        ee.data.authenticate,
+        ee.data.listFeatures,
         ee.data.setAssetAcl,
+        ee.data.getTaskList,
+        ee.data.createAsset,
+        ee.data.deleteAsset,
+        ee.data.makeThumbUrl,
+        ee.data.authenticateViaOauth,
+        ee.data.getFilmstripThumbId,
+        ee.data.getVideoThumbId,
+        ee.data.resetWorkloadTag,
+        ee.data.getThumbId,
+        ee.data.getFeatureViewTilesKey,
+        ee.data.setDefaultWorkloadTag,
+        ee.data.createFolder,
+        ee.data.setWorkloadTag,
+        ee.data.authenticateViaPopup,
+        ee.data.updateTask,
+        ee.data.startProcessing,
+        ee.data.copyAsset,
+        ee.data.getWorkloadTag,
+        ee.data.renameAsset,
+        ee.data.getTaskListWithLimit,
+        ee.data.getTileUrl,
+        ee.data.getTableDownloadId,
+        ee.data.computeValue,
+        ee.data.authenticateViaPrivateKey,
+        ee.data.getTaskStatus,
+        ee.data.getInfo,
+        ee.data.updateAsset,
+        ee.data.makeTableDownloadUrl,
+        ee.data.setAssetProperties,
+        ee.data.getAsset,
+        ee.data.getAssetRootQuota,
+        ee.data.startTableIngestion,
+        ee.data.listImages,
+        ee.data.newTaskId,
+        ee.data.cancelTask,
+        ee.data.listBuckets,
+        ee.data.getDownloadId,
         ee.Date,
         ee.Deserializer.fromCloudApiJSON,
-        ee.Deserializer.fromJSON,
         ee.Deserializer.decode,
+        ee.Deserializer.fromJSON,
         ee.Deserializer.decodeCloudApi,
         ee.Dictionary,
-        ee.reset,
-        ee.call,
-        ee.TILE_SIZE,
-        ee.InitState,
         ee.apply,
+        ee.call,
         ee.initialize,
+        ee.TILE_SIZE,
         ee.Algorithms,
+        ee.reset,
+        ee.InitState,
         ee.Element.prototype.set,
         ee.Feature,
         ee.Feature.prototype.getMap,
         ee.Feature.prototype.getInfo,
-        ee.FeatureCollection.prototype.getMap,
-        ee.FeatureCollection.prototype.getInfo,
-        ee.FeatureCollection,
         ee.FeatureCollection.prototype.select,
+        ee.FeatureCollection,
+        ee.FeatureCollection.prototype.getInfo,
         ee.FeatureCollection.prototype.getDownloadURL,
-        ee.Filter.prototype.not,
-        ee.Filter.date,
-        ee.Filter.gte,
-        ee.Filter.neq,
+        ee.FeatureCollection.prototype.getMap,
+        ee.Filter.lt,
         ee.Filter.and,
+        ee.Filter.or,
+        ee.Filter.gte,
+        ee.Filter.date,
+        ee.Filter.inList,
+        ee.Filter.prototype.not,
+        ee.Filter,
         ee.Filter.metadata,
+        ee.Filter.eq,
+        ee.Filter.neq,
+        ee.Filter.bounds,
         ee.Filter.gt,
         ee.Filter.lte,
-        ee.Filter.inList,
-        ee.Filter.eq,
-        ee.Filter,
-        ee.Filter.or,
-        ee.Filter.bounds,
-        ee.Filter.lt,
-        ee.Function.prototype.apply,
         ee.Function.prototype.call,
-        ee.Geometry.MultiLineString,
-        ee.Geometry.prototype.toGeoJSON,
-        ee.Geometry.BBox,
-        ee.Geometry,
-        ee.Geometry.prototype.toGeoJSONString,
-        ee.Geometry.Rectangle,
+        ee.Function.prototype.apply,
         ee.Geometry.Polygon,
-        ee.Geometry.MultiPolygon,
+        ee.Geometry.prototype.toGeoJSON,
+        ee.Geometry.prototype.toGeoJSONString,
+        ee.Geometry.BBox,
         ee.Geometry.LinearRing,
-        ee.Geometry.LineString,
-        ee.Geometry.prototype.serialize,
         ee.Geometry.Point,
+        ee.Geometry.prototype.serialize,
+        ee.Geometry.MultiPolygon,
+        ee.Geometry,
         ee.Geometry.MultiPoint,
-        ee.Image.cat,
-        ee.Image.prototype.select,
-        ee.Image.prototype.getInfo,
+        ee.Geometry.MultiLineString,
+        ee.Geometry.Rectangle,
+        ee.Geometry.LineString,
+        ee.Image.prototype.clip,
         ee.Image.prototype.expression,
         ee.Image.prototype.rename,
-        ee.Image.prototype.getThumbId,
-        ee.Image.prototype.clip,
+        ee.Image,
         ee.Image.prototype.getMap,
         ee.Image.prototype.getDownloadURL,
-        ee.Image.prototype.getThumbURL,
-        ee.Image,
         ee.Image.rgb,
+        ee.Image.prototype.getInfo,
+        ee.Image.prototype.getThumbURL,
+        ee.Image.prototype.getThumbId,
+        ee.Image.prototype.select,
+        ee.Image.cat,
+        ee.ImageCollection.prototype.getFilmstripThumbURL,
         ee.ImageCollection.prototype.getVideoThumbURL,
+        ee.ImageCollection.prototype.getMap,
         ee.ImageCollection.prototype.getInfo,
         ee.ImageCollection.prototype.first,
-        ee.ImageCollection,
-        ee.ImageCollection.prototype.getMap,
-        ee.ImageCollection.prototype.getFilmstripThumbURL,
         ee.ImageCollection.prototype.select,
+        ee.ImageCollection,
         ee.List,
         ee.Number,
-        ee.Serializer.toReadableCloudApiJSON,
-        ee.Serializer.encodeCloudApi,
-        ee.Serializer.toCloudApiJSON,
         ee.Serializer.encode,
-        ee.Serializer.encodeCloudApiPretty,
-        ee.Serializer.toReadableJSON,
         ee.Serializer.toJSON,
+        ee.Serializer.toReadableJSON,
+        ee.Serializer.encodeCloudApi,
+        ee.Serializer.toReadableCloudApiJSON,
+        ee.Serializer.encodeCloudApiPretty,
+        ee.Serializer.toCloudApiJSON,
         ee.String,
         ee.Terrain,
     ].forEach(function (fn, i) {
