@@ -1,3 +1,10 @@
+## [3.8.2](https://github.com/dhis2/maps-gl/compare/v3.8.1...v3.8.2) (2023-03-01)
+
+
+### Bug Fixes
+
+* upgrade dependencies including earthengie-api ([#529](https://github.com/dhis2/maps-gl/issues/529)) ([0757797](https://github.com/dhis2/maps-gl/commit/07577977e7e56c5d62a0aa253d367bc4af39ac37))
+
 ## [3.8.1](https://github.com/dhis2/maps-gl/compare/v3.8.0...v3.8.1) (2023-02-13)
 
 
