@@ -105,6 +105,18 @@ class DonutCluster extends Cluster {
         }
     }
 
+    setVisibility(isVisible) {
+        super.setVisibility(isVisible)
+
+        if (this.isOnMap()) {
+            for (const id in this.clusters) {
+                this.clusters[id].setVisibility(isVisible)
+            }
+        }
+
+        this._isVisible = isVisible
+    }
+
     // Sort cluster features after legend colors before spiderfy
     sortClusterFeatures = features => {
         const colors = this.options.groups.map(g => g.color)
