@@ -113,8 +113,6 @@ class DonutCluster extends Cluster {
                 this.clusters[id].setVisibility(isVisible)
             }
         }
-
-        this._isVisible = isVisible
     }
 
     // Sort cluster features after legend colors before spiderfy
