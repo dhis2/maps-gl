@@ -110,6 +110,7 @@ export const clusterCountLayer = ({ id, color }) => ({
         'text-field': '{point_count_abbreviated}',
         'text-font': defaults.textFont,
         'text-size': defaults.textSize,
+        'text-allow-overlap': true,
     },
     paint: {
         'text-color': color || defaults.textColor,
