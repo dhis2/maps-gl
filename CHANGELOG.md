@@ -1,3 +1,10 @@
+## [3.8.4](https://github.com/dhis2/maps-gl/compare/v3.8.3...v3.8.4) (2023-03-17)
+
+
+### Bug Fixes
+
+* set Bing layer opacity after it's added to the map  ([#536](https://github.com/dhis2/maps-gl/issues/536)) ([61cc854](https://github.com/dhis2/maps-gl/commit/61cc854f8b3efa879ec79ac818d7c58eea822eec))
+
 ## [3.8.3](https://github.com/dhis2/maps-gl/compare/v3.8.2...v3.8.3) (2023-03-15)
 
 
