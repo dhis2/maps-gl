@@ -121,7 +121,8 @@ class EarthEngineWorker {
             // Apply array of filters (e.g. period)
             filter.forEach(f => {
                 collection = collection.filter(
-                    ee.Filter[f.type].apply(this, f.arguments)
+                    // ee.Filter[f.type].apply(this, f.arguments)
+                    ee.Filter[f.type](f.name, f.value)
                 )
             })
 
@@ -233,12 +234,14 @@ class EarthEngineWorker {
             format,
             aggregationType,
             band,
-            legend,
+            style,
             tileScale = DEFAULT_TILE_SCALE,
         } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
-            singleAggregation && hasClasses(aggregationType) && legend
+            singleAggregation &&
+            hasClasses(aggregationType) &&
+            Array.isArrat(style)
         const image = await this.getImage()
         const scale = this.eeScale
         const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
@@ -279,7 +282,7 @@ class EarthEngineWorker {
                         data,
                         scale: scaleValue,
                         aggregationType,
-                        legend,
+                        style,
                     })
                 )
             } else if (!singleAggregation && aggregationType.length) {

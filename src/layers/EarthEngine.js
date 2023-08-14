@@ -144,12 +144,12 @@ class EarthEngine extends Layer {
 
     // Returns value at at position
     getValue = async lnglat => {
-        const { band, legend } = this.options
+        const { band, style } = this.options
         const data = await this.worker.getValue(lnglat)
         const value = data[band] || Object.values(data)[0]
 
         // Used for landcover
-        const item = Array.isArray(legend) && legend.find(i => i.id === value)
+        const item = Array.isArray(style) && style.find(i => i.id === value)
 
         return item ? item.name : value
     }

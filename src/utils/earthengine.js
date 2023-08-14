@@ -14,11 +14,11 @@ const workerOptions = [
     'data',
     'datasetId',
     'filter',
-    'legend',
     'mask',
     'methods',
     'mosaic',
-    'params',
+    'params', // TODO: Remove?
+    'style',
     'tileScale',
 ]
 

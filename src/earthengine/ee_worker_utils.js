@@ -37,12 +37,12 @@ export const combineReducers = ee => types =>
 // Returns the linear scale in meters of the units of this projection
 export const getScale = image => image.select(0).projection().nominalScale()
 
-// Returns visualisation params from legend
-const getParamsFromLegend = legend => {
-    const keys = legend.map(l => l.id)
+// Returns visualisation params from style
+const getParamsFromStyle = style => {
+    const keys = style.map(l => l.value)
     const min = Math.min(...keys)
     const max = Math.max(...keys)
-    const palette = legend.map(l => l.color).join(',')
+    const palette = style.map(l => l.color).join(',')
 
     return { min, max, palette }
 }
@@ -52,13 +52,13 @@ export const getHistogramStatistics = ({
     data,
     scale,
     aggregationType,
-    legend,
+    style,
 }) =>
     data.features.reduce((obj, { id, properties }) => {
         const { histogram } = properties
         const sum = Object.values(histogram).reduce((a, b) => a + b, 0)
 
-        obj[id] = legend.reduce((values, { id }) => {
+        obj[id] = style.reduce((values, { id }) => {
             const count = histogram[id] || 0
             const sqMeters = count * (scale * scale)
             let value
@@ -92,20 +92,20 @@ export const getFeatureCollectionProperties = data =>
         {}
     )
 
-// Classify image according to legend
-export const getClassifiedImage = (eeImage, { legend = [], params }) => {
+// Classify image according to style
+export const getClassifiedImage = (eeImage, { style = [], params }) => {
     if (!params) {
         // Image has classes (e.g. landcover)
-        return { eeImage, params: getParamsFromLegend(legend) }
+        return { eeImage, params: getParamsFromStyle(style) }
     }
 
     const min = 0
-    const max = legend.length - 1
+    const max = style.length - 1
     const { palette } = params
     let zones
 
     for (let i = min, item; i < max; i++) {
-        item = legend[i]
+        item = style[i]
 
         if (!zones) {
             zones = eeImage.gt(item.to)
