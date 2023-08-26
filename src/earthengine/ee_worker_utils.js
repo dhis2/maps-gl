@@ -58,7 +58,7 @@ export const getHistogramStatistics = ({
         const { histogram } = properties
         const sum = Object.values(histogram).reduce((a, b) => a + b, 0)
 
-        obj[id] = style.reduce((values, { id }) => {
+        obj[id] = style.reduce((values, { value: id }) => {
             const count = histogram[id] || 0
             const sqMeters = count * (scale * scale)
             let value
@@ -93,19 +93,19 @@ export const getFeatureCollectionProperties = data =>
     )
 
 // Classify image according to style
-export const getClassifiedImage = (eeImage, { style = [], params }) => {
-    if (!params) {
+export const getClassifiedImage = (eeImage, { style, legend }) => {
+    if (Array.isArray(style)) {
         // Image has classes (e.g. landcover)
         return { eeImage, params: getParamsFromStyle(style) }
     }
 
     const min = 0
-    const max = style.length - 1
-    const { palette } = params
+    const max = legend.length - 1
+    const { palette } = style
     let zones
 
     for (let i = min, item; i < max; i++) {
-        item = style[i]
+        item = legend[i]
 
         if (!zones) {
             zones = eeImage.gt(item.to)

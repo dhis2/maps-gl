@@ -17,8 +17,9 @@ const workerOptions = [
     'mask',
     'methods',
     'mosaic',
-    'params', // TODO: Remove?
+    // 'params', // TODO: Remove?
     'style',
+    'legend',
     'tileScale',
 ]
 

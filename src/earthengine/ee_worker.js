@@ -194,9 +194,10 @@ class EarthEngineWorker {
                     )
                 }
 
-                eeImage
-                    .visualize(params)
-                    .getMap(null, response => resolve(response.urlFormat))
+                eeImage.visualize(params).getMap(null, response => {
+                    console.log('response', response)
+                    return resolve(response.urlFormat)
+                })
             }
         })
     }
@@ -241,7 +242,7 @@ class EarthEngineWorker {
         const useHistogram =
             singleAggregation &&
             hasClasses(aggregationType) &&
-            Array.isArrat(style)
+            Array.isArray(style)
         const image = await this.getImage()
         const scale = this.eeScale
         const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
