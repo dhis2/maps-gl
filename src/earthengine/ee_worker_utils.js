@@ -93,7 +93,7 @@ export const getFeatureCollectionProperties = data =>
     )
 
 // Classify image according to style
-export const getClassifiedImage = (eeImage, { style, legend }) => {
+export const getClassifiedImage = (eeImage, { legend = [], style }) => {
     if (Array.isArray(style)) {
         // Image has classes (e.g. landcover)
         return { eeImage, params: getParamsFromStyle(style) }

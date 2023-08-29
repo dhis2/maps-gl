@@ -151,14 +151,26 @@ class EarthEngineWorker {
 
         // Run methods on image
         if (methods) {
-            methods.forEach(method => {
-                if (eeImage[method.name]) {
-                    eeImage = eeImage[method.name].apply(
-                        eeImage,
-                        method.arguments
-                    )
-                }
-            })
+            if (Array.isArray(methods)) {
+                methods.forEach(method => {
+                    if (eeImage[method.name]) {
+                        eeImage = eeImage[method.name].apply(
+                            eeImage,
+                            method.arguments
+                        )
+                    }
+                })
+            } else {
+                // Backward compatibility for format used before 2.40
+                Object.keys(methods).forEach(method => {
+                    if (eeImage[method]) {
+                        eeImage = eeImage[method].apply(
+                            eeImage,
+                            methods[method]
+                        )
+                    }
+                })
+            }
         }
 
         this.eeImage = eeImage
@@ -197,13 +209,9 @@ class EarthEngineWorker {
                     )
                 }
 
-                eeImage.visualize(params).getMap(null, response => {
-                    if (response?.urlFormat) {
-                        return resolve(response.urlFormat)
-                    } else {
-                        console.log('No map URL response') // TODO: Handle error (could be missing band)
-                    }
-                })
+                eeImage
+                    .visualize(params)
+                    .getMap(null, response => resolve(response.urlFormat))
             }
         })
     }
@@ -251,7 +259,7 @@ class EarthEngineWorker {
             Array.isArray(style)
         const image = await this.getImage()
         const scale = this.eeScale
-        const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
+        const collection = this.getFeatureCollection()
 
         if (collection) {
             if (format === 'FeatureCollection') {
