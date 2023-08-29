@@ -15,7 +15,13 @@ import { getBufferGeometry } from '../utils/buffers'
 // Why we need to "hack" the '@google/earthengine bundle:
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
 
-const FEATURE_STYLE = { color: 'FFA500', strokeWidth: 2 }
+// Options are defined here:
+// https://developers.google.com/earth-engine/apidocs/ee-featurecollection-draw
+const DEFAULT_FEATURE_STYLE = {
+    color: 'FF0000',
+    strokeWidth: 2,
+    pointRadius: 5,
+}
 const DEFAULT_TILE_SCALE = 1
 
 class EarthEngineWorker {
@@ -180,15 +186,16 @@ class EarthEngineWorker {
 
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { format, data } = this.options
+        const { format, data, style } = this.options
 
         return new Promise(resolve => {
             if (format === 'FeatureCollection') {
                 const { datasetId } = this.options
 
-                let dataset = ee
-                    .FeatureCollection(datasetId)
-                    .draw(FEATURE_STYLE)
+                let dataset = ee.FeatureCollection(datasetId).draw({
+                    ...DEFAULT_FEATURE_STYLE,
+                    ...style,
+                })
 
                 if (data) {
                     dataset = dataset.clipToCollection(
