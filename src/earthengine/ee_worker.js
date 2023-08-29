@@ -151,9 +151,12 @@ class EarthEngineWorker {
 
         // Run methods on image
         if (methods) {
-            Object.keys(methods).forEach(method => {
-                if (eeImage[method]) {
-                    eeImage = eeImage[method].apply(eeImage, methods[method])
+            methods.forEach(method => {
+                if (eeImage[method.name]) {
+                    eeImage = eeImage[method.name].apply(
+                        eeImage,
+                        method.arguments
+                    )
                 }
             })
         }
@@ -195,8 +198,11 @@ class EarthEngineWorker {
                 }
 
                 eeImage.visualize(params).getMap(null, response => {
-                    console.log('response', response)
-                    return resolve(response.urlFormat)
+                    if (response?.urlFormat) {
+                        return resolve(response.urlFormat)
+                    } else {
+                        console.log('No map URL response') // TODO: Handle error (could be missing band)
+                    }
                 })
             }
         })
