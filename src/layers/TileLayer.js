@@ -14,15 +14,13 @@ class TileLayer extends Layer {
             layers,
             format = 'image/png',
             attribution = '',
-            tileSize = 256,
         } = this.options
-
         let tiles
 
         if (layers) {
             // WMS
             tiles = [
-                `${url}?bbox={bbox-epsg-3857}&format=${format}&service=WMS&version=1.1.1&request=GetMap&srs=EPSG:3857&transparent=true&width=${tileSize}&height=${tileSize}&layers=${layers}`,
+                `${url}?bbox={bbox-epsg-3857}&format=${format}&service=WMS&version=1.1.1&request=GetMap&srs=EPSG:3857&transparent=true&width=256&height=256&layers=${layers}`,
             ]
         } else if (url.includes('{s}')) {
             tiles = ['a', 'b', 'c'].map(letter => url.replace('{s}', letter))
@@ -33,7 +31,7 @@ class TileLayer extends Layer {
         this.setSource(this.getId(), {
             type: 'raster',
             tiles,
-            tileSize,
+            tileSize: 256,
             attribution,
         })
     }
