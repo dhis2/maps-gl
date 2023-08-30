@@ -242,7 +242,11 @@ class EarthEngineWorker {
 
         const featureCollection = ee
             .FeatureCollection(imageCollection)
-            .select(['system:time_start', 'system:time_end'], null, false)
+            .select(
+                ['system:time_start', 'system:time_end', 'year'],
+                null,
+                false
+            )
 
         return getInfo(featureCollection)
     }
