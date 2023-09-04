@@ -63,7 +63,7 @@ export const labelLayer = ({
         },
         paint: {
             'text-color': color ? color : ['get', 'color'],
-            'text-opacity': opacity || defaults.opacity,
+            'text-opacity': opacity ?? defaults.opacity,
         },
     }
 }

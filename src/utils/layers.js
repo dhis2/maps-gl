@@ -33,10 +33,10 @@ export const pointLayer = ({
     paint: {
         'circle-color': colorExpr(color || defaults.noDataColor),
         'circle-radius': radiusExpr(radius || defaults.radius),
-        'circle-opacity': opacity || defaults.opacity,
+        'circle-opacity': opacity ?? defaults.opacity,
         'circle-stroke-width': widthExpr(width),
         'circle-stroke-color': strokeColor || defaults.strokeColor,
-        'circle-stroke-opacity': opacity || defaults.opacity,
+        'circle-stroke-opacity': opacity ?? defaults.opacity,
     },
     filter: filter || isPointNoSymbol,
 })
@@ -49,7 +49,7 @@ export const lineLayer = ({ id, color, width, opacity, source, filter }) => ({
     paint: {
         'line-color': color,
         'line-width': widthExpr(width),
-        'line-opacity': opacity || defaults.opacity,
+        'line-opacity': opacity ?? defaults.opacity,
     },
     filter: filter || isLine,
 })
@@ -61,7 +61,7 @@ export const polygonLayer = ({ id, color, opacity, source, filter }) => ({
     source: source || id,
     paint: {
         'fill-color': colorExpr(color || defaults.noDataColor),
-        'fill-opacity': opacity || defaults.opacity,
+        'fill-opacity': opacity ?? defaults.opacity,
     },
     filter: filter || isPolygon,
 })
@@ -82,7 +82,7 @@ export const outlineLayer = ({
     paint: {
         'line-color': color || defaults.strokeColor,
         'line-width': widthExpr(width),
-        'line-opacity': opacity || defaults.opacity,
+        'line-opacity': opacity ?? defaults.opacity,
     },
     filter: filter || isPolygon,
 })
@@ -97,7 +97,7 @@ export const symbolLayer = ({ id, opacity, source, filter }) => ({
         'icon-allow-overlap': true,
     },
     paint: {
-        'icon-opacity': opacity || defaults.opacity,
+        'icon-opacity': opacity ?? defaults.opacity,
     },
     filter: filter || isSymbol,
 })
@@ -111,10 +111,10 @@ export const clusterLayer = ({ id, color, strokeColor, opacity }) => ({
     paint: {
         'circle-color': color,
         'circle-radius': clusterRadiusExpr,
-        'circle-opacity': opacity || defaults.opacity,
+        'circle-opacity': opacity ?? defaults.opacity,
         'circle-stroke-color': strokeColor,
         'circle-stroke-width': defaults.strokeWidth,
-        'circle-stroke-opacity': opacity || defaults.opacity,
+        'circle-stroke-opacity': opacity ?? defaults.opacity,
     },
 })
 
@@ -132,6 +132,6 @@ export const clusterCountLayer = ({ id, color, opacity }) => ({
     },
     paint: {
         'text-color': color || defaults.textColor,
-        'text-opacity': opacity || defaults.opacity,
+        'text-opacity': opacity ?? defaults.opacity,
     },
 })
