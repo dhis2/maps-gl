@@ -7,7 +7,7 @@ import {
     clusterLayer,
     clusterCountLayer,
 } from '../layers'
-import { opacity as defaultOpacity } from '../style'
+import defaults from '../style'
 
 const id = 'abc'
 const color = '#000000'
@@ -36,19 +36,21 @@ describe('layers', () => {
 
     it('Should set default opacity for different layer types', () => {
         expect(pointLayer({ id, color }).paint['circle-opacity']).toBe(
-            defaultOpacity
+            defaults.opacity
         )
-        expect(lineLayer({ id }).paint['line-opacity']).toBe(defaultOpacity)
+        expect(lineLayer({ id }).paint['line-opacity']).toBe(defaults.opacity)
         expect(polygonLayer({ id, color }).paint['fill-opacity']).toBe(
-            defaultOpacity
+            defaults.opacity
         )
-        expect(outlineLayer({ id }).paint['line-opacity']).toBe(defaultOpacity)
-        expect(symbolLayer({ id }).paint['icon-opacity']).toBe(defaultOpacity)
+        expect(outlineLayer({ id }).paint['line-opacity']).toBe(
+            defaults.opacity
+        )
+        expect(symbolLayer({ id }).paint['icon-opacity']).toBe(defaults.opacity)
         expect(clusterLayer({ id }).paint['circle-opacity']).toBe(
-            defaultOpacity
+            defaults.opacity
         )
         expect(clusterCountLayer({ id }).paint['text-opacity']).toBe(
-            defaultOpacity
+            defaults.opacity
         )
     })
 })

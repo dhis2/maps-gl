@@ -1,5 +1,5 @@
 import { labelLayer } from '../labels'
-import { opacity as defaultOpacity } from '../style'
+import defaults from '../style'
 
 const id = 'abc'
 const opacity = 0.5
@@ -10,6 +10,6 @@ describe('labels', () => {
     })
 
     it('Should set default opacity for label layer', () => {
-        expect(labelLayer({ id }).paint['text-opacity']).toBe(defaultOpacity)
+        expect(labelLayer({ id }).paint['text-opacity']).toBe(defaults.opacity)
     })
 })
