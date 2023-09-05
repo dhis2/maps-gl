@@ -1,3 +1,10 @@
+## [3.8.5](https://github.com/dhis2/maps-gl/compare/v3.8.4...v3.8.5) (2023-09-05)
+
+
+### Bug Fixes
+
+* draw layers with opacity (DHIS2-15793) ([#549](https://github.com/dhis2/maps-gl/issues/549)) ([eef6a8e](https://github.com/dhis2/maps-gl/commit/eef6a8ec54894d4bb4f06a7173ba5b0bfde14ef6))
+
 ## [3.8.4](https://github.com/dhis2/maps-gl/compare/v3.8.3...v3.8.4) (2023-03-17)
 
 
