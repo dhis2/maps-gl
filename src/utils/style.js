@@ -13,6 +13,8 @@ export const hoverStrokeMultiplier = 3
 export const eventStrokeColor = '#333333'
 export const clusterCountColor = '#000000'
 
+export const opacity = 1
+
 export const defaultGlyphs =
     'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf'
 
@@ -27,6 +29,7 @@ export default {
     textFont,
     textSize,
     textColor,
+    opacity,
     radius,
     noDataColor,
     strokeColor,
