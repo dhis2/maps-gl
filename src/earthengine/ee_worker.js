@@ -127,8 +127,7 @@ class EarthEngineWorker {
             // Apply array of filters (e.g. period)
             filter.forEach(f => {
                 collection = collection.filter(
-                    // ee.Filter[f.type].apply(this, f.arguments)
-                    ee.Filter[f.type](f.name, f.value)
+                    ee.Filter[f.type].apply(this, f.arguments)
                 )
             })
 
