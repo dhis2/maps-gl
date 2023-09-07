@@ -17,6 +17,10 @@ class DonutMarker extends Marker {
         }
     }
 
+    setVisibility(isVisible) {
+        this.getElement().style.display = isVisible ? 'block' : 'none'
+    }
+
     onClick = evt => {
         evt.stopPropagation()
         this.fire('click')

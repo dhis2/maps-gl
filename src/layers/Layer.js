@@ -60,7 +60,7 @@ class Layer extends Evented {
             this.setVisibility(false)
         }
 
-        if (opacity) {
+        if (opacity !== undefined) {
             this.setOpacity(opacity)
         }
 

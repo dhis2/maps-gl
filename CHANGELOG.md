@@ -1,3 +1,24 @@
+## [3.8.5](https://github.com/dhis2/maps-gl/compare/v3.8.4...v3.8.5) (2023-09-05)
+
+
+### Bug Fixes
+
+* draw layers with opacity (DHIS2-15793) ([#549](https://github.com/dhis2/maps-gl/issues/549)) ([eef6a8e](https://github.com/dhis2/maps-gl/commit/eef6a8ec54894d4bb4f06a7173ba5b0bfde14ef6))
+
+## [3.8.4](https://github.com/dhis2/maps-gl/compare/v3.8.3...v3.8.4) (2023-03-17)
+
+
+### Bug Fixes
+
+* set Bing layer opacity after it's added to the map  ([#536](https://github.com/dhis2/maps-gl/issues/536)) ([61cc854](https://github.com/dhis2/maps-gl/commit/61cc854f8b3efa879ec79ac818d7c58eea822eec))
+
+## [3.8.3](https://github.com/dhis2/maps-gl/compare/v3.8.2...v3.8.3) (2023-03-15)
+
+
+### Bug Fixes
+
+* toggle visibility for donut cluster (DHIS2-14928) ([#535](https://github.com/dhis2/maps-gl/issues/535)) ([25822ce](https://github.com/dhis2/maps-gl/commit/25822ce635b79b5a7ed85b2211306229f29b194d))
+
 ## [3.8.2](https://github.com/dhis2/maps-gl/compare/v3.8.1...v3.8.2) (2023-03-01)
 
 

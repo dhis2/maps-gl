@@ -44,6 +44,10 @@ class BingLayer extends Layer {
 
         this.updateAttribution()
         this.addBingMapsLogo()
+
+        if (this.options.opacity !== undefined) {
+            this.setOpacity(this.options.opacity)
+        }
     }
 
     onRemove() {
