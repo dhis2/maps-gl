@@ -219,8 +219,6 @@ class EarthEngineWorker {
     getTileUrl() {
         const { format, data, filter, style } = this.options
 
-        console.log('format', format, filter, style)
-
         return new Promise(resolve => {
             if (format === 'FeatureCollection') {
                 const { datasetId } = this.options
@@ -240,7 +238,7 @@ class EarthEngineWorker {
 
                 let dataset = ee.FeatureCollection(datasetId)
 
-                getInfo(dataset.first()).then(console.log)
+                // getInfo(dataset.first()).then(console.log)
                 // .filter(ee.Filter.gt('area_in_meters', 50))
 
                 dataset = applyFilter(ee, dataset, filter)
@@ -276,8 +274,6 @@ class EarthEngineWorker {
                                     styles.get(f.get(property))
                                 )
                             )
-
-                            console.log('property', property, styles)
                         }
                     } else {
                         const { byProperty, ...styleOptions } = style
@@ -293,7 +289,7 @@ class EarthEngineWorker {
                         } else if (Array.isArray(byProperty)) {
                             // https://developers.google.com/earth-engine/datasets/catalog/RESOLVE_ECOREGIONS_2017
 
-                            console.log('isArray', byProperty)
+                            // console.log('isArray', byProperty)
                             dataset = dataset.map(f => {
                                 // const item = byProperty.find(
 
@@ -368,8 +364,6 @@ class EarthEngineWorker {
                         this.getFeatureCollection()
                     )
                 }
-
-                console.log('getClassifiedImage', params, this.options)
 
                 eeImage
                     .visualize(params)
