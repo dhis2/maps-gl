@@ -149,7 +149,7 @@ class EarthEngine extends Layer {
         const value = data[band] || Object.values(data)[0]
 
         // Used for landcover
-        const item = Array.isArray(style) && style.find(i => i.id === value)
+        const item = Array.isArray(style) && style.find(i => i.value === value)
 
         return item ? item.name : value
     }

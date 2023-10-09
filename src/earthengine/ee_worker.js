@@ -9,6 +9,7 @@ import {
     getClassifiedImage,
     getHistogramStatistics,
     getFeatureCollectionProperties,
+    applyFilter,
 } from './ee_worker_utils'
 import { getBufferGeometry } from '../utils/buffers'
 
@@ -19,8 +20,8 @@ import { getBufferGeometry } from '../utils/buffers'
 // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-draw
 const DEFAULT_FEATURE_STYLE = {
     color: 'FF0000',
-    strokeWidth: 2,
-    pointRadius: 5,
+    width: 2,
+    pointSize: 5,
 }
 const DEFAULT_TILE_SCALE = 1
 
@@ -108,8 +109,16 @@ class EarthEngineWorker {
             return this.eeImage
         }
 
-        const { datasetId, filter, mosaic, band, bandReducer, mask, methods } =
-            this.options
+        const {
+            datasetId,
+            filter,
+            periodReducer,
+            mosaic,
+            band,
+            bandReducer,
+            mask,
+            methods,
+        } = this.options
 
         let eeImage
 
@@ -125,15 +134,38 @@ class EarthEngineWorker {
             this.eeScale = getScale(collection.first())
 
             // Apply array of filters (e.g. period)
+            collection = applyFilter(ee, collection, filter)
+            /*
             filter.forEach(f => {
                 collection = collection.filter(
                     ee.Filter[f.type].apply(this, f.arguments)
+                    //
                 )
             })
+            */
 
+            if (periodReducer) {
+                eeImage = collection[periodReducer]()
+            } else if (mosaic) {
+                // Composite all images inn a collection (e.g. per country)
+                eeImage = collection.mosaic()
+            } else {
+                // There should only be one image after applying the filters
+                eeImage = ee.Image(collection.first())
+            }
+
+            /*
             eeImage = mosaic
                 ? collection.mosaic() // Composite all images inn a collection (e.g. per country)
                 : ee.Image(collection.first()) // There should only be one image after applying the filters
+            */
+
+            // Experimental: Filter by date range
+            // eeImage = collection.filterDate('2022-07', '2022-08').sum()
+            // eeImage = collection.filter(ee.Filter.date('2022-07-01', '2022-08-01').sum()
+            // Other filters:
+            // https://developers.google.com/earth-engine/apidocs/ee-filter-date
+            // https://developers.google.com/earth-engine/apidocs/ee-filter-calendarrange
         }
 
         // // Select band (e.g. age group)
@@ -185,16 +217,138 @@ class EarthEngineWorker {
 
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { format, data, style } = this.options
+        const { format, data, filter, style } = this.options
+
+        console.log('format', format, filter, style)
 
         return new Promise(resolve => {
             if (format === 'FeatureCollection') {
                 const { datasetId } = this.options
 
+                /*
                 let dataset = ee.FeatureCollection(datasetId).draw({
                     ...DEFAULT_FEATURE_STYLE,
                     ...style,
                 })
+                */
+
+                /*
+                getInfo(ee.FeatureCollection(datasetId).first()).then(
+                    console.log
+                )
+                */
+
+                let dataset = ee.FeatureCollection(datasetId)
+
+                getInfo(dataset.first()).then(console.log)
+                // .filter(ee.Filter.gt('area_in_meters', 50))
+
+                dataset = applyFilter(ee, dataset, filter)
+
+                const styleProperty = 'dhis2style'
+
+                // TODO: Move to ee_worker_utils.js
+                if (style) {
+                    if (Array.isArray(style)) {
+                        // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-style
+
+                        const first = style.find(s => s.property)
+
+                        if (first) {
+                            const { property } = first
+
+                            const styles = ee.Dictionary(
+                                style.reduce(
+                                    (
+                                        obj,
+                                        { property, value, name, ...rest }
+                                    ) => {
+                                        obj[value] = rest
+                                        return obj
+                                    },
+                                    {}
+                                )
+                            )
+
+                            dataset = dataset.map(f =>
+                                f.set(
+                                    styleProperty,
+                                    styles.get(f.get(property))
+                                )
+                            )
+
+                            console.log('property', property, styles)
+                        }
+                    } else {
+                        const { byProperty, ...styleOptions } = style
+
+                        if (typeof byProperty === 'string') {
+                            dataset = dataset.map(f =>
+                                f.set({
+                                    [styleProperty]: {
+                                        color: f.get(byProperty),
+                                    },
+                                })
+                            )
+                        } else if (Array.isArray(byProperty)) {
+                            // https://developers.google.com/earth-engine/datasets/catalog/RESOLVE_ECOREGIONS_2017
+
+                            console.log('isArray', byProperty)
+                            dataset = dataset.map(f => {
+                                // const item = byProperty.find(
+
+                                return f.set({
+                                    [styleProperty]: { color: 'COLOR' },
+                                })
+                            })
+                        } else if (typeof byProperty === 'object') {
+                            dataset = dataset.map(f =>
+                                f.set({
+                                    [styleProperty]: Object.keys(
+                                        byProperty
+                                    ).reduce((obj, key) => {
+                                        obj[key] = f.get(byProperty[key])
+                                        return obj
+                                    }, {}),
+                                })
+                            )
+                        }
+                    }
+
+                    dataset = dataset.style({
+                        styleProperty,
+                        // ...styleOptions,
+                    })
+                }
+
+                /*
+                if (Array.isArray(style)) {
+                    console.log('ARRAY STYLE', style)
+
+                    dataset = dataset.style({
+                        ...DEFAULT_FEATURE_STYLE,
+                    })
+                } else {
+                    dataset = dataset.style({
+                        ...DEFAULT_FEATURE_STYLE,
+                        ...style,
+                    })
+                }
+                */
+
+                // TODO: Testing below
+                /*
+                let dataset = ee.FeatureCollection(datasetId).map(f => {
+                    const color = f.get('COLOR')
+                    return f.set({ style: { color, width: 0 } })
+                })
+
+                getInfo(dataset.sort('SHAPE_AREA', false).first()).then(
+                    console.log
+                )
+                */
+
+                // dataset = dataset.style({ styleProperty: 'style' })
 
                 if (data) {
                     dataset = dataset.clipToCollection(
@@ -214,6 +368,8 @@ class EarthEngineWorker {
                         this.getFeatureCollection()
                     )
                 }
+
+                console.log('getClassifiedImage', params, this.options)
 
                 eeImage
                     .visualize(params)
@@ -236,6 +392,7 @@ class EarthEngineWorker {
     getPeriods(eeId) {
         const imageCollection = ee
             .ImageCollection(eeId)
+            // .filterDate('2023', '2024') // TODO: Remove
             .distinct('system:time_start')
             .sort('system:time_start', false)
 
@@ -248,6 +405,21 @@ class EarthEngineWorker {
             )
 
         return getInfo(featureCollection)
+    }
+
+    // Returns min and max timestamp for an image collection
+    getTimeRange(eeId) {
+        const imageCollection = ee.ImageCollection(eeId)
+
+        const startTime = imageCollection.reduceColumns(ee.Reducer.min(), [
+            'system:time_start',
+        ])
+
+        const endTime = imageCollection.reduceColumns(ee.Reducer.max(), [
+            'system:time_end',
+        ])
+
+        return getInfo(startTime.combine(endTime))
     }
 
     // Returns aggregated values for org unit features
@@ -273,8 +445,10 @@ class EarthEngineWorker {
 
         if (collection) {
             if (format === 'FeatureCollection') {
-                const { datasetId } = this.options
-                const dataset = ee.FeatureCollection(datasetId)
+                const { datasetId, filter } = this.options
+                let dataset = ee.FeatureCollection(datasetId)
+
+                dataset = applyFilter(ee, dataset, filter)
 
                 const aggFeatures = collection
                     .map(feature => {

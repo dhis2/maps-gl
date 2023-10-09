@@ -14,6 +14,7 @@ const workerOptions = [
     'data',
     'datasetId',
     'filter',
+    'periodReducer',
     'legend',
     'style',
     'mask',

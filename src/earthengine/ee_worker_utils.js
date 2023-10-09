@@ -37,16 +37,6 @@ export const combineReducers = ee => types =>
 // Returns the linear scale in meters of the units of this projection
 export const getScale = image => image.select(0).projection().nominalScale()
 
-// Returns visualisation params from style
-const getParamsFromStyle = style => {
-    const keys = style.map(l => l.value)
-    const min = Math.min(...keys)
-    const max = Math.max(...keys)
-    const palette = style.map(l => l.color).join(',')
-
-    return { min, max, palette }
-}
-
 // Returns histogram data (e.g. landcover) in percentage, hectares or acres
 export const getHistogramStatistics = ({
     data,
@@ -93,10 +83,21 @@ export const getFeatureCollectionProperties = data =>
     )
 
 // Classify image according to style
-export const getClassifiedImage = (eeImage, { legend = [], style }) => {
+export const getClassifiedImage = (eeImage, { legend = [], style, band }) => {
+    // Image has classes (e.g. landcover)
     if (Array.isArray(style)) {
-        // Image has classes (e.g. landcover)
-        return { eeImage, params: getParamsFromStyle(style) }
+        return {
+            eeImage: eeImage.remap({
+                from: style.map(s => s.value),
+                to: [...Array(style.length).keys()],
+                bandName: band,
+            }),
+            params: {
+                min: 0,
+                max: style.length - 1,
+                palette: style.map(l => l.color).join(','),
+            },
+        }
     }
 
     const min = 0
@@ -115,4 +116,18 @@ export const getClassifiedImage = (eeImage, { legend = [], style }) => {
     }
 
     return { eeImage: zones, params: { min, max, palette } }
+}
+
+export const applyFilter = (ee, dataset, filter = []) => {
+    let filtered = dataset
+
+    filter.forEach(f => {
+        if (ee.Filter[f.type]) {
+            filtered = filtered.filter(
+                ee.Filter[f.type].apply(this, f.arguments)
+            )
+        }
+    })
+
+    return filtered
 }
