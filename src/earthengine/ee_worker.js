@@ -217,157 +217,217 @@ class EarthEngineWorker {
 
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { format, data, filter, style } = this.options
+        const { datasetId, format, data, filter, style } = this.options
+
+        console.log('getTileUrl', format)
 
         return new Promise(resolve => {
-            if (format === 'FeatureCollection') {
-                const { datasetId } = this.options
+            switch (format) {
+                case 'FeatureView':
+                    // https://developers.google.com/earth-engine/guides/featureview_overview
+                    // https://developers.google.com/earth-engine/datasets/catalog/WWF_HydroSHEDS_v1_FreeFlowingRivers
 
-                /*
-                let dataset = ee.FeatureCollection(datasetId).draw({
-                    ...DEFAULT_FEATURE_STYLE,
-                    ...style,
-                })
-                */
+                    ee.data.getFeatureViewTilesKey(
+                        {
+                            assetId: `${datasetId}_FeatureView`,
+                            visParams: style,
+                        },
+                        tilesKey => {
+                            const urlFormat = tilesKey
+                                .formatTileUrl(0, 0, 0)
+                                .replace('/0/0/0', '/{z}/{x}/{y}')
 
-                /*
-                getInfo(ee.FeatureCollection(datasetId).first()).then(
-                    console.log
-                )
-                */
+                            console.log('urlFormat', urlFormat)
 
-                let dataset = ee.FeatureCollection(datasetId)
-
-                // getInfo(dataset.first()).then(console.log)
-                // .filter(ee.Filter.gt('area_in_meters', 50))
-
-                dataset = applyFilter(ee, dataset, filter)
-
-                const styleProperty = 'dhis2style'
-
-                // TODO: Move to ee_worker_utils.js
-                if (style) {
-                    if (Array.isArray(style)) {
-                        // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-style
-
-                        const first = style.find(s => s.property)
-
-                        if (first) {
-                            const { property } = first
-
-                            const styles = ee.Dictionary(
-                                style.reduce(
-                                    (
-                                        obj,
-                                        { property, value, name, ...rest }
-                                    ) => {
-                                        obj[value] = rest
-                                        return obj
-                                    },
-                                    {}
-                                )
-                            )
-
-                            dataset = dataset.map(f =>
-                                f.set(
-                                    styleProperty,
-                                    styles.get(f.get(property))
-                                )
-                            )
+                            resolve(urlFormat)
                         }
-                    } else {
-                        const { byProperty, ...styleOptions } = style
+                    )
 
-                        if (typeof byProperty === 'string') {
-                            dataset = dataset.map(f =>
-                                f.set({
-                                    [styleProperty]: {
-                                        color: f.get(byProperty),
-                                    },
-                                })
-                            )
-                        } else if (Array.isArray(byProperty)) {
-                            // https://developers.google.com/earth-engine/datasets/catalog/RESOLVE_ECOREGIONS_2017
+                    /*
+                    console.log(
+                        'tilesKey.formatTileUrl',
+                        tilesKey.formatTileUrl(9, 80, 183)
+                    )
 
-                            // console.log('isArray', byProperty)
-                            dataset = dataset.map(f => {
-                                // const item = byProperty.find(
+                    console.log(
+                        'tilesKey',
+                        tilesKey,
+                        datasetId,
+                        this.options,
+                        ee.layers
+                    )
+                    */
 
-                                return f.set({
-                                    [styleProperty]: { color: 'COLOR' },
-                                })
-                            })
-                        } else if (typeof byProperty === 'object') {
-                            dataset = dataset.map(f =>
-                                f.set({
-                                    [styleProperty]: Object.keys(
-                                        byProperty
-                                    ).reduce((obj, key) => {
-                                        obj[key] = f.get(byProperty[key])
-                                        return obj
-                                    }, {}),
-                                })
-                            )
-                        }
-                    }
+                    /*
+                    const tileSource = new ee.layers.FeatureViewTileSource(
+                        tilesKey
+                    )
 
-                    dataset = dataset.style({
-                        styleProperty,
-                        // ...styleOptions,
-                    })
-                }
+                    const overlay = new ee.layers.ImageOverlay(tileSource)
+                    */
 
-                /*
-                if (Array.isArray(style)) {
-                    console.log('ARRAY STYLE', style)
+                    // tileSource.getTileUrl = function(tile, zoom) {
 
-                    dataset = dataset.style({
-                        ...DEFAULT_FEATURE_STYLE,
-                    })
-                } else {
-                    dataset = dataset.style({
+                    break
+
+                case 'FeatureCollection':
+                    // const { datasetId } = this.options
+
+                    /*
+                    let dataset = ee.FeatureCollection(datasetId).draw({
                         ...DEFAULT_FEATURE_STYLE,
                         ...style,
                     })
-                }
-                */
+                    */
 
-                // TODO: Testing below
-                /*
-                let dataset = ee.FeatureCollection(datasetId).map(f => {
-                    const color = f.get('COLOR')
-                    return f.set({ style: { color, width: 0 } })
-                })
-
-                getInfo(dataset.sort('SHAPE_AREA', false).first()).then(
-                    console.log
-                )
-                */
-
-                // dataset = dataset.style({ styleProperty: 'style' })
-
-                if (data) {
-                    dataset = dataset.clipToCollection(
-                        this.getFeatureCollection()
+                    /*
+                    getInfo(ee.FeatureCollection(datasetId).first()).then(
+                        console.log
                     )
-                }
+                    */
 
-                dataset.getMap(null, response => resolve(response.urlFormat))
-            } else {
-                let { eeImage, params } = getClassifiedImage(
-                    this.getImage(),
-                    this.options
-                )
+                    let dataset = ee.FeatureCollection(datasetId)
 
-                if (data) {
-                    eeImage = eeImage.clipToCollection(
-                        this.getFeatureCollection()
+                    // getInfo(dataset.first()).then(console.log)
+                    // .filter(ee.Filter.gt('area_in_meters', 50))
+
+                    dataset = applyFilter(ee, dataset, filter)
+
+                    const styleProperty = 'dhis2style'
+
+                    // TODO: Move to ee_worker_utils.js
+                    if (style) {
+                        if (Array.isArray(style)) {
+                            // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-style
+
+                            const first = style.find(s => s.property)
+
+                            if (first) {
+                                const { property } = first
+
+                                const styles = ee.Dictionary(
+                                    style.reduce(
+                                        (
+                                            obj,
+                                            { property, value, name, ...rest }
+                                        ) => {
+                                            obj[value] = rest
+                                            return obj
+                                        },
+                                        {}
+                                    )
+                                )
+
+                                dataset = dataset.map(f =>
+                                    f.set(
+                                        styleProperty,
+                                        styles.get(f.get(property))
+                                    )
+                                )
+                            }
+                        } else {
+                            const { byProperty, ...styleOptions } = style
+
+                            if (typeof byProperty === 'string') {
+                                dataset = dataset.map(f =>
+                                    f.set({
+                                        [styleProperty]: {
+                                            color: f.get(byProperty),
+                                        },
+                                    })
+                                )
+                            } else if (Array.isArray(byProperty)) {
+                                // https://developers.google.com/earth-engine/datasets/catalog/RESOLVE_ECOREGIONS_2017
+
+                                // console.log('isArray', byProperty)
+                                dataset = dataset.map(f => {
+                                    // const item = byProperty.find(
+
+                                    return f.set({
+                                        [styleProperty]: { color: 'COLOR' },
+                                    })
+                                })
+                            } else if (typeof byProperty === 'object') {
+                                dataset = dataset.map(f =>
+                                    f.set({
+                                        [styleProperty]: Object.keys(
+                                            byProperty
+                                        ).reduce((obj, key) => {
+                                            obj[key] = f.get(byProperty[key])
+                                            return obj
+                                        }, {}),
+                                    })
+                                )
+                            }
+                        }
+
+                        dataset = dataset.style({
+                            styleProperty,
+                            // ...styleOptions,
+                        })
+                    }
+
+                    /*
+                    if (Array.isArray(style)) {
+                        console.log('ARRAY STYLE', style)
+    
+                        dataset = dataset.style({
+                            ...DEFAULT_FEATURE_STYLE,
+                        })
+                    } else {
+                        dataset = dataset.style({
+                            ...DEFAULT_FEATURE_STYLE,
+                            ...style,
+                        })
+                    }
+                    */
+
+                    // TODO: Testing below
+                    /*
+                    let dataset = ee.FeatureCollection(datasetId).map(f => {
+                        const color = f.get('COLOR')
+                        return f.set({ style: { color, width: 0 } })
+                    })
+    
+                    getInfo(dataset.sort('SHAPE_AREA', false).first()).then(
+                        console.log
                     )
-                }
+                    */
 
-                eeImage
-                    .visualize(params)
-                    .getMap(null, response => resolve(response.urlFormat))
+                    // dataset = dataset.style({ styleProperty: 'style' })
+
+                    if (data) {
+                        dataset = dataset.clipToCollection(
+                            this.getFeatureCollection()
+                        )
+                    }
+
+                    dataset.getMap(null, response =>
+                        resolve(response.urlFormat)
+                    )
+
+                    break
+                case 'Image':
+                case 'ImageCollection':
+                    let { eeImage, params } = getClassifiedImage(
+                        this.getImage(),
+                        this.options
+                    )
+
+                    if (data) {
+                        eeImage = eeImage.clipToCollection(
+                            this.getFeatureCollection()
+                        )
+                    }
+
+                    eeImage
+                        .visualize(params)
+                        .getMap(null, response => resolve(response.urlFormat))
+
+                    break
+                default:
+                // TODO: Handle unkonwn format
+                // this.getRasterTileUrl().then(resolve)
             }
         })
     }
