@@ -9,6 +9,8 @@ import {
     getClassifiedImage,
     getHistogramStatistics,
     getFeatureCollectionProperties,
+    parseTimeSeries,
+    parseAirQuality,
 } from './ee_worker_utils'
 import { getBufferGeometry } from '../utils/buffers'
 
@@ -317,6 +319,63 @@ class EarthEngineWorker {
                 return getInfo(aggFeatures).then(getFeatureCollectionProperties)
             } else throw new Error('Aggregation type is not valid')
         } else throw new Error('Missing org unit features')
+    }
+
+    async getTimeSeries(config, geometry) {
+        const { datasetId, band } = config
+
+        let collection = ee
+            .ImageCollection(datasetId)
+            // .filterDate('1970', '2030') // TODO
+            .filter(ee.Filter.gte('system:index', '1970-01-01')) // TODO
+            // .sort('system:time_start', false)
+            .select(band)
+
+        console.log('a')
+        getInfo(collection.first()).then(console.log)
+
+        // const end = ee.Image(collection.first()).date().advance(1, 'day')
+        // const start = end.advance(-1, 'year')
+        // const dateRange = ee.DateRange(start, end)
+
+        // collection = collection.filterDate(dateRange)
+
+        const [lng, lat] = geometry.coordinates
+        const point = ee.Geometry.Point(lng, lat)
+        const reducer = ee.Reducer.mean()
+
+        return getInfo(
+            ee.FeatureCollection(
+                collection.map(image =>
+                    ee.Feature(null, image.reduceRegion(reducer, point, 1))
+                )
+            )
+        ).then(parseTimeSeries)
+    }
+
+    async getAirQuality(geometry) {
+        const collection = ee.ImageCollection('ECMWF/CAMS/NRT')
+
+        const lastTime = collection
+            .sort('system:time_start', false)
+            .first()
+            .get('model_initialization_datetime')
+
+        const period = collection.filter(
+            ee.Filter.eq('model_initialization_datetime', lastTime)
+        )
+
+        const [lng, lat] = geometry.coordinates
+        const point = ee.Geometry.Point(lng, lat)
+        const reducer = ee.Reducer.mean()
+
+        return getInfo(
+            ee.FeatureCollection(
+                period.map(image =>
+                    ee.Feature(null, image.reduceRegion(reducer, point, 1))
+                )
+            )
+        ).then(parseAirQuality)
     }
 }
 
