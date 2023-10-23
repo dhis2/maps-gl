@@ -47,7 +47,7 @@ export const lineLayer = ({ id, color, width, opacity, source, filter }) => ({
     type: 'line',
     source: source || id,
     paint: {
-        'line-color': color,
+        'line-color': color || defaults.strokeColor,
         'line-width': widthExpr(width),
         'line-opacity': opacity ?? defaults.opacity,
     },
