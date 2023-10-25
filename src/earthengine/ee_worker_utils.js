@@ -138,19 +138,3 @@ export const parseTimeSeries = periodType => collection =>
                 : getDayFromId(f.id),
         ...f.properties,
     }))
-
-const idToDate = id => {
-    const year = id.substring(0, 4)
-    const month = id.substring(4, 6)
-    const day = id.substring(6, 8)
-    const hour = id.substring(9, 11)
-    const forecast = id.slice(-3)
-    const date = new Date(`${year}-${month}-${day}T${hour}:00:00Z`)
-    return date.setHours(date.getHours() + parseInt(forecast))
-}
-
-export const parseAirQuality = collection =>
-    collection.features.map(f => ({
-        id: idToDate(f.id),
-        ...f.properties,
-    }))

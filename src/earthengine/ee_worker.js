@@ -10,7 +10,6 @@ import {
     getHistogramStatistics,
     getFeatureCollectionProperties,
     parseTimeSeries,
-    parseAirQuality,
 } from './ee_worker_utils'
 import { getBufferGeometry } from '../utils/buffers'
 
@@ -321,10 +320,15 @@ class EarthEngineWorker {
         } else throw new Error('Missing org unit features')
     }
 
+    // Returns time series data for a geometry
     async getTimeSeries(config, geometry) {
         const { datasetId, periodType, band, filters = [] } = config
 
-        let collection = ee.ImageCollection(datasetId).select(band)
+        let collection = ee.ImageCollection(datasetId)
+
+        if (band) {
+            collection = collection.select(band)
+        }
 
         filters.forEach(f => {
             collection = collection.filter(
@@ -345,31 +349,6 @@ class EarthEngineWorker {
                 )
             )
         ).then(parser)
-    }
-
-    async getAirQuality(geometry) {
-        const collection = ee.ImageCollection('ECMWF/CAMS/NRT')
-
-        const lastTime = collection
-            .sort('system:time_start', false)
-            .first()
-            .get('model_initialization_datetime')
-
-        const period = collection.filter(
-            ee.Filter.eq('model_initialization_datetime', lastTime)
-        )
-
-        const [lng, lat] = geometry.coordinates
-        const point = ee.Geometry.Point(lng, lat)
-        const reducer = ee.Reducer.mean()
-
-        return getInfo(
-            ee.FeatureCollection(
-                period.map(image =>
-                    ee.Feature(null, image.reduceRegion(reducer, point, 1))
-                )
-            )
-        ).then(parseAirQuality)
     }
 }
 
