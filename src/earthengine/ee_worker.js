@@ -322,9 +322,11 @@ class EarthEngineWorker {
 
     // Returns time series data for a geometry
     async getTimeSeries(config, geometry) {
-        const { datasetId, periodType, band, filters = [] } = config
+        const { datasetId, band, filters = [], reducer = 'mean' } = config
 
         let collection = ee.ImageCollection(datasetId)
+
+        const eeScale = getScale(collection.first())
 
         if (band) {
             collection = collection.select(band)
@@ -336,19 +338,20 @@ class EarthEngineWorker {
             )
         })
 
-        const [lng, lat] = geometry.coordinates
-        const point = ee.Geometry.Point(lng, lat)
-        const reducer = ee.Reducer.mean()
-
-        const parser = parseTimeSeries(periodType)
+        const { type, coordinates } = geometry
+        const eeGeometry = ee.Geometry[type](coordinates)
+        const eeReducer = ee.Reducer[reducer]()
 
         return getInfo(
             ee.FeatureCollection(
                 collection.map(image =>
-                    ee.Feature(null, image.reduceRegion(reducer, point, 1))
+                    ee.Feature(
+                        null,
+                        image.reduceRegion(eeReducer, eeGeometry, eeScale)
+                    )
                 )
             )
-        ).then(parser)
+        ).then(parseTimeSeries)
     }
 }
 

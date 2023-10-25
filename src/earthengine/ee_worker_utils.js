@@ -117,24 +117,9 @@ export const getClassifiedImage = (eeImage, { legend = [], params }) => {
     return { eeImage: zones, params: { min, max, palette } }
 }
 
-const getMonthFromId = id => {
-    const year = id.substring(0, 4)
-    const month = id.substring(4, 6)
-    return `${year}-${month}`
-}
-
-const getDayFromId = id => {
-    const year = id.substring(0, 4)
-    const month = id.substring(4, 6)
-    const day = id.substring(6, 8)
-    return `${year}-${month}-${day}`
-}
-
-export const parseTimeSeries = periodType => collection =>
+// Reduce feature collection to array of objects with id and properties
+export const parseTimeSeries = collection =>
     collection.features.map(f => ({
-        id:
-            periodType === 'monthly'
-                ? getMonthFromId(f.id)
-                : getDayFromId(f.id),
+        id: f.id,
         ...f.properties,
     }))
