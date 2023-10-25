@@ -352,8 +352,8 @@ class EarthEngineWorker {
 
         if (Array.isArray(reducer)) {
             // Combine multiple reducers
-            // sharedInputs = true means that the reducers are applied to all bands
-            // sharedInouts = false meand that one reducer is applied to each band
+            // sharedInputs = true means that all reducers are applied to all bands
+            // sharedInouts = false means one reducer for each band
             eeReducer = reducer.reduce(
                 (r, t, i) =>
                     i === 0
@@ -372,7 +372,7 @@ class EarthEngineWorker {
             }
         } else {
             // Single reducer
-            reducer = ee.Reducer[reducer]()
+            eeReducer = ee.Reducer[reducer]()
         }
 
         // Retruns a time series array of objects
