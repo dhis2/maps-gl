@@ -322,27 +322,21 @@ class EarthEngineWorker {
     }
 
     async getTimeSeries(config, geometry) {
-        const { datasetId, band } = config
+        const { datasetId, periodType, band, filters = [] } = config
 
-        let collection = ee
-            .ImageCollection(datasetId)
-            // .filterDate('1970', '2030') // TODO
-            .filter(ee.Filter.gte('system:index', '1970-01-01')) // TODO
-            // .sort('system:time_start', false)
-            .select(band)
+        let collection = ee.ImageCollection(datasetId).select(band)
 
-        console.log('a')
-        getInfo(collection.first()).then(console.log)
-
-        // const end = ee.Image(collection.first()).date().advance(1, 'day')
-        // const start = end.advance(-1, 'year')
-        // const dateRange = ee.DateRange(start, end)
-
-        // collection = collection.filterDate(dateRange)
+        filters.forEach(f => {
+            collection = collection.filter(
+                ee.Filter[f.type].apply(this, f.arguments)
+            )
+        })
 
         const [lng, lat] = geometry.coordinates
         const point = ee.Geometry.Point(lng, lat)
         const reducer = ee.Reducer.mean()
+
+        const parser = parseTimeSeries(periodType)
 
         return getInfo(
             ee.FeatureCollection(
@@ -350,7 +344,7 @@ class EarthEngineWorker {
                     ee.Feature(null, image.reduceRegion(reducer, point, 1))
                 )
             )
-        ).then(parseTimeSeries)
+        ).then(parser)
     }
 
     async getAirQuality(geometry) {
