@@ -1,6 +1,7 @@
 import {
     hasClasses,
     getHistogramStatistics,
+    getFeatureCollectionProperties,
     getFeatureCollectionPropertiesArray,
 } from '../ee_worker_utils'
 
@@ -150,6 +151,15 @@ describe('earthengine', () => {
         expect(itemA['13']).toBe(toAcres(7))
         expect(itemB['9']).toBe(toAcres(5))
         expect(itemB['13']).toBe(toAcres(8))
+    })
+
+    it('Should reduce a feature collection an object of properties', () => {
+        const result = getFeatureCollectionProperties(collection)
+
+        expect(result).toEqual({
+            '2023-10-24': { value: 123 },
+            '2023-10-25': { value: 234 },
+        })
     })
 
     it('Should reduce a feature collection to array of objects with id and properties', () => {
