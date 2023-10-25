@@ -320,9 +320,15 @@ class EarthEngineWorker {
         } else throw new Error('Missing org unit features')
     }
 
-    // Returns time series data for a geometry
+    // Returns time series data for a geometry supporting multiple bands and reducers
     async getTimeSeries(config, geometry) {
-        const { datasetId, band, filters = [], reducer = 'mean' } = config
+        const {
+            datasetId,
+            band,
+            filters = [],
+            reducer = 'mean',
+            sharedInputs = false,
+        } = config
 
         let collection = ee.ImageCollection(datasetId)
 
@@ -332,6 +338,7 @@ class EarthEngineWorker {
             collection = collection.select(band)
         }
 
+        // Apply array of filters
         filters.forEach(f => {
             collection = collection.filter(
                 ee.Filter[f.type].apply(this, f.arguments)
@@ -341,11 +348,34 @@ class EarthEngineWorker {
         const { type, coordinates } = geometry
         const eeGeometry = ee.Geometry[type](coordinates)
 
-        // Possible to have one reducer for each band
-        const eeReducer = Array.isArray(reducer)
-            ? reducer.map(r => ee.Reducer[r]())
-            : ee.Reducer[reducer]()
+        let eeReducer
 
+        if (Array.isArray(reducer)) {
+            // Combine multiple reducers
+            // sharedInputs = true means that the reducers are applied to all bands
+            // sharedInouts = false meand that one reducer is applied to each band
+            eeReducer = reducer.reduce(
+                (r, t, i) =>
+                    i === 0
+                        ? r[t]().unweighted()
+                        : r.combine({
+                              reducer2: ee.Reducer[t]().unweighted(),
+                              outputPrefix: sharedInputs ? '' : String(i),
+                              sharedInputs,
+                          }),
+                ee.Reducer
+            )
+
+            if (!sharedInputs && Array.isArray(band)) {
+                // Use band names as output names
+                eeReducer = eeReducer.setOutputs(band)
+            }
+        } else {
+            // Single reducer
+            reducer = ee.Reducer[reducer]()
+        }
+
+        // Retruns a time series array of objects
         return getInfo(
             ee.FeatureCollection(
                 collection.map(image =>
