@@ -340,7 +340,11 @@ class EarthEngineWorker {
 
         const { type, coordinates } = geometry
         const eeGeometry = ee.Geometry[type](coordinates)
-        const eeReducer = ee.Reducer[reducer]()
+
+        // Possible to have one reducer for each band
+        const eeReducer = Array.isArray(reducer)
+            ? reducer.map(r => ee.Reducer[r]())
+            : ee.Reducer[reducer]()
 
         return getInfo(
             ee.FeatureCollection(
