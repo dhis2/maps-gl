@@ -1,4 +1,8 @@
-import { hasClasses, getHistogramStatistics } from '../ee_worker_utils'
+import {
+    hasClasses,
+    getHistogramStatistics,
+    getFeatureCollectionPropertiesArray,
+} from '../ee_worker_utils'
 
 const scale = 1000
 
@@ -50,6 +54,26 @@ const data = {
                     13: 8,
                     14: 9,
                 },
+            },
+        },
+    ],
+}
+
+const collection = {
+    type: 'FeatureCollection',
+    features: [
+        {
+            type: 'Feature',
+            id: '2023-10-24',
+            properties: {
+                value: 123,
+            },
+        },
+        {
+            type: 'Feature',
+            id: '2023-10-25',
+            properties: {
+                value: 234,
             },
         },
     ],
@@ -126,5 +150,14 @@ describe('earthengine', () => {
         expect(itemA['13']).toBe(toAcres(7))
         expect(itemB['9']).toBe(toAcres(5))
         expect(itemB['13']).toBe(toAcres(8))
+    })
+
+    it('Should reduce a feature collection to array of objects with id and properties', () => {
+        const result = getFeatureCollectionPropertiesArray(collection)
+
+        expect(result).toEqual([
+            { id: '2023-10-24', value: 123 },
+            { id: '2023-10-25', value: 234 },
+        ])
     })
 })

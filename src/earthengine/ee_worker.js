@@ -9,7 +9,7 @@ import {
     getClassifiedImage,
     getHistogramStatistics,
     getFeatureCollectionProperties,
-    parseTimeSeries,
+    getFeatureCollectionPropertiesArray,
 } from './ee_worker_utils'
 import { getBufferGeometry } from '../utils/buffers'
 
@@ -351,7 +351,7 @@ class EarthEngineWorker {
                     )
                 )
             )
-        ).then(parseTimeSeries)
+        ).then(getFeatureCollectionPropertiesArray)
     }
 }
 

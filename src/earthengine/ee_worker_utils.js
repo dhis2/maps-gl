@@ -92,6 +92,13 @@ export const getFeatureCollectionProperties = data =>
         {}
     )
 
+// Reduce a feature collection to array of objects with id and properties
+export const getFeatureCollectionPropertiesArray = data =>
+    data.features.map(f => ({
+        id: f.id,
+        ...f.properties,
+    }))
+
 // Classify image according to legend
 export const getClassifiedImage = (eeImage, { legend = [], params }) => {
     if (!params) {
@@ -116,10 +123,3 @@ export const getClassifiedImage = (eeImage, { legend = [], params }) => {
 
     return { eeImage: zones, params: { min, max, palette } }
 }
-
-// Reduce feature collection to array of objects with id and properties
-export const parseTimeSeries = collection =>
-    collection.features.map(f => ({
-        id: f.id,
-        ...f.properties,
-    }))
