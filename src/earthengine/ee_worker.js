@@ -130,6 +130,8 @@ class EarthEngineWorker {
             // Image collection
             let collection = ee.ImageCollection(datasetId)
 
+            getInfo(collection).then(console.log)
+
             // Scale is lost when creating a mosaic below
             this.eeScale = getScale(collection.first())
 
@@ -420,6 +422,8 @@ class EarthEngineWorker {
                         )
                     }
 
+                    console.log('params', params)
+
                     eeImage
                         .visualize(params)
                         .getMap(null, response => resolve(response.urlFormat))
@@ -449,6 +453,7 @@ class EarthEngineWorker {
             // .filterDate('2023', '2024') // TODO: Remove
             .distinct('system:time_start')
             .sort('system:time_start', false)
+            .limit(100)
 
         const featureCollection = ee
             .FeatureCollection(imageCollection)
