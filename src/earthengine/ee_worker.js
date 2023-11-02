@@ -118,6 +118,7 @@ class EarthEngineWorker {
             bandReducer,
             mask,
             methods,
+            cloudScore,
         } = this.options
 
         let eeImage
@@ -130,7 +131,7 @@ class EarthEngineWorker {
             // Image collection
             let collection = ee.ImageCollection(datasetId)
 
-            getInfo(collection).then(console.log)
+            // getInfo(collection).then(console.log)
 
             // Scale is lost when creating a mosaic below
             this.eeScale = getScale(collection.first())
@@ -145,6 +146,18 @@ class EarthEngineWorker {
                 )
             })
             */
+
+            if (cloudScore) {
+                var csCollection = ee.ImageCollection(cloudScore.datasetId)
+                const csBand = cloudScore.band
+                const clearTreshold = cloudScore.clearTreshold
+
+                collection = collection
+                    .linkCollection(csCollection, [csBand])
+                    .map(img =>
+                        img.updateMask(img.select(csBand).gte(clearTreshold))
+                    )
+            }
 
             if (periodReducer) {
                 eeImage = collection[periodReducer]()
@@ -221,7 +234,7 @@ class EarthEngineWorker {
     getTileUrl() {
         const { datasetId, format, data, filter, style } = this.options
 
-        console.log('getTileUrl', format)
+        console.log('getTileUrl', format, this.options)
 
         return new Promise(resolve => {
             switch (format) {
@@ -421,8 +434,6 @@ class EarthEngineWorker {
                             this.getFeatureCollection()
                         )
                     }
-
-                    console.log('params', params)
 
                     eeImage
                         .visualize(params)

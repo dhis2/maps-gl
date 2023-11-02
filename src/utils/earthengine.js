@@ -21,6 +21,7 @@ const workerOptions = [
     'methods',
     'mosaic',
     'tileScale',
+    'cloudScore',
 ]
 
 // Returns the layer options that should be passed to the EE worker

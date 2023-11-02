@@ -100,6 +100,9 @@ export const getClassifiedImage = (eeImage, { legend = [], style, band }) => {
                 palette: style.map(l => l.color).join(','),
             },
         }
+    } else if (style.bands) {
+        // Satellite image
+        return { eeImage, params: style }
     }
 
     const min = 0
