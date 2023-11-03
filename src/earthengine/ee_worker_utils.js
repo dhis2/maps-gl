@@ -143,14 +143,14 @@ export const applyMethods = (eeImage, methods = []) => {
     if (Array.isArray(methods)) {
         methods.forEach(m => {
             if (image[m.name]) {
-                image = image[m.name].apply(this, m.arguments)
+                image = image[m.name].apply(image, m.arguments)
             }
         })
     } else {
         // Backward compatibility for format used before 2.40
         Object.keys(methods).forEach(m => {
             if (image[m]) {
-                image = image[m].apply(eeImage, methods[m])
+                image = image[m].apply(image, methods[m])
             }
         })
     }
