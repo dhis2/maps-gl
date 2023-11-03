@@ -125,8 +125,9 @@ export const getClassifiedImage = (eeImage, { legend = [], style, band }) => {
     return { eeImage: zones, params: { min, max, palette } }
 }
 
-export const applyFilter = (ee, dataset, filter = []) => {
-    let filtered = dataset
+// Apply filter to image collection
+export const applyFilter = (ee, collection, filter = []) => {
+    let filtered = collection
 
     filter.forEach(f => {
         if (ee.Filter[f.type]) {
@@ -137,4 +138,26 @@ export const applyFilter = (ee, dataset, filter = []) => {
     })
 
     return filtered
+}
+
+// Apply methods to image cells
+export const applyMethods = (eeImage, methods = []) => {
+    let image = eeImage
+
+    if (Array.isArray(methods)) {
+        methods.forEach(m => {
+            if (image[m.name]) {
+                image = image[m.name].apply(this, m.arguments)
+            }
+        })
+    } else {
+        // Backward compatibility for format used before 2.40
+        Object.keys(methods).forEach(m => {
+            if (image[m]) {
+                image = image[m].apply(eeImage, methods[m])
+            }
+        })
+    }
+
+    return image
 }

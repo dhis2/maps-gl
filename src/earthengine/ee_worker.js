@@ -10,6 +10,7 @@ import {
     getHistogramStatistics,
     getFeatureCollectionProperties,
     applyFilter,
+    applyMethods,
 } from './ee_worker_utils'
 import { getBufferGeometry } from '../utils/buffers'
 
@@ -131,22 +132,13 @@ class EarthEngineWorker {
             // Image collection
             let collection = ee.ImageCollection(datasetId)
 
-            // getInfo(collection).then(console.log)
-
             // Scale is lost when creating a mosaic below
             this.eeScale = getScale(collection.first())
 
             // Apply array of filters (e.g. period)
             collection = applyFilter(ee, collection, filter)
-            /*
-            filter.forEach(f => {
-                collection = collection.filter(
-                    ee.Filter[f.type].apply(this, f.arguments)
-                    //
-                )
-            })
-            */
 
+            // Mask out clouds from satellite images
             if (cloudScore) {
                 var csCollection = ee.ImageCollection(cloudScore.datasetId)
                 const csBand = cloudScore.band
@@ -160,6 +152,7 @@ class EarthEngineWorker {
             }
 
             if (periodReducer) {
+                // Apply period reducer (e.g. going from daily to monthly)
                 eeImage = collection[periodReducer]()
             } else if (mosaic) {
                 // Composite all images inn a collection (e.g. per country)
@@ -168,19 +161,6 @@ class EarthEngineWorker {
                 // There should only be one image after applying the filters
                 eeImage = ee.Image(collection.first())
             }
-
-            /*
-            eeImage = mosaic
-                ? collection.mosaic() // Composite all images inn a collection (e.g. per country)
-                : ee.Image(collection.first()) // There should only be one image after applying the filters
-            */
-
-            // Experimental: Filter by date range
-            // eeImage = collection.filterDate('2022-07', '2022-08').sum()
-            // eeImage = collection.filter(ee.Filter.date('2022-07-01', '2022-08-01').sum()
-            // Other filters:
-            // https://developers.google.com/earth-engine/apidocs/ee-filter-date
-            // https://developers.google.com/earth-engine/apidocs/ee-filter-calendarrange
         }
 
         // // Select band (e.g. age group)
@@ -202,28 +182,7 @@ class EarthEngineWorker {
         }
 
         // Run methods on image
-        if (methods) {
-            if (Array.isArray(methods)) {
-                methods.forEach(method => {
-                    if (eeImage[method.name]) {
-                        eeImage = eeImage[method.name].apply(
-                            eeImage,
-                            method.arguments
-                        )
-                    }
-                })
-            } else {
-                // Backward compatibility for format used before 2.40
-                Object.keys(methods).forEach(method => {
-                    if (eeImage[method]) {
-                        eeImage = eeImage[method].apply(
-                            eeImage,
-                            methods[method]
-                        )
-                    }
-                })
-            }
-        }
+        eeImage = applyMethods(ee, eeImage, methods)
 
         this.eeImage = eeImage
 
@@ -464,7 +423,7 @@ class EarthEngineWorker {
             // .filterDate('2023', '2024') // TODO: Remove
             .distinct('system:time_start')
             .sort('system:time_start', false)
-            .limit(100)
+        // .limit(100) // TODO: Remove
 
         const featureCollection = ee
             .FeatureCollection(imageCollection)
