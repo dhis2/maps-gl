@@ -163,7 +163,7 @@ class EarthEngineWorker {
             }
         }
 
-        // // Select band (e.g. age group)
+        // Select band (e.g. age group)
         if (band) {
             eeImage = eeImage.select(band)
 
@@ -193,8 +193,6 @@ class EarthEngineWorker {
     getTileUrl() {
         const { datasetId, format, data, filter, style } = this.options
 
-        console.log('getTileUrl', format, this.options)
-
         return new Promise(resolve => {
             switch (format) {
                 case 'FeatureView':
@@ -217,53 +215,10 @@ class EarthEngineWorker {
                         }
                     )
 
-                    /*
-                    console.log(
-                        'tilesKey.formatTileUrl',
-                        tilesKey.formatTileUrl(9, 80, 183)
-                    )
-
-                    console.log(
-                        'tilesKey',
-                        tilesKey,
-                        datasetId,
-                        this.options,
-                        ee.layers
-                    )
-                    */
-
-                    /*
-                    const tileSource = new ee.layers.FeatureViewTileSource(
-                        tilesKey
-                    )
-
-                    const overlay = new ee.layers.ImageOverlay(tileSource)
-                    */
-
-                    // tileSource.getTileUrl = function(tile, zoom) {
-
                     break
 
                 case 'FeatureCollection':
-                    // const { datasetId } = this.options
-
-                    /*
-                    let dataset = ee.FeatureCollection(datasetId).draw({
-                        ...DEFAULT_FEATURE_STYLE,
-                        ...style,
-                    })
-                    */
-
-                    /*
-                    getInfo(ee.FeatureCollection(datasetId).first()).then(
-                        console.log
-                    )
-                    */
-
                     let dataset = ee.FeatureCollection(datasetId)
-
-                    // getInfo(dataset.first()).then(console.log)
-                    // .filter(ee.Filter.gt('area_in_meters', 50))
 
                     dataset = applyFilter(ee, dataset, filter)
 
@@ -313,10 +268,7 @@ class EarthEngineWorker {
                             } else if (Array.isArray(byProperty)) {
                                 // https://developers.google.com/earth-engine/datasets/catalog/RESOLVE_ECOREGIONS_2017
 
-                                // console.log('isArray', byProperty)
                                 dataset = dataset.map(f => {
-                                    // const item = byProperty.find(
-
                                     return f.set({
                                         [styleProperty]: { color: 'COLOR' },
                                     })
@@ -340,35 +292,6 @@ class EarthEngineWorker {
                             // ...styleOptions,
                         })
                     }
-
-                    /*
-                    if (Array.isArray(style)) {
-                        console.log('ARRAY STYLE', style)
-    
-                        dataset = dataset.style({
-                            ...DEFAULT_FEATURE_STYLE,
-                        })
-                    } else {
-                        dataset = dataset.style({
-                            ...DEFAULT_FEATURE_STYLE,
-                            ...style,
-                        })
-                    }
-                    */
-
-                    // TODO: Testing below
-                    /*
-                    let dataset = ee.FeatureCollection(datasetId).map(f => {
-                        const color = f.get('COLOR')
-                        return f.set({ style: { color, width: 0 } })
-                    })
-    
-                    getInfo(dataset.sort('SHAPE_AREA', false).first()).then(
-                        console.log
-                    )
-                    */
-
-                    // dataset = dataset.style({ styleProperty: 'style' })
 
                     if (data) {
                         dataset = dataset.clipToCollection(
@@ -401,7 +324,6 @@ class EarthEngineWorker {
                     break
                 default:
                 // TODO: Handle unkonwn format
-                // this.getRasterTileUrl().then(resolve)
             }
         })
     }
