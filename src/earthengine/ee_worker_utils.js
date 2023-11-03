@@ -84,8 +84,6 @@ export const getFeatureCollectionProperties = data =>
 
 // Classify image according to style
 export const getClassifiedImage = (eeImage, { legend = [], style, band }) => {
-    console.log('getClassifiedImage', style)
-
     // Image has classes (e.g. landcover)
     if (Array.isArray(style)) {
         return {
@@ -109,8 +107,6 @@ export const getClassifiedImage = (eeImage, { legend = [], style, band }) => {
     const max = legend.length - 1
     const { palette } = style
     let zones
-
-    console.log('min max', min, max, legend, palette)
 
     for (let i = min, item; i < max; i++) {
         item = legend[i]

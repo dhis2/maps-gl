@@ -17,6 +17,10 @@ import { getBufferGeometry } from '../utils/buffers'
 // Why we need to "hack" the '@google/earthengine bundle:
 // https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
 
+const IMAGE = 'Image'
+const IMAGE_COLLECTION = 'ImageCollection'
+const FEATURE_COLLECTION = 'FeatureCollection'
+
 // Options are defined here:
 // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-draw
 const DEFAULT_FEATURE_STYLE = {
@@ -112,6 +116,7 @@ class EarthEngineWorker {
 
         const {
             datasetId,
+            format,
             filter,
             periodReducer,
             mosaic,
@@ -124,7 +129,7 @@ class EarthEngineWorker {
 
         let eeImage
 
-        if (!filter) {
+        if (format === IMAGE) {
             // Single image
             eeImage = ee.Image(datasetId)
             this.eeScale = getScale(eeImage)
@@ -182,7 +187,7 @@ class EarthEngineWorker {
         }
 
         // Run methods on image
-        eeImage = applyMethods(ee, eeImage, methods)
+        eeImage = applyMethods(eeImage, methods)
 
         this.eeImage = eeImage
 
@@ -209,15 +214,13 @@ class EarthEngineWorker {
                                 .formatTileUrl(0, 0, 0)
                                 .replace('/0/0/0', '/{z}/{x}/{y}')
 
-                            console.log('urlFormat', urlFormat)
-
                             resolve(urlFormat)
                         }
                     )
 
                     break
 
-                case 'FeatureCollection':
+                case FEATURE_COLLECTION:
                     let dataset = ee.FeatureCollection(datasetId)
 
                     dataset = applyFilter(ee, dataset, filter)
@@ -304,8 +307,8 @@ class EarthEngineWorker {
                     )
 
                     break
-                case 'Image':
-                case 'ImageCollection':
+                case IMAGE:
+                case IMAGE_COLLECTION:
                     let { eeImage, params } = getClassifiedImage(
                         this.getImage(),
                         this.options
@@ -395,7 +398,7 @@ class EarthEngineWorker {
         const collection = this.getFeatureCollection()
 
         if (collection) {
-            if (format === 'FeatureCollection') {
+            if (format === FEATURE_COLLECTION) {
                 const { datasetId, filter } = this.options
                 let dataset = ee.FeatureCollection(datasetId)
 
