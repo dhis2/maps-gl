@@ -348,7 +348,11 @@ class EarthEngineWorker {
             // .filterDate('2023', '2024') // TODO: Remove
             .distinct('system:time_start')
             .sort('system:time_start', false)
-        // .limit(100) // TODO: Remove
+            .limit(100) // TODO: Remove
+
+        console.log('getPeriods', eeId)
+
+        getInfo(imageCollection).then(console.log)
 
         const featureCollection = ee
             .FeatureCollection(imageCollection)
@@ -362,6 +366,7 @@ class EarthEngineWorker {
     }
 
     // Returns min and max timestamp for an image collection
+    /*
     getTimeRange(eeId) {
         const imageCollection = ee.ImageCollection(eeId)
 
@@ -375,6 +380,47 @@ class EarthEngineWorker {
 
         return getInfo(startTime.combine(endTime))
     }
+    */
+
+    getTimeRange(eeId) {
+        const collection = ee.ImageCollection(eeId)
+
+        // getInfo(collection).then(console.log)
+
+        const range = collection.reduceColumns(ee.Reducer.minMax(), [
+            'system:time_start',
+        ])
+
+        return getInfo(range)
+    }
+
+    /*
+    getTimeRange3(eeId) {
+        const imageCollection = ee.ImageCollection(eeId)
+
+        const startTime = imageCollection.first().get('system:time_start')
+
+        const endTime = imageCollection
+            .limit(1, 'system:time_start', false)
+            .first()
+            .get('system:time_start')
+
+        return getInfo(endTime)
+    }
+
+    getTimeRange4(eeId) {
+        const imageCollection = ee.ImageCollection(eeId)
+
+        const startTime = imageCollection.first().get('system:time_start')
+
+        const endTime = imageCollection
+            .sort('system:time_start', false)
+            .first()
+            .get('system:time_start')
+
+        return getInfo(endTime)
+    }
+    */
 
     // Returns aggregated values for org unit features
     async getAggregations(config) {
