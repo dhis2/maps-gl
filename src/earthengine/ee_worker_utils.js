@@ -18,17 +18,22 @@ export const getInfo = instance =>
         })
     )
 
-// Combine multiple aggregation types/reducers
 // unweighted means that centroids are used for each grid cell
-// https://developers.google.com/earth-engine/guides/reducers_intro
 // https://developers.google.com/earth-engine/guides/reducers_reduce_region#pixels-in-the-region
-export const combineReducers = ee => types =>
+const createReducer = (eeReducer, type, unweighted) => {
+    const reducer = eeReducer[type]()
+    return unweighted ? reducer.unweighted() : reducer
+}
+
+// Combine multiple aggregation types/reducers
+// https://developers.google.com/earth-engine/guides/reducers_intro
+export const combineReducers = ee => (types, unweighted) =>
     types.reduce(
         (r, t, i) =>
             i === 0
-                ? r[t]().unweighted()
+                ? createReducer(r, t, unweighted)
                 : r.combine({
-                      reducer2: ee.Reducer[t]().unweighted(),
+                      reducer2: createReducer(ee.Reducer, t, unweighted),
                       sharedInputs: true,
                   }),
         ee.Reducer

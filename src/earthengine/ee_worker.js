@@ -431,6 +431,7 @@ class EarthEngineWorker {
             format,
             aggregationType,
             band,
+            useCentroid,
             style,
             tileScale = DEFAULT_TILE_SCALE,
         } = this.options
@@ -485,7 +486,10 @@ class EarthEngineWorker {
                     })
                 )
             } else if (!singleAggregation && aggregationType.length) {
-                const reducer = combineReducers(ee)(aggregationType)
+                const reducer = combineReducers(ee)(
+                    aggregationType,
+                    useCentroid
+                )
                 const props = [...aggregationType]
 
                 let aggFeatures = image.reduceRegions({
