@@ -155,7 +155,7 @@ class EarthEngine extends Layer {
     }
 
     // TODO: Move popup handling to the maps app
-    showValue = latlng =>
+    showValue = (latlng, precision) =>
         this.getValue(latlng).then(value => {
             const { lng, lat } = latlng
             const options = this.options
@@ -167,7 +167,9 @@ class EarthEngine extends Layer {
                 content = setTemplate(options.popup, {
                     ...options,
                     value:
-                        typeof value === 'number' ? setPrecision(value) : value,
+                        typeof value === 'number'
+                            ? setPrecision(value, precision)
+                            : value,
                 })
             }
 

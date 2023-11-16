@@ -231,7 +231,7 @@ class EarthEngineWorker {
 
                     break
                 default:
-                // TODO: Handle unkonwn format
+                // TODO: Handle unknown format
             }
         })
     }
