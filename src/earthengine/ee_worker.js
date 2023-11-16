@@ -25,9 +25,9 @@ const FEATURE_COLLECTION = 'FeatureCollection'
 // Options are defined here:
 // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-draw
 const DEFAULT_FEATURE_STYLE = {
-    color: 'FF0000',
-    width: 2,
-    pointSize: 5,
+    color: '#FFA500',
+    strokeWidth: 2,
+    pointRadius: 5,
 }
 const DEFAULT_TILE_SCALE = 1
 
@@ -196,78 +196,10 @@ class EarthEngineWorker {
                 case FEATURE_COLLECTION:
                     let dataset = ee.FeatureCollection(datasetId)
 
-                    dataset = applyFilter(dataset, filter)
-
-                    const styleProperty = 'dhis2style'
-
-                    // TODO: Move to ee_worker_utils.js
-                    if (style) {
-                        if (Array.isArray(style)) {
-                            // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-style
-
-                            const first = style.find(s => s.property)
-
-                            if (first) {
-                                const { property } = first
-
-                                const styles = ee.Dictionary(
-                                    style.reduce(
-                                        (
-                                            obj,
-                                            { property, value, name, ...rest }
-                                        ) => {
-                                            obj[value] = rest
-                                            return obj
-                                        },
-                                        {}
-                                    )
-                                )
-
-                                dataset = dataset.map(f =>
-                                    f.set(
-                                        styleProperty,
-                                        styles.get(f.get(property))
-                                    )
-                                )
-                            }
-                        } else {
-                            const { byProperty, ...styleOptions } = style
-
-                            if (typeof byProperty === 'string') {
-                                dataset = dataset.map(f =>
-                                    f.set({
-                                        [styleProperty]: {
-                                            color: f.get(byProperty),
-                                        },
-                                    })
-                                )
-                            } else if (Array.isArray(byProperty)) {
-                                // https://developers.google.com/earth-engine/datasets/catalog/RESOLVE_ECOREGIONS_2017
-
-                                dataset = dataset.map(f => {
-                                    return f.set({
-                                        [styleProperty]: { color: 'COLOR' },
-                                    })
-                                })
-                            } else if (typeof byProperty === 'object') {
-                                dataset = dataset.map(f =>
-                                    f.set({
-                                        [styleProperty]: Object.keys(
-                                            byProperty
-                                        ).reduce((obj, key) => {
-                                            obj[key] = f.get(byProperty[key])
-                                            return obj
-                                        }, {}),
-                                    })
-                                )
-                            }
-                        }
-
-                        dataset = dataset.style({
-                            styleProperty,
-                            // ...styleOptions,
-                        })
-                    }
+                    dataset = applyFilter(dataset, filter).draw({
+                        ...DEFAULT_FEATURE_STYLE,
+                        ...style,
+                    })
 
                     if (data) {
                         dataset = dataset.clipToCollection(
