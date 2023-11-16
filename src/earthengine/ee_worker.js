@@ -9,9 +9,9 @@ import {
     getClassifiedImage,
     getHistogramStatistics,
     getFeatureCollectionProperties,
-    applyCloudMask,
     applyFilter,
     applyMethods,
+    applyCloudMask,
 } from './ee_worker_utils'
 import { getBufferGeometry } from '../utils/buffers'
 

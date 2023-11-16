@@ -6,23 +6,23 @@ export const defaultOptions = {
 }
 
 const workerOptions = [
-    'format',
     'aggregationType',
     'band',
     'bandReducer',
     'buffer',
+    'cloudScore',
     'data',
     'datasetId',
     'filter',
-    'periodReducer',
-    'useCentroid',
+    'format',
     'legend',
-    'style',
     'mask',
     'methods',
     'mosaic',
+    'periodReducer',
+    'style',
     'tileScale',
-    'cloudScore',
+    'useCentroid',
 ]
 
 // Returns the layer options that should be passed to the EE worker

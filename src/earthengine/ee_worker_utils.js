@@ -129,7 +129,7 @@ export const getClassifiedImage = (eeImage, { legend = [], style, band }) => {
 }
 
 // Apply filter to image collection
-export const applyFilter = (ee, collection, filter = []) => {
+export const applyFilter = (collection, filter = []) => {
     let filtered = collection
 
     filter.forEach(f => {
@@ -166,10 +166,7 @@ export const applyMethods = (eeImage, methods = []) => {
 }
 
 // Mask out clouds from satellite images
-export const applyCloudMask = (
-    collection,
-    { datasetId, band, clearTreshold }
-) => {
+export const applyCloudMask = (collection, cloudScore) => {
     const { datasetId, band, clearTreshold } = cloudScore
 
     return collection
