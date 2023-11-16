@@ -200,26 +200,6 @@ class EarthEngineWorker {
 
         return new Promise(resolve => {
             switch (format) {
-                case 'FeatureView':
-                    // https://developers.google.com/earth-engine/guides/featureview_overview
-                    // https://developers.google.com/earth-engine/datasets/catalog/WWF_HydroSHEDS_v1_FreeFlowingRivers
-
-                    ee.data.getFeatureViewTilesKey(
-                        {
-                            assetId: `${datasetId}_FeatureView`,
-                            visParams: style,
-                        },
-                        tilesKey => {
-                            const urlFormat = tilesKey
-                                .formatTileUrl(0, 0, 0)
-                                .replace('/0/0/0', '/{z}/{x}/{y}')
-
-                            resolve(urlFormat)
-                        }
-                    )
-
-                    break
-
                 case FEATURE_COLLECTION:
                     let dataset = ee.FeatureCollection(datasetId)
 
@@ -366,22 +346,6 @@ class EarthEngineWorker {
     }
 
     // Returns min and max timestamp for an image collection
-    /*
-    getTimeRange(eeId) {
-        const imageCollection = ee.ImageCollection(eeId)
-
-        const startTime = imageCollection.reduceColumns(ee.Reducer.min(), [
-            'system:time_start',
-        ])
-
-        const endTime = imageCollection.reduceColumns(ee.Reducer.max(), [
-            'system:time_end',
-        ])
-
-        return getInfo(startTime.combine(endTime))
-    }
-    */
-
     getTimeRange(eeId) {
         const collection = ee.ImageCollection(eeId)
 
@@ -393,34 +357,6 @@ class EarthEngineWorker {
 
         return getInfo(range)
     }
-
-    /*
-    getTimeRange3(eeId) {
-        const imageCollection = ee.ImageCollection(eeId)
-
-        const startTime = imageCollection.first().get('system:time_start')
-
-        const endTime = imageCollection
-            .limit(1, 'system:time_start', false)
-            .first()
-            .get('system:time_start')
-
-        return getInfo(endTime)
-    }
-
-    getTimeRange4(eeId) {
-        const imageCollection = ee.ImageCollection(eeId)
-
-        const startTime = imageCollection.first().get('system:time_start')
-
-        const endTime = imageCollection
-            .sort('system:time_start', false)
-            .first()
-            .get('system:time_start')
-
-        return getInfo(endTime)
-    }
-    */
 
     // Returns aggregated values for org unit features
     async getAggregations(config) {
