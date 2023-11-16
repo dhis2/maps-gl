@@ -9,6 +9,7 @@ import {
     getClassifiedImage,
     getHistogramStatistics,
     getFeatureCollectionProperties,
+    applyCloudMask,
     applyFilter,
     applyMethods,
 } from './ee_worker_utils'
@@ -141,19 +142,11 @@ class EarthEngineWorker {
             this.eeScale = getScale(collection.first())
 
             // Apply array of filters (e.g. period)
-            collection = applyFilter(ee, collection, filter)
+            collection = applyFilter(collection, filter)
 
             // Mask out clouds from satellite images
             if (cloudScore) {
-                var csCollection = ee.ImageCollection(cloudScore.datasetId)
-                const csBand = cloudScore.band
-                const clearTreshold = cloudScore.clearTreshold
-
-                collection = collection
-                    .linkCollection(csCollection, [csBand])
-                    .map(img =>
-                        img.updateMask(img.select(csBand).gte(clearTreshold))
-                    )
+                collection = applyCloudMask(collection, cloudScore)
             }
 
             if (periodReducer) {
@@ -203,7 +196,7 @@ class EarthEngineWorker {
                 case FEATURE_COLLECTION:
                     let dataset = ee.FeatureCollection(datasetId)
 
-                    dataset = applyFilter(ee, dataset, filter)
+                    dataset = applyFilter(dataset, filter)
 
                     const styleProperty = 'dhis2style'
 
@@ -325,14 +318,8 @@ class EarthEngineWorker {
     getPeriods(eeId) {
         const imageCollection = ee
             .ImageCollection(eeId)
-            // .filterDate('2023', '2024') // TODO: Remove
             .distinct('system:time_start')
             .sort('system:time_start', false)
-            .limit(100) // TODO: Remove
-
-        console.log('getPeriods', eeId)
-
-        getInfo(imageCollection).then(console.log)
 
         const featureCollection = ee
             .FeatureCollection(imageCollection)
@@ -348,8 +335,6 @@ class EarthEngineWorker {
     // Returns min and max timestamp for an image collection
     getTimeRange(eeId) {
         const collection = ee.ImageCollection(eeId)
-
-        // getInfo(collection).then(console.log)
 
         const range = collection.reduceColumns(ee.Reducer.minMax(), [
             'system:time_start',
@@ -385,7 +370,7 @@ class EarthEngineWorker {
                 const { datasetId, filter } = this.options
                 let dataset = ee.FeatureCollection(datasetId)
 
-                dataset = applyFilter(ee, dataset, filter)
+                dataset = applyFilter(dataset, filter)
 
                 const aggFeatures = collection
                     .map(feature => {
@@ -422,10 +407,7 @@ class EarthEngineWorker {
                     })
                 )
             } else if (!singleAggregation && aggregationType.length) {
-                const reducer = combineReducers(ee)(
-                    aggregationType,
-                    useCentroid
-                )
+                const reducer = combineReducers(aggregationType, useCentroid)
                 const props = [...aggregationType]
 
                 let aggFeatures = image.reduceRegions({

@@ -1,3 +1,5 @@
+import ee from './ee_api_js_worker'
+
 const squareMetersToHectares = value => value / 10000
 
 const squareMetersToAcres = value => value / 4046.8564224
@@ -27,7 +29,7 @@ const createReducer = (eeReducer, type, unweighted) => {
 
 // Combine multiple aggregation types/reducers
 // https://developers.google.com/earth-engine/guides/reducers_intro
-export const combineReducers = ee => (types, unweighted) =>
+export const combineReducers = (types, unweighted) =>
     types.reduce(
         (r, t, i) =>
             i === 0
@@ -161,4 +163,16 @@ export const applyMethods = (eeImage, methods = []) => {
     }
 
     return image
+}
+
+// Mask out clouds from satellite images
+export const applyCloudMask = (
+    collection,
+    { datasetId, band, clearTreshold }
+) => {
+    const { datasetId, band, clearTreshold } = cloudScore
+
+    return collection
+        .linkCollection(ee.ImageCollection(datasetId), [band])
+        .map(img => img.updateMask(img.select(band).gte(clearTreshold)))
 }
