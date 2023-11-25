@@ -16,7 +16,7 @@ const workerOptions = [
     'filter',
     'format',
     'legend',
-    'mask',
+    'maskOperator',
     'methods',
     'mosaic',
     'periodReducer',

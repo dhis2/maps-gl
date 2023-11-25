@@ -123,8 +123,9 @@ class EarthEngineWorker {
             mosaic,
             band,
             bandReducer,
-            mask,
+            maskOperator,
             methods,
+            style,
             cloudScore,
         } = this.options
 
@@ -174,9 +175,9 @@ class EarthEngineWorker {
             }
         }
 
-        // Mask out 0-values
-        if (mask) {
-            eeImage = eeImage.updateMask(eeImage.gt(0))
+        // Only keep pixels above min value
+        if (maskOperator && eeImage[maskOperator]) {
+            eeImage = eeImage.updateMask(eeImage[maskOperator](style?.min || 0))
         }
 
         // Run methods on image
@@ -191,7 +192,7 @@ class EarthEngineWorker {
     getTileUrl() {
         const { datasetId, format, data, filter, style } = this.options
 
-        return new Promise(resolve => {
+        return new Promise((resolve, reject) => {
             switch (format) {
                 case FEATURE_COLLECTION:
                     let dataset = ee.FeatureCollection(datasetId)
@@ -231,7 +232,7 @@ class EarthEngineWorker {
 
                     break
                 default:
-                // TODO: Handle unknown format
+                    reject(new Error('Unknown format'))
             }
         })
     }
