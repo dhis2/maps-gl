@@ -34,10 +34,7 @@ export const combineReducers = (types, unweighted) =>
         (r, t, i) =>
             i === 0
                 ? createReducer(r, t, unweighted)
-                : r.combine({
-                      reducer2: createReducer(ee.Reducer, t, unweighted),
-                      sharedInputs: true,
-                  }),
+                : r.combine(createReducer(ee.Reducer, t, unweighted), '', true),
         ee.Reducer
     )
 
