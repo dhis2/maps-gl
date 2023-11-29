@@ -175,13 +175,13 @@ class EarthEngineWorker {
             }
         }
 
+        // Run methods on image
+        eeImage = applyMethods(eeImage, methods)
+
         // Only keep pixels above min value
         if (maskOperator && eeImage[maskOperator]) {
             eeImage = eeImage.updateMask(eeImage[maskOperator](style?.min || 0))
         }
-
-        // Run methods on image
-        eeImage = applyMethods(eeImage, methods)
 
         this.eeImage = eeImage
 
