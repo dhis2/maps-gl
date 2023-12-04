@@ -273,9 +273,8 @@ export class MapGL extends Evented {
     }
 
     onIdle = () => {
-        const isLoading = this.getLayers().some(layer => layer._isLoading)
-
-        if (isLoading) {
+        // Return if some layers are still loading data
+        if (this.getLayers().some(layer => layer._isLoading)) {
             return
         }
 
@@ -284,9 +283,6 @@ export class MapGL extends Evented {
         if (!classList.contains(renderedClass)) {
             classList.add(renderedClass)
         }
-
-        // Should fire when map is fully rendered
-        this.fire('render', this)
     }
 
     // Set hover state for features
