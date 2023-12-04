@@ -18,6 +18,7 @@ class EarthEngine extends Layer {
     addTo = map =>
         new Promise((resolve, reject) => {
             this._map = map
+            this._isLoading = true
 
             if (map.styleIsLoaded()) {
                 this.getWorkerInstance()
@@ -34,6 +35,8 @@ class EarthEngine extends Layer {
                             this.createLayers()
                             super.addTo(map)
                             this.onLoad()
+
+                            this._isLoading = false
 
                             const { preload, data } = this.options
 

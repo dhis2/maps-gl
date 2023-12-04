@@ -15,6 +15,8 @@ import Popup from './ui/Popup'
 import Label from './ui/Label'
 import './Map.css'
 
+const renderedClass = 'dhis2-map-rendered'
+
 export class MapGL extends Evented {
     // Returns true if the layer type is supported
     static hasLayerSupport(type) {
@@ -44,6 +46,7 @@ export class MapGL extends Evented {
 
         this._mapgl = mapgl
         this._glyphs = glyphs
+        this._isRendered = false
 
         // Translate strings
         if (locale) {
@@ -55,6 +58,8 @@ export class MapGL extends Evented {
             })
         }
 
+        mapgl.on('render', this.onRender)
+        mapgl.on('idle', this.onIdle)
         mapgl.on('load', this.onLoad)
         mapgl.on('click', this.onClick)
         mapgl.on('contextmenu', this.onContextMenu)
@@ -106,6 +111,7 @@ export class MapGL extends Evented {
         this._layers.push(layer)
 
         if (!layer.isOnMap()) {
+            this._isRendered = false
             await layer.addTo(this)
 
             this.fire('layeradd', this._layers)
@@ -146,6 +152,8 @@ export class MapGL extends Evented {
     remove() {
         const mapgl = this._mapgl
 
+        mapgl.off('render', this.onRender)
+        mapgl.off('idle', this.onIdle)
         mapgl.off('load', this.onLoad)
         mapgl.off('click', this.onClick)
         mapgl.off('contextmenu', this.onContextMenu)
@@ -256,6 +264,31 @@ export class MapGL extends Evented {
         )
 
         this.getMapGL().getCanvas().style.cursor = feature ? 'pointer' : ''
+    }
+
+    onRender = () => {
+        const { classList } = this.getContainer()
+
+        if (classList.contains(renderedClass)) {
+            classList.remove(renderedClass)
+        }
+    }
+
+    onIdle = () => {
+        const isLoading = this.getLayers().some(layer => layer._isLoading)
+
+        if (isLoading) {
+            return
+        }
+
+        const { classList } = this.getContainer()
+
+        if (!classList.contains(renderedClass)) {
+            classList.add(renderedClass)
+        }
+
+        // Should fire when map is fully rendered
+        this.fire('render', this)
     }
 
     // Set hover state for features
