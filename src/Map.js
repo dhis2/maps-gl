@@ -266,11 +266,7 @@ export class MapGL extends Evented {
 
     // Remove rendered class if rendering is happening
     onRender = () => {
-        const { classList } = this.getContainer()
-
-        if (classList.contains(renderedClass)) {
-            classList.remove(renderedClass)
-        }
+        this._addClass(renderedClass)
     }
 
     // Add rendered class if map is idle
@@ -280,11 +276,7 @@ export class MapGL extends Evented {
             return
         }
 
-        const { classList } = this.getContainer()
-
-        if (!classList.contains(renderedClass)) {
-            classList.add(renderedClass)
-        }
+        this._removeClass(renderedClass)
     }
 
     // Set hover state for features
@@ -481,6 +473,24 @@ export class MapGL extends Evented {
         const feature = this.getEventFeature(evt)
 
         return { type, coordinates, position, feature }
+    }
+
+    // Add class to map container
+    _addClass(className) {
+        const { classList } = this.getContainer()
+
+        if (classList.contains(className)) {
+            classList.remove(className)
+        }
+    }
+
+    // Remove class from map container
+    _removeClass(className) {
+        const { classList } = this.getContainer()
+
+        if (!classList.contains(className)) {
+            classList.add(className)
+        }
     }
 }
 
