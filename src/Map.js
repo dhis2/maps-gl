@@ -264,6 +264,7 @@ export class MapGL extends Evented {
         this.getMapGL().getCanvas().style.cursor = feature ? 'pointer' : ''
     }
 
+    // Remove rendered class if rendering is happening
     onRender = () => {
         const { classList } = this.getContainer()
 
@@ -272,6 +273,7 @@ export class MapGL extends Evented {
         }
     }
 
+    // Add rendered class if map is idle
     onIdle = () => {
         // Return if some layers are still loading data
         if (this.getLayers().some(layer => layer._isLoading)) {
