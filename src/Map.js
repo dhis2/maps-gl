@@ -486,19 +486,23 @@ export class MapGL extends Evented {
 
     // Add class to map container
     _addClass(className) {
-        const { classList } = this.getContainer()
+        if (this._mapgl) {
+            const { classList } = this._mapgl._container
 
-        if (!classList.contains(className)) {
-            classList.add(className)
+            if (!classList.contains(className)) {
+                classList.add(className)
+            }
         }
     }
 
     // Remove class from map container
     _removeClass(className) {
-        const { classList } = this.getContainer()
+        if (this._mapgl) {
+            const { classList } = this._mapgl._container
 
-        if (classList.contains(className)) {
-            classList.remove(className)
+            if (classList.contains(className)) {
+                classList.remove(className)
+            }
         }
     }
 }
