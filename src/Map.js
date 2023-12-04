@@ -46,7 +46,6 @@ export class MapGL extends Evented {
 
         this._mapgl = mapgl
         this._glyphs = glyphs
-        this._isRendered = false
 
         // Translate strings
         if (locale) {
@@ -111,7 +110,6 @@ export class MapGL extends Evented {
         this._layers.push(layer)
 
         if (!layer.isOnMap()) {
-            this._isRendered = false
             await layer.addTo(this)
 
             this.fire('layeradd', this._layers)
