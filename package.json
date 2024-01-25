@@ -48,7 +48,7 @@
         "husky": "^8.0.3",
         "identity-obj-proxy": "^3.0.0",
         "jest": "^27.5.1",
-        "rimraf": "^3.0.2"
+        "rimraf": "^5.0.1"
     },
     "scripts": {
         "format": "d2-style apply js --all --no-stage",
