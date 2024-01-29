@@ -49,7 +49,9 @@ class GeoJson extends Layer {
             opacityFactor,
         })
         this.addLayer(outlineLayer({ id, color: strokeColor, width }))
-        this.addLayer(lineLayer({ id, color, width }), { isInteractive })
+        this.addLayer(lineLayer({ id, color: strokeColor || color, width }), {
+            isInteractive,
+        })
         this.addLayer(pointLayer({ id, color, strokeColor, width, radius }), {
             isInteractive,
         })

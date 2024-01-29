@@ -1,3 +1,10 @@
+## [3.8.6](https://github.com/dhis2/maps-gl/compare/v3.8.5...v3.8.6) (2023-10-23)
+
+
+### Bug Fixes
+
+* color needs to be set to strokeColor for lines to show ([#550](https://github.com/dhis2/maps-gl/issues/550)) ([e4ec3d5](https://github.com/dhis2/maps-gl/commit/e4ec3d57e200c458929ae1bb69bcd05632204008))
+
 ## [3.8.5](https://github.com/dhis2/maps-gl/compare/v3.8.4...v3.8.5) (2023-09-05)
 
 
