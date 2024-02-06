@@ -18,9 +18,9 @@ class EarthEngine extends Layer {
     addTo = map =>
         new Promise((resolve, reject) => {
             this._map = map
-            this._isLoading = true
 
             if (map.styleIsLoaded()) {
+                this._isLoading = true
                 this.getWorkerInstance()
                     .then(async worker => {
                         this.worker = worker
@@ -49,7 +49,10 @@ class EarthEngine extends Layer {
 
                         resolve()
                     })
-                    .catch(reject)
+                    .catch(() => {
+                        this._isLoading = false
+                        reject()
+                    })
             } else {
                 resolve()
             }
