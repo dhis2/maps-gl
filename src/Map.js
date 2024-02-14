@@ -16,6 +16,7 @@ import Label from './ui/Label'
 import './Map.css'
 
 const renderedClass = 'dhis2-map-rendered'
+const RENDER_TIMEOUT_DURATION = 500
 
 export class MapGL extends Evented {
     // Returns true if the layer type is supported
@@ -46,6 +47,7 @@ export class MapGL extends Evented {
 
         this._mapgl = mapgl
         this._glyphs = glyphs
+        this._renderTimeout = null
 
         // Translate strings
         if (locale) {
@@ -65,6 +67,10 @@ export class MapGL extends Evented {
         mapgl.on('mousemove', this.onMouseMove)
         mapgl.on('mouseout', this.onMouseOut)
         mapgl.on('error', this.onError)
+        /* Data and dataloading events are an indication that
+         * the map is not done yet */
+        mapgl.on('data', this._clearRenderTimeout)
+        mapgl.on('dataloading', this._clearRenderTimeout)
 
         this._layers = []
         this._controls = {}
@@ -158,6 +164,8 @@ export class MapGL extends Evented {
         mapgl.off('mousemove', this.onMouseMove)
         mapgl.off('mouseout', this.onMouseOut)
         mapgl.off('error', this.onError)
+        mapgl.off('data', this._clearRenderTimeout)
+        mapgl.off('dataloading', this._clearRenderTimeout)
 
         mapgl.remove()
 
@@ -267,25 +275,12 @@ export class MapGL extends Evented {
     // Remove rendered class if rendering is happening
     onRender = () => {
         this._removeClass(renderedClass)
-
-        if (this._renderTimeout) {
-            clearTimeout(this._renderTimeout)
-            this._renderTimeout = null
-        }
+        this._clearRenderTimeout()
     }
 
     // Add rendered class if map is idle
     onIdle = () => {
-        // Return if some layers are still loading data
-        if (this.getLayers().some(layer => layer._isLoading)) {
-            return
-        }
-
-        // Make sure the map stay rendered for at least 500ms
-        this._renderTimeout = setTimeout(() => {
-            this._addClass(renderedClass)
-            this._renderTimeout = null
-        }, 500)
+        this._setRenderTimeout()
     }
 
     // Set hover state for features
@@ -482,6 +477,23 @@ export class MapGL extends Evented {
         const feature = this.getEventFeature(evt)
 
         return { type, coordinates, position, feature }
+    }
+
+    _setRenderTimeout() {
+        // Ensure pending timeout is cleared before setting a new one
+        this._clearRenderTimeout()
+        // Make sure the map stay rendered for at least 500ms
+        this._renderTimeout = setTimeout(() => {
+            this._addClass(renderedClass)
+            this._renderTimeout = null
+        }, RENDER_TIMEOUT_DURATION)
+    }
+
+    _clearRenderTimeout() {
+        if (this._renderTimeout) {
+            clearTimeout(this._renderTimeout)
+            this._renderTimeout = null
+        }
     }
 
     // Add class to map container
