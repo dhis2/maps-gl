@@ -31,15 +31,11 @@ class BingLayer extends Layer {
     }
 
     async addTo(map) {
-        this._isLoading = true
-
         await this.createSource()
 
         this.createLayer()
 
         await super.addTo(map)
-
-        this._isLoading = false
 
         // Make sure overlays are on top
         map.orderOverlays()
