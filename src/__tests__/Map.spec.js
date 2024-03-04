@@ -1,14 +1,17 @@
 import Map from '../Map'
 
-jest.mock('maplibre-gl', () => ({
-    Map: () => mockMapGL,
-    Evented: () => {},
-    Marker: () => {},
-    Popup: () => {},
-    AttributionControl: () => {},
-    NavigationControl: () => {},
-    FullscreenControl: () => {},
-}))
+jest.mock('maplibre-gl', () => {
+    const actualMapLibreGl = jest.requireActual('maplibre-gl')
+    class MockMap {
+        constructor() {
+            Object.assign(this, mockMapGL)
+        }
+    }
+    return {
+        ...actualMapLibreGl,
+        Map: MockMap,
+    }
+})
 
 jest.mock('../earthengine/ee_worker_loader', () => ({
     __esModule: true,
