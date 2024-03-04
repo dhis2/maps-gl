@@ -49,9 +49,9 @@ class EarthEngine extends Layer {
 
                         resolve()
                     })
-                    .catch(() => {
+                    .catch(error => {
                         this._isLoading = false
-                        reject()
+                        reject(error)
                     })
             } else {
                 resolve()
