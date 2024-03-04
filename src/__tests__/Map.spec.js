@@ -22,7 +22,7 @@ describe('DHIS2 Maps-gl Map', () => {
 
         expect(mapgl).not.toBe(undefined)
         expect(mapgl).toEqual(mockMapGL)
-        expect(mapgl.on).toHaveBeenCalledTimes(6)
+        expect(mapgl.on).toHaveBeenCalledTimes(10)
     })
 
     it('should set layer feature hover state', () => {
