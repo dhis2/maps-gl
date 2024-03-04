@@ -165,6 +165,7 @@ class ServerCluster extends Cluster {
 
             if (!this.tileClusters[tileId]) {
                 this.tileClusters[tileId] = 'pending'
+                this._isLoading = true
                 this.options.load(this.getTileParams(tileId), this.onTileLoad)
             }
         }
@@ -196,6 +197,8 @@ class ServerCluster extends Cluster {
         if (visibleTiles.includes(tileId)) {
             this.updateClusters([tileId])
         }
+
+        this._isLoading = false
     }
 
     getBounds = () => this.options.bounds
