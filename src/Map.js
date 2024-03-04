@@ -280,6 +280,10 @@ export class MapGL extends Evented {
 
     // Add rendered class if map is idle
     onIdle = () => {
+        if (this.getLayers().some(layer => layer._isLoading)) {
+            return
+        }
+
         this._setRenderTimeout()
     }
 
