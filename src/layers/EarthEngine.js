@@ -64,7 +64,7 @@ class EarthEngine extends Layer {
     }
 
     // Returns promise resolving a new worker instance
-    getWorkerInstance = () => {
+    getWorkerInstance() {
         if (!this._workerPromise) {
             this._workerPromise = new Promise((resolve, reject) =>
                 getEarthEngineWorker(this.options.getAuthToken)

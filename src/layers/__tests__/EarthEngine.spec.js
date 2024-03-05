@@ -3,18 +3,6 @@ import EarthEngine from '../EarthEngine'
 const urlFormat =
     'https://earthengine.googleapis.com/v1alpha/projects/earthengine-legacy/maps/.../tiles/{z}/{x}/{y}'
 
-// Mock out EE Worker - import.meta not supported in jest
-jest.mock('../../earthengine/ee_worker_loader', () => {
-    class EarthEngineWorkerMock {
-        getTileUrl = async () => urlFormat
-        then = callback => callback(this)
-    }
-    return {
-        __esModule: true,
-        default: async () => EarthEngineWorkerMock,
-    }
-})
-
 const token = {
     access_token: 'abc',
     client_id: '123',
@@ -96,6 +84,28 @@ const options = {
 }
 
 describe('EarthEngine', () => {
+    beforeAll(() => {
+        /* Ideally the default export from 'earthengine/ee_worker_loader'
+         * should have been mocked instead of this, but since that function
+         * returns a proxy from the ComLink library, it was difficult to mock.
+         * If we ever want to add tests for the `getWorkerInstance` method
+         * itself we will have to find a way to mock that `getEarthEngineWorker`
+         * function. */
+        jest.spyOn(
+            EarthEngine.prototype,
+            'getWorkerInstance'
+        ).mockImplementation(async () => {
+            class EarthEngineWorkerMock {
+                getTileUrl = async () => urlFormat
+            }
+            const worker = new EarthEngineWorkerMock()
+            return Promise.resolve(worker)
+        })
+    })
+
+    afterAll(() => {
+        jest.restoreAllMocks()
+    })
     it('Should initialize', () => {
         const layer = new EarthEngine()
 
