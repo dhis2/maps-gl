@@ -44,6 +44,7 @@
         "@dhis2/cli-style": "^10.5.1",
         "@types/jest": "^29.4.0",
         "babel-jest": "^29.5.0",
+        "babel-plugin-transform-import-meta": "^2.2.1",
         "concurrently": "^7.6.0",
         "husky": "^8.0.3",
         "identity-obj-proxy": "^3.0.0",

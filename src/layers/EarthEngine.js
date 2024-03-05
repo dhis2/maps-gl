@@ -49,9 +49,9 @@ class EarthEngine extends Layer {
 
                         resolve()
                     })
-                    .catch(() => {
+                    .catch(error => {
                         this._isLoading = false
-                        reject()
+                        reject(error)
                     })
             } else {
                 resolve()
@@ -64,7 +64,7 @@ class EarthEngine extends Layer {
     }
 
     // Returns promise resolving a new worker instance
-    getWorkerInstance = () => {
+    getWorkerInstance() {
         if (!this._workerPromise) {
             this._workerPromise = new Promise((resolve, reject) =>
                 getEarthEngineWorker(this.options.getAuthToken)
