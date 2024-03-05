@@ -4,13 +4,16 @@ const urlFormat =
     'https://earthengine.googleapis.com/v1alpha/projects/earthengine-legacy/maps/.../tiles/{z}/{x}/{y}'
 
 // Mock out EE Worker - import.meta not supported in jest
-jest.mock('../../earthengine/ee_worker_loader', () => ({
-    __esModule: true,
-    default: async () => async () =>
-        new (class EarthEngineWorkerMock {
-            getTileUrl = async () => urlFormat
-        })(),
-}))
+jest.mock('../../earthengine/ee_worker_loader', () => {
+    class EarthEngineWorkerMock {
+        getTileUrl = async () => urlFormat
+        then = callback => callback(this)
+    }
+    return {
+        __esModule: true,
+        default: async () => EarthEngineWorkerMock,
+    }
+})
 
 const token = {
     access_token: 'abc',
