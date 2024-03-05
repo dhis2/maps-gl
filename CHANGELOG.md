@@ -1,3 +1,11 @@
+# [3.9.0](https://github.com/dhis2/maps-gl/compare/v3.8.6...v3.9.0) (2024-03-05)
+
+
+### Features
+
+* add class when map is rendered and push-analytics helper files and classes ([#552](https://github.com/dhis2/maps-gl/issues/552)) ([c3830ac](https://github.com/dhis2/maps-gl/commit/c3830acbbfdb699dfa3eb6bc83bda97c2c3379fc))
+* add map rendered class and push-analytics config and classes ([#565](https://github.com/dhis2/maps-gl/issues/565)) ([354ba97](https://github.com/dhis2/maps-gl/commit/354ba970512e6513d3467fa0cc8fa9e3f15c0d7a)), closes [#552](https://github.com/dhis2/maps-gl/issues/552)
+
 ## [3.8.6](https://github.com/dhis2/maps-gl/compare/v3.8.5...v3.8.6) (2023-10-23)
 
 
