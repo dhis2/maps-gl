@@ -88,6 +88,10 @@ export const outlineLayer = ({
         'line-width': widthExpr(width),
         'line-opacity': opacity ?? defaults.opacity,
     },
+    layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
+    },
     filter: filter || isPolygon,
 })
 
