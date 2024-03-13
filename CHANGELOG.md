@@ -1,3 +1,10 @@
+## [3.9.1](https://github.com/dhis2/maps-gl/compare/v3.9.0...v3.9.1) (2024-03-13)
+
+
+### Bug Fixes
+
+* use round style for line-join and line-cap ([#566](https://github.com/dhis2/maps-gl/issues/566)) ([476f5af](https://github.com/dhis2/maps-gl/commit/476f5af95f47ad68f50bafd0b52185515714f29b))
+
 # [3.9.0](https://github.com/dhis2/maps-gl/compare/v3.8.6...v3.9.0) (2024-03-05)
 
 
