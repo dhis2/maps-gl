@@ -20,6 +20,7 @@ class EarthEngine extends Layer {
             this._map = map
 
             if (map.styleIsLoaded()) {
+                this._isLoading = true
                 this.getWorkerInstance()
                     .then(async worker => {
                         this.worker = worker
@@ -35,6 +36,8 @@ class EarthEngine extends Layer {
                             super.addTo(map)
                             this.onLoad()
 
+                            this._isLoading = false
+
                             const { preload, data } = this.options
 
                             // Get aggregations if not plugin (preload=false) and org units
@@ -46,7 +49,10 @@ class EarthEngine extends Layer {
 
                         resolve()
                     })
-                    .catch(reject)
+                    .catch(error => {
+                        this._isLoading = false
+                        reject(error)
+                    })
             } else {
                 resolve()
             }
@@ -58,7 +64,7 @@ class EarthEngine extends Layer {
     }
 
     // Returns promise resolving a new worker instance
-    getWorkerInstance = () => {
+    getWorkerInstance() {
         if (!this._workerPromise) {
             this._workerPromise = new Promise((resolve, reject) =>
                 getEarthEngineWorker(this.options.getAuthToken)

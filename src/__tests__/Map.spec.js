@@ -1,14 +1,17 @@
 import Map from '../Map'
 
-jest.mock('maplibre-gl', () => ({
-    Map: () => mockMapGL,
-    Evented: () => {},
-    Marker: () => {},
-    Popup: () => {},
-    AttributionControl: () => {},
-    NavigationControl: () => {},
-    FullscreenControl: () => {},
-}))
+jest.mock('maplibre-gl', () => {
+    const actualMapLibreGl = jest.requireActual('maplibre-gl')
+    class MockMap {
+        constructor() {
+            Object.assign(this, mockMapGL)
+        }
+    }
+    return {
+        ...actualMapLibreGl,
+        Map: MockMap,
+    }
+})
 
 jest.mock('../earthengine/ee_worker_loader', () => ({
     __esModule: true,
@@ -22,7 +25,7 @@ describe('DHIS2 Maps-gl Map', () => {
 
         expect(mapgl).not.toBe(undefined)
         expect(mapgl).toEqual(mockMapGL)
-        expect(mapgl.on).toHaveBeenCalledTimes(6)
+        expect(mapgl.on).toHaveBeenCalledTimes(10)
     })
 
     it('should set layer feature hover state', () => {

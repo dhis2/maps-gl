@@ -51,6 +51,10 @@ export const lineLayer = ({ id, color, width, opacity, source, filter }) => ({
         'line-width': widthExpr(width),
         'line-opacity': opacity ?? defaults.opacity,
     },
+    layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
+    },
     filter: filter || isLine,
 })
 
@@ -83,6 +87,10 @@ export const outlineLayer = ({
         'line-color': color || defaults.strokeColor,
         'line-width': widthExpr(width),
         'line-opacity': opacity ?? defaults.opacity,
+    },
+    layout: {
+        'line-join': 'round',
+        'line-cap': 'round',
     },
     filter: filter || isPolygon,
 })

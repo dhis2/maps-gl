@@ -24,7 +24,10 @@ module.exports = function (api) {
         ],
         env: {
             test: {
-                plugins: ['@babel/plugin-transform-runtime'],
+                plugins: [
+                    '@babel/plugin-transform-runtime',
+                    'babel-plugin-transform-import-meta',
+                ],
             },
         },
     }
