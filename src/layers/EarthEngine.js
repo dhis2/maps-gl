@@ -150,18 +150,18 @@ class EarthEngine extends Layer {
 
     // Returns value at at position
     getValue = async lnglat => {
-        const { band, legend } = this.options
+        const { band, style } = this.options
         const data = await this.worker.getValue(lnglat)
         const value = data[band] || Object.values(data)[0]
 
         // Used for landcover
-        const item = Array.isArray(legend) && legend.find(i => i.id === value)
+        const item = Array.isArray(style) && style.find(i => i.value === value)
 
         return item ? item.name : value
     }
 
     // TODO: Move popup handling to the maps app
-    showValue = latlng =>
+    showValue = (latlng, precision) =>
         this.getValue(latlng).then(value => {
             const { lng, lat } = latlng
             const options = this.options
@@ -173,7 +173,9 @@ class EarthEngine extends Layer {
                 content = setTemplate(options.popup, {
                     ...options,
                     value:
-                        typeof value === 'number' ? setPrecision(value) : value,
+                        typeof value === 'number'
+                            ? setPrecision(value, precision)
+                            : value,
                 })
             }
 

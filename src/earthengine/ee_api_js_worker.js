@@ -1,10 +1,4 @@
-/*
-
- Copyright The Closure Library Authors.
- SPDX-License-Identifier: Apache-2.0
-*/
-var isChrome87,
-    $jscomp = $jscomp || {}
+var $jscomp = $jscomp || {}
 $jscomp.scope = {}
 $jscomp.arrayIteratorImpl = function (array) {
     var index = 0
@@ -64,13 +58,19 @@ $jscomp.TRUST_ES6_POLYFILLS =
 $jscomp.polyfills = {}
 $jscomp.propertyToPolyfillSymbol = {}
 $jscomp.POLYFILL_PREFIX = '$jscp$'
-var $jscomp$lookupPolyfilledValue = function (target, property) {
-    var obfuscatedName = $jscomp.propertyToPolyfillSymbol[property]
-    if (null == obfuscatedName) {
-        return target[property]
+var $jscomp$lookupPolyfilledValue = function (
+    target,
+    property,
+    isOptionalAccess
+) {
+    if (!isOptionalAccess || null != target) {
+        var obfuscatedName = $jscomp.propertyToPolyfillSymbol[property]
+        if (null == obfuscatedName) {
+            return target[property]
+        }
+        var polyfill = target[obfuscatedName]
+        return void 0 !== polyfill ? polyfill : target[property]
     }
-    var polyfill = target[obfuscatedName]
-    return void 0 !== polyfill ? polyfill : target[property]
 }
 $jscomp.polyfill = function (target, polyfill, fromLang, toLang) {
     polyfill &&
@@ -240,9 +240,13 @@ $jscomp.makeIterator = function (iterable) {
         'undefined' != typeof Symbol &&
         Symbol.iterator &&
         iterable[Symbol.iterator]
-    return iteratorFunction
-        ? iteratorFunction.call(iterable)
-        : $jscomp.arrayIterator(iterable)
+    if (iteratorFunction) {
+        return iteratorFunction.call(iterable)
+    }
+    if ('number' == typeof iterable.length) {
+        return $jscomp.arrayIterator(iterable)
+    }
+    throw Error(String(iterable) + ' is not an iterable or ArrayLike')
 }
 $jscomp.arrayFromIterator = function (iterator) {
     for (var i, arr = []; !(i = iterator.next()).done; ) {
@@ -293,7 +297,7 @@ $jscomp.getConstructImplementation = function () {
     function reflectConstructWorks() {
         function Base() {}
         new Base()
-        Reflect.construct(Base, [], function Derived() {})
+        Reflect.construct(Base, [], function () {})
         return new Base() instanceof Base
     }
     if (
@@ -312,7 +316,7 @@ $jscomp.getConstructImplementation = function () {
             return out
         }
     }
-    return function construct(target, argList, opt_newTarget) {
+    return function (target, argList, opt_newTarget) {
         void 0 === opt_newTarget && (opt_newTarget = target)
         var obj = $jscomp.objectCreate(
             opt_newTarget.prototype || Object.prototype
@@ -1208,8 +1212,8 @@ $jscomp.polyfill(
         }
         var idMap = new WeakMap(),
             PolyfillMap = function (opt_iterable) {
-                this.data_ = {}
-                this.head_ = createHead()
+                this[0] = {}
+                this[1] = createHead()
                 this.size = 0
                 if (opt_iterable) {
                     for (
@@ -1225,19 +1229,19 @@ $jscomp.polyfill(
         PolyfillMap.prototype.set = function (key, value) {
             key = 0 === key ? 0 : key
             var r = maybeGetEntry(this, key)
-            r.list || (r.list = this.data_[r.id] = [])
+            r.list || (r.list = this[0][r.id] = [])
             r.entry
                 ? (r.entry.value = value)
                 : ((r.entry = {
-                      next: this.head_,
-                      previous: this.head_.previous,
-                      head: this.head_,
+                      next: this[1],
+                      previous: this[1].previous,
+                      head: this[1],
                       key: key,
                       value: value,
                   }),
                   r.list.push(r.entry),
-                  (this.head_.previous.next = r.entry),
-                  (this.head_.previous = r.entry),
+                  (this[1].previous.next = r.entry),
+                  (this[1].previous = r.entry),
                   this.size++)
             return this
         }
@@ -1245,7 +1249,7 @@ $jscomp.polyfill(
             var r = maybeGetEntry(this, key)
             return r.entry && r.list
                 ? (r.list.splice(r.index, 1),
-                  r.list.length || delete this.data_[r.id],
+                  r.list.length || delete this[0][r.id],
                   (r.entry.previous.next = r.entry.next),
                   (r.entry.next.previous = r.entry.previous),
                   (r.entry.head = null),
@@ -1254,8 +1258,8 @@ $jscomp.polyfill(
                 : !1
         }
         PolyfillMap.prototype.clear = function () {
-            this.data_ = {}
-            this.head_ = this.head_.previous = createHead()
+            this[0] = {}
+            this[1] = this[1].previous = createHead()
             this.size = 0
         }
         PolyfillMap.prototype.has = function (key) {
@@ -1293,8 +1297,8 @@ $jscomp.polyfill(
         PolyfillMap.prototype[Symbol.iterator] = PolyfillMap.prototype.entries
         var maybeGetEntry = function (map, key) {
                 var id = getId(key),
-                    list = map.data_[id]
-                if (list && $jscomp.owns(map.data_, id)) {
+                    list = map[0][id]
+                if (list && $jscomp.owns(map[0], id)) {
                     for (var index = 0; index < list.length; index++) {
                         var entry = list[index]
                         if (
@@ -1313,10 +1317,10 @@ $jscomp.polyfill(
                 return { id: id, list: list, index: -1, entry: void 0 }
             },
             makeIterator = function (map, func) {
-                var entry = map.head_
+                var entry = map[1]
                 return $jscomp.iteratorPrototype(function () {
                     if (entry) {
-                        for (; entry.head != map.head_; ) {
+                        for (; entry.head != map[1]; ) {
                             entry = entry.previous
                         }
                         for (; entry.next != entry.head; ) {
@@ -1351,6 +1355,14 @@ $jscomp.polyfill(
     },
     'es6',
     'es3'
+)
+$jscomp.polyfill(
+    'Object.setPrototypeOf',
+    function (orig) {
+        return orig || $jscomp.setPrototypeOf
+    },
+    'es6',
+    'es5'
 )
 $jscomp.findInternal = function (array, callback, thisArg) {
     array instanceof String && (array = String(array))
@@ -1496,14 +1508,6 @@ $jscomp.polyfill(
     },
     'es8',
     'es3'
-)
-$jscomp.polyfill(
-    'Object.setPrototypeOf',
-    function (orig) {
-        return orig || $jscomp.setPrototypeOf
-    },
-    'es6',
-    'es5'
 )
 $jscomp.polyfill(
     'String.prototype.endsWith',
@@ -1830,7 +1834,27 @@ $jscomp.polyfill(
     'es8',
     'es3'
 )
-var goog = goog || {}
+var CLOSURE_TOGGLE_ORDINALS = {
+    GoogFlags__async_throw_on_unicode_to_byte__enable: !1,
+    GoogFlags__client_only_wiz_attribute_sanitization__disable: !1,
+    GoogFlags__client_only_wiz_hook_context_fix__enable: !1,
+    GoogFlags__jspb_disable_serializing_empty_repeated_and_map_fields__disable:
+        !1,
+    GoogFlags__override_disable_toggles: !1,
+    GoogFlags__testonly_debug_flag__enable: !1,
+    GoogFlags__testonly_disabled_flag__enable: !1,
+    GoogFlags__testonly_stable_flag__disable: !1,
+    GoogFlags__testonly_staging_flag__disable: !1,
+    GoogFlags__use_toggles: !1,
+    GoogFlags__use_user_agent_client_hints__enable: !1,
+}
+/*
+
+ Copyright The Closure Library Authors.
+ SPDX-License-Identifier: Apache-2.0
+*/
+var isChrome87,
+    goog = goog || {}
 goog.global = this || self
 goog.exportPath_ = function (
     name,
@@ -1882,6 +1906,18 @@ goog.readFlagInternalDoNotUseOrElse = function (googFlagId, defaultValue) {
 }
 goog.FLAGS_OBJECT_ = 'CLOSURE_FLAGS'
 goog.FLAGS_STAGING_DEFAULT = !0
+goog.readToggleInternalDoNotCallDirectly = function (name) {
+    var ordinals =
+            'object' === typeof CLOSURE_TOGGLE_ORDINALS
+                ? CLOSURE_TOGGLE_ORDINALS
+                : void 0,
+        ordinal = ordinals && ordinals[name]
+    return 'number' !== typeof ordinal
+        ? !!ordinal
+        : !!(goog.TOGGLES_[Math.floor(ordinal / 30)] & (1 << ordinal % 30))
+}
+goog.TOGGLE_VAR_ = '_F_toggles'
+goog.TOGGLES_ = goog.global[goog.TOGGLE_VAR_] || []
 goog.provide = function (name) {
     if (goog.isInModuleLoader_()) {
         throw Error('goog.provide cannot be used within a module.')
@@ -1943,6 +1979,7 @@ goog.setImportHandlerInternalDoNotCallOrElse = function (fn) {
 goog.setUncompiledChunkIdHandlerInternalDoNotCallOrElse = function (fn) {
     goog.uncompiledChunkIdHandler_ = fn
 }
+goog.maybeRequireFrameworkInternalOnlyDoNotCallOrElse = function (namespace) {}
 goog.ModuleType = { ES6: 'es6', GOOG: 'goog' }
 goog.moduleLoaderState_ = null
 goog.isInModuleLoader_ = function () {
@@ -2016,7 +2053,7 @@ goog.getObjectByName = function (name, opt_obj) {
     return cur
 }
 goog.addDependency = function (relPath, provides, requires, opt_loadFlags) {}
-goog.ENABLE_DEBUG_LOADER = !0
+goog.ENABLE_DEBUG_LOADER = !1
 goog.logToConsole_ = function (msg) {
     goog.global.console && goog.global.console.error(msg)
 }
@@ -2965,8 +3002,8 @@ goog.array.reduce =
               opt_obj && (f = goog.bind(f, opt_obj))
               return Array.prototype.reduce.call(arr, f, val)
           }
-        : function (arr, f, val$jscomp$0, opt_obj) {
-              var rval = val$jscomp$0
+        : function (arr, f, val, opt_obj) {
+              var rval = val
               module$contents$goog$array_forEach(arr, function (val, index) {
                   rval = f.call(opt_obj, rval, val, index, arr)
               })
@@ -2982,8 +3019,8 @@ goog.array.reduceRight =
               opt_obj && (f = goog.bind(f, opt_obj))
               return Array.prototype.reduceRight.call(arr, f, val)
           }
-        : function (arr, f, val$jscomp$0, opt_obj) {
-              var rval = val$jscomp$0
+        : function (arr, f, val, opt_obj) {
+              var rval = val
               module$contents$goog$array_forEachRight(
                   arr,
                   function (val, index) {
@@ -3037,10 +3074,10 @@ var module$contents$goog$array_every =
               return !0
           }
 goog.array.every = module$contents$goog$array_every
-function module$contents$goog$array_count(arr$jscomp$0, f, opt_obj) {
+function module$contents$goog$array_count(arr, f, opt_obj) {
     var count = 0
     module$contents$goog$array_forEach(
-        arr$jscomp$0,
+        arr,
         function (element, index, arr) {
             f.call(opt_obj, element, index, arr) && ++count
         },
@@ -3069,11 +3106,7 @@ function module$contents$goog$array_findIndex(arr, f, opt_obj) {
     return -1
 }
 goog.array.findIndex = module$contents$goog$array_findIndex
-goog.array.findRight = function module$contents$goog$array_findRight(
-    arr,
-    f,
-    opt_obj
-) {
+goog.array.findRight = function (arr, f, opt_obj) {
     var i = module$contents$goog$array_findIndexRight(arr, f, opt_obj)
     return 0 > i ? null : 'string' === typeof arr ? arr.charAt(i) : arr[i]
 }
@@ -3109,28 +3142,20 @@ function module$contents$goog$array_clear(arr) {
     arr.length = 0
 }
 goog.array.clear = module$contents$goog$array_clear
-goog.array.insert = function module$contents$goog$array_insert(arr, obj) {
+goog.array.insert = function (arr, obj) {
     module$contents$goog$array_contains(arr, obj) || arr.push(obj)
 }
 function module$contents$goog$array_insertAt(arr, obj, opt_i) {
     module$contents$goog$array_splice(arr, opt_i, 0, obj)
 }
 goog.array.insertAt = module$contents$goog$array_insertAt
-goog.array.insertArrayAt = function module$contents$goog$array_insertArrayAt(
-    arr,
-    elementsToAdd,
-    opt_i
-) {
+goog.array.insertArrayAt = function (arr, elementsToAdd, opt_i) {
     goog.partial(module$contents$goog$array_splice, arr, opt_i, 0).apply(
         null,
         elementsToAdd
     )
 }
-goog.array.insertBefore = function module$contents$goog$array_insertBefore(
-    arr,
-    obj,
-    opt_obj2
-) {
+goog.array.insertBefore = function (arr, obj, opt_obj2) {
     var i
     2 == arguments.length ||
     0 > (i = module$contents$goog$array_indexOf(arr, opt_obj2))
@@ -3154,19 +3179,11 @@ function module$contents$goog$array_removeAt(arr, i) {
     return 1 == Array.prototype.splice.call(arr, i, 1).length
 }
 goog.array.removeAt = module$contents$goog$array_removeAt
-goog.array.removeIf = function module$contents$goog$array_removeIf(
-    arr,
-    f,
-    opt_obj
-) {
+goog.array.removeIf = function (arr, f, opt_obj) {
     var i = module$contents$goog$array_findIndex(arr, f, opt_obj)
     return 0 <= i ? (module$contents$goog$array_removeAt(arr, i), !0) : !1
 }
-goog.array.removeAllIf = function module$contents$goog$array_removeAllIf(
-    arr,
-    f,
-    opt_obj
-) {
+goog.array.removeAllIf = function (arr, f, opt_obj) {
     var removedCount = 0
     module$contents$goog$array_forEachRight(arr, function (val, index) {
         f.call(opt_obj, val, index, arr) &&
@@ -3179,7 +3196,7 @@ function module$contents$goog$array_concat(var_args) {
     return Array.prototype.concat.apply([], arguments)
 }
 goog.array.concat = module$contents$goog$array_concat
-goog.array.join = function module$contents$goog$array_join(var_args) {
+goog.array.join = function (var_args) {
     return Array.prototype.concat.apply([], arguments)
 }
 function module$contents$goog$array_toArray(object) {
@@ -3257,11 +3274,7 @@ function module$contents$goog$array_binarySearch(arr, target, opt_compareFn) {
     )
 }
 goog.array.binarySearch = module$contents$goog$array_binarySearch
-goog.array.binarySelect = function module$contents$goog$array_binarySelect(
-    arr,
-    evaluator,
-    opt_obj
-) {
+goog.array.binarySelect = function (arr, evaluator, opt_obj) {
     return module$contents$goog$array_binarySearch_(
         arr,
         evaluator,
@@ -3293,26 +3306,17 @@ function module$contents$goog$array_sort(arr, opt_compareFn) {
     arr.sort(opt_compareFn || module$contents$goog$array_defaultCompare)
 }
 goog.array.sort = module$contents$goog$array_sort
-goog.array.stableSort = function module$contents$goog$array_stableSort(
-    arr,
-    opt_compareFn
-) {
+goog.array.stableSort = function (arr, opt_compareFn) {
     for (var compArr = Array(arr.length), i = 0; i < arr.length; i++) {
         compArr[i] = { index: i, value: arr[i] }
     }
     var valueCompareFn =
         opt_compareFn || module$contents$goog$array_defaultCompare
-    module$contents$goog$array_sort(
-        compArr,
-        function stableCompareFn(obj1, obj2) {
-            return (
-                valueCompareFn(obj1.value, obj2.value) ||
-                obj1.index - obj2.index
-            )
-        }
-    )
-    for (var i$35 = 0; i$35 < arr.length; i$35++) {
-        arr[i$35] = compArr[i$35].value
+    module$contents$goog$array_sort(compArr, function (obj1, obj2) {
+        return valueCompareFn(obj1.value, obj2.value) || obj1.index - obj2.index
+    })
+    for (var i$jscomp$0 = 0; i$jscomp$0 < arr.length; i$jscomp$0++) {
+        arr[i$jscomp$0] = compArr[i$jscomp$0].value
     }
 }
 function module$contents$goog$array_sortByKey(arr, keyFn, opt_compareFn) {
@@ -3323,20 +3327,15 @@ function module$contents$goog$array_sortByKey(arr, keyFn, opt_compareFn) {
     })
 }
 goog.array.sortByKey = module$contents$goog$array_sortByKey
-goog.array.sortObjectsByKey =
-    function module$contents$goog$array_sortObjectsByKey(
+goog.array.sortObjectsByKey = function (arr, key, opt_compareFn) {
+    module$contents$goog$array_sortByKey(
         arr,
-        key,
+        function (obj) {
+            return obj[key]
+        },
         opt_compareFn
-    ) {
-        module$contents$goog$array_sortByKey(
-            arr,
-            function (obj) {
-                return obj[key]
-            },
-            opt_compareFn
-        )
-    }
+    )
+}
 function module$contents$goog$array_isSorted(arr, opt_compareFn, opt_strict) {
     for (
         var compare =
@@ -3377,11 +3376,7 @@ function module$contents$goog$array_equals(arr1, arr2, opt_equalsFn) {
     return !0
 }
 goog.array.equals = module$contents$goog$array_equals
-goog.array.compare3 = function module$contents$goog$array_compare3(
-    arr1,
-    arr2,
-    opt_compareFn
-) {
+goog.array.compare3 = function (arr1, arr2, opt_compareFn) {
     for (
         var compare =
                 opt_compareFn || module$contents$goog$array_defaultCompare,
@@ -3401,20 +3396,15 @@ function module$contents$goog$array_defaultCompare(a, b) {
     return a > b ? 1 : a < b ? -1 : 0
 }
 goog.array.defaultCompare = module$contents$goog$array_defaultCompare
-goog.array.inverseDefaultCompare =
-    function module$contents$goog$array_inverseDefaultCompare(a, b) {
-        return -module$contents$goog$array_defaultCompare(a, b)
-    }
+goog.array.inverseDefaultCompare = function (a, b) {
+    return -module$contents$goog$array_defaultCompare(a, b)
+}
 function module$contents$goog$array_defaultCompareEquality(a, b) {
     return a === b
 }
 goog.array.defaultCompareEquality =
     module$contents$goog$array_defaultCompareEquality
-goog.array.binaryInsert = function module$contents$goog$array_binaryInsert(
-    array,
-    value,
-    opt_compareFn
-) {
+goog.array.binaryInsert = function (array, value, opt_compareFn) {
     var index = module$contents$goog$array_binarySearch(
         array,
         value,
@@ -3424,11 +3414,7 @@ goog.array.binaryInsert = function module$contents$goog$array_binaryInsert(
         ? (module$contents$goog$array_insertAt(array, value, -(index + 1)), !0)
         : !1
 }
-goog.array.binaryRemove = function module$contents$goog$array_binaryRemove(
-    array,
-    value,
-    opt_compareFn
-) {
+goog.array.binaryRemove = function (array, value, opt_compareFn) {
     var index = module$contents$goog$array_binarySearch(
         array,
         value,
@@ -3436,11 +3422,7 @@ goog.array.binaryRemove = function module$contents$goog$array_binaryRemove(
     )
     return 0 <= index ? module$contents$goog$array_removeAt(array, index) : !1
 }
-goog.array.bucket = function module$contents$goog$array_bucket(
-    array,
-    sorter,
-    opt_obj
-) {
+goog.array.bucket = function (array, sorter, opt_obj) {
     for (var buckets = {}, i = 0; i < array.length; i++) {
         var value = array[i],
             key = sorter.call(opt_obj, value, i, array)
@@ -3448,10 +3430,7 @@ goog.array.bucket = function module$contents$goog$array_bucket(
     }
     return buckets
 }
-goog.array.bucketToMap = function module$contents$goog$array_bucketToMap(
-    array,
-    sorter
-) {
+goog.array.bucketToMap = function (array, sorter) {
     for (var buckets = new Map(), i = 0; i < array.length; i++) {
         var value = array[i],
             key = sorter(value, i, array)
@@ -3463,18 +3442,14 @@ goog.array.bucketToMap = function module$contents$goog$array_bucketToMap(
     }
     return buckets
 }
-goog.array.toObject = function module$contents$goog$array_toObject(
-    arr,
-    keyFunc,
-    opt_obj
-) {
+goog.array.toObject = function (arr, keyFunc, opt_obj) {
     var ret = {}
     module$contents$goog$array_forEach(arr, function (element, index) {
         ret[keyFunc.call(opt_obj, element, index, arr)] = element
     })
     return ret
 }
-goog.array.toMap = function module$contents$goog$array_toMap(arr, keyFunc) {
+goog.array.toMap = function (arr, keyFunc) {
     for (var map = new Map(), i = 0; i < arr.length; i++) {
         var element = arr[i]
         map.set(keyFunc(element, i, arr), element)
@@ -3495,8 +3470,8 @@ function module$contents$goog$array_range(startOrEnd, opt_end, opt_step) {
             array.push(i)
         }
     } else {
-        for (var i$36 = start; i$36 > end; i$36 += step) {
-            array.push(i$36)
+        for (var i$jscomp$0 = start; i$jscomp$0 > end; i$jscomp$0 += step) {
+            array.push(i$jscomp$0)
         }
     }
     return array
@@ -3539,7 +3514,7 @@ function module$contents$goog$array_flatten(var_args) {
     return result
 }
 goog.array.flatten = module$contents$goog$array_flatten
-goog.array.rotate = function module$contents$goog$array_rotate(array, n) {
+goog.array.rotate = function (array, n) {
     goog.asserts.assert(null != array.length)
     array.length &&
         ((n %= array.length),
@@ -3548,17 +3523,13 @@ goog.array.rotate = function module$contents$goog$array_rotate(array, n) {
             : 0 > n && Array.prototype.push.apply(array, array.splice(0, -n)))
     return array
 }
-goog.array.moveItem = function module$contents$goog$array_moveItem(
-    arr,
-    fromIndex,
-    toIndex
-) {
+goog.array.moveItem = function (arr, fromIndex, toIndex) {
     goog.asserts.assert(0 <= fromIndex && fromIndex < arr.length)
     goog.asserts.assert(0 <= toIndex && toIndex < arr.length)
     var removedItems = Array.prototype.splice.call(arr, fromIndex, 1)
     Array.prototype.splice.call(arr, toIndex, 0, removedItems[0])
 }
-goog.array.zip = function module$contents$goog$array_zip(var_args) {
+goog.array.zip = function (var_args) {
     if (!arguments.length) {
         return []
     }
@@ -3569,18 +3540,15 @@ goog.array.zip = function module$contents$goog$array_zip(var_args) {
     ) {
         arguments[i].length < minLen && (minLen = arguments[i].length)
     }
-    for (var i$37 = 0; i$37 < minLen; i$37++) {
+    for (var i$jscomp$0 = 0; i$jscomp$0 < minLen; i$jscomp$0++) {
         for (var value = [], j = 0; j < arguments.length; j++) {
-            value.push(arguments[j][i$37])
+            value.push(arguments[j][i$jscomp$0])
         }
         result.push(value)
     }
     return result
 }
-goog.array.shuffle = function module$contents$goog$array_shuffle(
-    arr,
-    opt_randFn
-) {
+goog.array.shuffle = function (arr, opt_randFn) {
     for (
         var randFn = opt_randFn || Math.random, i = arr.length - 1;
         0 < i;
@@ -3592,21 +3560,14 @@ goog.array.shuffle = function module$contents$goog$array_shuffle(
         arr[j] = tmp
     }
 }
-goog.array.copyByIndex = function module$contents$goog$array_copyByIndex(
-    arr,
-    index_arr
-) {
+goog.array.copyByIndex = function (arr, index_arr) {
     var result = []
     module$contents$goog$array_forEach(index_arr, function (index) {
         result.push(arr[index])
     })
     return result
 }
-goog.array.concatMap = function module$contents$goog$array_concatMap(
-    arr,
-    f,
-    opt_obj
-) {
+goog.array.concatMap = function (arr, f, opt_obj) {
     return module$contents$goog$array_concat.apply(
         [],
         module$contents$goog$array_map(arr, f, opt_obj)
@@ -3669,8 +3630,8 @@ goog.debug.expose = function (obj, opt_showFn) {
     }
     return str.join('\n')
 }
-goog.debug.deepExpose = function (obj$jscomp$0, opt_showFn) {
-    var str$jscomp$0 = [],
+goog.debug.deepExpose = function (obj, opt_showFn) {
+    var str = [],
         uidsToCleanup = [],
         ancestorUids = {},
         helper = function (obj, space) {
@@ -3680,46 +3641,46 @@ goog.debug.deepExpose = function (obj$jscomp$0, opt_showFn) {
                 }
             try {
                 if (void 0 === obj) {
-                    str$jscomp$0.push('undefined')
+                    str.push('undefined')
                 } else if (null === obj) {
-                    str$jscomp$0.push('NULL')
+                    str.push('NULL')
                 } else if ('string' === typeof obj) {
-                    str$jscomp$0.push('"' + indentMultiline(obj) + '"')
+                    str.push('"' + indentMultiline(obj) + '"')
                 } else if ('function' === typeof obj) {
-                    str$jscomp$0.push(indentMultiline(String(obj)))
+                    str.push(indentMultiline(String(obj)))
                 } else if (goog.isObject(obj)) {
                     goog.hasUid(obj) || uidsToCleanup.push(obj)
                     var uid = goog.getUid(obj)
                     if (ancestorUids[uid]) {
-                        str$jscomp$0.push(
+                        str.push(
                             '*** reference loop detected (id=' + uid + ') ***'
                         )
                     } else {
                         ancestorUids[uid] = !0
-                        str$jscomp$0.push('{')
+                        str.push('{')
                         for (var x in obj) {
                             if (opt_showFn || 'function' !== typeof obj[x]) {
-                                str$jscomp$0.push('\n'),
-                                    str$jscomp$0.push(nestspace),
-                                    str$jscomp$0.push(x + ' = '),
+                                str.push('\n'),
+                                    str.push(nestspace),
+                                    str.push(x + ' = '),
                                     helper(obj[x], nestspace)
                             }
                         }
-                        str$jscomp$0.push('\n' + space + '}')
+                        str.push('\n' + space + '}')
                         delete ancestorUids[uid]
                     }
                 } else {
-                    str$jscomp$0.push(obj)
+                    str.push(obj)
                 }
             } catch (e) {
-                str$jscomp$0.push('*** ' + e + ' ***')
+                str.push('*** ' + e + ' ***')
             }
         }
-    helper(obj$jscomp$0, '')
+    helper(obj, '')
     for (var i = 0; i < uidsToCleanup.length; i++) {
         goog.removeUid(uidsToCleanup[i])
     }
-    return str$jscomp$0.join('')
+    return str.join('')
 }
 goog.debug.exposeArray = function (arr) {
     for (var str = [], i = 0; i < arr.length; i++) {
@@ -3754,7 +3715,7 @@ goog.debug.normalizeErrorObject = function (err) {
             err.sourceURL ||
             goog.global.$googDebugFname ||
             href
-    } catch (e$38) {
+    } catch (e) {
         ;(fileName = 'Not available'), (threwError = !0)
     }
     var stack = goog.debug.serializeErrorStack_(err)
@@ -3782,7 +3743,7 @@ goog.debug.normalizeErrorObject = function (err) {
                             ' with Event.type "' +
                             (err.type || '') +
                             '"'
-                    } catch (e$39) {}
+                    } catch (e) {}
                 }
             } else {
                 message = 'Unknown Error of unknown type'
@@ -4033,20 +3994,616 @@ goog.events.BrowserFeature = {
                 },
             })
         try {
-            goog.global.addEventListener('test', function () {}, options),
-                goog.global.removeEventListener('test', function () {}, options)
+            var nullFunction = function () {}
+            goog.global.addEventListener('test', nullFunction, options)
+            goog.global.removeEventListener('test', nullFunction, options)
         } catch (e) {}
         return passive
     }),
 }
 goog.labs = {}
 goog.labs.userAgent = {}
+goog.labs.userAgent.chromiumRebrands = {}
+goog.labs.userAgent.chromiumRebrands.ChromiumRebrand = {
+    GOOGLE_CHROME: 'Google Chrome',
+    BRAVE: 'Brave',
+    OPERA: 'Opera',
+    EDGE: 'Microsoft Edge',
+}
+var module$exports$tslib = {},
+    module$contents$tslib_extendStatics =
+        Object.setPrototypeOf ||
+        function (d, b) {
+            for (var p in b) {
+                Object.prototype.hasOwnProperty.call(b, p) && (d[p] = b[p])
+            }
+        }
+module$exports$tslib.__extends = function (d, b) {
+    function __() {
+        this.constructor = d
+    }
+    module$contents$tslib_extendStatics(d, b)
+    d.prototype =
+        null === b ? Object.create(b) : ((__.prototype = b.prototype), new __())
+}
+module$exports$tslib.__assign =
+    Object.assign ||
+    function (t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i]
+            for (var p in s) {
+                Object.prototype.hasOwnProperty.call(s, p) && (t[p] = s[p])
+            }
+        }
+        return t
+    }
+module$exports$tslib.__rest = function (s, e) {
+    var t = {},
+        p
+    for (p in s) {
+        Object.prototype.hasOwnProperty.call(s, p) &&
+            0 > e.indexOf(p) &&
+            (t[p] = s[p])
+    }
+    if (null != s && 'function' === typeof Object.getOwnPropertySymbols) {
+        var i = 0
+        for (p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            0 > e.indexOf(p[i]) &&
+                Object.prototype.propertyIsEnumerable.call(s, p[i]) &&
+                (t[p[i]] = s[p[i]])
+        }
+    }
+    return t
+}
+module$exports$tslib.__decorate = function (decorators, target, key, desc) {
+    var c = arguments.length,
+        r =
+            3 > c
+                ? target
+                : null === desc
+                ? (desc = Object.getOwnPropertyDescriptor(target, key))
+                : desc,
+        d
+    if (
+        'object' === typeof Reflect &&
+        Reflect &&
+        'function' === typeof Reflect.decorate
+    ) {
+        r = Reflect.decorate(decorators, target, key, desc)
+    } else {
+        for (var i = decorators.length - 1; 0 <= i; i--) {
+            if ((d = decorators[i])) {
+                r =
+                    (3 > c
+                        ? d(r)
+                        : 3 < c
+                        ? d(target, key, r)
+                        : d(target, key)) || r
+            }
+        }
+    }
+    return 3 < c && r && Object.defineProperty(target, key, r), r
+}
+module$exports$tslib.__param = function (paramIndex, decorator) {
+    return function (target, key) {
+        decorator(target, key, paramIndex)
+    }
+}
+module$exports$tslib.__setFunctionName = function (f, name, prefix) {
+    'symbol' === typeof name &&
+        (name = name.description ? '['.concat(name.description, ']') : '')
+    return Object.defineProperty(f, 'name', {
+        configurable: !0,
+        value: prefix ? ''.concat(prefix, ' ', name) : name,
+    })
+}
+module$exports$tslib.__metadata = function (metadataKey, metadataValue) {
+    if (
+        'object' === typeof Reflect &&
+        Reflect &&
+        'function' === typeof Reflect.metadata
+    ) {
+        return Reflect.metadata(metadataKey, metadataValue)
+    }
+}
+module$exports$tslib.__awaiter = function (thisArg, _arguments, P, generator) {
+    function adopt(value) {
+        return value instanceof P
+            ? value
+            : new P(function (resolve) {
+                  resolve(value)
+              })
+    }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) {
+            try {
+                step(generator.next(value))
+            } catch (e) {
+                reject(e)
+            }
+        }
+        function rejected(value) {
+            try {
+                step(generator['throw'](value))
+            } catch (e) {
+                reject(e)
+            }
+        }
+        function step(result) {
+            result.done
+                ? resolve(result.value)
+                : adopt(result.value).then(fulfilled, rejected)
+        }
+        step((generator = generator.apply(thisArg, _arguments || [])).next())
+    })
+}
+module$exports$tslib.__generator = function (thisArg, body) {
+    function verb(n) {
+        return function (v) {
+            return step([n, v])
+        }
+    }
+    function step(op) {
+        if (f) {
+            throw new TypeError('Generator is already executing.')
+        }
+        for (; _; ) {
+            try {
+                if (
+                    ((f = 1),
+                    y &&
+                        (t =
+                            op[0] & 2
+                                ? y['return']
+                                : op[0]
+                                ? y['throw'] ||
+                                  ((t = y['return']) && t.call(y), 0)
+                                : y.next) &&
+                        !(t = t.call(y, op[1])).done)
+                ) {
+                    return t
+                }
+                if (((y = 0), t)) {
+                    op = [op[0] & 2, t.value]
+                }
+                switch (op[0]) {
+                    case 0:
+                    case 1:
+                        t = op
+                        break
+                    case 4:
+                        return _.label++, { value: op[1], done: !1 }
+                    case 5:
+                        _.label++
+                        y = op[1]
+                        op = [0]
+                        continue
+                    case 7:
+                        op = _.ops.pop()
+                        _.trys.pop()
+                        continue
+                    default:
+                        if (
+                            !((t = _.trys),
+                            (t = 0 < t.length && t[t.length - 1])) &&
+                            (6 === op[0] || 2 === op[0])
+                        ) {
+                            _ = 0
+                            continue
+                        }
+                        if (
+                            3 === op[0] &&
+                            (!t || (op[1] > t[0] && op[1] < t[3]))
+                        ) {
+                            _.label = op[1]
+                        } else {
+                            if (6 === op[0] && _.label < t[1]) {
+                                ;(_.label = t[1]), (t = op)
+                            } else {
+                                if (t && _.label < t[2]) {
+                                    ;(_.label = t[2]), _.ops.push(op)
+                                } else {
+                                    t[2] && _.ops.pop()
+                                    _.trys.pop()
+                                    continue
+                                }
+                            }
+                        }
+                }
+                op = body.call(thisArg, _)
+            } catch (e) {
+                ;(op = [6, e]), (y = 0)
+            } finally {
+                f = t = 0
+            }
+        }
+        if (op[0] & 5) {
+            throw op[1]
+        }
+        return { value: op[0] ? op[1] : void 0, done: !0 }
+    }
+    var _ = {
+            label: 0,
+            sent: function () {
+                if (t[0] & 1) {
+                    throw t[1]
+                }
+                return t[1]
+            },
+            trys: [],
+            ops: [],
+        },
+        f,
+        y,
+        t,
+        g
+    return (
+        (g = { next: verb(0), throw: verb(1), return: verb(2) }),
+        'function' === typeof Symbol &&
+            (g[Symbol.iterator] = function () {
+                return g
+            }),
+        g
+    )
+}
+module$exports$tslib.__exportStar = function (m, o) {
+    for (var p in m) {
+        o.hasOwnProperty(p) || (o[p] = m[p])
+    }
+}
+module$exports$tslib.__values = function (o) {
+    var m = 'function' === typeof Symbol && o[Symbol.iterator],
+        i = 0
+    return m
+        ? m.call(o)
+        : {
+              next: function () {
+                  o && i >= o.length && (o = void 0)
+                  return { value: o && o[i++], done: !o }
+              },
+          }
+}
+module$exports$tslib.__read = function (o, n) {
+    var m = 'function' === typeof Symbol && o[Symbol.iterator]
+    if (!m) {
+        return o
+    }
+    var i = m.call(o),
+        r,
+        ar = []
+    try {
+        for (; (void 0 === n || 0 < n--) && !(r = i.next()).done; ) {
+            ar.push(r.value)
+        }
+    } catch (error) {
+        var e = { error: error }
+    } finally {
+        try {
+            r && !r.done && (m = i['return']) && m.call(i)
+        } finally {
+            if (e) {
+                throw e.error
+            }
+        }
+    }
+    return ar
+}
+module$exports$tslib.__spread = function () {
+    for (var ar = [], i = 0; i < arguments.length; i++) {
+        ar = ar.concat(module$exports$tslib.__read(arguments[i]))
+    }
+    return ar
+}
+module$exports$tslib.__spreadArrays = function () {
+    for (var s = 0, i = 0, il = arguments.length; i < il; i++) {
+        s += arguments[i].length
+    }
+    var r = Array(s),
+        k = 0
+    for (i = 0; i < il; i++) {
+        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++) {
+            r[k] = a[j]
+        }
+    }
+    return r
+}
+module$exports$tslib.__spreadArray = function (to, from, pack) {
+    if (!(Array.isArray(from) || from instanceof NodeList)) {
+        throw new TypeError('Expected an Array or NodeList: ' + String(from))
+    }
+    if (pack || 2 === arguments.length) {
+        for (var i = 0, l = from.length, ar; i < l; i++) {
+            ;(!ar && i in from) ||
+                (ar || (ar = Array.prototype.slice.call(from, 0, i)),
+                (ar[i] = from[i]))
+        }
+    }
+    return to.concat(ar || Array.prototype.slice.call(from))
+}
+module$exports$tslib.__await = function (v) {
+    return this instanceof module$exports$tslib.__await
+        ? ((this.v = v), this)
+        : new module$exports$tslib.__await(v)
+}
+module$exports$tslib.__asyncGenerator = function (
+    thisArg,
+    _arguments,
+    generator
+) {
+    function verb(n) {
+        g[n] &&
+            (i[n] = function (v) {
+                return new Promise(function (a, b) {
+                    1 < q.push([n, v, a, b]) || resume(n, v)
+                })
+            })
+    }
+    function resume(n, v) {
+        try {
+            step(g[n](v))
+        } catch (e) {
+            settle(q[0][3], e)
+        }
+    }
+    function step(r) {
+        r.value instanceof module$exports$tslib.__await
+            ? Promise.resolve(r.value.v).then(fulfill, reject)
+            : settle(q[0][2], r)
+    }
+    function fulfill(value) {
+        resume('next', value)
+    }
+    function reject(value) {
+        resume('throw', value)
+    }
+    function settle(f, v) {
+        ;(f(v), q.shift(), q.length) && resume(q[0][0], q[0][1])
+    }
+    if (!Symbol.asyncIterator) {
+        throw new TypeError('Symbol.asyncIterator is not defined.')
+    }
+    var g = generator.apply(thisArg, _arguments || []),
+        i,
+        q = []
+    return (
+        (i = {}),
+        verb('next'),
+        verb('throw'),
+        verb('return'),
+        (i[Symbol.asyncIterator] = function () {
+            return this
+        }),
+        i
+    )
+}
+module$exports$tslib.__asyncDelegator = function (o) {
+    function verb(n, f) {
+        i[n] = o[n]
+            ? function (v) {
+                  return (p = !p)
+                      ? {
+                            value: new module$exports$tslib.__await(o[n](v)),
+                            done: 'return' === n,
+                        }
+                      : f
+                      ? f(v)
+                      : v
+              }
+            : f
+    }
+    var i, p
+    return (
+        (i = {}),
+        verb('next'),
+        verb('throw', function (e) {
+            throw e
+        }),
+        verb('return'),
+        (i[Symbol.iterator] = function () {
+            return i
+        }),
+        i
+    )
+}
+module$exports$tslib.__asyncValues = function (o) {
+    function verb(n) {
+        i[n] =
+            o[n] &&
+            function (v) {
+                return new Promise(function (resolve, reject) {
+                    v = o[n](v)
+                    settle(resolve, reject, v.done, v.value)
+                })
+            }
+    }
+    function settle(resolve, reject, d, v) {
+        Promise.resolve(v).then(function (v) {
+            resolve({ value: v, done: d })
+        }, reject)
+    }
+    if (!Symbol.asyncIterator) {
+        throw new TypeError('Symbol.asyncIterator is not defined.')
+    }
+    var m = o[Symbol.asyncIterator],
+        i
+    return m
+        ? m.call(o)
+        : ((o =
+              'function' === typeof __values
+                  ? __values(o)
+                  : o[Symbol.iterator]()),
+          (i = {}),
+          verb('next'),
+          verb('throw'),
+          verb('return'),
+          (i[Symbol.asyncIterator] = function () {
+              return this
+          }),
+          i)
+}
+module$exports$tslib.__makeTemplateObject = function (cooked, raw) {
+    Object.defineProperty
+        ? Object.defineProperty(cooked, 'raw', { value: raw })
+        : (cooked.raw = raw)
+    return cooked
+}
+module$exports$tslib.__classPrivateFieldGet = function (
+    receiver,
+    state,
+    kind,
+    f
+) {
+    if ('a' === kind && !f) {
+        throw new TypeError('Private accessor was defined without a getter')
+    }
+    if (
+        'function' === typeof state
+            ? receiver !== state || !f
+            : !state.has(receiver)
+    ) {
+        throw new TypeError(
+            'Cannot read private member from an object whose class did not declare it'
+        )
+    }
+    return 'm' === kind
+        ? f
+        : 'a' === kind
+        ? f.call(receiver)
+        : f
+        ? f.value
+        : state.get(receiver)
+}
+module$exports$tslib.__classPrivateFieldSet = function (
+    receiver,
+    state,
+    value,
+    kind,
+    f
+) {
+    if ('m' === kind) {
+        throw new TypeError('Private method is not writable')
+    }
+    if ('a' === kind && !f) {
+        throw new TypeError('Private accessor was defined without a setter')
+    }
+    if (
+        'function' === typeof state
+            ? receiver !== state || !f
+            : !state.has(receiver)
+    ) {
+        throw new TypeError(
+            'Cannot write private member to an object whose class did not declare it'
+        )
+    }
+    return (
+        'a' === kind
+            ? f.call(receiver, value)
+            : f
+            ? (f.value = value)
+            : state.set(receiver, value),
+        value
+    )
+}
+module$exports$tslib.__classPrivateFieldIn = function (state, receiver) {
+    if (
+        null === receiver ||
+        ('object' !== typeof receiver && 'function' !== typeof receiver)
+    ) {
+        throw new TypeError("Cannot use 'in' operator on non-object")
+    }
+    return 'function' === typeof state
+        ? receiver === state
+        : state.has(receiver)
+}
+var module$exports$closure$flags$flags$2etoggles = {},
+    module$contents$closure$flags$flags$2etoggles_module =
+        module$contents$closure$flags$flags$2etoggles_module || {
+            id: 'third_party/javascript/closure/flags/flags.toggles.closure.js',
+        }
+module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__use_toggles = !1
+module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__override_disable_toggles =
+    !1
+module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__use_user_agent_client_hints__enable =
+    !1
+module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__async_throw_on_unicode_to_byte__enable =
+    !1
+module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__client_only_wiz_attribute_sanitization__disable =
+    !1
+module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__client_only_wiz_hook_context_fix__enable =
+    !1
+module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__jspb_disable_serializing_empty_repeated_and_map_fields__disable =
+    !1
+module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__testonly_disabled_flag__enable =
+    !1
+module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__testonly_debug_flag__enable =
+    !1
+module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__testonly_staging_flag__disable =
+    !1
+module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__testonly_stable_flag__disable =
+    !1
+goog.flags = {}
+var module$contents$goog$flags_STAGING = goog.readFlagInternalDoNotUseOrElse(
+    1,
+    goog.FLAGS_STAGING_DEFAULT
+)
+goog.flags.USE_USER_AGENT_CLIENT_HINTS =
+    module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__use_toggles
+        ? module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__use_user_agent_client_hints__enable
+        : goog.readFlagInternalDoNotUseOrElse(610401301, !1)
+goog.flags.ASYNC_THROW_ON_UNICODE_TO_BYTE =
+    module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__use_toggles
+        ? module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__async_throw_on_unicode_to_byte__enable
+        : goog.readFlagInternalDoNotUseOrElse(899588437, !1)
+goog.flags.CLIENT_ONLY_WIZ_ATTRIBUTE_SANITIZATION =
+    module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__use_toggles
+        ? module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__override_disable_toggles ||
+          !module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__client_only_wiz_attribute_sanitization__disable
+        : goog.readFlagInternalDoNotUseOrElse(533565600, !0)
+goog.flags.CLIENT_ONLY_WIZ_HOOK_CONTEXT_FIX =
+    module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__use_toggles
+        ? module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__client_only_wiz_hook_context_fix__enable
+        : goog.readFlagInternalDoNotUseOrElse(563486499, !1)
+goog.flags.JSPB_DISABLE_SERIALIZING_EMPTY_REPEATED_AND_MAP_FIELDS =
+    module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__use_toggles
+        ? goog.FLAGS_STAGING_DEFAULT &&
+          (module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__override_disable_toggles ||
+              !module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__jspb_disable_serializing_empty_repeated_and_map_fields__disable)
+        : goog.readFlagInternalDoNotUseOrElse(
+              572417392,
+              module$contents$goog$flags_STAGING
+          )
+goog.flags.TESTONLY_DISABLED_FLAG =
+    module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__use_toggles
+        ? module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__testonly_disabled_flag__enable
+        : goog.readFlagInternalDoNotUseOrElse(2147483644, !1)
+goog.flags.TESTONLY_DEBUG_FLAG =
+    module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__use_toggles
+        ? goog.DEBUG ||
+          module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__testonly_debug_flag__enable
+        : goog.readFlagInternalDoNotUseOrElse(2147483645, goog.DEBUG)
+goog.flags.TESTONLY_STAGING_FLAG =
+    module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__use_toggles
+        ? goog.FLAGS_STAGING_DEFAULT &&
+          (module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__override_disable_toggles ||
+              !module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__testonly_staging_flag__disable)
+        : goog.readFlagInternalDoNotUseOrElse(
+              2147483646,
+              module$contents$goog$flags_STAGING
+          )
+goog.flags.TESTONLY_STABLE_FLAG =
+    module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__use_toggles
+        ? module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__override_disable_toggles ||
+          !module$exports$closure$flags$flags$2etoggles.TOGGLE_GoogFlags__testonly_stable_flag__disable
+        : goog.readFlagInternalDoNotUseOrElse(2147483647, !0)
 var module$contents$goog$labs$userAgent_forceClientHintsInTests = !1
 goog.labs.userAgent.setUseClientHintsForTesting = function (use) {
     module$contents$goog$labs$userAgent_forceClientHintsInTests = use
 }
 goog.labs.userAgent.useClientHints = function () {
-    return module$contents$goog$labs$userAgent_forceClientHintsInTests
+    return (
+        goog.flags.USE_USER_AGENT_CLIENT_HINTS ||
+        module$contents$goog$labs$userAgent_forceClientHintsInTests
+    )
 }
 goog.string = {}
 goog.string.internal = {}
@@ -4274,25 +4831,20 @@ goog.labs.userAgent.util.matchUserAgentDataBrand =
     module$contents$goog$labs$userAgent$util_matchUserAgentDataBrand
 goog.labs.userAgent.util.matchUserAgentIgnoreCase =
     module$contents$goog$labs$userAgent$util_matchUserAgentIgnoreCase
-goog.labs.userAgent.util.resetUserAgentData =
-    function module$contents$goog$labs$userAgent$util_resetUserAgentData() {
-        module$contents$goog$labs$userAgent$util_userAgentDataInternal =
-            module$contents$goog$labs$userAgent$util_getNativeUserAgentData()
-    }
-goog.labs.userAgent.util.setUserAgent =
-    function module$contents$goog$labs$userAgent$util_setUserAgent(userAgent) {
-        module$contents$goog$labs$userAgent$util_userAgentInternal =
-            'string' === typeof userAgent
-                ? userAgent
-                : module$contents$goog$labs$userAgent$util_getNativeUserAgentString()
-    }
-goog.labs.userAgent.util.setUserAgentData =
-    function module$contents$goog$labs$userAgent$util_setUserAgentData(
+goog.labs.userAgent.util.resetUserAgentData = function () {
+    module$contents$goog$labs$userAgent$util_userAgentDataInternal =
+        module$contents$goog$labs$userAgent$util_getNativeUserAgentData()
+}
+goog.labs.userAgent.util.setUserAgent = function (userAgent) {
+    module$contents$goog$labs$userAgent$util_userAgentInternal =
+        'string' === typeof userAgent
+            ? userAgent
+            : module$contents$goog$labs$userAgent$util_getNativeUserAgentString()
+}
+goog.labs.userAgent.util.setUserAgentData = function (userAgentData) {
+    module$contents$goog$labs$userAgent$util_userAgentDataInternal =
         userAgentData
-    ) {
-        module$contents$goog$labs$userAgent$util_userAgentDataInternal =
-            userAgentData
-    }
+}
 var module$exports$goog$labs$userAgent$highEntropy$highEntropyValue = {
     AsyncValue: function () {},
 }
@@ -4317,28 +4869,31 @@ module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.HighEntropyValue
         var $jscomp$async$this = this,
             userAgentData
         return $jscomp.asyncExecutePromiseGeneratorProgram(function (
-            $jscomp$generator$context
+            $jscomp$generator$context$m2110036436$1
         ) {
-            if (1 == $jscomp$generator$context.nextAddress) {
+            if (1 == $jscomp$generator$context$m2110036436$1.nextAddress) {
                 userAgentData =
                     module$contents$goog$labs$userAgent$util_getUserAgentData()
                 if (!userAgentData) {
-                    return $jscomp$generator$context.return(void 0)
+                    return $jscomp$generator$context$m2110036436$1.return(
+                        void 0
+                    )
                 }
                 $jscomp$async$this.promise_ ||
                     (($jscomp$async$this.pending_ = !0),
                     ($jscomp$async$this.promise_ = (function () {
                         var dataValues
                         return $jscomp.asyncExecutePromiseGeneratorProgram(
-                            function ($jscomp$generator$context$1) {
+                            function ($jscomp$generator$context$m2110036436$0) {
                                 if (
-                                    1 == $jscomp$generator$context$1.nextAddress
+                                    1 ==
+                                    $jscomp$generator$context$m2110036436$0.nextAddress
                                 ) {
                                     return (
-                                        $jscomp$generator$context$1.setFinallyBlock(
+                                        $jscomp$generator$context$m2110036436$0.setFinallyBlock(
                                             2
                                         ),
-                                        $jscomp$generator$context$1.yield(
+                                        $jscomp$generator$context$m2110036436$0.yield(
                                             userAgentData.getHighEntropyValues([
                                                 $jscomp$async$this.key_,
                                             ]),
@@ -4347,35 +4902,36 @@ module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.HighEntropyValue
                                     )
                                 }
                                 if (
-                                    2 != $jscomp$generator$context$1.nextAddress
+                                    2 !=
+                                    $jscomp$generator$context$m2110036436$0.nextAddress
                                 ) {
                                     return (
                                         (dataValues =
-                                            $jscomp$generator$context$1.yieldResult),
+                                            $jscomp$generator$context$m2110036436$0.yieldResult),
                                         ($jscomp$async$this.value_ =
                                             dataValues[
                                                 $jscomp$async$this.key_
                                             ]),
-                                        $jscomp$generator$context$1.return(
+                                        $jscomp$generator$context$m2110036436$0.return(
                                             $jscomp$async$this.value_
                                         )
                                     )
                                 }
-                                $jscomp$generator$context$1.enterFinallyBlock()
+                                $jscomp$generator$context$m2110036436$0.enterFinallyBlock()
                                 $jscomp$async$this.pending_ = !1
-                                return $jscomp$generator$context$1.leaveFinallyBlock(
+                                return $jscomp$generator$context$m2110036436$0.leaveFinallyBlock(
                                     0
                                 )
                             }
                         )
                     })()))
-                return $jscomp$generator$context.yield(
+                return $jscomp$generator$context$m2110036436$1.yield(
                     $jscomp$async$this.promise_,
                     2
                 )
             }
-            return $jscomp$generator$context.return(
-                $jscomp$generator$context.yieldResult
+            return $jscomp$generator$context$m2110036436$1.return(
+                $jscomp$generator$context$m2110036436$1.yieldResult
             )
         })
     }
@@ -4427,6 +4983,7 @@ var module$contents$goog$labs$userAgent$browser_Brand = {
 }
 goog.labs.userAgent.browser.Brand =
     module$contents$goog$labs$userAgent$browser_Brand
+var module$contents$goog$labs$userAgent$browser_AllBrandsInternal
 function module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand(
     ignoreClientHintsFlag
 ) {
@@ -4560,22 +5117,19 @@ var module$contents$goog$labs$userAgent$browser_isCoast =
     module$contents$goog$labs$userAgent$browser_matchCoast
 goog.labs.userAgent.browser.isCoast =
     module$contents$goog$labs$userAgent$browser_matchCoast
-goog.labs.userAgent.browser.isIosWebview =
-    function module$contents$goog$labs$userAgent$browser_matchIosWebview() {
-        return (
-            (module$contents$goog$labs$userAgent$util_matchUserAgent('iPad') ||
-                module$contents$goog$labs$userAgent$util_matchUserAgent(
-                    'iPhone'
-                )) &&
-            !module$contents$goog$labs$userAgent$browser_matchSafari() &&
-            !module$contents$goog$labs$userAgent$browser_matchChrome() &&
-            !module$contents$goog$labs$userAgent$browser_matchCoast() &&
-            !module$contents$goog$labs$userAgent$browser_matchFirefox() &&
+goog.labs.userAgent.browser.isIosWebview = function () {
+    return (
+        (module$contents$goog$labs$userAgent$util_matchUserAgent('iPad') ||
             module$contents$goog$labs$userAgent$util_matchUserAgent(
-                'AppleWebKit'
-            )
-        )
-    }
+                'iPhone'
+            )) &&
+        !module$contents$goog$labs$userAgent$browser_matchSafari() &&
+        !module$contents$goog$labs$userAgent$browser_matchChrome() &&
+        !module$contents$goog$labs$userAgent$browser_matchCoast() &&
+        !module$contents$goog$labs$userAgent$browser_matchFirefox() &&
+        module$contents$goog$labs$userAgent$util_matchUserAgent('AppleWebKit')
+    )
+}
 var module$contents$goog$labs$userAgent$browser_isChrome =
     module$contents$goog$labs$userAgent$browser_matchChrome
 goog.labs.userAgent.browser.isChrome =
@@ -4642,18 +5196,15 @@ function module$contents$goog$labs$userAgent$browser_getVersion() {
 }
 goog.labs.userAgent.browser.getVersion =
     module$contents$goog$labs$userAgent$browser_getVersion
-goog.labs.userAgent.browser.isVersionOrHigher =
-    function module$contents$goog$labs$userAgent$browser_isVersionOrHigher(
-        version
-    ) {
-        return (
-            0 <=
-            (0, goog.string.internal.compareVersions)(
-                module$contents$goog$labs$userAgent$browser_getVersion(),
-                version
-            )
+goog.labs.userAgent.browser.isVersionOrHigher = function (version) {
+    return (
+        0 <=
+        (0, goog.string.internal.compareVersions)(
+            module$contents$goog$labs$userAgent$browser_getVersion(),
+            version
         )
-    }
+    )
+}
 function module$contents$goog$labs$userAgent$browser_getIEVersion(userAgent) {
     var rv = /rv: *([\d\.]*)/.exec(userAgent)
     if (rv && rv[1]) {
@@ -4796,20 +5347,16 @@ function module$contents$goog$labs$userAgent$browser_isAtLeast(
 }
 goog.labs.userAgent.browser.isAtLeast =
     module$contents$goog$labs$userAgent$browser_isAtLeast
-goog.labs.userAgent.browser.isAtMost =
-    function module$contents$goog$labs$userAgent$browser_isAtMost(
-        brand,
+goog.labs.userAgent.browser.isAtMost = function (brand, majorVersion) {
+    ;(0, goog.asserts.assert)(
+        Math.floor(majorVersion) === majorVersion,
+        'Major version must be an integer'
+    )
+    return (
+        module$contents$goog$labs$userAgent$browser_versionOf_(brand) <=
         majorVersion
-    ) {
-        ;(0, goog.asserts.assert)(
-            Math.floor(majorVersion) === majorVersion,
-            'Major version must be an integer'
-        )
-        return (
-            module$contents$goog$labs$userAgent$browser_versionOf_(brand) <=
-            majorVersion
-        )
-    }
+    )
+}
 var module$contents$goog$labs$userAgent$browser_HighEntropyBrandVersion =
     function (brand, useUach, fallbackVersion) {
         this.brand_ = brand
@@ -4849,19 +5396,20 @@ module$contents$goog$labs$userAgent$browser_HighEntropyBrandVersion.prototype.lo
             loadedVersionList,
             matchingBrand
         return $jscomp.asyncExecutePromiseGeneratorProgram(function (
-            $jscomp$generator$context
+            $jscomp$generator$context$1683157560$0
         ) {
-            if (1 == $jscomp$generator$context.nextAddress) {
+            if (1 == $jscomp$generator$context$1683157560$0.nextAddress) {
                 return $jscomp$async$this.useUach_
-                    ? $jscomp$generator$context.yield(
+                    ? $jscomp$generator$context$1683157560$0.yield(
                           module$exports$goog$labs$userAgent$highEntropy$highEntropyData.fullVersionList.load(),
                           5
                       )
-                    : $jscomp$generator$context.yield(0, 3)
+                    : $jscomp$generator$context$1683157560$0.yield(0, 3)
             }
             if (
-                3 != $jscomp$generator$context.nextAddress &&
-                ((loadedVersionList = $jscomp$generator$context.yieldResult),
+                3 != $jscomp$generator$context$1683157560$0.nextAddress &&
+                ((loadedVersionList =
+                    $jscomp$generator$context$1683157560$0.yieldResult),
                 void 0 !== loadedVersionList)
             ) {
                 return (
@@ -4874,7 +5422,7 @@ module$contents$goog$labs$userAgent$browser_HighEntropyBrandVersion.prototype.lo
                         )
                     })),
                     (0, goog.asserts.assertExists)(matchingBrand),
-                    $jscomp$generator$context.return(
+                    $jscomp$generator$context$1683157560$0.return(
                         new module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.Version(
                             matchingBrand.version
                         )
@@ -4882,29 +5430,30 @@ module$contents$goog$labs$userAgent$browser_HighEntropyBrandVersion.prototype.lo
                 )
             }
             module$contents$goog$labs$userAgent$browser_preUachHasLoaded = !0
-            return $jscomp$generator$context.return($jscomp$async$this.version_)
+            return $jscomp$generator$context$1683157560$0.return(
+                $jscomp$async$this.version_
+            )
         })
     }
 var module$contents$goog$labs$userAgent$browser_preUachHasLoaded = !1
-goog.labs.userAgent.browser.loadFullVersions =
-    function module$contents$goog$labs$userAgent$browser_loadFullVersions() {
-        return $jscomp.asyncExecutePromiseGeneratorProgram(function (
-            $jscomp$generator$context
-        ) {
-            if (1 == $jscomp$generator$context.nextAddress) {
-                return module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand(
-                    !0
-                )
-                    ? $jscomp$generator$context.yield(
-                          module$exports$goog$labs$userAgent$highEntropy$highEntropyData.fullVersionList.load(),
-                          2
-                      )
-                    : $jscomp$generator$context.jumpTo(2)
-            }
-            module$contents$goog$labs$userAgent$browser_preUachHasLoaded = !0
-            $jscomp$generator$context.jumpToEnd()
-        })
-    }
+goog.labs.userAgent.browser.loadFullVersions = function () {
+    return $jscomp.asyncExecutePromiseGeneratorProgram(function (
+        $jscomp$generator$context$1683157560$1
+    ) {
+        if (1 == $jscomp$generator$context$1683157560$1.nextAddress) {
+            return module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand(
+                !0
+            )
+                ? $jscomp$generator$context$1683157560$1.yield(
+                      module$exports$goog$labs$userAgent$highEntropy$highEntropyData.fullVersionList.load(),
+                      2
+                  )
+                : $jscomp$generator$context$1683157560$1.jumpTo(2)
+        }
+        module$contents$goog$labs$userAgent$browser_preUachHasLoaded = !0
+        $jscomp$generator$context$1683157560$1.jumpToEnd()
+    })
+}
 goog.labs.userAgent.browser.resetForTesting = function () {
     module$contents$goog$labs$userAgent$browser_preUachHasLoaded = !1
     module$exports$goog$labs$userAgent$highEntropy$highEntropyData.fullVersionList.resetForTesting()
@@ -4940,39 +5489,30 @@ function module$contents$goog$labs$userAgent$browser_fullVersionOf(browser) {
 }
 goog.labs.userAgent.browser.fullVersionOf =
     module$contents$goog$labs$userAgent$browser_fullVersionOf
-goog.labs.userAgent.browser.getVersionStringForLogging =
-    function module$contents$goog$labs$userAgent$browser_getVersionStringForLogging(
-        browser
-    ) {
-        if (
-            module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand(
-                !0
-            )
-        ) {
-            var fullVersionObj =
-                module$contents$goog$labs$userAgent$browser_fullVersionOf(
-                    browser
-                )
-            if (fullVersionObj) {
-                var fullVersion = fullVersionObj.getIfLoaded()
-                if (fullVersion) {
-                    return fullVersion.toVersionStringForLogging()
-                }
-                var matchingBrand =
-                    module$contents$goog$labs$userAgent$util_getUserAgentData().brands.find(
-                        function ($jscomp$destructuring$var10) {
-                            return $jscomp$destructuring$var10.brand === browser
-                        }
-                    )
-                ;(0, goog.asserts.assertExists)(matchingBrand)
-                return matchingBrand.version
+goog.labs.userAgent.browser.getVersionStringForLogging = function (browser) {
+    if (module$contents$goog$labs$userAgent$browser_useUserAgentDataBrand(!0)) {
+        var fullVersionObj =
+            module$contents$goog$labs$userAgent$browser_fullVersionOf(browser)
+        if (fullVersionObj) {
+            var fullVersion = fullVersionObj.getIfLoaded()
+            if (fullVersion) {
+                return fullVersion.toVersionStringForLogging()
             }
-            return ''
+            var matchingBrand =
+                module$contents$goog$labs$userAgent$util_getUserAgentData().brands.find(
+                    function ($jscomp$destructuring$var10) {
+                        return $jscomp$destructuring$var10.brand === browser
+                    }
+                )
+            ;(0, goog.asserts.assertExists)(matchingBrand)
+            return matchingBrand.version
         }
-        return module$contents$goog$labs$userAgent$browser_getFullVersionFromUserAgentString(
-            browser
-        )
+        return ''
     }
+    return module$contents$goog$labs$userAgent$browser_getFullVersionFromUserAgentString(
+        browser
+    )
+}
 goog.labs.userAgent.engine = {}
 function module$contents$goog$labs$userAgent$engine_isPresto() {
     return module$contents$goog$labs$userAgent$util_matchUserAgent('Presto')
@@ -5062,18 +5602,15 @@ goog.labs.userAgent.engine.isPresto =
     module$contents$goog$labs$userAgent$engine_isPresto
 goog.labs.userAgent.engine.isTrident =
     module$contents$goog$labs$userAgent$engine_isTrident
-goog.labs.userAgent.engine.isVersionOrHigher =
-    function module$contents$goog$labs$userAgent$engine_isVersionOrHigher(
-        version
-    ) {
-        return (
-            0 <=
-            goog.string.internal.compareVersions(
-                module$contents$goog$labs$userAgent$engine_getVersion(),
-                version
-            )
+goog.labs.userAgent.engine.isVersionOrHigher = function (version) {
+    return (
+        0 <=
+        goog.string.internal.compareVersions(
+            module$contents$goog$labs$userAgent$engine_getVersion(),
+            version
         )
-    }
+    )
+}
 goog.labs.userAgent.engine.isWebKit =
     module$contents$goog$labs$userAgent$engine_isWebKit
 goog.labs.userAgent.platform = {}
@@ -5162,24 +5699,24 @@ function module$contents$goog$labs$userAgent$platform_getVersion() {
         version = match ? match[1] : '0.0'
     } else if (module$contents$goog$labs$userAgent$platform_isIos()) {
         re = /(?:iPhone|iPod|iPad|CPU)\s+OS\s+(\S+)/
-        var match$40 = re.exec(userAgentString)
-        version = match$40 && match$40[1].replace(/_/g, '.')
+        var match$jscomp$0 = re.exec(userAgentString)
+        version = match$jscomp$0 && match$jscomp$0[1].replace(/_/g, '.')
     } else if (module$contents$goog$labs$userAgent$platform_isMacintosh()) {
         re = /Mac OS X ([0-9_.]+)/
-        var match$41 = re.exec(userAgentString)
-        version = match$41 ? match$41[1].replace(/_/g, '.') : '10'
+        var match$jscomp$1 = re.exec(userAgentString)
+        version = match$jscomp$1 ? match$jscomp$1[1].replace(/_/g, '.') : '10'
     } else if (module$contents$goog$labs$userAgent$platform_isKaiOS()) {
         re = /(?:KaiOS)\/(\S+)/i
-        var match$42 = re.exec(userAgentString)
-        version = match$42 && match$42[1]
+        var match$jscomp$2 = re.exec(userAgentString)
+        version = match$jscomp$2 && match$jscomp$2[1]
     } else if (module$contents$goog$labs$userAgent$platform_isAndroid()) {
         re = /Android\s+([^\);]+)(\)|;)/
-        var match$43 = re.exec(userAgentString)
-        version = match$43 && match$43[1]
+        var match$jscomp$3 = re.exec(userAgentString)
+        version = match$jscomp$3 && match$jscomp$3[1]
     } else if (module$contents$goog$labs$userAgent$platform_isChromeOS()) {
         re = /(?:CrOS\s+(?:i686|x86_64)\s+([0-9.]+))/
-        var match$44 = re.exec(userAgentString)
-        version = match$44 && match$44[1]
+        var match$jscomp$4 = re.exec(userAgentString)
+        version = match$jscomp$4 && match$jscomp$4[1]
     }
     return version || ''
 }
@@ -5212,31 +5749,33 @@ module$contents$goog$labs$userAgent$platform_PlatformVersion.prototype.load =
         var $jscomp$async$this = this,
             JSCompiler_temp_const
         return $jscomp.asyncExecutePromiseGeneratorProgram(function (
-            $jscomp$generator$context
+            $jscomp$generator$context$m1628565157$0
         ) {
-            if (1 == $jscomp$generator$context.nextAddress) {
+            if (1 == $jscomp$generator$context$m1628565157$0.nextAddress) {
                 if (
                     !module$contents$goog$labs$userAgent$platform_useUserAgentDataPlatform(
                         !0
                     )
                 ) {
                     $jscomp$async$this.preUachHasLoaded_ = !0
-                    return $jscomp$generator$context.return(
+                    return $jscomp$generator$context$m1628565157$0.return(
                         new module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.Version(
                             module$contents$goog$labs$userAgent$platform_getVersion()
                         )
                     )
-                    return $jscomp$generator$context.jumpTo(0)
+                    return $jscomp$generator$context$m1628565157$0.jumpTo(0)
                 }
                 JSCompiler_temp_const =
                     module$exports$goog$labs$userAgent$highEntropy$highEntropyValue.Version
-                return $jscomp$generator$context.yield(
+                return $jscomp$generator$context$m1628565157$0.yield(
                     module$exports$goog$labs$userAgent$highEntropy$highEntropyData.platformVersion.load(),
                     3
                 )
             }
-            return $jscomp$generator$context.return(
-                new JSCompiler_temp_const($jscomp$generator$context.yieldResult)
+            return $jscomp$generator$context$m1628565157$0.return(
+                new JSCompiler_temp_const(
+                    $jscomp$generator$context$m1628565157$0.yieldResult
+                )
             )
         })
     }
@@ -5253,10 +5792,9 @@ goog.labs.userAgent.platform.isAndroid =
     module$contents$goog$labs$userAgent$platform_isAndroid
 goog.labs.userAgent.platform.isChromeOS =
     module$contents$goog$labs$userAgent$platform_isChromeOS
-goog.labs.userAgent.platform.isChromecast =
-    function module$contents$goog$labs$userAgent$platform_isChromecast() {
-        return module$contents$goog$labs$userAgent$util_matchUserAgent('CrKey')
-    }
+goog.labs.userAgent.platform.isChromecast = function () {
+    return module$contents$goog$labs$userAgent$util_matchUserAgent('CrKey')
+}
 goog.labs.userAgent.platform.isIos =
     module$contents$goog$labs$userAgent$platform_isIos
 goog.labs.userAgent.platform.isIpad =
@@ -5271,18 +5809,15 @@ goog.labs.userAgent.platform.isLinux =
     module$contents$goog$labs$userAgent$platform_isLinux
 goog.labs.userAgent.platform.isMacintosh =
     module$contents$goog$labs$userAgent$platform_isMacintosh
-goog.labs.userAgent.platform.isVersionOrHigher =
-    function module$contents$goog$labs$userAgent$platform_isVersionOrHigher(
-        version
-    ) {
-        return (
-            0 <=
-            goog.string.internal.compareVersions(
-                module$contents$goog$labs$userAgent$platform_getVersion(),
-                version
-            )
+goog.labs.userAgent.platform.isVersionOrHigher = function (version) {
+    return (
+        0 <=
+        goog.string.internal.compareVersions(
+            module$contents$goog$labs$userAgent$platform_getVersion(),
+            version
         )
-    }
+    )
+}
 goog.labs.userAgent.platform.isWindows =
     module$contents$goog$labs$userAgent$platform_isWindows
 goog.labs.userAgent.platform.version =
@@ -5676,13 +6211,6 @@ goog.events.EventType = {
     UNRESPONSIVE: 'unresponsive',
     VISIBILITYCHANGE: 'visibilitychange',
     STORAGE: 'storage',
-    DOMSUBTREEMODIFIED: 'DOMSubtreeModified',
-    DOMNODEINSERTED: 'DOMNodeInserted',
-    DOMNODEREMOVED: 'DOMNodeRemoved',
-    DOMNODEREMOVEDFROMDOCUMENT: 'DOMNodeRemovedFromDocument',
-    DOMNODEINSERTEDINTODOCUMENT: 'DOMNodeInsertedIntoDocument',
-    DOMATTRMODIFIED: 'DOMAttrModified',
-    DOMCHARACTERDATAMODIFIED: 'DOMCharacterDataModified',
     BEFOREPRINT: 'beforeprint',
     AFTERPRINT: 'afterprint',
     BEFOREINSTALLPROMPT: 'beforeinstallprompt',
@@ -6075,7 +6603,7 @@ function module$contents$goog$object_createSet(var_args) {
     }
     return rv
 }
-goog.object.add = function module$contents$goog$object_add(obj, key, val) {
+goog.object.add = function (obj, key, val) {
     if (null !== obj && key in obj) {
         throw Error('The object already contains the key "' + key + '"')
     }
@@ -6087,33 +6615,28 @@ goog.object.contains = module$contents$goog$object_contains
 goog.object.containsKey = module$contents$goog$object_containsKey
 goog.object.containsValue = module$contents$goog$object_containsValue
 goog.object.create = module$contents$goog$object_create
-goog.object.createImmutableView =
-    function module$contents$goog$object_createImmutableView(obj) {
-        var result = obj
-        Object.isFrozen &&
-            !Object.isFrozen(obj) &&
-            ((result = Object.create(obj)), Object.freeze(result))
-        return result
-    }
+goog.object.createImmutableView = function (obj) {
+    var result = obj
+    Object.isFrozen &&
+        !Object.isFrozen(obj) &&
+        ((result = Object.create(obj)), Object.freeze(result))
+    return result
+}
 goog.object.createSet = module$contents$goog$object_createSet
-goog.object.equals = function module$contents$goog$object_equals(a, b) {
+goog.object.equals = function (a, b) {
     for (var k in a) {
         if (!(k in b) || a[k] !== b[k]) {
             return !1
         }
     }
-    for (var k$45 in b) {
-        if (!(k$45 in a)) {
+    for (var k$jscomp$0 in b) {
+        if (!(k$jscomp$0 in a)) {
             return !1
         }
     }
     return !0
 }
-goog.object.every = function module$contents$goog$object_every(
-    obj,
-    f,
-    opt_obj
-) {
+goog.object.every = function (obj, f, opt_obj) {
     for (var key in obj) {
         if (!f.call(opt_obj, obj[key], key, obj)) {
             return !1
@@ -6124,111 +6647,94 @@ goog.object.every = function module$contents$goog$object_every(
 goog.object.extend = module$contents$goog$object_extend
 goog.object.filter = module$contents$goog$object_filter
 goog.object.findKey = module$contents$goog$object_findKey
-goog.object.findValue = function module$contents$goog$object_findValue(
-    obj,
-    f,
-    thisObj
-) {
+goog.object.findValue = function (obj, f, thisObj) {
     var key = module$contents$goog$object_findKey(obj, f, thisObj)
     return key && obj[key]
 }
 goog.object.forEach = module$contents$goog$object_forEach
-goog.object.get = function module$contents$goog$object_get(obj, key, val) {
+goog.object.get = function (obj, key, val) {
     return null !== obj && key in obj ? obj[key] : val
 }
-goog.object.getAllPropertyNames =
-    function module$contents$goog$object_getAllPropertyNames(
-        obj,
-        includeObjectPrototype,
-        includeFunctionPrototype
-    ) {
-        if (!obj) {
-            return []
-        }
-        if (!Object.getOwnPropertyNames || !Object.getPrototypeOf) {
-            return module$contents$goog$object_getKeys(obj)
-        }
-        for (
-            var visitedSet = {}, proto = obj;
-            proto &&
-            (proto !== Object.prototype || includeObjectPrototype) &&
-            (proto !== Function.prototype || includeFunctionPrototype);
-
-        ) {
-            for (
-                var names = Object.getOwnPropertyNames(proto), i = 0;
-                i < names.length;
-                i++
-            ) {
-                visitedSet[names[i]] = !0
-            }
-            proto = Object.getPrototypeOf(proto)
-        }
-        return module$contents$goog$object_getKeys(visitedSet)
+goog.object.getAllPropertyNames = function (
+    obj,
+    includeObjectPrototype,
+    includeFunctionPrototype
+) {
+    if (!obj) {
+        return []
     }
-goog.object.getAnyKey = function module$contents$goog$object_getAnyKey(obj) {
+    if (!Object.getOwnPropertyNames || !Object.getPrototypeOf) {
+        return module$contents$goog$object_getKeys(obj)
+    }
+    for (
+        var visitedSet = {}, proto = obj;
+        proto &&
+        (proto !== Object.prototype || includeObjectPrototype) &&
+        (proto !== Function.prototype || includeFunctionPrototype);
+
+    ) {
+        for (
+            var names = Object.getOwnPropertyNames(proto), i = 0;
+            i < names.length;
+            i++
+        ) {
+            visitedSet[names[i]] = !0
+        }
+        proto = Object.getPrototypeOf(proto)
+    }
+    return module$contents$goog$object_getKeys(visitedSet)
+}
+goog.object.getAnyKey = function (obj) {
     for (var key in obj) {
         return key
     }
 }
-goog.object.getAnyValue = function module$contents$goog$object_getAnyValue(
-    obj
-) {
+goog.object.getAnyValue = function (obj) {
     for (var key in obj) {
         return obj[key]
     }
 }
 goog.object.getCount = module$contents$goog$object_getCount
 goog.object.getKeys = module$contents$goog$object_getKeys
-goog.object.getSuperClass = function module$contents$goog$object_getSuperClass(
-    constructor
-) {
+goog.object.getSuperClass = function (constructor) {
     var proto = Object.getPrototypeOf(constructor.prototype)
     return proto && proto.constructor
 }
-goog.object.getValueByKeys =
-    function module$contents$goog$object_getValueByKeys(obj, var_args) {
-        for (
-            var isArrayLike = goog.isArrayLike(var_args),
-                keys = isArrayLike ? var_args : arguments,
-                i = isArrayLike ? 0 : 1;
-            i < keys.length;
-            i++
-        ) {
-            if (null == obj) {
-                return
-            }
-            obj = obj[keys[i]]
+goog.object.getValueByKeys = function (obj, var_args) {
+    for (
+        var isArrayLike = goog.isArrayLike(var_args),
+            keys = isArrayLike ? var_args : arguments,
+            i = isArrayLike ? 0 : 1;
+        i < keys.length;
+        i++
+    ) {
+        if (null == obj) {
+            return
         }
-        return obj
+        obj = obj[keys[i]]
     }
+    return obj
+}
 goog.object.getValues = module$contents$goog$object_getValues
 goog.object.isEmpty = module$contents$goog$object_isEmpty
-goog.object.isImmutableView =
-    function module$contents$goog$object_isImmutableView(obj) {
-        return !!Object.isFrozen && Object.isFrozen(obj)
-    }
+goog.object.isImmutableView = function (obj) {
+    return !!Object.isFrozen && Object.isFrozen(obj)
+}
 goog.object.map = module$contents$goog$object_map
 goog.object.remove = module$contents$goog$object_remove
 goog.object.set = module$contents$goog$object_set
-goog.object.setIfUndefined =
-    function module$contents$goog$object_setIfUndefined(obj, key, value) {
-        return key in obj ? obj[key] : (obj[key] = value)
+goog.object.setIfUndefined = function (obj, key, value) {
+    return key in obj ? obj[key] : (obj[key] = value)
+}
+goog.object.setWithReturnValueIfNotSet = function (obj, key, f) {
+    if (key in obj) {
+        return obj[key]
     }
-goog.object.setWithReturnValueIfNotSet =
-    function module$contents$goog$object_setWithReturnValueIfNotSet(
-        obj,
-        key,
-        f
-    ) {
-        if (key in obj) {
-            return obj[key]
-        }
-        var val = f()
-        return (obj[key] = val)
-    }
+    var val = f()
+    return (obj[key] = val)
+}
 goog.object.some = module$contents$goog$object_some
-goog.object.transpose = function module$contents$goog$object_transpose(obj) {
+goog.object.transpose = function (obj) {
     var transposed = {},
         key
     for (key in obj) {
@@ -7577,8 +8083,8 @@ goog.iter.map = function (iterable, f, opt_obj) {
     }
     return newIter
 }
-goog.iter.reduce = function (iterable, f, val$jscomp$0, opt_obj) {
-    var rval = val$jscomp$0
+goog.iter.reduce = function (iterable, f, val, opt_obj) {
+    var rval = val
     goog.iter.forEach(iterable, function (val) {
         rval = f.call(opt_obj, rval, val)
     })
@@ -7625,17 +8131,17 @@ goog.iter.chainFromIterable = function (iterable) {
     iter.next = function () {
         for (;;) {
             if (null == current) {
-                var it = iteratorOfIterators.next()
-                if (it.done) {
+                var it$jscomp$0 = iteratorOfIterators.next()
+                if (it$jscomp$0.done) {
                     return goog.iter.ES6_ITERATOR_DONE
                 }
-                current = goog.iter.toIterator(it.value)
+                current = goog.iter.toIterator(it$jscomp$0.value)
             }
-            var it$46 = current.next()
-            if (it$46.done) {
+            var it = current.next()
+            if (it.done) {
                 current = null
             } else {
-                return goog.iter.createEs6IteratorYield(it$46.value)
+                return goog.iter.createEs6IteratorYield(it.value)
             }
         }
     }
@@ -7955,23 +8461,20 @@ goog.iter.tee = function (iterable, opt_num) {
                 return []
             }
         )
-    return module$contents$goog$array_map(
-        buffers,
-        function createIterator(buffer) {
-            var iter = new goog.iter.Iterator()
-            iter.next = function () {
-                if (
-                    module$contents$goog$array_isEmpty(buffer) &&
-                    !addNextIteratorValueToBuffers()
-                ) {
-                    return goog.iter.ES6_ITERATOR_DONE
-                }
-                goog.asserts.assert(!module$contents$goog$array_isEmpty(buffer))
-                return goog.iter.createEs6IteratorYield(buffer.shift())
+    return module$contents$goog$array_map(buffers, function (buffer) {
+        var iter = new goog.iter.Iterator()
+        iter.next = function () {
+            if (
+                module$contents$goog$array_isEmpty(buffer) &&
+                !addNextIteratorValueToBuffers()
+            ) {
+                return goog.iter.ES6_ITERATOR_DONE
             }
-            return iter
+            goog.asserts.assert(!module$contents$goog$array_isEmpty(buffer))
+            return goog.iter.createEs6IteratorYield(buffer.shift())
         }
-    )
+        return iter
+    })
 }
 goog.iter.enumerate = function (iterable, opt_start) {
     return goog.iter.zip(goog.iter.count(opt_start), iterable)
@@ -8679,518 +9182,18 @@ ee.TileEvent = function (count) {
     this.count = count
 }
 goog.inherits(ee.TileEvent, goog.events.Event)
-var module$exports$tslib = {},
-    module$contents$tslib_extendStatics =
-        Object.setPrototypeOf ||
-        function (d, b) {
-            for (var p in b) {
-                Object.prototype.hasOwnProperty.call(b, p) && (d[p] = b[p])
-            }
-        }
-module$exports$tslib.__extends = function (d, b) {
-    function __() {
-        this.constructor = d
-    }
-    module$contents$tslib_extendStatics(d, b)
-    d.prototype =
-        null === b ? Object.create(b) : ((__.prototype = b.prototype), new __())
-}
-module$exports$tslib.__assign =
-    Object.assign ||
-    function (t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i]
-            for (var p in s) {
-                Object.prototype.hasOwnProperty.call(s, p) && (t[p] = s[p])
-            }
-        }
-        return t
-    }
-module$exports$tslib.__rest = function (s, e) {
-    var t = {},
-        p
-    for (p in s) {
-        Object.prototype.hasOwnProperty.call(s, p) &&
-            0 > e.indexOf(p) &&
-            (t[p] = s[p])
-    }
-    if (null != s && 'function' === typeof Object.getOwnPropertySymbols) {
-        var i = 0
-        for (p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            0 > e.indexOf(p[i]) &&
-                Object.prototype.propertyIsEnumerable.call(s, p[i]) &&
-                (t[p[i]] = s[p[i]])
-        }
-    }
-    return t
-}
-module$exports$tslib.__decorate = function (decorators, target, key, desc) {
-    var c = arguments.length,
-        r =
-            3 > c
-                ? target
-                : null === desc
-                ? (desc = Object.getOwnPropertyDescriptor(target, key))
-                : desc,
-        d
-    if (
-        'object' === typeof Reflect &&
-        Reflect &&
-        'function' === typeof Reflect.decorate
-    ) {
-        r = Reflect.decorate(decorators, target, key, desc)
-    } else {
-        for (var i = decorators.length - 1; 0 <= i; i--) {
-            if ((d = decorators[i])) {
-                r =
-                    (3 > c
-                        ? d(r)
-                        : 3 < c
-                        ? d(target, key, r)
-                        : d(target, key)) || r
-            }
-        }
-    }
-    return 3 < c && r && Object.defineProperty(target, key, r), r
-}
-module$exports$tslib.__param = function (paramIndex, decorator) {
-    return function (target, key) {
-        decorator(target, key, paramIndex)
-    }
-}
-module$exports$tslib.__metadata = function (metadataKey, metadataValue) {
-    if (
-        'object' === typeof Reflect &&
-        Reflect &&
-        'function' === typeof Reflect.metadata
-    ) {
-        return Reflect.metadata(metadataKey, metadataValue)
-    }
-}
-module$exports$tslib.__awaiter = function (thisArg, _arguments, P, generator) {
-    function adopt(value) {
-        return value instanceof P
-            ? value
-            : new P(function (resolve) {
-                  resolve(value)
-              })
-    }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) {
-            try {
-                step(generator.next(value))
-            } catch (e) {
-                reject(e)
-            }
-        }
-        function rejected(value) {
-            try {
-                step(generator['throw'](value))
-            } catch (e) {
-                reject(e)
-            }
-        }
-        function step(result) {
-            result.done
-                ? resolve(result.value)
-                : adopt(result.value).then(fulfilled, rejected)
-        }
-        step((generator = generator.apply(thisArg, _arguments || [])).next())
-    })
-}
-module$exports$tslib.__generator = function (thisArg, body) {
-    function verb(n) {
-        return function (v) {
-            return step([n, v])
-        }
-    }
-    function step(op) {
-        if (f) {
-            throw new TypeError('Generator is already executing.')
-        }
-        for (; _; ) {
-            try {
-                if (
-                    ((f = 1),
-                    y &&
-                        (t =
-                            op[0] & 2
-                                ? y['return']
-                                : op[0]
-                                ? y['throw'] ||
-                                  ((t = y['return']) && t.call(y), 0)
-                                : y.next) &&
-                        !(t = t.call(y, op[1])).done)
-                ) {
-                    return t
-                }
-                if (((y = 0), t)) {
-                    op = [op[0] & 2, t.value]
-                }
-                switch (op[0]) {
-                    case 0:
-                    case 1:
-                        t = op
-                        break
-                    case 4:
-                        return _.label++, { value: op[1], done: !1 }
-                    case 5:
-                        _.label++
-                        y = op[1]
-                        op = [0]
-                        continue
-                    case 7:
-                        op = _.ops.pop()
-                        _.trys.pop()
-                        continue
-                    default:
-                        if (
-                            !((t = _.trys),
-                            (t = 0 < t.length && t[t.length - 1])) &&
-                            (6 === op[0] || 2 === op[0])
-                        ) {
-                            _ = 0
-                            continue
-                        }
-                        if (
-                            3 === op[0] &&
-                            (!t || (op[1] > t[0] && op[1] < t[3]))
-                        ) {
-                            _.label = op[1]
-                        } else {
-                            if (6 === op[0] && _.label < t[1]) {
-                                ;(_.label = t[1]), (t = op)
-                            } else {
-                                if (t && _.label < t[2]) {
-                                    ;(_.label = t[2]), _.ops.push(op)
-                                } else {
-                                    t[2] && _.ops.pop()
-                                    _.trys.pop()
-                                    continue
-                                }
-                            }
-                        }
-                }
-                op = body.call(thisArg, _)
-            } catch (e) {
-                ;(op = [6, e]), (y = 0)
-            } finally {
-                f = t = 0
-            }
-        }
-        if (op[0] & 5) {
-            throw op[1]
-        }
-        return { value: op[0] ? op[1] : void 0, done: !0 }
-    }
-    var _ = {
-            label: 0,
-            sent: function () {
-                if (t[0] & 1) {
-                    throw t[1]
-                }
-                return t[1]
-            },
-            trys: [],
-            ops: [],
-        },
-        f,
-        y,
-        t,
-        g
-    return (
-        (g = { next: verb(0), throw: verb(1), return: verb(2) }),
-        'function' === typeof Symbol &&
-            (g[Symbol.iterator] = function () {
-                return g
-            }),
-        g
-    )
-}
-module$exports$tslib.__exportStar = function (m, o) {
-    for (var p in m) {
-        o.hasOwnProperty(p) || (o[p] = m[p])
-    }
-}
-module$exports$tslib.__values = function (o) {
-    var m = 'function' === typeof Symbol && o[Symbol.iterator],
-        i = 0
-    return m
-        ? m.call(o)
-        : {
-              next: function () {
-                  o && i >= o.length && (o = void 0)
-                  return { value: o && o[i++], done: !o }
-              },
-          }
-}
-module$exports$tslib.__read = function (o, n) {
-    var m = 'function' === typeof Symbol && o[Symbol.iterator]
-    if (!m) {
-        return o
-    }
-    var i = m.call(o),
-        r,
-        ar = []
-    try {
-        for (; (void 0 === n || 0 < n--) && !(r = i.next()).done; ) {
-            ar.push(r.value)
-        }
-    } catch (error) {
-        var e = { error: error }
-    } finally {
-        try {
-            r && !r.done && (m = i['return']) && m.call(i)
-        } finally {
-            if (e) {
-                throw e.error
-            }
-        }
-    }
-    return ar
-}
-module$exports$tslib.__spread = function () {
-    for (var ar = [], i = 0; i < arguments.length; i++) {
-        ar = ar.concat(module$exports$tslib.__read(arguments[i]))
-    }
-    return ar
-}
-module$exports$tslib.__spreadArrays = function () {
-    for (var s = 0, i = 0, il = arguments.length; i < il; i++) {
-        s += arguments[i].length
-    }
-    var r = Array(s),
-        k = 0
-    for (i = 0; i < il; i++) {
-        for (var a = arguments[i], j = 0, jl = a.length; j < jl; j++, k++) {
-            r[k] = a[j]
-        }
-    }
-    return r
-}
-module$exports$tslib.__spreadArray = function (to, from, pack) {
-    if (!(Array.isArray(from) || from instanceof NodeList)) {
-        throw new TypeError('Expected an Array or NodeList: ' + String(from))
-    }
-    if (pack || 2 === arguments.length) {
-        for (var i = 0, l = from.length, ar; i < l; i++) {
-            ;(!ar && i in from) ||
-                (ar || (ar = Array.prototype.slice.call(from, 0, i)),
-                (ar[i] = from[i]))
-        }
-    }
-    return to.concat(ar || Array.prototype.slice.call(from))
-}
-module$exports$tslib.__await = function (v) {
-    return this instanceof module$exports$tslib.__await
-        ? ((this.v = v), this)
-        : new module$exports$tslib.__await(v)
-}
-module$exports$tslib.__asyncGenerator = function (
-    thisArg,
-    _arguments,
-    generator
-) {
-    function verb(n) {
-        g[n] &&
-            (i[n] = function (v) {
-                return new Promise(function (a, b) {
-                    1 < q.push([n, v, a, b]) || resume(n, v)
-                })
-            })
-    }
-    function resume(n, v) {
-        try {
-            step(g[n](v))
-        } catch (e) {
-            settle(q[0][3], e)
-        }
-    }
-    function step(r) {
-        r.value instanceof module$exports$tslib.__await
-            ? Promise.resolve(r.value.v).then(fulfill, reject)
-            : settle(q[0][2], r)
-    }
-    function fulfill(value) {
-        resume('next', value)
-    }
-    function reject(value) {
-        resume('throw', value)
-    }
-    function settle(f, v) {
-        ;(f(v), q.shift(), q.length) && resume(q[0][0], q[0][1])
-    }
-    if (!Symbol.asyncIterator) {
-        throw new TypeError('Symbol.asyncIterator is not defined.')
-    }
-    var g = generator.apply(thisArg, _arguments || []),
-        i,
-        q = []
-    return (
-        (i = {}),
-        verb('next'),
-        verb('throw'),
-        verb('return'),
-        (i[Symbol.asyncIterator] = function () {
-            return this
-        }),
-        i
-    )
-}
-module$exports$tslib.__asyncDelegator = function (o) {
-    function verb(n, f) {
-        i[n] = o[n]
-            ? function (v) {
-                  return (p = !p)
-                      ? {
-                            value: new module$exports$tslib.__await(o[n](v)),
-                            done: 'return' === n,
-                        }
-                      : f
-                      ? f(v)
-                      : v
-              }
-            : f
-    }
-    var i, p
-    return (
-        (i = {}),
-        verb('next'),
-        verb('throw', function (e) {
-            throw e
-        }),
-        verb('return'),
-        (i[Symbol.iterator] = function () {
-            return i
-        }),
-        i
-    )
-}
-module$exports$tslib.__asyncValues = function (o) {
-    function verb(n) {
-        i[n] =
-            o[n] &&
-            function (v) {
-                return new Promise(function (resolve, reject) {
-                    v = o[n](v)
-                    settle(resolve, reject, v.done, v.value)
-                })
-            }
-    }
-    function settle(resolve, reject, d, v$jscomp$0) {
-        Promise.resolve(v$jscomp$0).then(function (v) {
-            resolve({ value: v, done: d })
-        }, reject)
-    }
-    if (!Symbol.asyncIterator) {
-        throw new TypeError('Symbol.asyncIterator is not defined.')
-    }
-    var m = o[Symbol.asyncIterator],
-        i
-    return m
-        ? m.call(o)
-        : ((o =
-              'function' === typeof __values
-                  ? __values(o)
-                  : o[Symbol.iterator]()),
-          (i = {}),
-          verb('next'),
-          verb('throw'),
-          verb('return'),
-          (i[Symbol.asyncIterator] = function () {
-              return this
-          }),
-          i)
-}
-module$exports$tslib.__makeTemplateObject = function (cooked, raw) {
-    Object.defineProperty
-        ? Object.defineProperty(cooked, 'raw', { value: raw })
-        : (cooked.raw = raw)
-    return cooked
-}
-module$exports$tslib.__classPrivateFieldGet = function (
-    receiver,
-    state,
-    kind,
-    f
-) {
-    if ('a' === kind && !f) {
-        throw new TypeError('Private accessor was defined without a getter')
-    }
-    if (
-        'function' === typeof state
-            ? receiver !== state || !f
-            : !state.has(receiver)
-    ) {
-        throw new TypeError(
-            'Cannot read private member from an object whose class did not declare it'
-        )
-    }
-    return 'm' === kind
-        ? f
-        : 'a' === kind
-        ? f.call(receiver)
-        : f
-        ? f.value
-        : state.get(receiver)
-}
-module$exports$tslib.__classPrivateFieldSet = function (
-    receiver,
-    state,
-    value,
-    kind,
-    f
-) {
-    if ('m' === kind) {
-        throw new TypeError('Private method is not writable')
-    }
-    if ('a' === kind && !f) {
-        throw new TypeError('Private accessor was defined without a setter')
-    }
-    if (
-        'function' === typeof state
-            ? receiver !== state || !f
-            : !state.has(receiver)
-    ) {
-        throw new TypeError(
-            'Cannot write private member to an object whose class did not declare it'
-        )
-    }
-    return (
-        'a' === kind
-            ? f.call(receiver, value)
-            : f
-            ? (f.value = value)
-            : state.set(receiver, value),
-        value
-    )
-}
-module$exports$tslib.__classPrivateFieldIn = function (state, receiver) {
-    if (
-        null === receiver ||
-        ('object' !== typeof receiver && 'function' !== typeof receiver)
-    ) {
-        throw new TypeError("Cannot use 'in' operator on non-object")
-    }
-    return 'function' === typeof state
-        ? receiver === state
-        : state.has(receiver)
-}
 var module$exports$eeapiclient$domain_object = {},
     module$contents$eeapiclient$domain_object_module =
         module$contents$eeapiclient$domain_object_module || {
             id: 'javascript/typescript/contrib/apiclient/core/domain_object.closure.js',
         }
-module$exports$eeapiclient$domain_object.ObjectMapMetadata =
-    function module$contents$eeapiclient$domain_object_ObjectMapMetadata() {}
+module$exports$eeapiclient$domain_object.ObjectMapMetadata = function () {}
 var module$contents$eeapiclient$domain_object_Primitive
-module$exports$eeapiclient$domain_object.ClassMetadata =
-    function module$contents$eeapiclient$domain_object_ClassMetadata() {}
+module$exports$eeapiclient$domain_object.ClassMetadata = function () {}
 var module$contents$eeapiclient$domain_object_NullClass = function () {}
 module$exports$eeapiclient$domain_object.NULL_VALUE =
     new module$contents$eeapiclient$domain_object_NullClass()
-module$exports$eeapiclient$domain_object.ISerializable =
-    function module$contents$eeapiclient$domain_object_ISerializable() {}
+module$exports$eeapiclient$domain_object.ISerializable = function () {}
 function module$contents$eeapiclient$domain_object_buildClassMetadataFromPartial(
     partialClassMetadata
 ) {
@@ -9233,21 +9236,18 @@ module$exports$eeapiclient$domain_object.Serializable.prototype.Serializable$has
     function (key) {
         return null != this.Serializable$values[key]
     }
-module$exports$eeapiclient$domain_object.SerializableCtor =
-    function module$contents$eeapiclient$domain_object_SerializableCtor() {}
-module$exports$eeapiclient$domain_object.clone =
-    function module$contents$eeapiclient$domain_object_clone(serializable) {
-        return module$contents$eeapiclient$domain_object_deserialize(
-            serializable.getConstructor(),
-            module$contents$eeapiclient$domain_object_serialize(serializable)
-        )
-    }
-module$exports$eeapiclient$domain_object.isEmpty =
-    function module$contents$eeapiclient$domain_object_isEmpty(serializable) {
-        return !Object.keys(
-            module$contents$eeapiclient$domain_object_serialize(serializable)
-        ).length
-    }
+module$exports$eeapiclient$domain_object.SerializableCtor = function () {}
+module$exports$eeapiclient$domain_object.clone = function (serializable) {
+    return module$contents$eeapiclient$domain_object_deserialize(
+        serializable.getConstructor(),
+        module$contents$eeapiclient$domain_object_serialize(serializable)
+    )
+}
+module$exports$eeapiclient$domain_object.isEmpty = function (serializable) {
+    return !Object.keys(
+        module$contents$eeapiclient$domain_object_serialize(serializable)
+    ).length
+}
 function module$contents$eeapiclient$domain_object_serialize(serializable) {
     return module$contents$eeapiclient$domain_object_deepCopy(
         serializable,
@@ -9303,13 +9303,12 @@ function module$contents$eeapiclient$domain_object_deserializeInstanciator(
     }
     return new ctor()
 }
-module$exports$eeapiclient$domain_object.strictDeserialize =
-    function module$contents$eeapiclient$domain_object_strictDeserialize(
-        type,
-        raw
-    ) {
-        return module$contents$eeapiclient$domain_object_deserialize(type, raw)
-    }
+module$exports$eeapiclient$domain_object.strictDeserialize = function (
+    type,
+    raw
+) {
+    return module$contents$eeapiclient$domain_object_deserialize(type, raw)
+}
 var module$contents$eeapiclient$domain_object_CopyValueGetter,
     module$contents$eeapiclient$domain_object_CopyValueSetter,
     module$contents$eeapiclient$domain_object_CopyConstructor,
@@ -9331,15 +9330,14 @@ function module$contents$eeapiclient$domain_object_deepCopy(
             arrays = metadata.arrays || {},
             objects = metadata.objects || {},
             objectMaps = metadata.objectMaps || {},
-            $jscomp$loop$72 = {},
-            $jscomp$iter$12 = $jscomp.makeIterator(metadata.keys || []),
-            $jscomp$key$key = $jscomp$iter$12.next();
+            $jscomp$iter$19 = $jscomp.makeIterator(metadata.keys || []),
+            $jscomp$key$key = $jscomp$iter$19.next(),
+            $jscomp$loop$m1892927425$0 = {};
         !$jscomp$key$key.done;
-        $jscomp$loop$72 = {
-            $jscomp$loop$prop$mapMetadata$73:
-                $jscomp$loop$72.$jscomp$loop$prop$mapMetadata$73,
+        $jscomp$loop$m1892927425$0 = {
+            mapMetadata: $jscomp$loop$m1892927425$0.mapMetadata,
         },
-            $jscomp$key$key = $jscomp$iter$12.next()
+            $jscomp$key$key = $jscomp$iter$19.next()
     ) {
         var key = $jscomp$key$key.value,
             value = valueGetter(key, source)
@@ -9369,26 +9367,25 @@ function module$contents$eeapiclient$domain_object_deepCopy(
                     objects[key]
                 )
             } else if (objectMaps.hasOwnProperty(key)) {
-                ;($jscomp$loop$72.$jscomp$loop$prop$mapMetadata$73 =
-                    objectMaps[key]),
-                    (copy = $jscomp$loop$72.$jscomp$loop$prop$mapMetadata$73
+                ;($jscomp$loop$m1892927425$0.mapMetadata = objectMaps[key]),
+                    (copy = $jscomp$loop$m1892927425$0.mapMetadata
                         .isPropertyArray
                         ? value.map(
-                              (function ($jscomp$loop$72) {
+                              (function ($jscomp$loop$m1892927425$0) {
                                   return function (v) {
                                       return module$contents$eeapiclient$domain_object_deepCopyObjectMap(
                                           v,
-                                          $jscomp$loop$72.$jscomp$loop$prop$mapMetadata$73,
+                                          $jscomp$loop$m1892927425$0.mapMetadata,
                                           valueGetter,
                                           valueSetter,
                                           copyInstanciator
                                       )
                                   }
-                              })($jscomp$loop$72)
+                              })($jscomp$loop$m1892927425$0)
                           )
                         : module$contents$eeapiclient$domain_object_deepCopyObjectMap(
                               value,
-                              $jscomp$loop$72.$jscomp$loop$prop$mapMetadata$73,
+                              $jscomp$loop$m1892927425$0.mapMetadata,
                               valueGetter,
                               valueSetter,
                               copyInstanciator
@@ -9426,10 +9423,10 @@ function module$contents$eeapiclient$domain_object_deepCopyObjectMap(
 ) {
     for (
         var objMap = {},
-            $jscomp$iter$13 = $jscomp.makeIterator(Object.keys(value)),
-            $jscomp$key$mapKey = $jscomp$iter$13.next();
+            $jscomp$iter$20 = $jscomp.makeIterator(Object.keys(value)),
+            $jscomp$key$mapKey = $jscomp$iter$20.next();
         !$jscomp$key$mapKey.done;
-        $jscomp$key$mapKey = $jscomp$iter$13.next()
+        $jscomp$key$mapKey = $jscomp$iter$20.next()
     ) {
         var mapKey = $jscomp$key$mapKey.value,
             mapValue = value[mapKey]
@@ -9544,17 +9541,16 @@ function module$contents$eeapiclient$domain_object_deepEquals(
         return !1
     }
     for (
-        var $jscomp$loop$74 = {},
-            $jscomp$iter$14 = $jscomp.makeIterator(keys1),
-            $jscomp$key$key = $jscomp$iter$14.next();
+        var $jscomp$iter$21 = $jscomp.makeIterator(keys1),
+            $jscomp$key$key = $jscomp$iter$21.next(),
+            $jscomp$loop$m1892927425$1 = {};
         !$jscomp$key$key.done;
-        $jscomp$loop$74 = {
-            $jscomp$loop$prop$value2$75:
-                $jscomp$loop$74.$jscomp$loop$prop$value2$75,
-            $jscomp$loop$prop$mapMetadata$76:
-                $jscomp$loop$74.$jscomp$loop$prop$mapMetadata$76,
+        $jscomp$loop$m1892927425$1 = {
+            value2$jscomp$7: $jscomp$loop$m1892927425$1.value2$jscomp$7,
+            mapMetadata$jscomp$2:
+                $jscomp$loop$m1892927425$1.mapMetadata$jscomp$2,
         },
-            $jscomp$key$key = $jscomp$iter$14.next()
+            $jscomp$key$key = $jscomp$iter$21.next()
     ) {
         var key = $jscomp$key$key.value,
             has1 =
@@ -9574,13 +9570,13 @@ function module$contents$eeapiclient$domain_object_deepEquals(
         }
         if (has1) {
             var value1 = serializable1.Serializable$get(key)
-            $jscomp$loop$74.$jscomp$loop$prop$value2$75 =
+            $jscomp$loop$m1892927425$1.value2$jscomp$7 =
                 serializable2.Serializable$get(key)
             if (arrays1.hasOwnProperty(key)) {
                 if (
                     !module$contents$eeapiclient$domain_object_deepEqualsValue(
                         value1,
-                        $jscomp$loop$74.$jscomp$loop$prop$value2$75,
+                        $jscomp$loop$m1892927425$1.value2$jscomp$7,
                         !0,
                         !0
                     )
@@ -9591,7 +9587,7 @@ function module$contents$eeapiclient$domain_object_deepEquals(
                 if (
                     !module$contents$eeapiclient$domain_object_deepEqualsValue(
                         value1,
-                        $jscomp$loop$74.$jscomp$loop$prop$value2$75,
+                        $jscomp$loop$m1892927425$1.value2$jscomp$7,
                         !1,
                         !0
                     )
@@ -9600,27 +9596,27 @@ function module$contents$eeapiclient$domain_object_deepEquals(
                 }
             } else if (objectMaps1.hasOwnProperty(key)) {
                 if (
-                    (($jscomp$loop$74.$jscomp$loop$prop$mapMetadata$76 =
+                    (($jscomp$loop$m1892927425$1.mapMetadata$jscomp$2 =
                         objectMaps1[key]),
-                    $jscomp$loop$74.$jscomp$loop$prop$mapMetadata$76
+                    $jscomp$loop$m1892927425$1.mapMetadata$jscomp$2
                         .isPropertyArray)
                 ) {
                     if (
                         !module$contents$eeapiclient$domain_object_sameKeys(
                             value1,
-                            $jscomp$loop$74.$jscomp$loop$prop$value2$75
+                            $jscomp$loop$m1892927425$1.value2$jscomp$7
                         ) ||
                         value1.some(
-                            (function ($jscomp$loop$74) {
+                            (function ($jscomp$loop$m1892927425$1) {
                                 return function (v1, i) {
                                     return !module$contents$eeapiclient$domain_object_deepEqualsObjectMap(
                                         v1,
-                                        $jscomp$loop$74
-                                            .$jscomp$loop$prop$value2$75[i],
-                                        $jscomp$loop$74.$jscomp$loop$prop$mapMetadata$76
+                                        $jscomp$loop$m1892927425$1
+                                            .value2$jscomp$7[i],
+                                        $jscomp$loop$m1892927425$1.mapMetadata$jscomp$2
                                     )
                                 }
-                            })($jscomp$loop$74)
+                            })($jscomp$loop$m1892927425$1)
                         )
                     ) {
                         return !1
@@ -9628,8 +9624,8 @@ function module$contents$eeapiclient$domain_object_deepEquals(
                 } else if (
                     !module$contents$eeapiclient$domain_object_deepEqualsObjectMap(
                         value1,
-                        $jscomp$loop$74.$jscomp$loop$prop$value2$75,
-                        $jscomp$loop$74.$jscomp$loop$prop$mapMetadata$76
+                        $jscomp$loop$m1892927425$1.value2$jscomp$7,
+                        $jscomp$loop$m1892927425$1.mapMetadata$jscomp$2
                     )
                 ) {
                     return !1
@@ -9638,7 +9634,7 @@ function module$contents$eeapiclient$domain_object_deepEquals(
                 if (
                     !module$contents$eeapiclient$domain_object_deepEqualsValue(
                         value1,
-                        $jscomp$loop$74.$jscomp$loop$prop$value2$75,
+                        $jscomp$loop$m1892927425$1.value2$jscomp$7,
                         !0,
                         !1
                     )
@@ -9648,7 +9644,7 @@ function module$contents$eeapiclient$domain_object_deepEquals(
             } else if (
                 !module$contents$eeapiclient$domain_object_deepEqualsValue(
                     value1,
-                    $jscomp$loop$74.$jscomp$loop$prop$value2$75,
+                    $jscomp$loop$m1892927425$1.value2$jscomp$7,
                     !1,
                     !1
                 )
@@ -9684,10 +9680,10 @@ function module$contents$eeapiclient$domain_object_deepEqualsObjectMap(
         return !1
     }
     for (
-        var $jscomp$iter$15 = $jscomp.makeIterator(Object.keys(value1)),
-            $jscomp$key$mapKey = $jscomp$iter$15.next();
+        var $jscomp$iter$22 = $jscomp.makeIterator(Object.keys(value1)),
+            $jscomp$key$mapKey = $jscomp$iter$22.next();
         !$jscomp$key$mapKey.done;
-        $jscomp$key$mapKey = $jscomp$iter$15.next()
+        $jscomp$key$mapKey = $jscomp$iter$22.next()
     ) {
         var mapKey = $jscomp$key$mapKey.value
         if (
@@ -9773,23 +9769,17 @@ function module$contents$eeapiclient$domain_object_sameKeys(a, b) {
     }
     return !0
 }
-module$exports$eeapiclient$domain_object.serializableEqualityTester =
-    function module$contents$eeapiclient$domain_object_serializableEqualityTester(
-        left,
-        right
+module$exports$eeapiclient$domain_object.serializableEqualityTester = function (
+    left,
+    right
+) {
+    if (
+        left instanceof module$exports$eeapiclient$domain_object.Serializable &&
+        right instanceof module$exports$eeapiclient$domain_object.Serializable
     ) {
-        if (
-            left instanceof
-                module$exports$eeapiclient$domain_object.Serializable &&
-            right instanceof
-                module$exports$eeapiclient$domain_object.Serializable
-        ) {
-            return module$contents$eeapiclient$domain_object_deepEquals(
-                left,
-                right
-            )
-        }
+        return module$contents$eeapiclient$domain_object_deepEquals(left, right)
     }
+}
 goog.dom.HtmlElement = function () {}
 goog.dom.TagName = function () {}
 goog.dom.TagName.cast = function (name, type) {
@@ -10372,11 +10362,14 @@ goog.string.Const.GOOG_STRING_CONSTRUCTOR_TOKEN_PRIVATE_ = {}
 goog.string.Const.EMPTY = goog.string.Const.from('')
 var module$contents$goog$html$SafeScript_CONSTRUCTOR_TOKEN_PRIVATE = {},
     module$contents$goog$html$SafeScript_SafeScript = function (value, token) {
-        this.privateDoNotAccessOrElseSafeScriptWrappedValue_ =
-            token ===
-            module$contents$goog$html$SafeScript_CONSTRUCTOR_TOKEN_PRIVATE
-                ? value
-                : ''
+        if (
+            goog.DEBUG &&
+            token !==
+                module$contents$goog$html$SafeScript_CONSTRUCTOR_TOKEN_PRIVATE
+        ) {
+            throw Error('SafeScript is not meant to be built directly')
+        }
+        this.privateDoNotAccessOrElseSafeScriptWrappedValue_ = value
         this.implementsGoogStringTypedString = !0
     }
 module$contents$goog$html$SafeScript_SafeScript.prototype.toString =
@@ -10505,10 +10498,13 @@ goog.fs.blob.getBlobWithProperties = function (parts, opt_type, opt_endings) {
     throw Error("This browser doesn't seem to support creating Blobs")
 }
 goog.html.TrustedResourceUrl = function (value, token) {
-    this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ =
-        token === goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_
-            ? value
-            : ''
+    if (
+        goog.DEBUG &&
+        token !== goog.html.TrustedResourceUrl.CONSTRUCTOR_TOKEN_PRIVATE_
+    ) {
+        throw Error('TrustedResourceUrl is not meant to be built directly')
+    }
+    this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ = value
 }
 goog.html.TrustedResourceUrl.prototype.toString = function () {
     return this.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_ + ''
@@ -10553,10 +10549,9 @@ goog.html.TrustedResourceUrl.unwrapTrustedScriptURL = function (
         return trustedResourceUrl.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue_
     }
     goog.asserts.fail(
-        "expected object of type TrustedResourceUrl, got '" +
-            trustedResourceUrl +
-            "' of type " +
-            goog.typeOf(trustedResourceUrl)
+        "expected object of type TrustedResourceUrl, got '%s' of type %s",
+        trustedResourceUrl,
+        goog.typeOf(trustedResourceUrl)
     )
     return 'type_error:TrustedResourceUrl'
 }
@@ -10678,8 +10673,10 @@ goog.html.TrustedResourceUrl.stringifyParams_ = function (
     return currentString
 }
 goog.html.SafeUrl = function (value, token) {
-    this.privateDoNotAccessOrElseSafeUrlWrappedValue_ =
-        token === goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_ ? value : ''
+    if (goog.DEBUG && token !== goog.html.SafeUrl.CONSTRUCTOR_TOKEN_PRIVATE_) {
+        throw Error('SafeUrl is not meant to be built directly')
+    }
+    this.privateDoNotAccessOrElseSafeUrlWrappedValue_ = value
 }
 goog.html.SafeUrl.prototype.toString = function () {
     return this.privateDoNotAccessOrElseSafeUrlWrappedValue_.toString()
@@ -10705,9 +10702,13 @@ goog.html.SafeUrl.unwrap = function (safeUrl) {
     return 'type_error:SafeUrl'
 }
 goog.html.SafeUrl.fromConstant = function (url) {
-    return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(
-        goog.string.Const.unwrap(url)
-    )
+    var str = goog.string.Const.unwrap(url)
+    if (goog.DEBUG && 'javascript:' === goog.html.SafeUrl.extractScheme(str)) {
+        throw Error(
+            'Building a SafeUrl with a javascript scheme is not supported'
+        )
+    }
+    return goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse(str)
 }
 goog.html.SAFE_MIME_TYPE_PATTERN_ = RegExp(
     '^(?:audio/(?:3gpp2|3gpp|aac|L16|midi|mp3|mp4|mpeg|oga|ogg|opus|x-m4a|x-matroska|x-wav|wav|webm)|font/\\w+|image/(?:bmp|gif|jpeg|jpg|png|tiff|webp|x-icon|heic|heif)|video/(?:mpeg|mp4|ogg|webm|quicktime|x-matroska))(?:;\\w+=(?:\\w+|"[\\w;,= ]+"))*$',
@@ -10870,7 +10871,6 @@ goog.html.SafeUrl.fromTrustedResourceUrl = function (trustedResourceUrl) {
     )
 }
 goog.html.SAFE_URL_PATTERN_ = /^(?:(?:https?|mailto|ftp):|[^:/?#]*(?:[/?#]|$))/i
-goog.html.SafeUrl.SAFE_URL_PATTERN = goog.html.SAFE_URL_PATTERN_
 goog.html.SafeUrl.trySanitize = function (url) {
     if (url instanceof goog.html.SafeUrl) {
         return url
@@ -10974,11 +10974,14 @@ goog.html.SafeUrl.ABOUT_BLANK =
     )
 var module$contents$goog$html$SafeStyle_CONSTRUCTOR_TOKEN_PRIVATE = {},
     module$contents$goog$html$SafeStyle_SafeStyle = function (value, token) {
-        this.privateDoNotAccessOrElseSafeStyleWrappedValue_ =
-            token ===
-            module$contents$goog$html$SafeStyle_CONSTRUCTOR_TOKEN_PRIVATE
-                ? value
-                : ''
+        if (
+            goog.DEBUG &&
+            token !==
+                module$contents$goog$html$SafeStyle_CONSTRUCTOR_TOKEN_PRIVATE
+        ) {
+            throw Error('SafeStyle is not meant to be built directly')
+        }
+        this.privateDoNotAccessOrElseSafeStyleWrappedValue_ = value
         this.implementsGoogStringTypedString = !0
     }
 module$contents$goog$html$SafeStyle_SafeStyle.fromConstant = function (style) {
@@ -11203,7 +11206,7 @@ var module$contents$goog$html$SafeStyle_VALUE_RE = RegExp(
 function module$contents$goog$html$SafeStyle_sanitizeUrl(value) {
     return value.replace(
         module$contents$goog$html$SafeStyle_URL_RE,
-        function (match$jscomp$0, before, url, after) {
+        function (match, before, url, after) {
             var quote = ''
             url = url.replace(
                 /^(['"])(.*)\1$/,
@@ -11224,11 +11227,14 @@ var module$contents$goog$html$SafeStyleSheet_CONSTRUCTOR_TOKEN_PRIVATE = {},
         value,
         token
     ) {
-        this.privateDoNotAccessOrElseSafeStyleSheetWrappedValue_ =
-            token ===
-            module$contents$goog$html$SafeStyleSheet_CONSTRUCTOR_TOKEN_PRIVATE
-                ? value
-                : ''
+        if (
+            goog.DEBUG &&
+            token !==
+                module$contents$goog$html$SafeStyleSheet_CONSTRUCTOR_TOKEN_PRIVATE
+        ) {
+            throw Error('SafeStyleSheet is not meant to be built directly')
+        }
+        this.privateDoNotAccessOrElseSafeStyleSheetWrappedValue_ = value
         this.implementsGoogStringTypedString = !0
     }
 module$contents$goog$html$SafeStyleSheet_SafeStyleSheet.prototype.toString =
@@ -11246,9 +11252,9 @@ module$contents$goog$html$SafeStyleSheet_SafeStyleSheet.createRule = function (
         /('|")((?!\1)[^\r\n\f\\]|\\[\s\S])*\1/g,
         ''
     )
-    if (!/^[-_a-zA-Z0-9#.:* ,>+~[\]()=^$|]+$/.test(selectorToCheck)) {
+    if (!/^[-_a-zA-Z0-9#.:* ,>+~[\]()=\\^$|]+$/.test(selectorToCheck)) {
         throw Error(
-            'Selector allows only [-_a-zA-Z0-9#.:* ,>+~[\\]()=^$|] and strings, got: ' +
+            'Selector allows only [-_a-zA-Z0-9#.:* ,>+~[\\]()=\\^$|] and strings, got: ' +
                 selector
         )
     }
@@ -11360,11 +11366,14 @@ goog.html.SafeStyleSheet =
     module$contents$goog$html$SafeStyleSheet_SafeStyleSheet
 var module$contents$goog$html$SafeHtml_CONSTRUCTOR_TOKEN_PRIVATE = {},
     module$contents$goog$html$SafeHtml_SafeHtml = function (value, token) {
-        this.privateDoNotAccessOrElseSafeHtmlWrappedValue_ =
-            token ===
-            module$contents$goog$html$SafeHtml_CONSTRUCTOR_TOKEN_PRIVATE
-                ? value
-                : ''
+        if (
+            goog.DEBUG &&
+            token !==
+                module$contents$goog$html$SafeHtml_CONSTRUCTOR_TOKEN_PRIVATE
+        ) {
+            throw Error('SafeHtml is not meant to be built directly')
+        }
+        this.privateDoNotAccessOrElseSafeHtmlWrappedValue_ = value
         this.implementsGoogStringTypedString = !0
     }
 module$contents$goog$html$SafeHtml_SafeHtml.prototype.getTypedStringValue =
@@ -11750,34 +11759,40 @@ module$contents$goog$html$SafeHtml_SafeHtml.combineAttributes = function (
             ),
             (combinedAttributes[name] = fixedAttributes[name]))
     }
-    for (var name$48 in defaultAttributes) {
-        Object.prototype.hasOwnProperty.call(defaultAttributes, name$48) &&
+    for (var name$jscomp$0 in defaultAttributes) {
+        Object.prototype.hasOwnProperty.call(
+            defaultAttributes,
+            name$jscomp$0
+        ) &&
             (goog.asserts.assert(
-                name$48.toLowerCase() == name$48,
+                name$jscomp$0.toLowerCase() == name$jscomp$0,
                 'Must be lower case'
             ),
-            (combinedAttributes[name$48] = defaultAttributes[name$48]))
+            (combinedAttributes[name$jscomp$0] =
+                defaultAttributes[name$jscomp$0]))
     }
     if (attributes) {
-        for (var name$49 in attributes) {
-            if (Object.prototype.hasOwnProperty.call(attributes, name$49)) {
-                var nameLower = name$49.toLowerCase()
+        for (var name$jscomp$1 in attributes) {
+            if (
+                Object.prototype.hasOwnProperty.call(attributes, name$jscomp$1)
+            ) {
+                var nameLower = name$jscomp$1.toLowerCase()
                 if (nameLower in fixedAttributes) {
                     throw Error(
                         module$contents$goog$html$SafeHtml_SafeHtml.ENABLE_ERROR_MESSAGES
                             ? 'Cannot override "' +
                                   nameLower +
                                   '" attribute, got "' +
-                                  name$49 +
+                                  name$jscomp$1 +
                                   '" with value "' +
-                                  attributes[name$49] +
+                                  attributes[name$jscomp$1] +
                                   '"'
                             : ''
                     )
                 }
                 nameLower in defaultAttributes &&
                     delete combinedAttributes[nameLower]
-                combinedAttributes[name$49] = attributes[name$49]
+                combinedAttributes[name$jscomp$1] = attributes[name$jscomp$1]
             }
         }
     }
@@ -12763,17 +12778,17 @@ goog.string.editDistance = function (a, b) {
     for (var i = 0; i < b.length + 1; i++) {
         v0[i] = i
     }
-    for (var i$50 = 0; i$50 < a.length; i$50++) {
-        v1[0] = i$50 + 1
+    for (var i$jscomp$0 = 0; i$jscomp$0 < a.length; i$jscomp$0++) {
+        v1[0] = i$jscomp$0 + 1
         for (var j = 0; j < b.length; j++) {
             v1[j + 1] = Math.min(
                 v1[j] + 1,
                 v0[j + 1] + 1,
-                v0[j] + Number(a[i$50] != b[j])
+                v0[j] + Number(a[i$jscomp$0] != b[j])
             )
         }
-        for (var j$51 = 0; j$51 < v0.length; j$51++) {
-            v0[j$51] = v1[j$51]
+        for (var j$jscomp$0 = 0; j$jscomp$0 < v0.length; j$jscomp$0++) {
+            v0[j$jscomp$0] = v1[j$jscomp$0]
         }
     }
     return v1[b.length]
@@ -12789,110 +12804,97 @@ module$contents$goog$collections$maps_MapLike.prototype.keys = function () {}
 module$contents$goog$collections$maps_MapLike.prototype.values = function () {}
 module$contents$goog$collections$maps_MapLike.prototype.has = function (key) {}
 goog.collections.maps.MapLike = module$contents$goog$collections$maps_MapLike
-goog.collections.maps.setAll =
-    function module$contents$goog$collections$maps_setAll(map, entries) {
-        if (entries) {
-            for (
-                var $jscomp$iter$16 = $jscomp.makeIterator(entries),
-                    $jscomp$key$ = $jscomp$iter$16.next();
-                !$jscomp$key$.done;
-                $jscomp$key$ = $jscomp$iter$16.next()
-            ) {
-                var $jscomp$destructuring$var25 = $jscomp.makeIterator(
-                        $jscomp$key$.value
-                    ),
-                    k = $jscomp$destructuring$var25.next().value,
-                    v = $jscomp$destructuring$var25.next().value
-                map.set(k, v)
-            }
-        }
-    }
-goog.collections.maps.hasValue =
-    function module$contents$goog$collections$maps_hasValue(
-        map,
-        val,
-        valueEqualityFn
-    ) {
-        valueEqualityFn =
-            void 0 === valueEqualityFn
-                ? module$contents$goog$collections$maps_defaultEqualityFn
-                : valueEqualityFn
+goog.collections.maps.setAll = function (map, entries) {
+    if (entries) {
         for (
-            var $jscomp$iter$17 = $jscomp.makeIterator(map.values()),
-                $jscomp$key$v = $jscomp$iter$17.next();
-            !$jscomp$key$v.done;
-            $jscomp$key$v = $jscomp$iter$17.next()
+            var $jscomp$iter$23 = $jscomp.makeIterator(entries),
+                $jscomp$key$ = $jscomp$iter$23.next();
+            !$jscomp$key$.done;
+            $jscomp$key$ = $jscomp$iter$23.next()
         ) {
-            if (valueEqualityFn($jscomp$key$v.value, val)) {
-                return !0
-            }
+            var $jscomp$destructuring$var25 = $jscomp.makeIterator(
+                    $jscomp$key$.value
+                ),
+                k = $jscomp$destructuring$var25.next().value,
+                v = $jscomp$destructuring$var25.next().value
+            map.set(k, v)
         }
-        return !1
     }
+}
+goog.collections.maps.hasValue = function (map, val, valueEqualityFn) {
+    valueEqualityFn =
+        void 0 === valueEqualityFn
+            ? module$contents$goog$collections$maps_defaultEqualityFn
+            : valueEqualityFn
+    for (
+        var $jscomp$iter$24 = $jscomp.makeIterator(map.values()),
+            $jscomp$key$v = $jscomp$iter$24.next();
+        !$jscomp$key$v.done;
+        $jscomp$key$v = $jscomp$iter$24.next()
+    ) {
+        if (valueEqualityFn($jscomp$key$v.value, val)) {
+            return !0
+        }
+    }
+    return !1
+}
 var module$contents$goog$collections$maps_defaultEqualityFn = function (a, b) {
     return a === b
 }
-goog.collections.maps.equals =
-    function module$contents$goog$collections$maps_equals(
-        map,
-        otherMap,
-        valueEqualityFn
-    ) {
-        valueEqualityFn =
-            void 0 === valueEqualityFn
-                ? module$contents$goog$collections$maps_defaultEqualityFn
-                : valueEqualityFn
-        if (map === otherMap) {
-            return !0
-        }
-        if (map.size !== otherMap.size) {
-            return !1
-        }
-        for (
-            var $jscomp$iter$18 = $jscomp.makeIterator(map.keys()),
-                $jscomp$key$key = $jscomp$iter$18.next();
-            !$jscomp$key$key.done;
-            $jscomp$key$key = $jscomp$iter$18.next()
-        ) {
-            var key = $jscomp$key$key.value
-            if (
-                !otherMap.has(key) ||
-                !valueEqualityFn(map.get(key), otherMap.get(key))
-            ) {
-                return !1
-            }
-        }
+goog.collections.maps.equals = function (map, otherMap, valueEqualityFn) {
+    valueEqualityFn =
+        void 0 === valueEqualityFn
+            ? module$contents$goog$collections$maps_defaultEqualityFn
+            : valueEqualityFn
+    if (map === otherMap) {
         return !0
     }
-goog.collections.maps.transpose =
-    function module$contents$goog$collections$maps_transpose(map) {
-        for (
-            var transposed = new Map(),
-                $jscomp$iter$19 = $jscomp.makeIterator(map.keys()),
-                $jscomp$key$key = $jscomp$iter$19.next();
-            !$jscomp$key$key.done;
-            $jscomp$key$key = $jscomp$iter$19.next()
-        ) {
-            var key = $jscomp$key$key.value,
-                val = map.get(key)
-            transposed.set(val, key)
-        }
-        return transposed
+    if (map.size !== otherMap.size) {
+        return !1
     }
-goog.collections.maps.toObject =
-    function module$contents$goog$collections$maps_toObject(map) {
-        for (
-            var obj = {},
-                $jscomp$iter$20 = $jscomp.makeIterator(map.keys()),
-                $jscomp$key$key = $jscomp$iter$20.next();
-            !$jscomp$key$key.done;
-            $jscomp$key$key = $jscomp$iter$20.next()
+    for (
+        var $jscomp$iter$25 = $jscomp.makeIterator(map.keys()),
+            $jscomp$key$key = $jscomp$iter$25.next();
+        !$jscomp$key$key.done;
+        $jscomp$key$key = $jscomp$iter$25.next()
+    ) {
+        var key = $jscomp$key$key.value
+        if (
+            !otherMap.has(key) ||
+            !valueEqualityFn(map.get(key), otherMap.get(key))
         ) {
-            var key = $jscomp$key$key.value
-            obj[key] = map.get(key)
+            return !1
         }
-        return obj
     }
+    return !0
+}
+goog.collections.maps.transpose = function (map) {
+    for (
+        var transposed = new Map(),
+            $jscomp$iter$26 = $jscomp.makeIterator(map.keys()),
+            $jscomp$key$key = $jscomp$iter$26.next();
+        !$jscomp$key$key.done;
+        $jscomp$key$key = $jscomp$iter$26.next()
+    ) {
+        var key = $jscomp$key$key.value,
+            val = map.get(key)
+        transposed.set(val, key)
+    }
+    return transposed
+}
+goog.collections.maps.toObject = function (map) {
+    for (
+        var obj = {},
+            $jscomp$iter$27 = $jscomp.makeIterator(map.keys()),
+            $jscomp$key$key = $jscomp$iter$27.next();
+        !$jscomp$key$key.done;
+        $jscomp$key$key = $jscomp$iter$27.next()
+    ) {
+        var key = $jscomp$key$key.value
+        obj[key] = map.get(key)
+    }
+    return obj
+}
 goog.uri = {}
 goog.uri.utils = {}
 goog.uri.utils.QueryArray = {}
@@ -14094,10 +14096,10 @@ function module$contents$eeapiclient$request_params_buildQueryParams(
     for (
         var urlQueryParams = (passthroughParams =
                 void 0 === passthroughParams ? {} : passthroughParams),
-            $jscomp$iter$21 = $jscomp.makeIterator(Object.entries(mapping)),
-            $jscomp$key$ = $jscomp$iter$21.next();
+            $jscomp$iter$28 = $jscomp.makeIterator(Object.entries(mapping)),
+            $jscomp$key$ = $jscomp$iter$28.next();
         !$jscomp$key$.done;
-        $jscomp$key$ = $jscomp$iter$21.next()
+        $jscomp$key$ = $jscomp$iter$28.next()
     ) {
         var $jscomp$destructuring$var27 = $jscomp.makeIterator(
                 $jscomp$key$.value
@@ -14124,74 +14126,71 @@ var module$contents$eeapiclient$request_params_simpleCorsAllowedHeaders = [
         'HEAD',
         'POST',
     ]
-module$exports$eeapiclient$request_params.bypassCorsPreflight =
-    function module$contents$eeapiclient$request_params_bypassCorsPreflight(
-        params
-    ) {
-        var safeHeaders = {},
-            unsafeHeaders = {},
-            hasUnsafeHeaders = !1,
-            hasSafeHeaders = !1,
-            hasContentType = !1
-        if (params.headers) {
-            hasContentType = null != params.headers['Content-Type']
-            for (
-                var $jscomp$iter$22 = $jscomp.makeIterator(
-                        Object.entries(params.headers)
-                    ),
-                    $jscomp$key$ = $jscomp$iter$22.next();
-                !$jscomp$key$.done;
-                $jscomp$key$ = $jscomp$iter$22.next()
-            ) {
-                var $jscomp$destructuring$var29 = $jscomp.makeIterator(
-                        $jscomp$key$.value
-                    ),
-                    key__tsickle_destructured_3 =
-                        $jscomp$destructuring$var29.next().value,
-                    value__tsickle_destructured_4 =
-                        $jscomp$destructuring$var29.next().value,
-                    key = key__tsickle_destructured_3,
-                    value = value__tsickle_destructured_4
-                module$contents$eeapiclient$request_params_simpleCorsAllowedHeaders.includes(
-                    key
-                )
-                    ? ((safeHeaders[key] = value), (hasSafeHeaders = !0))
-                    : ((unsafeHeaders[key] = value), (hasUnsafeHeaders = !0))
-            }
-        }
-        if (
-            null != params.body ||
-            'PUT' === params.httpMethod ||
-            'POST' === params.httpMethod
+module$exports$eeapiclient$request_params.bypassCorsPreflight = function (
+    params
+) {
+    var safeHeaders = {},
+        unsafeHeaders = {},
+        hasUnsafeHeaders = !1,
+        hasContentType = !1
+    if (params.headers) {
+        hasContentType = null != params.headers['Content-Type']
+        for (
+            var $jscomp$iter$29 = $jscomp.makeIterator(
+                    Object.entries(params.headers)
+                ),
+                $jscomp$key$ = $jscomp$iter$29.next();
+            !$jscomp$key$.done;
+            $jscomp$key$ = $jscomp$iter$29.next()
         ) {
-            hasContentType ||
-                ((unsafeHeaders['Content-Type'] = 'application/json'),
-                (hasUnsafeHeaders = !0)),
-                (safeHeaders['Content-Type'] = 'text/plain'),
-                (hasSafeHeaders = !0)
-        }
-        if (hasUnsafeHeaders) {
-            var finalParam = (0,
-            module$exports$goog$net$rpc$HttpCors.generateEncodedHttpHeadersOverwriteParam)(
-                unsafeHeaders
+            var $jscomp$destructuring$var29 = $jscomp.makeIterator(
+                    $jscomp$key$.value
+                ),
+                key__tsickle_destructured_3 =
+                    $jscomp$destructuring$var29.next().value,
+                value__tsickle_destructured_4 =
+                    $jscomp$destructuring$var29.next().value,
+                key = key__tsickle_destructured_3,
+                value = value__tsickle_destructured_4
+            module$contents$eeapiclient$request_params_simpleCorsAllowedHeaders.includes(
+                key
             )
-            module$contents$eeapiclient$request_params_addQueryParameter(
-                params,
-                module$exports$goog$net$rpc$HttpCors.HTTP_HEADERS_PARAM_NAME,
-                finalParam
-            )
+                ? (safeHeaders[key] = value)
+                : ((unsafeHeaders[key] = value), (hasUnsafeHeaders = !0))
         }
-        hasSafeHeaders && (params.headers = safeHeaders)
-        module$contents$eeapiclient$request_params_simpleCorsAllowedMethods.includes(
-            params.httpMethod
-        ) ||
-            (module$contents$eeapiclient$request_params_addQueryParameter(
-                params,
-                module$exports$goog$net$rpc$HttpCors.HTTP_METHOD_PARAM_NAME,
-                params.httpMethod
-            ),
-            (params.httpMethod = 'POST'))
     }
+    if (
+        null != params.body ||
+        'PUT' === params.httpMethod ||
+        'POST' === params.httpMethod
+    ) {
+        hasContentType ||
+            ((unsafeHeaders['Content-Type'] = 'application/json'),
+            (hasUnsafeHeaders = !0)),
+            (safeHeaders['Content-Type'] = 'text/plain')
+    }
+    if (hasUnsafeHeaders) {
+        var finalParam = (0,
+        module$exports$goog$net$rpc$HttpCors.generateEncodedHttpHeadersOverwriteParam)(
+            unsafeHeaders
+        )
+        module$contents$eeapiclient$request_params_addQueryParameter(
+            params,
+            module$exports$goog$net$rpc$HttpCors.HTTP_HEADERS_PARAM_NAME,
+            finalParam
+        )
+    }
+    params.headers = safeHeaders
+    module$contents$eeapiclient$request_params_simpleCorsAllowedMethods.includes(
+        params.httpMethod
+    ) ||
+        (module$contents$eeapiclient$request_params_addQueryParameter(
+            params,
+            module$exports$goog$net$rpc$HttpCors.HTTP_METHOD_PARAM_NAME,
+            params.httpMethod
+        ),
+        (params.httpMethod = 'POST'))
+}
 function module$contents$eeapiclient$request_params_addQueryParameter(
     params,
     key,
@@ -14200,9 +14199,9 @@ function module$contents$eeapiclient$request_params_addQueryParameter(
     if (params.queryParams) {
         params.queryParams[key] = value
     } else {
-        var $jscomp$compprop7 = {}
+        var $jscomp$compprop13 = {}
         params.queryParams =
-            (($jscomp$compprop7[key] = value), $jscomp$compprop7)
+            (($jscomp$compprop13[key] = value), $jscomp$compprop13)
     }
 }
 var module$exports$eeapiclient$multipart_request = {},
@@ -14256,10 +14255,10 @@ module$exports$eeapiclient$multipart_request.MultipartRequest.prototype.build =
             })
         ).then(function (filePayloads) {
             for (
-                var $jscomp$iter$23 = $jscomp.makeIterator(filePayloads),
-                    $jscomp$key$filePayload = $jscomp$iter$23.next();
+                var $jscomp$iter$30 = $jscomp.makeIterator(filePayloads),
+                    $jscomp$key$filePayload = $jscomp$iter$30.next();
                 !$jscomp$key$filePayload.done;
-                $jscomp$key$filePayload = $jscomp$iter$23.next()
+                $jscomp$key$filePayload = $jscomp$iter$30.next()
             ) {
                 payload += $jscomp$key$filePayload.value
             }
@@ -14285,8 +14284,8 @@ module$exports$eeapiclient$multipart_request.MultipartRequest.prototype.base64En
             var reader = new FileReader()
             reader.onload = function (ev) {
                 try {
-                    var file$52 = ev.target.result,
-                        toResolve = file$52.substr(file$52.indexOf(',') + 1)
+                    var file = ev.target.result,
+                        toResolve = file.substr(file.indexOf(',') + 1)
                     resolve(toResolve)
                 } catch (e) {
                     reject(e)
@@ -14379,11 +14378,11 @@ var module$exports$eeapiclient$api_request_hook = {},
             id: 'javascript/typescript/contrib/apiclient/core/api_request_hook.closure.js',
         }
 module$exports$eeapiclient$api_request_hook.ApiClientRequestHook =
-    function module$contents$eeapiclient$api_request_hook_ApiClientRequestHook() {}
+    function () {}
 module$exports$eeapiclient$api_request_hook.ApiClientHookFactory =
     function () {}
 module$exports$eeapiclient$api_request_hook.ApiClientHookFactoryCtor =
-    function module$contents$eeapiclient$api_request_hook_ApiClientHookFactoryCtor() {}
+    function () {}
 module$exports$eeapiclient$api_request_hook.DefaultApiClientHookFactory =
     function () {}
 module$exports$eeapiclient$api_request_hook.DefaultApiClientHookFactory.prototype.getRequestHook =
@@ -14468,10 +14467,10 @@ module$exports$eeapiclient$promise_api_client.PromiseApiClient.prototype.$upload
 var module$exports$eeapiclient$ee_api_client = {},
     module$contents$eeapiclient$ee_api_client_module =
         module$contents$eeapiclient$ee_api_client_module || {
-            id: 'geo/gestalt/client/javascript/v1alpha/ee_api_client.closure.js',
+            id: 'geo/gestalt/client/javascript/v1/ee_api_client.closure.js',
         }
 module$exports$eeapiclient$ee_api_client.IAuditLogConfigLogTypeEnum =
-    function module$contents$eeapiclient$ee_api_client_IAuditLogConfigLogTypeEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.AuditLogConfigLogTypeEnum = {
     ADMIN_READ: 'ADMIN_READ',
     DATA_READ: 'DATA_READ',
@@ -14491,7 +14490,7 @@ module$exports$eeapiclient$ee_api_client.AuditLogConfigLogTypeEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IAuthorizationLoggingOptionsPermissionTypeEnum =
-    function module$contents$eeapiclient$ee_api_client_IAuthorizationLoggingOptionsPermissionTypeEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.AuthorizationLoggingOptionsPermissionTypeEnum =
     {
         ADMIN_READ: 'ADMIN_READ',
@@ -14516,7 +14515,7 @@ module$exports$eeapiclient$ee_api_client.AuthorizationLoggingOptionsPermissionTy
         },
     }
 module$exports$eeapiclient$ee_api_client.ICapabilitiesCapabilitiesEnum =
-    function module$contents$eeapiclient$ee_api_client_ICapabilitiesCapabilitiesEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.CapabilitiesCapabilitiesEnum = {
     AUTO_APPEAL_ELIGIBLE: 'AUTO_APPEAL_ELIGIBLE',
     CAPABILITY_GROUP_UNSPECIFIED: 'CAPABILITY_GROUP_UNSPECIFIED',
@@ -14554,12 +14553,14 @@ module$exports$eeapiclient$ee_api_client.CapabilitiesCapabilitiesEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IChangeSubscriptionTypeRequestChangeTimeEnum =
-    function module$contents$eeapiclient$ee_api_client_IChangeSubscriptionTypeRequestChangeTimeEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequestChangeTimeEnum =
     {
         CHANGE_TIME_TYPE_UNSPECIFIED: 'CHANGE_TIME_TYPE_UNSPECIFIED',
         EARLIEST_POSSIBLE: 'EARLIEST_POSSIBLE',
         END_OF_PERIOD: 'END_OF_PERIOD',
+        END_OF_TERM: 'END_OF_TERM',
+        SPECIFIC_DATE: 'SPECIFIC_DATE',
         values: function () {
             return [
                 module$exports$eeapiclient$ee_api_client
@@ -14570,11 +14571,15 @@ module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequestChangeTime
                 module$exports$eeapiclient$ee_api_client
                     .ChangeSubscriptionTypeRequestChangeTimeEnum
                     .EARLIEST_POSSIBLE,
+                module$exports$eeapiclient$ee_api_client
+                    .ChangeSubscriptionTypeRequestChangeTimeEnum.SPECIFIC_DATE,
+                module$exports$eeapiclient$ee_api_client
+                    .ChangeSubscriptionTypeRequestChangeTimeEnum.END_OF_TERM,
             ]
         },
     }
 module$exports$eeapiclient$ee_api_client.IChangeSubscriptionTypeRequestTypeEnum =
-    function module$contents$eeapiclient$ee_api_client_IChangeSubscriptionTypeRequestTypeEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequestTypeEnum =
     {
         BASIC: 'BASIC',
@@ -14598,7 +14603,7 @@ module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequestTypeEnum =
         },
     }
 module$exports$eeapiclient$ee_api_client.ICloudAuditOptionsLogNameEnum =
-    function module$contents$eeapiclient$ee_api_client_ICloudAuditOptionsLogNameEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.CloudAuditOptionsLogNameEnum = {
     ADMIN_ACTIVITY: 'ADMIN_ACTIVITY',
     DATA_ACCESS: 'DATA_ACCESS',
@@ -14615,7 +14620,7 @@ module$exports$eeapiclient$ee_api_client.CloudAuditOptionsLogNameEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.ICloudStorageDestinationPermissionsEnum =
-    function module$contents$eeapiclient$ee_api_client_ICloudStorageDestinationPermissionsEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.CloudStorageDestinationPermissionsEnum =
     {
         DEFAULT_OBJECT_ACL: 'DEFAULT_OBJECT_ACL',
@@ -14634,7 +14639,7 @@ module$exports$eeapiclient$ee_api_client.CloudStorageDestinationPermissionsEnum 
         },
     }
 module$exports$eeapiclient$ee_api_client.IComputePixelsRequestFileFormatEnum =
-    function module$contents$eeapiclient$ee_api_client_IComputePixelsRequestFileFormatEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ComputePixelsRequestFileFormatEnum = {
     AUTO_JPEG_PNG: 'AUTO_JPEG_PNG',
     GEO_TIFF: 'GEO_TIFF',
@@ -14672,8 +14677,7 @@ module$exports$eeapiclient$ee_api_client.ComputePixelsRequestFileFormatEnum = {
         ]
     },
 }
-module$exports$eeapiclient$ee_api_client.IConditionIamEnum =
-    function module$contents$eeapiclient$ee_api_client_IConditionIamEnum() {}
+module$exports$eeapiclient$ee_api_client.IConditionIamEnum = function () {}
 module$exports$eeapiclient$ee_api_client.ConditionIamEnum = {
     APPROVER: 'APPROVER',
     ATTRIBUTION: 'ATTRIBUTION',
@@ -14701,8 +14705,7 @@ module$exports$eeapiclient$ee_api_client.ConditionIamEnum = {
         ]
     },
 }
-module$exports$eeapiclient$ee_api_client.IConditionOpEnum =
-    function module$contents$eeapiclient$ee_api_client_IConditionOpEnum() {}
+module$exports$eeapiclient$ee_api_client.IConditionOpEnum = function () {}
 module$exports$eeapiclient$ee_api_client.ConditionOpEnum = {
     DISCHARGED: 'DISCHARGED',
     EQUALS: 'EQUALS',
@@ -14721,8 +14724,7 @@ module$exports$eeapiclient$ee_api_client.ConditionOpEnum = {
         ]
     },
 }
-module$exports$eeapiclient$ee_api_client.IConditionSysEnum =
-    function module$contents$eeapiclient$ee_api_client_IConditionSysEnum() {}
+module$exports$eeapiclient$ee_api_client.IConditionSysEnum = function () {}
 module$exports$eeapiclient$ee_api_client.ConditionSysEnum = {
     IP: 'IP',
     NAME: 'NAME',
@@ -14740,7 +14742,7 @@ module$exports$eeapiclient$ee_api_client.ConditionSysEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IDataAccessOptionsLogModeEnum =
-    function module$contents$eeapiclient$ee_api_client_IDataAccessOptionsLogModeEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.DataAccessOptionsLogModeEnum = {
     LOG_FAIL_CLOSED: 'LOG_FAIL_CLOSED',
     LOG_MODE_UNSPECIFIED: 'LOG_MODE_UNSPECIFIED',
@@ -14754,7 +14756,7 @@ module$exports$eeapiclient$ee_api_client.DataAccessOptionsLogModeEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IEarthEngineAssetTypeEnum =
-    function module$contents$eeapiclient$ee_api_client_IEarthEngineAssetTypeEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.EarthEngineAssetTypeEnum = {
     CLASSIFIER: 'CLASSIFIER',
     FEATURE_VIEW: 'FEATURE_VIEW',
@@ -14783,7 +14785,7 @@ module$exports$eeapiclient$ee_api_client.EarthEngineAssetTypeEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IEarthEngineMapFileFormatEnum =
-    function module$contents$eeapiclient$ee_api_client_IEarthEngineMapFileFormatEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.EarthEngineMapFileFormatEnum = {
     AUTO_JPEG_PNG: 'AUTO_JPEG_PNG',
     GEO_TIFF: 'GEO_TIFF',
@@ -14821,7 +14823,7 @@ module$exports$eeapiclient$ee_api_client.EarthEngineMapFileFormatEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IExportVideoMapRequestVersionEnum =
-    function module$contents$eeapiclient$ee_api_client_IExportVideoMapRequestVersionEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ExportVideoMapRequestVersionEnum = {
     V1: 'V1',
     V2: 'V2',
@@ -14838,7 +14840,7 @@ module$exports$eeapiclient$ee_api_client.ExportVideoMapRequestVersionEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IFeatureViewAttributeTypeEnum =
-    function module$contents$eeapiclient$ee_api_client_IFeatureViewAttributeTypeEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.FeatureViewAttributeTypeEnum = {
     BOOLEAN: 'BOOLEAN',
     DATE_TIME: 'DATE_TIME',
@@ -14864,7 +14866,7 @@ module$exports$eeapiclient$ee_api_client.FeatureViewAttributeTypeEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IFeatureViewDestinationPermissionsEnum =
-    function module$contents$eeapiclient$ee_api_client_IFeatureViewDestinationPermissionsEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.FeatureViewDestinationPermissionsEnum =
     {
         FEATURE_VIEW_ASSET_PERMISSIONS_UNSPECIFIED:
@@ -14881,7 +14883,7 @@ module$exports$eeapiclient$ee_api_client.FeatureViewDestinationPermissionsEnum =
         },
     }
 module$exports$eeapiclient$ee_api_client.IFilmstripThumbnailFileFormatEnum =
-    function module$contents$eeapiclient$ee_api_client_IFilmstripThumbnailFileFormatEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.FilmstripThumbnailFileFormatEnum = {
     AUTO_JPEG_PNG: 'AUTO_JPEG_PNG',
     GEO_TIFF: 'GEO_TIFF',
@@ -14919,7 +14921,7 @@ module$exports$eeapiclient$ee_api_client.FilmstripThumbnailFileFormatEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IFilmstripThumbnailOrientationEnum =
-    function module$contents$eeapiclient$ee_api_client_IFilmstripThumbnailOrientationEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.FilmstripThumbnailOrientationEnum = {
     HORIZONTAL: 'HORIZONTAL',
     ORIENTATION_UNSPECIFIED: 'ORIENTATION_UNSPECIFIED',
@@ -14935,25 +14937,8 @@ module$exports$eeapiclient$ee_api_client.FilmstripThumbnailOrientationEnum = {
         ]
     },
 }
-module$exports$eeapiclient$ee_api_client.IGcsDestinationPermissionsEnum =
-    function module$contents$eeapiclient$ee_api_client_IGcsDestinationPermissionsEnum() {}
-module$exports$eeapiclient$ee_api_client.GcsDestinationPermissionsEnum = {
-    DEFAULT_OBJECT_ACL: 'DEFAULT_OBJECT_ACL',
-    PUBLIC: 'PUBLIC',
-    TILE_PERMISSIONS_UNSPECIFIED: 'TILE_PERMISSIONS_UNSPECIFIED',
-    values: function () {
-        return [
-            module$exports$eeapiclient$ee_api_client
-                .GcsDestinationPermissionsEnum.TILE_PERMISSIONS_UNSPECIFIED,
-            module$exports$eeapiclient$ee_api_client
-                .GcsDestinationPermissionsEnum.PUBLIC,
-            module$exports$eeapiclient$ee_api_client
-                .GcsDestinationPermissionsEnum.DEFAULT_OBJECT_ACL,
-        ]
-    },
-}
 module$exports$eeapiclient$ee_api_client.IGetPixelsRequestFileFormatEnum =
-    function module$contents$eeapiclient$ee_api_client_IGetPixelsRequestFileFormatEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.GetPixelsRequestFileFormatEnum = {
     AUTO_JPEG_PNG: 'AUTO_JPEG_PNG',
     GEO_TIFF: 'GEO_TIFF',
@@ -14991,7 +14976,7 @@ module$exports$eeapiclient$ee_api_client.GetPixelsRequestFileFormatEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IImageAssetExportOptionsPyramidingPolicyEnum =
-    function module$contents$eeapiclient$ee_api_client_IImageAssetExportOptionsPyramidingPolicyEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ImageAssetExportOptionsPyramidingPolicyEnum =
     {
         MAX: 'MAX',
@@ -15022,7 +15007,7 @@ module$exports$eeapiclient$ee_api_client.ImageAssetExportOptionsPyramidingPolicy
         },
     }
 module$exports$eeapiclient$ee_api_client.IImageAssetExportOptionsPyramidingPolicyOverridesEnum =
-    function module$contents$eeapiclient$ee_api_client_IImageAssetExportOptionsPyramidingPolicyOverridesEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ImageAssetExportOptionsPyramidingPolicyOverridesEnum =
     {
         MAX: 'MAX',
@@ -15055,7 +15040,7 @@ module$exports$eeapiclient$ee_api_client.ImageAssetExportOptionsPyramidingPolicy
         },
     }
 module$exports$eeapiclient$ee_api_client.IImageBandPyramidingPolicyEnum =
-    function module$contents$eeapiclient$ee_api_client_IImageBandPyramidingPolicyEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ImageBandPyramidingPolicyEnum = {
     MAX: 'MAX',
     MEAN: 'MEAN',
@@ -15084,7 +15069,7 @@ module$exports$eeapiclient$ee_api_client.ImageBandPyramidingPolicyEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IImageFileExportOptionsFileFormatEnum =
-    function module$contents$eeapiclient$ee_api_client_IImageFileExportOptionsFileFormatEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ImageFileExportOptionsFileFormatEnum =
     {
         AUTO_JPEG_PNG: 'AUTO_JPEG_PNG',
@@ -15125,7 +15110,7 @@ module$exports$eeapiclient$ee_api_client.ImageFileExportOptionsFileFormatEnum =
         },
     }
 module$exports$eeapiclient$ee_api_client.IImageManifestPyramidingPolicyEnum =
-    function module$contents$eeapiclient$ee_api_client_IImageManifestPyramidingPolicyEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ImageManifestPyramidingPolicyEnum = {
     MAX: 'MAX',
     MEAN: 'MEAN',
@@ -15154,8 +15139,25 @@ module$exports$eeapiclient$ee_api_client.ImageManifestPyramidingPolicyEnum = {
         ]
     },
 }
+module$exports$eeapiclient$ee_api_client.IImportImageRequestModeEnum =
+    function () {}
+module$exports$eeapiclient$ee_api_client.ImportImageRequestModeEnum = {
+    IMPORT_MODE_UNSPECIFIED: 'IMPORT_MODE_UNSPECIFIED',
+    INGEST: 'INGEST',
+    VIRTUAL: 'VIRTUAL',
+    values: function () {
+        return [
+            module$exports$eeapiclient$ee_api_client.ImportImageRequestModeEnum
+                .IMPORT_MODE_UNSPECIFIED,
+            module$exports$eeapiclient$ee_api_client.ImportImageRequestModeEnum
+                .INGEST,
+            module$exports$eeapiclient$ee_api_client.ImportImageRequestModeEnum
+                .VIRTUAL,
+        ]
+    },
+}
 module$exports$eeapiclient$ee_api_client.IOperationMetadataStateEnum =
-    function module$contents$eeapiclient$ee_api_client_IOperationMetadataStateEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.OperationMetadataStateEnum = {
     CANCELLED: 'CANCELLED',
     CANCELLING: 'CANCELLING',
@@ -15184,7 +15186,7 @@ module$exports$eeapiclient$ee_api_client.OperationMetadataStateEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IOperationNotificationSeverityEnum =
-    function module$contents$eeapiclient$ee_api_client_IOperationNotificationSeverityEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.OperationNotificationSeverityEnum = {
     SEVERE: 'SEVERE',
     SEVERITY_UNSPECIFIED: 'SEVERITY_UNSPECIFIED',
@@ -15201,7 +15203,7 @@ module$exports$eeapiclient$ee_api_client.OperationNotificationSeverityEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IPixelDataTypePrecisionEnum =
-    function module$contents$eeapiclient$ee_api_client_IPixelDataTypePrecisionEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.PixelDataTypePrecisionEnum = {
     DOUBLE: 'DOUBLE',
     FLOAT: 'FLOAT',
@@ -15221,7 +15223,7 @@ module$exports$eeapiclient$ee_api_client.PixelDataTypePrecisionEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IProjectRegistrationBillingConsentEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectRegistrationBillingConsentEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectRegistrationBillingConsentEnum =
     {
         BILLING_CONSENT_FULL: 'BILLING_CONSENT_FULL',
@@ -15240,7 +15242,7 @@ module$exports$eeapiclient$ee_api_client.ProjectRegistrationBillingConsentEnum =
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectRegistrationFreeQuotaEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectRegistrationFreeQuotaEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectRegistrationFreeQuotaEnum = {
     FREE_QUOTA_FULL: 'FREE_QUOTA_FULL',
     FREE_QUOTA_NONE: 'FREE_QUOTA_NONE',
@@ -15257,7 +15259,7 @@ module$exports$eeapiclient$ee_api_client.ProjectRegistrationFreeQuotaEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IRankByOneThingRuleDirectionEnum =
-    function module$contents$eeapiclient$ee_api_client_IRankByOneThingRuleDirectionEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.RankByOneThingRuleDirectionEnum = {
     ASCENDING: 'ASCENDING',
     DESCENDING: 'DESCENDING',
@@ -15273,8 +15275,7 @@ module$exports$eeapiclient$ee_api_client.RankByOneThingRuleDirectionEnum = {
         ]
     },
 }
-module$exports$eeapiclient$ee_api_client.IRuleActionEnum =
-    function module$contents$eeapiclient$ee_api_client_IRuleActionEnum() {}
+module$exports$eeapiclient$ee_api_client.IRuleActionEnum = function () {}
 module$exports$eeapiclient$ee_api_client.RuleActionEnum = {
     ALLOW: 'ALLOW',
     ALLOW_WITH_LOG: 'ALLOW_WITH_LOG',
@@ -15296,7 +15297,7 @@ module$exports$eeapiclient$ee_api_client.RuleActionEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IScheduledUpdateSubscriptionUpdateTypeEnum =
-    function module$contents$eeapiclient$ee_api_client_IScheduledUpdateSubscriptionUpdateTypeEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ScheduledUpdateSubscriptionUpdateTypeEnum =
     {
         BASIC: 'BASIC',
@@ -15320,11 +15321,13 @@ module$exports$eeapiclient$ee_api_client.ScheduledUpdateSubscriptionUpdateTypeEn
         },
     }
 module$exports$eeapiclient$ee_api_client.IScheduledUpdateUpdateChangeTypeEnum =
-    function module$contents$eeapiclient$ee_api_client_IScheduledUpdateUpdateChangeTypeEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ScheduledUpdateUpdateChangeTypeEnum = {
     CHANGE_TIME_TYPE_UNSPECIFIED: 'CHANGE_TIME_TYPE_UNSPECIFIED',
     EARLIEST_POSSIBLE: 'EARLIEST_POSSIBLE',
     END_OF_PERIOD: 'END_OF_PERIOD',
+    END_OF_TERM: 'END_OF_TERM',
+    SPECIFIC_DATE: 'SPECIFIC_DATE',
     values: function () {
         return [
             module$exports$eeapiclient$ee_api_client
@@ -15334,11 +15337,14 @@ module$exports$eeapiclient$ee_api_client.ScheduledUpdateUpdateChangeTypeEnum = {
                 .ScheduledUpdateUpdateChangeTypeEnum.END_OF_PERIOD,
             module$exports$eeapiclient$ee_api_client
                 .ScheduledUpdateUpdateChangeTypeEnum.EARLIEST_POSSIBLE,
+            module$exports$eeapiclient$ee_api_client
+                .ScheduledUpdateUpdateChangeTypeEnum.SPECIFIC_DATE,
+            module$exports$eeapiclient$ee_api_client
+                .ScheduledUpdateUpdateChangeTypeEnum.END_OF_TERM,
         ]
     },
 }
-module$exports$eeapiclient$ee_api_client.ISubscriptionStateEnum =
-    function module$contents$eeapiclient$ee_api_client_ISubscriptionStateEnum() {}
+module$exports$eeapiclient$ee_api_client.ISubscriptionStateEnum = function () {}
 module$exports$eeapiclient$ee_api_client.SubscriptionStateEnum = {
     ACTIVE: 'ACTIVE',
     COMPLETED: 'COMPLETED',
@@ -15361,7 +15367,7 @@ module$exports$eeapiclient$ee_api_client.SubscriptionStateEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.ISubscriptionTrialStateEnum =
-    function module$contents$eeapiclient$ee_api_client_ISubscriptionTrialStateEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.SubscriptionTrialStateEnum = {
     ACTIVE: 'ACTIVE',
     EXPIRED: 'EXPIRED',
@@ -15377,8 +15383,7 @@ module$exports$eeapiclient$ee_api_client.SubscriptionTrialStateEnum = {
         ]
     },
 }
-module$exports$eeapiclient$ee_api_client.ISubscriptionTypeEnum =
-    function module$contents$eeapiclient$ee_api_client_ISubscriptionTypeEnum() {}
+module$exports$eeapiclient$ee_api_client.ISubscriptionTypeEnum = function () {}
 module$exports$eeapiclient$ee_api_client.SubscriptionTypeEnum = {
     BASIC: 'BASIC',
     NO_SUBSCRIPTION: 'NO_SUBSCRIPTION',
@@ -15400,7 +15405,7 @@ module$exports$eeapiclient$ee_api_client.SubscriptionTypeEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.ITableFileExportOptionsFileFormatEnum =
-    function module$contents$eeapiclient$ee_api_client_ITableFileExportOptionsFileFormatEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TableFileExportOptionsFileFormatEnum =
     {
         CSV: 'CSV',
@@ -15430,8 +15435,7 @@ module$exports$eeapiclient$ee_api_client.TableFileExportOptionsFileFormatEnum =
             ]
         },
     }
-module$exports$eeapiclient$ee_api_client.ITableFileFormatEnum =
-    function module$contents$eeapiclient$ee_api_client_ITableFileFormatEnum() {}
+module$exports$eeapiclient$ee_api_client.ITableFileFormatEnum = function () {}
 module$exports$eeapiclient$ee_api_client.TableFileFormatEnum = {
     CSV: 'CSV',
     GEO_JSON: 'GEO_JSON',
@@ -15456,7 +15460,7 @@ module$exports$eeapiclient$ee_api_client.TableFileFormatEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.ITableManifestColumnDataTypeOverridesEnum =
-    function module$contents$eeapiclient$ee_api_client_ITableManifestColumnDataTypeOverridesEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TableManifestColumnDataTypeOverridesEnum =
     {
         COLUMN_DATA_TYPE_LONG: 'COLUMN_DATA_TYPE_LONG',
@@ -15481,7 +15485,7 @@ module$exports$eeapiclient$ee_api_client.TableManifestColumnDataTypeOverridesEnu
         },
     }
 module$exports$eeapiclient$ee_api_client.ITableManifestCsvColumnDataTypeOverridesEnum =
-    function module$contents$eeapiclient$ee_api_client_ITableManifestCsvColumnDataTypeOverridesEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TableManifestCsvColumnDataTypeOverridesEnum =
     {
         CSV_COLUMN_DATA_TYPE_LONG: 'CSV_COLUMN_DATA_TYPE_LONG',
@@ -15506,12 +15510,14 @@ module$exports$eeapiclient$ee_api_client.TableManifestCsvColumnDataTypeOverrides
         },
     }
 module$exports$eeapiclient$ee_api_client.ITerminateSubscriptionRequestTerminationTypeEnum =
-    function module$contents$eeapiclient$ee_api_client_ITerminateSubscriptionRequestTerminationTypeEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequestTerminationTypeEnum =
     {
         CHANGE_TIME_TYPE_UNSPECIFIED: 'CHANGE_TIME_TYPE_UNSPECIFIED',
         EARLIEST_POSSIBLE: 'EARLIEST_POSSIBLE',
         END_OF_PERIOD: 'END_OF_PERIOD',
+        END_OF_TERM: 'END_OF_TERM',
+        SPECIFIC_DATE: 'SPECIFIC_DATE',
         values: function () {
             return [
                 module$exports$eeapiclient$ee_api_client
@@ -15523,11 +15529,17 @@ module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequestTermination
                 module$exports$eeapiclient$ee_api_client
                     .TerminateSubscriptionRequestTerminationTypeEnum
                     .EARLIEST_POSSIBLE,
+                module$exports$eeapiclient$ee_api_client
+                    .TerminateSubscriptionRequestTerminationTypeEnum
+                    .SPECIFIC_DATE,
+                module$exports$eeapiclient$ee_api_client
+                    .TerminateSubscriptionRequestTerminationTypeEnum
+                    .END_OF_TERM,
             ]
         },
     }
 module$exports$eeapiclient$ee_api_client.IThinningOptionsThinningStrategyEnum =
-    function module$contents$eeapiclient$ee_api_client_IThinningOptionsThinningStrategyEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ThinningOptionsThinningStrategyEnum = {
     GLOBALLY_CONSISTENT: 'GLOBALLY_CONSISTENT',
     HIGHER_DENSITY: 'HIGHER_DENSITY',
@@ -15544,7 +15556,7 @@ module$exports$eeapiclient$ee_api_client.ThinningOptionsThinningStrategyEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IThumbnailFileFormatEnum =
-    function module$contents$eeapiclient$ee_api_client_IThumbnailFileFormatEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ThumbnailFileFormatEnum = {
     AUTO_JPEG_PNG: 'AUTO_JPEG_PNG',
     GEO_TIFF: 'GEO_TIFF',
@@ -15582,7 +15594,7 @@ module$exports$eeapiclient$ee_api_client.ThumbnailFileFormatEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.ITilesetBandPyramidingPolicyEnum =
-    function module$contents$eeapiclient$ee_api_client_ITilesetBandPyramidingPolicyEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TilesetBandPyramidingPolicyEnum = {
     MAX: 'MAX',
     MEAN: 'MEAN',
@@ -15610,8 +15622,7 @@ module$exports$eeapiclient$ee_api_client.TilesetBandPyramidingPolicyEnum = {
         ]
     },
 }
-module$exports$eeapiclient$ee_api_client.ITilesetDataTypeEnum =
-    function module$contents$eeapiclient$ee_api_client_ITilesetDataTypeEnum() {}
+module$exports$eeapiclient$ee_api_client.ITilesetDataTypeEnum = function () {}
 module$exports$eeapiclient$ee_api_client.TilesetDataTypeEnum = {
     DATA_TYPE_UNSPECIFIED: 'DATA_TYPE_UNSPECIFIED',
     DOUBLE: 'DOUBLE',
@@ -15638,7 +15649,7 @@ module$exports$eeapiclient$ee_api_client.TilesetDataTypeEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.ITrialStatusEligibilityEnum =
-    function module$contents$eeapiclient$ee_api_client_ITrialStatusEligibilityEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TrialStatusEligibilityEnum = {
     ACCOUNT_INELIGIBLE: 'ACCOUNT_INELIGIBLE',
     ALREADY_EVALUATED: 'ALREADY_EVALUATED',
@@ -15663,8 +15674,7 @@ module$exports$eeapiclient$ee_api_client.TrialStatusEligibilityEnum = {
         ]
     },
 }
-module$exports$eeapiclient$ee_api_client.ITrialStatusStateEnum =
-    function module$contents$eeapiclient$ee_api_client_ITrialStatusStateEnum() {}
+module$exports$eeapiclient$ee_api_client.ITrialStatusStateEnum = function () {}
 module$exports$eeapiclient$ee_api_client.TrialStatusStateEnum = {
     ACTIVE: 'ACTIVE',
     EXPIRED: 'EXPIRED',
@@ -15681,7 +15691,7 @@ module$exports$eeapiclient$ee_api_client.TrialStatusStateEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IVideoFileExportOptionsFileFormatEnum =
-    function module$contents$eeapiclient$ee_api_client_IVideoFileExportOptionsFileFormatEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.VideoFileExportOptionsFileFormatEnum =
     {
         GIF: 'GIF',
@@ -15703,7 +15713,7 @@ module$exports$eeapiclient$ee_api_client.VideoFileExportOptionsFileFormatEnum =
         },
     }
 module$exports$eeapiclient$ee_api_client.IVideoThumbnailFileFormatEnum =
-    function module$contents$eeapiclient$ee_api_client_IVideoThumbnailFileFormatEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.VideoThumbnailFileFormatEnum = {
     GIF: 'GIF',
     MP4: 'MP4',
@@ -15723,7 +15733,7 @@ module$exports$eeapiclient$ee_api_client.VideoThumbnailFileFormatEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.AffineTransformParameters =
-    function module$contents$eeapiclient$ee_api_client_AffineTransformParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.AffineTransform = function (
     parameters
 ) {
@@ -15847,8 +15857,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.AlgorithmParameters =
-    function module$contents$eeapiclient$ee_api_client_AlgorithmParameters() {}
+module$exports$eeapiclient$ee_api_client.AlgorithmParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Algorithm = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -16025,7 +16034,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.AlgorithmArgumentParameters =
-    function module$contents$eeapiclient$ee_api_client_AlgorithmArgumentParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.AlgorithmArgument = function (
     parameters
 ) {
@@ -16138,7 +16147,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.AppealRestrictionRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_AppealRestrictionRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.AppealRestrictionRequest = function (
     parameters
 ) {
@@ -16157,8 +16166,7 @@ module$exports$eeapiclient$ee_api_client.AppealRestrictionRequest.prototype.getP
     function () {
         return { keys: [] }
     }
-module$exports$eeapiclient$ee_api_client.ArrayValueParameters =
-    function module$contents$eeapiclient$ee_api_client_ArrayValueParameters() {}
+module$exports$eeapiclient$ee_api_client.ArrayValueParameters = function () {}
 module$exports$eeapiclient$ee_api_client.ArrayValue = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -16201,8 +16209,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.AuditConfigParameters =
-    function module$contents$eeapiclient$ee_api_client_AuditConfigParameters() {}
+module$exports$eeapiclient$ee_api_client.AuditConfigParameters = function () {}
 module$exports$eeapiclient$ee_api_client.AuditConfig = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -16263,7 +16270,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.AuditLogConfigParameters =
-    function module$contents$eeapiclient$ee_api_client_AuditLogConfigParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.AuditLogConfig = function (
     parameters
 ) {
@@ -16356,7 +16363,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.AuthorizationLoggingOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_AuthorizationLoggingOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.AuthorizationLoggingOptions =
     function (parameters) {
         parameters = void 0 === parameters ? {} : parameters
@@ -16415,7 +16422,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.BigQueryDestinationParameters =
-    function module$contents$eeapiclient$ee_api_client_BigQueryDestinationParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.BigQueryDestination = function (
     parameters
 ) {
@@ -16429,6 +16436,10 @@ module$exports$eeapiclient$ee_api_client.BigQueryDestination = function (
         'overwrite',
         null == parameters.overwrite ? null : parameters.overwrite
     )
+    this.Serializable$set(
+        'append',
+        null == parameters.append ? null : parameters.append
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.BigQueryDestination,
@@ -16440,11 +16451,23 @@ module$exports$eeapiclient$ee_api_client.BigQueryDestination.prototype.getConstr
     }
 module$exports$eeapiclient$ee_api_client.BigQueryDestination.prototype.getPartialClassMetadata =
     function () {
-        return { keys: ['overwrite', 'table'] }
+        return { keys: ['append', 'overwrite', 'table'] }
     }
 $jscomp.global.Object.defineProperties(
     module$exports$eeapiclient$ee_api_client.BigQueryDestination.prototype,
     {
+        append: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('append')
+                    ? this.Serializable$get('append')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('append', value)
+            },
+        },
         overwrite: {
             configurable: !0,
             enumerable: !0,
@@ -16472,7 +16495,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.BigQueryExportOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_BigQueryExportOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.BigQueryExportOptions = function (
     parameters
 ) {
@@ -16520,8 +16543,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.BindingParameters =
-    function module$contents$eeapiclient$ee_api_client_BindingParameters() {}
+module$exports$eeapiclient$ee_api_client.BindingParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Binding = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -16613,7 +16635,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.CancelOperationRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_CancelOperationRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.CancelOperationRequest = function (
     parameters
 ) {
@@ -16632,8 +16654,7 @@ module$exports$eeapiclient$ee_api_client.CancelOperationRequest.prototype.getPar
     function () {
         return { keys: [] }
     }
-module$exports$eeapiclient$ee_api_client.CapabilitiesParameters =
-    function module$contents$eeapiclient$ee_api_client_CapabilitiesParameters() {}
+module$exports$eeapiclient$ee_api_client.CapabilitiesParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Capabilities = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -16690,7 +16711,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_ChangeSubscriptionTypeRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ChangeSubscriptionTypeRequest =
     function (parameters) {
         parameters = void 0 === parameters ? {} : parameters
@@ -16789,7 +16810,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ClassifierAssetExportOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_ClassifierAssetExportOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ClassifierAssetExportOptions =
     function (parameters) {
         parameters = void 0 === parameters ? {} : parameters
@@ -16838,7 +16859,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.CloudAuditOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_CloudAuditOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.CloudAuditOptions = function (
     parameters
 ) {
@@ -16919,7 +16940,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.CloudStorageDestinationParameters =
-    function module$contents$eeapiclient$ee_api_client_CloudStorageDestinationParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.CloudStorageDestination = function (
     parameters
 ) {
@@ -17026,7 +17047,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.CloudStorageLocationParameters =
-    function module$contents$eeapiclient$ee_api_client_CloudStorageLocationParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.CloudStorageLocation = function (
     parameters
 ) {
@@ -17067,7 +17088,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ComputeFeaturesRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_ComputeFeaturesRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ComputeFeaturesRequest = function (
     parameters
 ) {
@@ -17161,7 +17182,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ComputeFeaturesResponseParameters =
-    function module$contents$eeapiclient$ee_api_client_ComputeFeaturesResponseParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ComputeFeaturesResponse = function (
     parameters
 ) {
@@ -17239,7 +17260,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ComputeImagesRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_ComputeImagesRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ComputeImagesRequest = function (
     parameters
 ) {
@@ -17333,7 +17354,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ComputeImagesResponseParameters =
-    function module$contents$eeapiclient$ee_api_client_ComputeImagesResponseParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ComputeImagesResponse = function (
     parameters
 ) {
@@ -17395,7 +17416,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ComputePixelsRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_ComputePixelsRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ComputePixelsRequest = function (
     parameters
 ) {
@@ -17544,7 +17565,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ComputeValueRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_ComputeValueRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ComputeValueRequest = function (
     parameters
 ) {
@@ -17606,7 +17627,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ComputeValueResponseParameters =
-    function module$contents$eeapiclient$ee_api_client_ComputeValueResponseParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ComputeValueResponse = function (
     parameters
 ) {
@@ -17646,8 +17667,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.ConditionParameters =
-    function module$contents$eeapiclient$ee_api_client_ConditionParameters() {}
+module$exports$eeapiclient$ee_api_client.ConditionParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Condition = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -17771,7 +17791,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.CopyAssetRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_CopyAssetRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.CopyAssetRequest = function (
     parameters
 ) {
@@ -17844,7 +17864,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.CounterOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_CounterOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.CounterOptions = function (
     parameters
 ) {
@@ -17922,8 +17942,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.CustomFieldParameters =
-    function module$contents$eeapiclient$ee_api_client_CustomFieldParameters() {}
+module$exports$eeapiclient$ee_api_client.CustomFieldParameters = function () {}
 module$exports$eeapiclient$ee_api_client.CustomField = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -17978,7 +17997,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.DataAccessOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_DataAccessOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.DataAccessOptions = function (
     parameters
 ) {
@@ -18037,7 +18056,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.DictionaryValueParameters =
-    function module$contents$eeapiclient$ee_api_client_DictionaryValueParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.DictionaryValue = function (
     parameters
 ) {
@@ -18087,8 +18106,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.DoubleRangeParameters =
-    function module$contents$eeapiclient$ee_api_client_DoubleRangeParameters() {}
+module$exports$eeapiclient$ee_api_client.DoubleRangeParameters = function () {}
 module$exports$eeapiclient$ee_api_client.DoubleRange = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -18137,7 +18155,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.DriveDestinationParameters =
-    function module$contents$eeapiclient$ee_api_client_DriveDestinationParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.DriveDestination = function (
     parameters
 ) {
@@ -18194,7 +18212,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.EarthEngineAssetParameters =
-    function module$contents$eeapiclient$ee_api_client_EarthEngineAssetParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.EarthEngineAsset = function (
     parameters
 ) {
@@ -18211,14 +18229,6 @@ module$exports$eeapiclient$ee_api_client.EarthEngineAsset = function (
         null == parameters.cloudStorageLocation
             ? null
             : parameters.cloudStorageLocation
-    )
-    this.Serializable$set(
-        'tilestoreEntry',
-        null == parameters.tilestoreEntry ? null : parameters.tilestoreEntry
-    )
-    this.Serializable$set(
-        'gcsLocation',
-        null == parameters.gcsLocation ? null : parameters.gcsLocation
     )
     this.Serializable$set(
         'featureViewAssetLocation',
@@ -18242,14 +18252,6 @@ module$exports$eeapiclient$ee_api_client.EarthEngineAsset = function (
     this.Serializable$set(
         'updateTime',
         null == parameters.updateTime ? null : parameters.updateTime
-    )
-    this.Serializable$set(
-        'title',
-        null == parameters.title ? null : parameters.title
-    )
-    this.Serializable$set(
-        'description',
-        null == parameters.description ? null : parameters.description
     )
     this.Serializable$set(
         'properties',
@@ -18287,6 +18289,10 @@ module$exports$eeapiclient$ee_api_client.EarthEngineAsset = function (
         'expression',
         null == parameters.expression ? null : parameters.expression
     )
+    this.Serializable$set(
+        'tilesets',
+        null == parameters.tilesets ? null : parameters.tilesets
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.EarthEngineAsset,
@@ -18301,11 +18307,12 @@ module$exports$eeapiclient$ee_api_client.EarthEngineAsset.prototype.getPartialCl
         return {
             arrays: {
                 bands: module$exports$eeapiclient$ee_api_client.ImageBand,
+                tilesets: module$exports$eeapiclient$ee_api_client.Tileset,
             },
             enums: {
                 type: module$exports$eeapiclient$ee_api_client.EarthEngineAssetTypeEnum,
             },
-            keys: 'bands cloudStorageLocation description endTime expression featureCount featureViewAssetLocation gcsLocation geometry id name properties quota sizeBytes startTime tableLocation tilestoreEntry tilestoreLocation title type updateTime'.split(
+            keys: 'bands cloudStorageLocation endTime expression featureCount featureViewAssetLocation geometry id name properties quota sizeBytes startTime tableLocation tilesets tilestoreLocation type updateTime'.split(
                 ' '
             ),
             objectMaps: {
@@ -18328,13 +18335,9 @@ module$exports$eeapiclient$ee_api_client.EarthEngineAsset.prototype.getPartialCl
                 expression: module$exports$eeapiclient$ee_api_client.Expression,
                 featureViewAssetLocation:
                     module$exports$eeapiclient$ee_api_client.FeatureViewLocation,
-                gcsLocation:
-                    module$exports$eeapiclient$ee_api_client.GcsLocation,
                 quota: module$exports$eeapiclient$ee_api_client.FolderQuota,
                 tableLocation:
                     module$exports$eeapiclient$ee_api_client.TableLocation,
-                tilestoreEntry:
-                    module$exports$eeapiclient$ee_api_client.TilestoreEntry,
                 tilestoreLocation:
                     module$exports$eeapiclient$ee_api_client.TilestoreLocation,
             },
@@ -18365,18 +18368,6 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('cloudStorageLocation', value)
-            },
-        },
-        description: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('description')
-                    ? this.Serializable$get('description')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('description', value)
             },
         },
         endTime: {
@@ -18425,18 +18416,6 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('featureViewAssetLocation', value)
-            },
-        },
-        gcsLocation: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('gcsLocation')
-                    ? this.Serializable$get('gcsLocation')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('gcsLocation', value)
             },
         },
         geometry: {
@@ -18535,16 +18514,16 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('tableLocation', value)
             },
         },
-        tilestoreEntry: {
+        tilesets: {
             configurable: !0,
             enumerable: !0,
             get: function () {
-                return this.Serializable$has('tilestoreEntry')
-                    ? this.Serializable$get('tilestoreEntry')
+                return this.Serializable$has('tilesets')
+                    ? this.Serializable$get('tilesets')
                     : null
             },
             set: function (value) {
-                this.Serializable$set('tilestoreEntry', value)
+                this.Serializable$set('tilesets', value)
             },
         },
         tilestoreLocation: {
@@ -18557,18 +18536,6 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('tilestoreLocation', value)
-            },
-        },
-        title: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('title')
-                    ? this.Serializable$get('title')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('title', value)
             },
         },
         type: {
@@ -18610,7 +18577,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.EarthEngineDestinationParameters =
-    function module$contents$eeapiclient$ee_api_client_EarthEngineDestinationParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.EarthEngineDestination = function (
     parameters
 ) {
@@ -18667,7 +18634,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.EarthEngineMapParameters =
-    function module$contents$eeapiclient$ee_api_client_EarthEngineMapParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.EarthEngineMap = function (
     parameters
 ) {
@@ -18802,8 +18769,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.EmptyParameters =
-    function module$contents$eeapiclient$ee_api_client_EmptyParameters() {}
+module$exports$eeapiclient$ee_api_client.EmptyParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Empty = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -18821,7 +18787,7 @@ module$exports$eeapiclient$ee_api_client.Empty.prototype.getPartialClassMetadata
         return { keys: [] }
     }
 module$exports$eeapiclient$ee_api_client.ExportClassifierRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_ExportClassifierRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ExportClassifierRequest = function (
     parameters
 ) {
@@ -18850,10 +18816,6 @@ module$exports$eeapiclient$ee_api_client.ExportClassifierRequest = function (
         null == parameters.maxWorkers ? null : parameters.maxWorkers
     )
     this.Serializable$set(
-        'maxWorkerCount',
-        null == parameters.maxWorkerCount ? null : parameters.maxWorkerCount
-    )
-    this.Serializable$set(
         'workloadTag',
         null == parameters.workloadTag ? null : parameters.workloadTag
     )
@@ -18869,7 +18831,7 @@ module$exports$eeapiclient$ee_api_client.ExportClassifierRequest.prototype.getCo
 module$exports$eeapiclient$ee_api_client.ExportClassifierRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: 'assetExportOptions description expression maxWorkerCount maxWorkers requestId workloadTag'.split(
+            keys: 'assetExportOptions description expression maxWorkers requestId workloadTag'.split(
                 ' '
             ),
             objects: {
@@ -18918,18 +18880,6 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('expression', value)
             },
         },
-        maxWorkerCount: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('maxWorkerCount')
-                    ? this.Serializable$get('maxWorkerCount')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('maxWorkerCount', value)
-            },
-        },
         maxWorkers: {
             configurable: !0,
             enumerable: !0,
@@ -18969,7 +18919,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ExportImageRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_ExportImageRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ExportImageRequest = function (
     parameters
 ) {
@@ -19012,10 +18962,6 @@ module$exports$eeapiclient$ee_api_client.ExportImageRequest = function (
         null == parameters.maxWorkers ? null : parameters.maxWorkers
     )
     this.Serializable$set(
-        'maxWorkerCount',
-        null == parameters.maxWorkerCount ? null : parameters.maxWorkerCount
-    )
-    this.Serializable$set(
         'workloadTag',
         null == parameters.workloadTag ? null : parameters.workloadTag
     )
@@ -19031,7 +18977,7 @@ module$exports$eeapiclient$ee_api_client.ExportImageRequest.prototype.getConstru
 module$exports$eeapiclient$ee_api_client.ExportImageRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: 'assetExportOptions description expression fileExportOptions grid maxPixels maxWorkerCount maxWorkers requestId workloadTag'.split(
+            keys: 'assetExportOptions description expression fileExportOptions grid maxPixels maxWorkers requestId workloadTag'.split(
                 ' '
             ),
             objects: {
@@ -19119,18 +19065,6 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('maxPixels', value)
             },
         },
-        maxWorkerCount: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('maxWorkerCount')
-                    ? this.Serializable$get('maxWorkerCount')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('maxWorkerCount', value)
-            },
-        },
         maxWorkers: {
             configurable: !0,
             enumerable: !0,
@@ -19170,7 +19104,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ExportMapRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_ExportMapRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ExportMapRequest = function (
     parameters
 ) {
@@ -19203,10 +19137,6 @@ module$exports$eeapiclient$ee_api_client.ExportMapRequest = function (
         null == parameters.maxWorkers ? null : parameters.maxWorkers
     )
     this.Serializable$set(
-        'maxWorkerCount',
-        null == parameters.maxWorkerCount ? null : parameters.maxWorkerCount
-    )
-    this.Serializable$set(
         'workloadTag',
         null == parameters.workloadTag ? null : parameters.workloadTag
     )
@@ -19222,7 +19152,7 @@ module$exports$eeapiclient$ee_api_client.ExportMapRequest.prototype.getConstruct
 module$exports$eeapiclient$ee_api_client.ExportMapRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: 'description expression maxWorkerCount maxWorkers requestId tileExportOptions tileOptions workloadTag'.split(
+            keys: 'description expression maxWorkers requestId tileExportOptions tileOptions workloadTag'.split(
                 ' '
             ),
             objects: {
@@ -19259,18 +19189,6 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('expression', value)
-            },
-        },
-        maxWorkerCount: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('maxWorkerCount')
-                    ? this.Serializable$get('maxWorkerCount')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('maxWorkerCount', value)
             },
         },
         maxWorkers: {
@@ -19336,7 +19254,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ExportTableRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_ExportTableRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ExportTableRequest = function (
     parameters
 ) {
@@ -19391,10 +19309,6 @@ module$exports$eeapiclient$ee_api_client.ExportTableRequest = function (
         null == parameters.maxWorkers ? null : parameters.maxWorkers
     )
     this.Serializable$set(
-        'maxWorkerCount',
-        null == parameters.maxWorkerCount ? null : parameters.maxWorkerCount
-    )
-    this.Serializable$set(
         'maxVertices',
         null == parameters.maxVertices ? null : parameters.maxVertices
     )
@@ -19418,7 +19332,7 @@ module$exports$eeapiclient$ee_api_client.ExportTableRequest.prototype.getConstru
 module$exports$eeapiclient$ee_api_client.ExportTableRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: 'assetExportOptions bigqueryExportOptions description expression featureViewExportOptions fileExportOptions maxErrorMeters maxVertices maxWorkerCount maxWorkers policy requestId selectors workloadTag'.split(
+            keys: 'assetExportOptions bigqueryExportOptions description expression featureViewExportOptions fileExportOptions maxErrorMeters maxVertices maxWorkers policy requestId selectors workloadTag'.split(
                 ' '
             ),
             objects: {
@@ -19534,18 +19448,6 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('maxVertices', value)
             },
         },
-        maxWorkerCount: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('maxWorkerCount')
-                    ? this.Serializable$get('maxWorkerCount')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('maxWorkerCount', value)
-            },
-        },
         maxWorkers: {
             configurable: !0,
             enumerable: !0,
@@ -19609,7 +19511,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ExportVideoMapRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_ExportVideoMapRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ExportVideoMapRequest = function (
     parameters
 ) {
@@ -19650,10 +19552,6 @@ module$exports$eeapiclient$ee_api_client.ExportVideoMapRequest = function (
         null == parameters.maxWorkers ? null : parameters.maxWorkers
     )
     this.Serializable$set(
-        'maxWorkerCount',
-        null == parameters.maxWorkerCount ? null : parameters.maxWorkerCount
-    )
-    this.Serializable$set(
         'workloadTag',
         null == parameters.workloadTag ? null : parameters.workloadTag
     )
@@ -19673,7 +19571,7 @@ module$exports$eeapiclient$ee_api_client.ExportVideoMapRequest.prototype.getPart
                 version:
                     module$exports$eeapiclient$ee_api_client.ExportVideoMapRequestVersionEnum,
             },
-            keys: 'description expression maxWorkerCount maxWorkers requestId tileExportOptions tileOptions version videoOptions workloadTag'.split(
+            keys: 'description expression maxWorkers requestId tileExportOptions tileOptions version videoOptions workloadTag'.split(
                 ' '
             ),
             objects: {
@@ -19712,18 +19610,6 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('expression', value)
-            },
-        },
-        maxWorkerCount: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('maxWorkerCount')
-                    ? this.Serializable$get('maxWorkerCount')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('maxWorkerCount', value)
             },
         },
         maxWorkers: {
@@ -19825,7 +19711,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ExportVideoRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_ExportVideoRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ExportVideoRequest = function (
     parameters
 ) {
@@ -19858,10 +19744,6 @@ module$exports$eeapiclient$ee_api_client.ExportVideoRequest = function (
         null == parameters.maxWorkers ? null : parameters.maxWorkers
     )
     this.Serializable$set(
-        'maxWorkerCount',
-        null == parameters.maxWorkerCount ? null : parameters.maxWorkerCount
-    )
-    this.Serializable$set(
         'workloadTag',
         null == parameters.workloadTag ? null : parameters.workloadTag
     )
@@ -19877,7 +19759,7 @@ module$exports$eeapiclient$ee_api_client.ExportVideoRequest.prototype.getConstru
 module$exports$eeapiclient$ee_api_client.ExportVideoRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: 'description expression fileExportOptions maxWorkerCount maxWorkers requestId videoOptions workloadTag'.split(
+            keys: 'description expression fileExportOptions maxWorkers requestId videoOptions workloadTag'.split(
                 ' '
             ),
             objects: {
@@ -19926,18 +19808,6 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('fileExportOptions', value)
-            },
-        },
-        maxWorkerCount: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('maxWorkerCount')
-                    ? this.Serializable$get('maxWorkerCount')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('maxWorkerCount', value)
             },
         },
         maxWorkers: {
@@ -19990,8 +19860,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.ExprParameters =
-    function module$contents$eeapiclient$ee_api_client_ExprParameters() {}
+module$exports$eeapiclient$ee_api_client.ExprParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Expr = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -20077,8 +19946,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.ExpressionParameters =
-    function module$contents$eeapiclient$ee_api_client_ExpressionParameters() {}
+module$exports$eeapiclient$ee_api_client.ExpressionParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Expression = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -20142,8 +20010,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.FeatureParameters =
-    function module$contents$eeapiclient$ee_api_client_FeatureParameters() {}
+module$exports$eeapiclient$ee_api_client.FeatureParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Feature = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -20213,8 +20080,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.FeatureViewParameters =
-    function module$contents$eeapiclient$ee_api_client_FeatureViewParameters() {}
+module$exports$eeapiclient$ee_api_client.FeatureViewParameters = function () {}
 module$exports$eeapiclient$ee_api_client.FeatureView = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -20309,7 +20175,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.FeatureViewAssetExportOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_FeatureViewAssetExportOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.FeatureViewAssetExportOptions =
     function (parameters) {
         parameters = void 0 === parameters ? {} : parameters
@@ -20378,7 +20244,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.FeatureViewAttributeParameters =
-    function module$contents$eeapiclient$ee_api_client_FeatureViewAttributeParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.FeatureViewAttribute = function (
     parameters
 ) {
@@ -20452,7 +20318,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.FeatureViewDestinationParameters =
-    function module$contents$eeapiclient$ee_api_client_FeatureViewDestinationParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.FeatureViewDestination = function (
     parameters
 ) {
@@ -20543,7 +20409,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.FeatureViewIngestionTimeParametersParameters =
-    function module$contents$eeapiclient$ee_api_client_FeatureViewIngestionTimeParametersParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.FeatureViewIngestionTimeParameters =
     function (parameters) {
         parameters = void 0 === parameters ? {} : parameters
@@ -20630,7 +20496,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.FeatureViewLocationParameters =
-    function module$contents$eeapiclient$ee_api_client_FeatureViewLocationParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.FeatureViewLocation = function (
     parameters
 ) {
@@ -20693,7 +20559,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.FeatureViewOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_FeatureViewOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.FeatureViewOptions = function (
     parameters
 ) {
@@ -20764,7 +20630,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.FilmstripThumbnailParameters =
-    function module$contents$eeapiclient$ee_api_client_FilmstripThumbnailParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.FilmstripThumbnail = function (
     parameters
 ) {
@@ -20899,8 +20765,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.FolderQuotaParameters =
-    function module$contents$eeapiclient$ee_api_client_FolderQuotaParameters() {}
+module$exports$eeapiclient$ee_api_client.FolderQuotaParameters = function () {}
 module$exports$eeapiclient$ee_api_client.FolderQuota = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -20920,10 +20785,6 @@ module$exports$eeapiclient$ee_api_client.FolderQuota = function (parameters) {
         'maxAssets',
         null == parameters.maxAssets ? null : parameters.maxAssets
     )
-    this.Serializable$set(
-        'maxAssetCount',
-        null == parameters.maxAssetCount ? null : parameters.maxAssetCount
-    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.FolderQuota,
@@ -20936,13 +20797,7 @@ module$exports$eeapiclient$ee_api_client.FolderQuota.prototype.getConstructor =
 module$exports$eeapiclient$ee_api_client.FolderQuota.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: [
-                'assetCount',
-                'maxAssetCount',
-                'maxAssets',
-                'maxSizeBytes',
-                'sizeBytes',
-            ],
+            keys: ['assetCount', 'maxAssets', 'maxSizeBytes', 'sizeBytes'],
         }
     }
 $jscomp.global.Object.defineProperties(
@@ -20958,18 +20813,6 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('assetCount', value)
-            },
-        },
-        maxAssetCount: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('maxAssetCount')
-                    ? this.Serializable$get('maxAssetCount')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('maxAssetCount', value)
             },
         },
         maxAssets: {
@@ -21011,7 +20854,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.FunctionDefinitionParameters =
-    function module$contents$eeapiclient$ee_api_client_FunctionDefinitionParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.FunctionDefinition = function (
     parameters
 ) {
@@ -21068,7 +20911,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.FunctionInvocationParameters =
-    function module$contents$eeapiclient$ee_api_client_FunctionInvocationParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.FunctionInvocation = function (
     parameters
 ) {
@@ -21152,154 +20995,8 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.GcsDestinationParameters =
-    function module$contents$eeapiclient$ee_api_client_GcsDestinationParameters() {}
-module$exports$eeapiclient$ee_api_client.GcsDestination = function (
-    parameters
-) {
-    parameters = void 0 === parameters ? {} : parameters
-    module$exports$eeapiclient$domain_object.Serializable.call(this)
-    this.Serializable$set(
-        'bucket',
-        null == parameters.bucket ? null : parameters.bucket
-    )
-    this.Serializable$set(
-        'filenamePrefix',
-        null == parameters.filenamePrefix ? null : parameters.filenamePrefix
-    )
-    this.Serializable$set(
-        'permissions',
-        null == parameters.permissions ? null : parameters.permissions
-    )
-    this.Serializable$set(
-        'bucketCorsUris',
-        null == parameters.bucketCorsUris ? null : parameters.bucketCorsUris
-    )
-}
-$jscomp.inherits(
-    module$exports$eeapiclient$ee_api_client.GcsDestination,
-    module$exports$eeapiclient$domain_object.Serializable
-)
-module$exports$eeapiclient$ee_api_client.GcsDestination.prototype.getConstructor =
-    function () {
-        return module$exports$eeapiclient$ee_api_client.GcsDestination
-    }
-module$exports$eeapiclient$ee_api_client.GcsDestination.prototype.getPartialClassMetadata =
-    function () {
-        return {
-            enums: {
-                permissions:
-                    module$exports$eeapiclient$ee_api_client.GcsDestinationPermissionsEnum,
-            },
-            keys: ['bucket', 'bucketCorsUris', 'filenamePrefix', 'permissions'],
-        }
-    }
-$jscomp.global.Object.defineProperties(
-    module$exports$eeapiclient$ee_api_client.GcsDestination.prototype,
-    {
-        bucket: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('bucket')
-                    ? this.Serializable$get('bucket')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('bucket', value)
-            },
-        },
-        bucketCorsUris: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('bucketCorsUris')
-                    ? this.Serializable$get('bucketCorsUris')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('bucketCorsUris', value)
-            },
-        },
-        filenamePrefix: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('filenamePrefix')
-                    ? this.Serializable$get('filenamePrefix')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('filenamePrefix', value)
-            },
-        },
-        permissions: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('permissions')
-                    ? this.Serializable$get('permissions')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('permissions', value)
-            },
-        },
-    }
-)
-$jscomp.global.Object.defineProperties(
-    module$exports$eeapiclient$ee_api_client.GcsDestination,
-    {
-        Permissions: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return module$exports$eeapiclient$ee_api_client.GcsDestinationPermissionsEnum
-            },
-        },
-    }
-)
-module$exports$eeapiclient$ee_api_client.GcsLocationParameters =
-    function module$contents$eeapiclient$ee_api_client_GcsLocationParameters() {}
-module$exports$eeapiclient$ee_api_client.GcsLocation = function (parameters) {
-    parameters = void 0 === parameters ? {} : parameters
-    module$exports$eeapiclient$domain_object.Serializable.call(this)
-    this.Serializable$set(
-        'uris',
-        null == parameters.uris ? null : parameters.uris
-    )
-}
-$jscomp.inherits(
-    module$exports$eeapiclient$ee_api_client.GcsLocation,
-    module$exports$eeapiclient$domain_object.Serializable
-)
-module$exports$eeapiclient$ee_api_client.GcsLocation.prototype.getConstructor =
-    function () {
-        return module$exports$eeapiclient$ee_api_client.GcsLocation
-    }
-module$exports$eeapiclient$ee_api_client.GcsLocation.prototype.getPartialClassMetadata =
-    function () {
-        return { keys: ['uris'] }
-    }
-$jscomp.global.Object.defineProperties(
-    module$exports$eeapiclient$ee_api_client.GcsLocation.prototype,
-    {
-        uris: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('uris')
-                    ? this.Serializable$get('uris')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('uris', value)
-            },
-        },
-    }
-)
 module$exports$eeapiclient$ee_api_client.GeoTiffImageExportOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_GeoTiffImageExportOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.GeoTiffImageExportOptions = function (
     parameters
 ) {
@@ -21321,6 +21018,10 @@ module$exports$eeapiclient$ee_api_client.GeoTiffImageExportOptions = function (
         'tileSize',
         null == parameters.tileSize ? null : parameters.tileSize
     )
+    this.Serializable$set(
+        'noData',
+        null == parameters.noData ? null : parameters.noData
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.GeoTiffImageExportOptions,
@@ -21335,11 +21036,13 @@ module$exports$eeapiclient$ee_api_client.GeoTiffImageExportOptions.prototype.get
         return {
             keys: [
                 'cloudOptimized',
+                'noData',
                 'skipEmptyFiles',
                 'tileDimensions',
                 'tileSize',
             ],
             objects: {
+                noData: module$exports$eeapiclient$ee_api_client.Number,
                 tileDimensions:
                     module$exports$eeapiclient$ee_api_client.GridDimensions,
             },
@@ -21359,6 +21062,18 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('cloudOptimized', value)
+            },
+        },
+        noData: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('noData')
+                    ? this.Serializable$get('noData')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('noData', value)
             },
         },
         skipEmptyFiles: {
@@ -21400,7 +21115,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.GetIamPolicyRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_GetIamPolicyRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.GetIamPolicyRequest = function (
     parameters
 ) {
@@ -21447,7 +21162,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.GetLinkedAssetRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_GetLinkedAssetRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.GetLinkedAssetRequest = function (
     parameters
 ) {
@@ -21467,7 +21182,7 @@ module$exports$eeapiclient$ee_api_client.GetLinkedAssetRequest.prototype.getPart
         return { keys: [] }
     }
 module$exports$eeapiclient$ee_api_client.GetPixelsRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_GetPixelsRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.GetPixelsRequest = function (
     parameters
 ) {
@@ -21611,7 +21326,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.GetPolicyOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_GetPolicyOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.GetPolicyOptions = function (
     parameters
 ) {
@@ -21654,7 +21369,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.GridDimensionsParameters =
-    function module$contents$eeapiclient$ee_api_client_GridDimensionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.GridDimensions = function (
     parameters
 ) {
@@ -21710,8 +21425,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.GridPointParameters =
-    function module$contents$eeapiclient$ee_api_client_GridPointParameters() {}
+module$exports$eeapiclient$ee_api_client.GridPointParameters = function () {}
 module$exports$eeapiclient$ee_api_client.GridPoint = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -21759,8 +21473,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.HttpBodyParameters =
-    function module$contents$eeapiclient$ee_api_client_HttpBodyParameters() {}
+module$exports$eeapiclient$ee_api_client.HttpBodyParameters = function () {}
 module$exports$eeapiclient$ee_api_client.HttpBody = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -21840,225 +21553,8 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.ImageParameters =
-    function module$contents$eeapiclient$ee_api_client_ImageParameters() {}
-module$exports$eeapiclient$ee_api_client.Image = function (parameters) {
-    parameters = void 0 === parameters ? {} : parameters
-    module$exports$eeapiclient$domain_object.Serializable.call(this)
-    this.Serializable$set(
-        'name',
-        null == parameters.name ? null : parameters.name
-    )
-    this.Serializable$set('id', null == parameters.id ? null : parameters.id)
-    this.Serializable$set(
-        'updateTime',
-        null == parameters.updateTime ? null : parameters.updateTime
-    )
-    this.Serializable$set(
-        'title',
-        null == parameters.title ? null : parameters.title
-    )
-    this.Serializable$set(
-        'description',
-        null == parameters.description ? null : parameters.description
-    )
-    this.Serializable$set(
-        'properties',
-        null == parameters.properties ? null : parameters.properties
-    )
-    this.Serializable$set(
-        'startTime',
-        null == parameters.startTime ? null : parameters.startTime
-    )
-    this.Serializable$set(
-        'endTime',
-        null == parameters.endTime ? null : parameters.endTime
-    )
-    this.Serializable$set(
-        'geometry',
-        null == parameters.geometry ? null : parameters.geometry
-    )
-    this.Serializable$set(
-        'bands',
-        null == parameters.bands ? null : parameters.bands
-    )
-    this.Serializable$set(
-        'sizeBytes',
-        null == parameters.sizeBytes ? null : parameters.sizeBytes
-    )
-}
-$jscomp.inherits(
-    module$exports$eeapiclient$ee_api_client.Image,
-    module$exports$eeapiclient$domain_object.Serializable
-)
-module$exports$eeapiclient$ee_api_client.Image.prototype.getConstructor =
-    function () {
-        return module$exports$eeapiclient$ee_api_client.Image
-    }
-module$exports$eeapiclient$ee_api_client.Image.prototype.getPartialClassMetadata =
-    function () {
-        return {
-            arrays: {
-                bands: module$exports$eeapiclient$ee_api_client.ImageBand,
-            },
-            keys: 'bands description endTime geometry id name properties sizeBytes startTime title updateTime'.split(
-                ' '
-            ),
-            objectMaps: {
-                geometry: {
-                    ctor: null,
-                    isPropertyArray: !1,
-                    isSerializable: !1,
-                    isValueArray: !1,
-                },
-                properties: {
-                    ctor: null,
-                    isPropertyArray: !1,
-                    isSerializable: !1,
-                    isValueArray: !1,
-                },
-            },
-        }
-    }
-$jscomp.global.Object.defineProperties(
-    module$exports$eeapiclient$ee_api_client.Image.prototype,
-    {
-        bands: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('bands')
-                    ? this.Serializable$get('bands')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('bands', value)
-            },
-        },
-        description: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('description')
-                    ? this.Serializable$get('description')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('description', value)
-            },
-        },
-        endTime: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('endTime')
-                    ? this.Serializable$get('endTime')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('endTime', value)
-            },
-        },
-        geometry: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('geometry')
-                    ? this.Serializable$get('geometry')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('geometry', value)
-            },
-        },
-        id: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('id')
-                    ? this.Serializable$get('id')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('id', value)
-            },
-        },
-        name: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('name')
-                    ? this.Serializable$get('name')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('name', value)
-            },
-        },
-        properties: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('properties')
-                    ? this.Serializable$get('properties')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('properties', value)
-            },
-        },
-        sizeBytes: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('sizeBytes')
-                    ? this.Serializable$get('sizeBytes')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('sizeBytes', value)
-            },
-        },
-        startTime: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('startTime')
-                    ? this.Serializable$get('startTime')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('startTime', value)
-            },
-        },
-        title: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('title')
-                    ? this.Serializable$get('title')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('title', value)
-            },
-        },
-        updateTime: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('updateTime')
-                    ? this.Serializable$get('updateTime')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('updateTime', value)
-            },
-        },
-    }
-)
 module$exports$eeapiclient$ee_api_client.ImageAssetExportOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_ImageAssetExportOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ImageAssetExportOptions = function (
     parameters
 ) {
@@ -22194,8 +21690,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.ImageBandParameters =
-    function module$contents$eeapiclient$ee_api_client_ImageBandParameters() {}
+module$exports$eeapiclient$ee_api_client.ImageBandParameters = function () {}
 module$exports$eeapiclient$ee_api_client.ImageBand = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -22221,10 +21716,12 @@ module$exports$eeapiclient$ee_api_client.ImageBand = function (parameters) {
         null == parameters.missingData ? null : parameters.missingData
     )
     this.Serializable$set(
-        'cloudStorageLocation',
-        null == parameters.cloudStorageLocation
-            ? null
-            : parameters.cloudStorageLocation
+        'tilesetId',
+        null == parameters.tilesetId ? null : parameters.tilesetId
+    )
+    this.Serializable$set(
+        'tilesetBandIndex',
+        null == parameters.tilesetBandIndex ? null : parameters.tilesetBandIndex
     )
 }
 $jscomp.inherits(
@@ -22246,12 +21743,10 @@ module$exports$eeapiclient$ee_api_client.ImageBand.prototype.getPartialClassMeta
                 pyramidingPolicy:
                     module$exports$eeapiclient$ee_api_client.ImageBandPyramidingPolicyEnum,
             },
-            keys: 'cloudStorageLocation dataType grid id missingData pyramidingPolicy tilesets'.split(
+            keys: 'dataType grid id missingData pyramidingPolicy tilesetBandIndex tilesetId tilesets'.split(
                 ' '
             ),
             objects: {
-                cloudStorageLocation:
-                    module$exports$eeapiclient$ee_api_client.CloudStorageLocation,
                 dataType:
                     module$exports$eeapiclient$ee_api_client.PixelDataType,
                 grid: module$exports$eeapiclient$ee_api_client.PixelGrid,
@@ -22263,18 +21758,6 @@ module$exports$eeapiclient$ee_api_client.ImageBand.prototype.getPartialClassMeta
 $jscomp.global.Object.defineProperties(
     module$exports$eeapiclient$ee_api_client.ImageBand.prototype,
     {
-        cloudStorageLocation: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('cloudStorageLocation')
-                    ? this.Serializable$get('cloudStorageLocation')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('cloudStorageLocation', value)
-            },
-        },
         dataType: {
             configurable: !0,
             enumerable: !0,
@@ -22335,6 +21818,30 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('pyramidingPolicy', value)
             },
         },
+        tilesetBandIndex: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('tilesetBandIndex')
+                    ? this.Serializable$get('tilesetBandIndex')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('tilesetBandIndex', value)
+            },
+        },
+        tilesetId: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('tilesetId')
+                    ? this.Serializable$get('tilesetId')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('tilesetId', value)
+            },
+        },
         tilesets: {
             configurable: !0,
             enumerable: !0,
@@ -22362,7 +21869,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ImageFileExportOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_ImageFileExportOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ImageFileExportOptions = function (
     parameters
 ) {
@@ -22377,10 +21884,6 @@ module$exports$eeapiclient$ee_api_client.ImageFileExportOptions = function (
         null == parameters.cloudStorageDestination
             ? null
             : parameters.cloudStorageDestination
-    )
-    this.Serializable$set(
-        'gcsDestination',
-        null == parameters.gcsDestination ? null : parameters.gcsDestination
     )
     this.Serializable$set(
         'geoTiffOptions',
@@ -22410,16 +21913,18 @@ module$exports$eeapiclient$ee_api_client.ImageFileExportOptions.prototype.getPar
                 fileFormat:
                     module$exports$eeapiclient$ee_api_client.ImageFileExportOptionsFileFormatEnum,
             },
-            keys: 'cloudStorageDestination driveDestination fileFormat gcsDestination geoTiffOptions tfRecordOptions'.split(
-                ' '
-            ),
+            keys: [
+                'cloudStorageDestination',
+                'driveDestination',
+                'fileFormat',
+                'geoTiffOptions',
+                'tfRecordOptions',
+            ],
             objects: {
                 cloudStorageDestination:
                     module$exports$eeapiclient$ee_api_client.CloudStorageDestination,
                 driveDestination:
                     module$exports$eeapiclient$ee_api_client.DriveDestination,
-                gcsDestination:
-                    module$exports$eeapiclient$ee_api_client.GcsDestination,
                 geoTiffOptions:
                     module$exports$eeapiclient$ee_api_client.GeoTiffImageExportOptions,
                 tfRecordOptions:
@@ -22466,18 +21971,6 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('fileFormat', value)
             },
         },
-        gcsDestination: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('gcsDestination')
-                    ? this.Serializable$get('gcsDestination')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('gcsDestination', value)
-            },
-        },
         geoTiffOptions: {
             configurable: !0,
             enumerable: !0,
@@ -22517,7 +22010,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ImageManifestParameters =
-    function module$contents$eeapiclient$ee_api_client_ImageManifestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ImageManifest = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -22787,8 +22280,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.ImageSourceParameters =
-    function module$contents$eeapiclient$ee_api_client_ImageSourceParameters() {}
+module$exports$eeapiclient$ee_api_client.ImageSourceParameters = function () {}
 module$exports$eeapiclient$ee_api_client.ImageSource = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -22867,7 +22359,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ImportImageRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_ImportImageRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ImportImageRequest = function (
     parameters
 ) {
@@ -22889,6 +22381,10 @@ module$exports$eeapiclient$ee_api_client.ImportImageRequest = function (
         'requestId',
         null == parameters.requestId ? null : parameters.requestId
     )
+    this.Serializable$set(
+        'mode',
+        null == parameters.mode ? null : parameters.mode
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ImportImageRequest,
@@ -22901,7 +22397,16 @@ module$exports$eeapiclient$ee_api_client.ImportImageRequest.prototype.getConstru
 module$exports$eeapiclient$ee_api_client.ImportImageRequest.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: ['description', 'imageManifest', 'overwrite', 'requestId'],
+            enums: {
+                mode: module$exports$eeapiclient$ee_api_client.ImportImageRequestModeEnum,
+            },
+            keys: [
+                'description',
+                'imageManifest',
+                'mode',
+                'overwrite',
+                'requestId',
+            ],
             objects: {
                 imageManifest:
                     module$exports$eeapiclient$ee_api_client.ImageManifest,
@@ -22935,6 +22440,18 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('imageManifest', value)
             },
         },
+        mode: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('mode')
+                    ? this.Serializable$get('mode')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('mode', value)
+            },
+        },
         overwrite: {
             configurable: !0,
             enumerable: !0,
@@ -22961,8 +22478,20 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.ImportImageRequest,
+    {
+        Mode: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return module$exports$eeapiclient$ee_api_client.ImportImageRequestModeEnum
+            },
+        },
+    }
+)
 module$exports$eeapiclient$ee_api_client.ImportTableRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_ImportTableRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ImportTableRequest = function (
     parameters
 ) {
@@ -23057,7 +22586,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.LinkAssetRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_LinkAssetRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.LinkAssetRequest = function (
     parameters
 ) {
@@ -23098,7 +22627,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ListAlgorithmsResponseParameters =
-    function module$contents$eeapiclient$ee_api_client_ListAlgorithmsResponseParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ListAlgorithmsResponse = function (
     parameters
 ) {
@@ -23144,7 +22673,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ListAssetsResponseParameters =
-    function module$contents$eeapiclient$ee_api_client_ListAssetsResponseParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ListAssetsResponse = function (
     parameters
 ) {
@@ -23206,7 +22735,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ListFeaturesResponseParameters =
-    function module$contents$eeapiclient$ee_api_client_ListFeaturesResponseParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ListFeaturesResponse = function (
     parameters
 ) {
@@ -23283,68 +22812,8 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.ListImagesResponseParameters =
-    function module$contents$eeapiclient$ee_api_client_ListImagesResponseParameters() {}
-module$exports$eeapiclient$ee_api_client.ListImagesResponse = function (
-    parameters
-) {
-    parameters = void 0 === parameters ? {} : parameters
-    module$exports$eeapiclient$domain_object.Serializable.call(this)
-    this.Serializable$set(
-        'images',
-        null == parameters.images ? null : parameters.images
-    )
-    this.Serializable$set(
-        'nextPageToken',
-        null == parameters.nextPageToken ? null : parameters.nextPageToken
-    )
-}
-$jscomp.inherits(
-    module$exports$eeapiclient$ee_api_client.ListImagesResponse,
-    module$exports$eeapiclient$domain_object.Serializable
-)
-module$exports$eeapiclient$ee_api_client.ListImagesResponse.prototype.getConstructor =
-    function () {
-        return module$exports$eeapiclient$ee_api_client.ListImagesResponse
-    }
-module$exports$eeapiclient$ee_api_client.ListImagesResponse.prototype.getPartialClassMetadata =
-    function () {
-        return {
-            arrays: { images: module$exports$eeapiclient$ee_api_client.Image },
-            keys: ['images', 'nextPageToken'],
-        }
-    }
-$jscomp.global.Object.defineProperties(
-    module$exports$eeapiclient$ee_api_client.ListImagesResponse.prototype,
-    {
-        images: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('images')
-                    ? this.Serializable$get('images')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('images', value)
-            },
-        },
-        nextPageToken: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('nextPageToken')
-                    ? this.Serializable$get('nextPageToken')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('nextPageToken', value)
-            },
-        },
-    }
-)
 module$exports$eeapiclient$ee_api_client.ListOperationsResponseParameters =
-    function module$contents$eeapiclient$ee_api_client_ListOperationsResponseParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ListOperationsResponse = function (
     parameters
 ) {
@@ -23406,7 +22875,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ListSubscriptionsResponseParameters =
-    function module$contents$eeapiclient$ee_api_client_ListSubscriptionsResponseParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ListSubscriptionsResponse = function (
     parameters
 ) {
@@ -23469,8 +22938,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.LogConfigParameters =
-    function module$contents$eeapiclient$ee_api_client_LogConfigParameters() {}
+module$exports$eeapiclient$ee_api_client.LogConfigParameters = function () {}
 module$exports$eeapiclient$ee_api_client.LogConfig = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -23550,8 +23018,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.MissingDataParameters =
-    function module$contents$eeapiclient$ee_api_client_MissingDataParameters() {}
+module$exports$eeapiclient$ee_api_client.MissingDataParameters = function () {}
 module$exports$eeapiclient$ee_api_client.MissingData = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -23590,7 +23057,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.MoveAssetRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_MoveAssetRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.MoveAssetRequest = function (
     parameters
 ) {
@@ -23630,8 +23097,61 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.OperationParameters =
-    function module$contents$eeapiclient$ee_api_client_OperationParameters() {}
+module$exports$eeapiclient$ee_api_client.NumberParameters = function () {}
+module$exports$eeapiclient$ee_api_client.Number = function (parameters) {
+    parameters = void 0 === parameters ? {} : parameters
+    module$exports$eeapiclient$domain_object.Serializable.call(this)
+    this.Serializable$set(
+        'floatValue',
+        null == parameters.floatValue ? null : parameters.floatValue
+    )
+    this.Serializable$set(
+        'integerValue',
+        null == parameters.integerValue ? null : parameters.integerValue
+    )
+}
+$jscomp.inherits(
+    module$exports$eeapiclient$ee_api_client.Number,
+    module$exports$eeapiclient$domain_object.Serializable
+)
+module$exports$eeapiclient$ee_api_client.Number.prototype.getConstructor =
+    function () {
+        return module$exports$eeapiclient$ee_api_client.Number
+    }
+module$exports$eeapiclient$ee_api_client.Number.prototype.getPartialClassMetadata =
+    function () {
+        return { keys: ['floatValue', 'integerValue'] }
+    }
+$jscomp.global.Object.defineProperties(
+    module$exports$eeapiclient$ee_api_client.Number.prototype,
+    {
+        floatValue: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('floatValue')
+                    ? this.Serializable$get('floatValue')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('floatValue', value)
+            },
+        },
+        integerValue: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('integerValue')
+                    ? this.Serializable$get('integerValue')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('integerValue', value)
+            },
+        },
+    }
+)
+module$exports$eeapiclient$ee_api_client.OperationParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Operation = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -23751,7 +23271,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.OperationMetadataParameters =
-    function module$contents$eeapiclient$ee_api_client_OperationMetadataParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.OperationMetadata = function (
     parameters
 ) {
@@ -24042,7 +23562,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.OperationNotificationParameters =
-    function module$contents$eeapiclient$ee_api_client_OperationNotificationParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.OperationNotification = function (
     parameters
 ) {
@@ -24133,7 +23653,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.OperationStageParameters =
-    function module$contents$eeapiclient$ee_api_client_OperationStageParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.OperationStage = function (
     parameters
 ) {
@@ -24231,7 +23751,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.PixelDataTypeParameters =
-    function module$contents$eeapiclient$ee_api_client_PixelDataTypeParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.PixelDataType = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -24323,7 +23843,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.PixelFootprintParameters =
-    function module$contents$eeapiclient$ee_api_client_PixelFootprintParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.PixelFootprint = function (
     parameters
 ) {
@@ -24384,8 +23904,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.PixelGridParameters =
-    function module$contents$eeapiclient$ee_api_client_PixelGridParameters() {}
+module$exports$eeapiclient$ee_api_client.PixelGridParameters = function () {}
 module$exports$eeapiclient$ee_api_client.PixelGrid = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -24479,8 +23998,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.PolicyParameters =
-    function module$contents$eeapiclient$ee_api_client_PolicyParameters() {}
+module$exports$eeapiclient$ee_api_client.PolicyParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Policy = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -24591,7 +24109,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.PrerenderingOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_PrerenderingOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.PrerenderingOptions = function (
     parameters
 ) {
@@ -24654,7 +24172,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ProjectConfigParameters =
-    function module$contents$eeapiclient$ee_api_client_ProjectConfigParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectConfig = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -24670,6 +24188,12 @@ module$exports$eeapiclient$ee_api_client.ProjectConfig = function (parameters) {
         'trialStatus',
         null == parameters.trialStatus ? null : parameters.trialStatus
     )
+    this.Serializable$set(
+        'vpcServiceControlsRestricted',
+        null == parameters.vpcServiceControlsRestricted
+            ? null
+            : parameters.vpcServiceControlsRestricted
+    )
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ProjectConfig,
@@ -24682,7 +24206,12 @@ module$exports$eeapiclient$ee_api_client.ProjectConfig.prototype.getConstructor 
 module$exports$eeapiclient$ee_api_client.ProjectConfig.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: ['name', 'registration', 'trialStatus'],
+            keys: [
+                'name',
+                'registration',
+                'trialStatus',
+                'vpcServiceControlsRestricted',
+            ],
             objects: {
                 registration:
                     module$exports$eeapiclient$ee_api_client.ProjectRegistration,
@@ -24730,10 +24259,22 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('trialStatus', value)
             },
         },
+        vpcServiceControlsRestricted: {
+            configurable: !0,
+            enumerable: !0,
+            get: function () {
+                return this.Serializable$has('vpcServiceControlsRestricted')
+                    ? this.Serializable$get('vpcServiceControlsRestricted')
+                    : null
+            },
+            set: function (value) {
+                this.Serializable$set('vpcServiceControlsRestricted', value)
+            },
+        },
     }
 )
 module$exports$eeapiclient$ee_api_client.ProjectRegistrationParameters =
-    function module$contents$eeapiclient$ee_api_client_ProjectRegistrationParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectRegistration = function (
     parameters
 ) {
@@ -24817,7 +24358,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.RankByAttributeRuleParameters =
-    function module$contents$eeapiclient$ee_api_client_RankByAttributeRuleParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.RankByAttributeRule = function (
     parameters
 ) {
@@ -24858,7 +24399,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.RankByGeometryTypeRuleParameters =
-    function module$contents$eeapiclient$ee_api_client_RankByGeometryTypeRuleParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.RankByGeometryTypeRule = function (
     parameters
 ) {
@@ -24878,7 +24419,7 @@ module$exports$eeapiclient$ee_api_client.RankByGeometryTypeRule.prototype.getPar
         return { keys: [] }
     }
 module$exports$eeapiclient$ee_api_client.RankByMinVisibleLodRuleParameters =
-    function module$contents$eeapiclient$ee_api_client_RankByMinVisibleLodRuleParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.RankByMinVisibleLodRule = function (
     parameters
 ) {
@@ -24898,7 +24439,7 @@ module$exports$eeapiclient$ee_api_client.RankByMinVisibleLodRule.prototype.getPa
         return { keys: [] }
     }
 module$exports$eeapiclient$ee_api_client.RankByMinZoomLevelRuleParameters =
-    function module$contents$eeapiclient$ee_api_client_RankByMinZoomLevelRuleParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.RankByMinZoomLevelRule = function (
     parameters
 ) {
@@ -24918,7 +24459,7 @@ module$exports$eeapiclient$ee_api_client.RankByMinZoomLevelRule.prototype.getPar
         return { keys: [] }
     }
 module$exports$eeapiclient$ee_api_client.RankByOneThingRuleParameters =
-    function module$contents$eeapiclient$ee_api_client_RankByOneThingRuleParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.RankByOneThingRule = function (
     parameters
 ) {
@@ -25065,7 +24606,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.RankingOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_RankingOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.RankingOptions = function (
     parameters
 ) {
@@ -25133,8 +24674,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.RankingRuleParameters =
-    function module$contents$eeapiclient$ee_api_client_RankingRuleParameters() {}
+module$exports$eeapiclient$ee_api_client.RankingRuleParameters = function () {}
 module$exports$eeapiclient$ee_api_client.RankingRule = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -25198,8 +24738,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.RuleParameters =
-    function module$contents$eeapiclient$ee_api_client_RuleParameters() {}
+module$exports$eeapiclient$ee_api_client.RuleParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Rule = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -25354,7 +24893,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ScheduledUpdateParameters =
-    function module$contents$eeapiclient$ee_api_client_ScheduledUpdateParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ScheduledUpdate = function (
     parameters
 ) {
@@ -25456,7 +24995,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.SetIamPolicyRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_SetIamPolicyRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.SetIamPolicyRequest = function (
     parameters
 ) {
@@ -25517,8 +25056,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.StatusParameters =
-    function module$contents$eeapiclient$ee_api_client_StatusParameters() {}
+module$exports$eeapiclient$ee_api_client.StatusParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Status = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -25598,8 +25136,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.SubscriptionParameters =
-    function module$contents$eeapiclient$ee_api_client_SubscriptionParameters() {}
+module$exports$eeapiclient$ee_api_client.SubscriptionParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Subscription = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -25837,8 +25374,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.TableParameters =
-    function module$contents$eeapiclient$ee_api_client_TableParameters() {}
+module$exports$eeapiclient$ee_api_client.TableParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Table = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -25962,7 +25498,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.TableAssetExportOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_TableAssetExportOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TableAssetExportOptions = function (
     parameters
 ) {
@@ -26011,7 +25547,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.TableFileExportOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_TableFileExportOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TableFileExportOptions = function (
     parameters
 ) {
@@ -26026,10 +25562,6 @@ module$exports$eeapiclient$ee_api_client.TableFileExportOptions = function (
         null == parameters.cloudStorageDestination
             ? null
             : parameters.cloudStorageDestination
-    )
-    this.Serializable$set(
-        'gcsDestination',
-        null == parameters.gcsDestination ? null : parameters.gcsDestination
     )
     this.Serializable$set(
         'fileFormat',
@@ -26051,19 +25583,12 @@ module$exports$eeapiclient$ee_api_client.TableFileExportOptions.prototype.getPar
                 fileFormat:
                     module$exports$eeapiclient$ee_api_client.TableFileExportOptionsFileFormatEnum,
             },
-            keys: [
-                'cloudStorageDestination',
-                'driveDestination',
-                'fileFormat',
-                'gcsDestination',
-            ],
+            keys: ['cloudStorageDestination', 'driveDestination', 'fileFormat'],
             objects: {
                 cloudStorageDestination:
                     module$exports$eeapiclient$ee_api_client.CloudStorageDestination,
                 driveDestination:
                     module$exports$eeapiclient$ee_api_client.DriveDestination,
-                gcsDestination:
-                    module$exports$eeapiclient$ee_api_client.GcsDestination,
             },
         }
     }
@@ -26106,18 +25631,6 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('fileFormat', value)
             },
         },
-        gcsDestination: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('gcsDestination')
-                    ? this.Serializable$get('gcsDestination')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('gcsDestination', value)
-            },
-        },
     }
 )
 $jscomp.global.Object.defineProperties(
@@ -26133,7 +25646,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.TableLocationParameters =
-    function module$contents$eeapiclient$ee_api_client_TableLocationParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TableLocation = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -26224,7 +25737,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.TableManifestParameters =
-    function module$contents$eeapiclient$ee_api_client_TableManifestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TableManifest = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -26449,8 +25962,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.TableSourceParameters =
-    function module$contents$eeapiclient$ee_api_client_TableSourceParameters() {}
+module$exports$eeapiclient$ee_api_client.TableSourceParameters = function () {}
 module$exports$eeapiclient$ee_api_client.TableSource = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -26668,7 +26180,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_TerminateSubscriptionRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TerminateSubscriptionRequest =
     function (parameters) {
         parameters = void 0 === parameters ? {} : parameters
@@ -26745,7 +26257,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.TestIamPermissionsRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_TestIamPermissionsRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TestIamPermissionsRequest = function (
     parameters
 ) {
@@ -26787,7 +26299,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.TestIamPermissionsResponseParameters =
-    function module$contents$eeapiclient$ee_api_client_TestIamPermissionsResponseParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TestIamPermissionsResponse = function (
     parameters
 ) {
@@ -26829,7 +26341,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.TfRecordImageExportOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_TfRecordImageExportOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TfRecordImageExportOptions = function (
     parameters
 ) {
@@ -27017,7 +26529,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.ThinningOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_ThinningOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ThinningOptions = function (
     parameters
 ) {
@@ -27093,8 +26605,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.ThumbnailParameters =
-    function module$contents$eeapiclient$ee_api_client_ThumbnailParameters() {}
+module$exports$eeapiclient$ee_api_client.ThumbnailParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Thumbnail = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -27256,8 +26767,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.TileLimitingParameters =
-    function module$contents$eeapiclient$ee_api_client_TileLimitingParameters() {}
+module$exports$eeapiclient$ee_api_client.TileLimitingParameters = function () {}
 module$exports$eeapiclient$ee_api_client.TileLimiting = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -27354,18 +26864,13 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.TileOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_TileOptionsParameters() {}
+module$exports$eeapiclient$ee_api_client.TileOptionsParameters = function () {}
 module$exports$eeapiclient$ee_api_client.TileOptions = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
     this.Serializable$set(
         'endZoom',
         null == parameters.endZoom ? null : parameters.endZoom
-    )
-    this.Serializable$set(
-        'maxZoom',
-        null == parameters.maxZoom ? null : parameters.maxZoom
     )
     this.Serializable$set(
         'scale',
@@ -27376,16 +26881,8 @@ module$exports$eeapiclient$ee_api_client.TileOptions = function (parameters) {
         null == parameters.startZoom ? null : parameters.startZoom
     )
     this.Serializable$set(
-        'minZoom',
-        null == parameters.minZoom ? null : parameters.minZoom
-    )
-    this.Serializable$set(
         'skipEmpty',
         null == parameters.skipEmpty ? null : parameters.skipEmpty
-    )
-    this.Serializable$set(
-        'skipEmptyTiles',
-        null == parameters.skipEmptyTiles ? null : parameters.skipEmptyTiles
     )
     this.Serializable$set(
         'mapsApiKey',
@@ -27394,10 +26891,6 @@ module$exports$eeapiclient$ee_api_client.TileOptions = function (parameters) {
     this.Serializable$set(
         'dimensions',
         null == parameters.dimensions ? null : parameters.dimensions
-    )
-    this.Serializable$set(
-        'tileDimensions',
-        null == parameters.tileDimensions ? null : parameters.tileDimensions
     )
     this.Serializable$set(
         'stride',
@@ -27419,13 +26912,11 @@ module$exports$eeapiclient$ee_api_client.TileOptions.prototype.getConstructor =
 module$exports$eeapiclient$ee_api_client.TileOptions.prototype.getPartialClassMetadata =
     function () {
         return {
-            keys: 'dimensions endZoom mapsApiKey maxZoom minZoom scale skipEmpty skipEmptyTiles startZoom stride tileDimensions zoomSubset'.split(
+            keys: 'dimensions endZoom mapsApiKey scale skipEmpty startZoom stride zoomSubset'.split(
                 ' '
             ),
             objects: {
                 dimensions:
-                    module$exports$eeapiclient$ee_api_client.GridDimensions,
-                tileDimensions:
                     module$exports$eeapiclient$ee_api_client.GridDimensions,
                 zoomSubset: module$exports$eeapiclient$ee_api_client.ZoomSubset,
             },
@@ -27470,30 +26961,6 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('mapsApiKey', value)
             },
         },
-        maxZoom: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('maxZoom')
-                    ? this.Serializable$get('maxZoom')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('maxZoom', value)
-            },
-        },
-        minZoom: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('minZoom')
-                    ? this.Serializable$get('minZoom')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('minZoom', value)
-            },
-        },
         scale: {
             configurable: !0,
             enumerable: !0,
@@ -27516,18 +26983,6 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('skipEmpty', value)
-            },
-        },
-        skipEmptyTiles: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('skipEmptyTiles')
-                    ? this.Serializable$get('skipEmptyTiles')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('skipEmptyTiles', value)
             },
         },
         startZoom: {
@@ -27554,18 +27009,6 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('stride', value)
             },
         },
-        tileDimensions: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('tileDimensions')
-                    ? this.Serializable$get('tileDimensions')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('tileDimensions', value)
-            },
-        },
         zoomSubset: {
             configurable: !0,
             enumerable: !0,
@@ -27580,8 +27023,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.TilesetParameters =
-    function module$contents$eeapiclient$ee_api_client_TilesetParameters() {}
+module$exports$eeapiclient$ee_api_client.TilesetParameters = function () {}
 module$exports$eeapiclient$ee_api_client.Tileset = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -27716,8 +27158,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.TilesetBandParameters =
-    function module$contents$eeapiclient$ee_api_client_TilesetBandParameters() {}
+module$exports$eeapiclient$ee_api_client.TilesetBandParameters = function () {}
 module$exports$eeapiclient$ee_api_client.TilesetBand = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -27845,7 +27286,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.TilesetMaskBandParameters =
-    function module$contents$eeapiclient$ee_api_client_TilesetMaskBandParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TilesetMaskBand = function (
     parameters
 ) {
@@ -27901,71 +27342,8 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.TilestoreEntryParameters =
-    function module$contents$eeapiclient$ee_api_client_TilestoreEntryParameters() {}
-module$exports$eeapiclient$ee_api_client.TilestoreEntry = function (
-    parameters
-) {
-    parameters = void 0 === parameters ? {} : parameters
-    module$exports$eeapiclient$domain_object.Serializable.call(this)
-    this.Serializable$set(
-        'sources',
-        null == parameters.sources ? null : parameters.sources
-    )
-    this.Serializable$set(
-        'pathPrefix',
-        null == parameters.pathPrefix ? null : parameters.pathPrefix
-    )
-}
-$jscomp.inherits(
-    module$exports$eeapiclient$ee_api_client.TilestoreEntry,
-    module$exports$eeapiclient$domain_object.Serializable
-)
-module$exports$eeapiclient$ee_api_client.TilestoreEntry.prototype.getConstructor =
-    function () {
-        return module$exports$eeapiclient$ee_api_client.TilestoreEntry
-    }
-module$exports$eeapiclient$ee_api_client.TilestoreEntry.prototype.getPartialClassMetadata =
-    function () {
-        return {
-            arrays: {
-                sources:
-                    module$exports$eeapiclient$ee_api_client.TilestoreSource,
-            },
-            keys: ['pathPrefix', 'sources'],
-        }
-    }
-$jscomp.global.Object.defineProperties(
-    module$exports$eeapiclient$ee_api_client.TilestoreEntry.prototype,
-    {
-        pathPrefix: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('pathPrefix')
-                    ? this.Serializable$get('pathPrefix')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('pathPrefix', value)
-            },
-        },
-        sources: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('sources')
-                    ? this.Serializable$get('sources')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('sources', value)
-            },
-        },
-    }
-)
 module$exports$eeapiclient$ee_api_client.TilestoreLocationParameters =
-    function module$contents$eeapiclient$ee_api_client_TilestoreLocationParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TilestoreLocation = function (
     parameters
 ) {
@@ -28028,7 +27406,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.TilestoreSourceParameters =
-    function module$contents$eeapiclient$ee_api_client_TilestoreSourceParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TilestoreSource = function (
     parameters
 ) {
@@ -28085,7 +27463,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.TilestoreTilesetParameters =
-    function module$contents$eeapiclient$ee_api_client_TilestoreTilesetParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.TilestoreTileset = function (
     parameters
 ) {
@@ -28157,8 +27535,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.TrialStatusParameters =
-    function module$contents$eeapiclient$ee_api_client_TrialStatusParameters() {}
+module$exports$eeapiclient$ee_api_client.TrialStatusParameters = function () {}
 module$exports$eeapiclient$ee_api_client.TrialStatus = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -28305,7 +27682,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.UpdateAssetRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_UpdateAssetRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.UpdateAssetRequest = function (
     parameters
 ) {
@@ -28366,8 +27743,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.ValueNodeParameters =
-    function module$contents$eeapiclient$ee_api_client_ValueNodeParameters() {}
+module$exports$eeapiclient$ee_api_client.ValueNodeParameters = function () {}
 module$exports$eeapiclient$ee_api_client.ValueNode = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -28553,7 +27929,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.VideoFileExportOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_VideoFileExportOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.VideoFileExportOptions = function (
     parameters
 ) {
@@ -28568,10 +27944,6 @@ module$exports$eeapiclient$ee_api_client.VideoFileExportOptions = function (
         null == parameters.cloudStorageDestination
             ? null
             : parameters.cloudStorageDestination
-    )
-    this.Serializable$set(
-        'gcsDestination',
-        null == parameters.gcsDestination ? null : parameters.gcsDestination
     )
     this.Serializable$set(
         'fileFormat',
@@ -28593,19 +27965,12 @@ module$exports$eeapiclient$ee_api_client.VideoFileExportOptions.prototype.getPar
                 fileFormat:
                     module$exports$eeapiclient$ee_api_client.VideoFileExportOptionsFileFormatEnum,
             },
-            keys: [
-                'cloudStorageDestination',
-                'driveDestination',
-                'fileFormat',
-                'gcsDestination',
-            ],
+            keys: ['cloudStorageDestination', 'driveDestination', 'fileFormat'],
             objects: {
                 cloudStorageDestination:
                     module$exports$eeapiclient$ee_api_client.CloudStorageDestination,
                 driveDestination:
                     module$exports$eeapiclient$ee_api_client.DriveDestination,
-                gcsDestination:
-                    module$exports$eeapiclient$ee_api_client.GcsDestination,
             },
         }
     }
@@ -28648,18 +28013,6 @@ $jscomp.global.Object.defineProperties(
                 this.Serializable$set('fileFormat', value)
             },
         },
-        gcsDestination: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('gcsDestination')
-                    ? this.Serializable$get('gcsDestination')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('gcsDestination', value)
-            },
-        },
     }
 )
 $jscomp.global.Object.defineProperties(
@@ -28674,8 +28027,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.VideoOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_VideoOptionsParameters() {}
+module$exports$eeapiclient$ee_api_client.VideoOptionsParameters = function () {}
 module$exports$eeapiclient$ee_api_client.VideoOptions = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -28748,7 +28100,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.VideoThumbnailParameters =
-    function module$contents$eeapiclient$ee_api_client_VideoThumbnailParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.VideoThumbnail = function (
     parameters
 ) {
@@ -28877,7 +28229,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.VisualizationOptionsParameters =
-    function module$contents$eeapiclient$ee_api_client_VisualizationOptionsParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.VisualizationOptions = function (
     parameters
 ) {
@@ -28971,7 +28323,7 @@ $jscomp.global.Object.defineProperties(
     }
 )
 module$exports$eeapiclient$ee_api_client.WaitOperationRequestParameters =
-    function module$contents$eeapiclient$ee_api_client_WaitOperationRequestParameters() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.WaitOperationRequest = function (
     parameters
 ) {
@@ -29011,8 +28363,7 @@ $jscomp.global.Object.defineProperties(
         },
     }
 )
-module$exports$eeapiclient$ee_api_client.ZoomSubsetParameters =
-    function module$contents$eeapiclient$ee_api_client_ZoomSubsetParameters() {}
+module$exports$eeapiclient$ee_api_client.ZoomSubsetParameters = function () {}
 module$exports$eeapiclient$ee_api_client.ZoomSubset = function (parameters) {
     parameters = void 0 === parameters ? {} : parameters
     module$exports$eeapiclient$domain_object.Serializable.call(this)
@@ -29021,8 +28372,6 @@ module$exports$eeapiclient$ee_api_client.ZoomSubset = function (parameters) {
         null == parameters.start ? null : parameters.start
     )
     this.Serializable$set('end', null == parameters.end ? null : parameters.end)
-    this.Serializable$set('min', null == parameters.min ? null : parameters.min)
-    this.Serializable$set('max', null == parameters.max ? null : parameters.max)
 }
 $jscomp.inherits(
     module$exports$eeapiclient$ee_api_client.ZoomSubset,
@@ -29034,7 +28383,7 @@ module$exports$eeapiclient$ee_api_client.ZoomSubset.prototype.getConstructor =
     }
 module$exports$eeapiclient$ee_api_client.ZoomSubset.prototype.getPartialClassMetadata =
     function () {
-        return { keys: ['end', 'max', 'min', 'start'] }
+        return { keys: ['end', 'start'] }
     }
 $jscomp.global.Object.defineProperties(
     module$exports$eeapiclient$ee_api_client.ZoomSubset.prototype,
@@ -29049,30 +28398,6 @@ $jscomp.global.Object.defineProperties(
             },
             set: function (value) {
                 this.Serializable$set('end', value)
-            },
-        },
-        max: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('max')
-                    ? this.Serializable$get('max')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('max', value)
-            },
-        },
-        min: {
-            configurable: !0,
-            enumerable: !0,
-            get: function () {
-                return this.Serializable$has('min')
-                    ? this.Serializable$get('min')
-                    : null
-            },
-            set: function (value) {
-                this.Serializable$set('min', value)
             },
         },
         start: {
@@ -29094,9 +28419,7 @@ var module$contents$eeapiclient$ee_api_client_PARAM_MAP_0 = {
     access_token: 'access_token',
     alt: 'alt',
     assetId: 'assetId',
-    billingAccount: 'billingAccount',
     callback: 'callback',
-    endTime: 'endTime',
     fields: 'fields',
     filter: 'filter',
     key: 'key',
@@ -29108,7 +28431,6 @@ var module$contents$eeapiclient$ee_api_client_PARAM_MAP_0 = {
     prettyPrint: 'prettyPrint',
     quotaUser: 'quotaUser',
     region: 'region',
-    startTime: 'startTime',
     updateMask: 'updateMask',
     uploadType: 'uploadType',
     upload_protocol: 'upload_protocol',
@@ -29116,7 +28438,7 @@ var module$contents$eeapiclient$ee_api_client_PARAM_MAP_0 = {
     workloadTag: 'workloadTag',
 }
 module$exports$eeapiclient$ee_api_client.IBillingAccountsSubscriptionsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IBillingAccountsSubscriptionsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.BillingAccountsSubscriptionsApiClient$XgafvEnum =
     {
         1: '1',
@@ -29131,7 +28453,7 @@ module$exports$eeapiclient$ee_api_client.BillingAccountsSubscriptionsApiClient$X
         },
     }
 module$exports$eeapiclient$ee_api_client.IBillingAccountsSubscriptionsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IBillingAccountsSubscriptionsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.BillingAccountsSubscriptionsApiClientAltEnum =
     {
         JSON: 'json',
@@ -29266,7 +28588,7 @@ module$exports$eeapiclient$ee_api_client.BillingAccountsSubscriptionsApiClientIm
 module$exports$eeapiclient$ee_api_client.BillingAccountsSubscriptionsApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.ICapabilitiesApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_ICapabilitiesApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.CapabilitiesApiClient$XgafvEnum = {
     1: '1',
     2: '2',
@@ -29280,7 +28602,7 @@ module$exports$eeapiclient$ee_api_client.CapabilitiesApiClient$XgafvEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.ICapabilitiesApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_ICapabilitiesApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.CapabilitiesApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -29331,7 +28653,7 @@ module$exports$eeapiclient$ee_api_client.CapabilitiesApiClientImpl.prototype.app
     }
 module$exports$eeapiclient$ee_api_client.CapabilitiesApiClient = function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsAlgorithmsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsAlgorithmsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsAlgorithmsApiClient$XgafvEnum =
     {
         1: '1',
@@ -29346,7 +28668,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsAlgorithmsApiClient$XgafvEnum =
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsAlgorithmsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsAlgorithmsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsAlgorithmsApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -29397,7 +28719,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsAlgorithmsApiClientImpl.prototy
 module$exports$eeapiclient$ee_api_client.ProjectsAlgorithmsApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsApiClient$XgafvEnum = {
     1: '1',
     2: '2',
@@ -29411,7 +28733,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsApiClient$XgafvEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IProjectsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -29428,9 +28750,10 @@ module$exports$eeapiclient$ee_api_client.ProjectsApiClientAltEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IProjectsApiClientViewEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsApiClientViewEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsApiClientViewEnum = {
     BASIC: 'BASIC',
+    BASIC_SYNC: 'BASIC_SYNC',
     EARTH_ENGINE_ASSET_VIEW_UNSPECIFIED: 'EARTH_ENGINE_ASSET_VIEW_UNSPECIFIED',
     FULL: 'FULL',
     values: function () {
@@ -29441,6 +28764,8 @@ module$exports$eeapiclient$ee_api_client.ProjectsApiClientViewEnum = {
                 .FULL,
             module$exports$eeapiclient$ee_api_client.ProjectsApiClientViewEnum
                 .BASIC,
+            module$exports$eeapiclient$ee_api_client.ProjectsApiClientViewEnum
+                .BASIC_SYNC,
         ]
     },
 }
@@ -29555,7 +28880,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsApiClientImpl.prototype.updateC
     }
 module$exports$eeapiclient$ee_api_client.ProjectsApiClient = function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsAssetsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsAssetsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClient$XgafvEnum = {
     1: '1',
     2: '2',
@@ -29569,7 +28894,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClient$XgafvEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IProjectsAssetsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsAssetsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -29586,9 +28911,10 @@ module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClientAltEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IProjectsAssetsApiClientViewEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsAssetsApiClientViewEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClientViewEnum = {
     BASIC: 'BASIC',
+    BASIC_SYNC: 'BASIC_SYNC',
     EARTH_ENGINE_ASSET_VIEW_UNSPECIFIED: 'EARTH_ENGINE_ASSET_VIEW_UNSPECIFIED',
     FULL: 'FULL',
     values: function () {
@@ -29600,6 +28926,8 @@ module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClientViewEnum = {
                 .ProjectsAssetsApiClientViewEnum.FULL,
             module$exports$eeapiclient$ee_api_client
                 .ProjectsAssetsApiClientViewEnum.BASIC,
+            module$exports$eeapiclient$ee_api_client
+                .ProjectsAssetsApiClientViewEnum.BASIC_SYNC,
         ]
     },
 }
@@ -29919,32 +29247,6 @@ module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClientImpl.prototype.l
                 module$exports$eeapiclient$ee_api_client.ListFeaturesResponse,
         })
     }
-module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClientImpl.prototype.listImages =
-    function (parent, namedParameters, passthroughNamedParameters) {
-        namedParameters = void 0 === namedParameters ? {} : namedParameters
-        passthroughNamedParameters =
-            void 0 === passthroughNamedParameters
-                ? {}
-                : passthroughNamedParameters
-        this.$apiClient.$validateParameter(
-            parent,
-            RegExp('^projects/[^/]+/assets/.*$')
-        )
-        return this.$apiClient.$request({
-            body: null,
-            httpMethod: 'GET',
-            methodId: 'earthengine.projects.assets.listImages',
-            path: '/' + this.gapiVersion + '/' + parent + ':listImages',
-            queryParams:
-                module$contents$eeapiclient$request_params_buildQueryParams(
-                    namedParameters,
-                    module$contents$eeapiclient$ee_api_client_PARAM_MAP_0,
-                    passthroughNamedParameters
-                ),
-            responseCtor:
-                module$exports$eeapiclient$ee_api_client.ListImagesResponse,
-        })
-    }
 module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClientImpl.prototype.move =
     function (
         sourceName,
@@ -30067,7 +29369,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClientImpl.prototype.t
 module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsClassifierApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsClassifierApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsClassifierApiClient$XgafvEnum =
     {
         1: '1',
@@ -30082,7 +29384,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsClassifierApiClient$XgafvEnum =
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsClassifierApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsClassifierApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsClassifierApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -30137,7 +29439,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsClassifierApiClientImpl.prototy
 module$exports$eeapiclient$ee_api_client.ProjectsClassifierApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsFeatureViewApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsFeatureViewApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewApiClient$XgafvEnum =
     {
         1: '1',
@@ -30152,7 +29454,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewApiClient$XgafvEnum 
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsFeatureViewApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsFeatureViewApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -30207,7 +29509,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewApiClientImpl.protot
 module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsFeatureViewsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsFeatureViewsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsApiClient$XgafvEnum =
     {
         1: '1',
@@ -30222,7 +29524,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsApiClient$XgafvEnum
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsFeatureViewsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsFeatureViewsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsApiClientAltEnum =
     {
         JSON: 'json',
@@ -30278,7 +29580,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsApiClientImpl.proto
 module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsFeatureViewsTilesApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsFeatureViewsTilesApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsTilesApiClient$XgafvEnum =
     {
         1: '1',
@@ -30293,7 +29595,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsTilesApiClient$Xgaf
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsFeatureViewsTilesApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsFeatureViewsTilesApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsTilesApiClientAltEnum =
     {
         JSON: 'json',
@@ -30357,7 +29659,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsTilesApiClientImpl.
 module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewsTilesApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsFilmstripThumbnailsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsFilmstripThumbnailsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsFilmstripThumbnailsApiClient$XgafvEnum =
     {
         1: '1',
@@ -30372,7 +29674,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsFilmstripThumbnailsApiClient$Xg
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsFilmstripThumbnailsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsFilmstripThumbnailsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsFilmstripThumbnailsApiClientAltEnum =
     {
         JSON: 'json',
@@ -30455,7 +29757,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsFilmstripThumbnailsApiClientImp
 module$exports$eeapiclient$ee_api_client.ProjectsFilmstripThumbnailsApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsImageApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsImageApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsImageApiClient$XgafvEnum = {
     1: '1',
     2: '2',
@@ -30469,7 +29771,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsImageApiClient$XgafvEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IProjectsImageApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsImageApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsImageApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -30581,7 +29883,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsImageApiClientImpl.prototype.im
     }
 module$exports$eeapiclient$ee_api_client.ProjectsImageApiClient = function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsImageCollectionApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsImageCollectionApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsImageCollectionApiClient$XgafvEnum =
     {
         1: '1',
@@ -30596,7 +29898,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsImageCollectionApiClient$XgafvE
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsImageCollectionApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsImageCollectionApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsImageCollectionApiClientAltEnum =
     {
         JSON: 'json',
@@ -30658,7 +29960,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsImageCollectionApiClientImpl.pr
 module$exports$eeapiclient$ee_api_client.ProjectsImageCollectionApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsLocationsAssetsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsLocationsAssetsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsAssetsApiClient$XgafvEnum =
     {
         1: '1',
@@ -30673,7 +29975,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsLocationsAssetsApiClient$XgafvE
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsLocationsAssetsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsLocationsAssetsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsAssetsApiClientAltEnum =
     {
         JSON: 'json',
@@ -30765,7 +30067,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsLocationsAssetsApiClientImpl.pr
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsAssetsApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsLocationsFilmstripThumbnailsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsLocationsFilmstripThumbnailsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsFilmstripThumbnailsApiClient$XgafvEnum =
     {
         1: '1',
@@ -30780,7 +30082,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsLocationsFilmstripThumbnailsApi
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsLocationsFilmstripThumbnailsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsLocationsFilmstripThumbnailsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsFilmstripThumbnailsApiClientAltEnum =
     {
         JSON: 'json',
@@ -30842,7 +30144,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsLocationsFilmstripThumbnailsApi
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsFilmstripThumbnailsApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsLocationsMapsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsLocationsMapsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsMapsApiClient$XgafvEnum =
     {
         1: '1',
@@ -30857,7 +30159,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsLocationsMapsApiClient$XgafvEnu
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsLocationsMapsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsLocationsMapsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsMapsApiClientAltEnum =
     {
         JSON: 'json',
@@ -30917,7 +30219,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsLocationsMapsApiClientImpl.prot
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsMapsApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsLocationsTablesApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsLocationsTablesApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsTablesApiClient$XgafvEnum =
     {
         1: '1',
@@ -30932,7 +30234,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsLocationsTablesApiClient$XgafvE
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsLocationsTablesApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsLocationsTablesApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsTablesApiClientAltEnum =
     {
         JSON: 'json',
@@ -30991,7 +30293,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsLocationsTablesApiClientImpl.pr
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsTablesApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsLocationsThumbnailsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsLocationsThumbnailsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsThumbnailsApiClient$XgafvEnum =
     {
         1: '1',
@@ -31006,7 +30308,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsLocationsThumbnailsApiClient$Xg
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsLocationsThumbnailsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsLocationsThumbnailsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsThumbnailsApiClientAltEnum =
     {
         JSON: 'json',
@@ -31065,7 +30367,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsLocationsThumbnailsApiClientImp
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsThumbnailsApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsLocationsVideoThumbnailsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsLocationsVideoThumbnailsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsVideoThumbnailsApiClient$XgafvEnum =
     {
         1: '1',
@@ -31080,7 +30382,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsLocationsVideoThumbnailsApiClie
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsLocationsVideoThumbnailsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsLocationsVideoThumbnailsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsVideoThumbnailsApiClientAltEnum =
     {
         JSON: 'json',
@@ -31140,7 +30442,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsLocationsVideoThumbnailsApiClie
 module$exports$eeapiclient$ee_api_client.ProjectsLocationsVideoThumbnailsApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsMapApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsMapApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsMapApiClient$XgafvEnum = {
     1: '1',
     2: '2',
@@ -31154,7 +30456,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsMapApiClient$XgafvEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IProjectsMapApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsMapApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsMapApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -31211,7 +30513,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsMapApiClientImpl.prototype.expo
     }
 module$exports$eeapiclient$ee_api_client.ProjectsMapApiClient = function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsMapsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsMapsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsMapsApiClient$XgafvEnum = {
     1: '1',
     2: '2',
@@ -31225,7 +30527,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsMapsApiClient$XgafvEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IProjectsMapsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsMapsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsMapsApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -31283,7 +30585,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsMapsApiClientImpl.prototype.cre
     }
 module$exports$eeapiclient$ee_api_client.ProjectsMapsApiClient = function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsMapsTilesApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsMapsTilesApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsMapsTilesApiClient$XgafvEnum =
     {
         1: '1',
@@ -31298,7 +30600,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsMapsTilesApiClient$XgafvEnum =
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsMapsTilesApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsMapsTilesApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsMapsTilesApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -31361,7 +30663,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsMapsTilesApiClientImpl.prototyp
 module$exports$eeapiclient$ee_api_client.ProjectsMapsTilesApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsOperationsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsOperationsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsOperationsApiClient$XgafvEnum =
     {
         1: '1',
@@ -31376,7 +30678,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsOperationsApiClient$XgafvEnum =
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsOperationsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsOperationsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsOperationsApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -31527,7 +30829,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsOperationsApiClientImpl.prototy
 module$exports$eeapiclient$ee_api_client.ProjectsOperationsApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsTableApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsTableApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsTableApiClient$XgafvEnum = {
     1: '1',
     2: '2',
@@ -31541,7 +30843,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsTableApiClient$XgafvEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IProjectsTableApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsTableApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsTableApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -31658,7 +30960,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsTableApiClientImpl.prototype.im
     }
 module$exports$eeapiclient$ee_api_client.ProjectsTableApiClient = function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsTablesApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsTablesApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsTablesApiClient$XgafvEnum = {
     1: '1',
     2: '2',
@@ -31672,7 +30974,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsTablesApiClient$XgafvEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IProjectsTablesApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsTablesApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsTablesApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -31752,7 +31054,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsTablesApiClientImpl.prototype.g
 module$exports$eeapiclient$ee_api_client.ProjectsTablesApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsThumbnailsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsThumbnailsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsThumbnailsApiClient$XgafvEnum =
     {
         1: '1',
@@ -31767,7 +31069,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsThumbnailsApiClient$XgafvEnum =
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsThumbnailsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsThumbnailsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsThumbnailsApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -31847,7 +31149,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsThumbnailsApiClientImpl.prototy
 module$exports$eeapiclient$ee_api_client.ProjectsThumbnailsApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsValueApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsValueApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsValueApiClient$XgafvEnum = {
     1: '1',
     2: '2',
@@ -31861,7 +31163,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsValueApiClient$XgafvEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IProjectsValueApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsValueApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsValueApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -31919,7 +31221,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsValueApiClientImpl.prototype.co
     }
 module$exports$eeapiclient$ee_api_client.ProjectsValueApiClient = function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsVideoApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsVideoApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsVideoApiClient$XgafvEnum = {
     1: '1',
     2: '2',
@@ -31933,7 +31235,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsVideoApiClient$XgafvEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IProjectsVideoApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsVideoApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsVideoApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -31990,7 +31292,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsVideoApiClientImpl.prototype.ex
     }
 module$exports$eeapiclient$ee_api_client.ProjectsVideoApiClient = function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsVideoMapApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsVideoMapApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsVideoMapApiClient$XgafvEnum = {
     1: '1',
     2: '2',
@@ -32004,7 +31306,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsVideoMapApiClient$XgafvEnum = {
     },
 }
 module$exports$eeapiclient$ee_api_client.IProjectsVideoMapApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsVideoMapApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsVideoMapApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
@@ -32059,7 +31361,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsVideoMapApiClientImpl.prototype
 module$exports$eeapiclient$ee_api_client.ProjectsVideoMapApiClient =
     function () {}
 module$exports$eeapiclient$ee_api_client.IProjectsVideoThumbnailsApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsVideoThumbnailsApiClient$XgafvEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsVideoThumbnailsApiClient$XgafvEnum =
     {
         1: '1',
@@ -32074,7 +31376,7 @@ module$exports$eeapiclient$ee_api_client.ProjectsVideoThumbnailsApiClient$XgafvE
         },
     }
 module$exports$eeapiclient$ee_api_client.IProjectsVideoThumbnailsApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IProjectsVideoThumbnailsApiClientAltEnum() {}
+    function () {}
 module$exports$eeapiclient$ee_api_client.ProjectsVideoThumbnailsApiClientAltEnum =
     {
         JSON: 'json',
@@ -32155,38 +31457,31 @@ module$exports$eeapiclient$ee_api_client.ProjectsVideoThumbnailsApiClientImpl.pr
     }
 module$exports$eeapiclient$ee_api_client.ProjectsVideoThumbnailsApiClient =
     function () {}
-module$exports$eeapiclient$ee_api_client.IV1alphaApiClient$XgafvEnum =
-    function module$contents$eeapiclient$ee_api_client_IV1alphaApiClient$XgafvEnum() {}
-module$exports$eeapiclient$ee_api_client.V1alphaApiClient$XgafvEnum = {
+module$exports$eeapiclient$ee_api_client.IV1ApiClient$XgafvEnum = function () {}
+module$exports$eeapiclient$ee_api_client.V1ApiClient$XgafvEnum = {
     1: '1',
     2: '2',
     values: function () {
         return [
-            module$exports$eeapiclient$ee_api_client
-                .V1alphaApiClient$XgafvEnum[1],
-            module$exports$eeapiclient$ee_api_client
-                .V1alphaApiClient$XgafvEnum[2],
+            module$exports$eeapiclient$ee_api_client.V1ApiClient$XgafvEnum[1],
+            module$exports$eeapiclient$ee_api_client.V1ApiClient$XgafvEnum[2],
         ]
     },
 }
-module$exports$eeapiclient$ee_api_client.IV1alphaApiClientAltEnum =
-    function module$contents$eeapiclient$ee_api_client_IV1alphaApiClientAltEnum() {}
-module$exports$eeapiclient$ee_api_client.V1alphaApiClientAltEnum = {
+module$exports$eeapiclient$ee_api_client.IV1ApiClientAltEnum = function () {}
+module$exports$eeapiclient$ee_api_client.V1ApiClientAltEnum = {
     JSON: 'json',
     MEDIA: 'media',
     PROTO: 'proto',
     values: function () {
         return [
-            module$exports$eeapiclient$ee_api_client.V1alphaApiClientAltEnum
-                .JSON,
-            module$exports$eeapiclient$ee_api_client.V1alphaApiClientAltEnum
-                .MEDIA,
-            module$exports$eeapiclient$ee_api_client.V1alphaApiClientAltEnum
-                .PROTO,
+            module$exports$eeapiclient$ee_api_client.V1ApiClientAltEnum.JSON,
+            module$exports$eeapiclient$ee_api_client.V1ApiClientAltEnum.MEDIA,
+            module$exports$eeapiclient$ee_api_client.V1ApiClientAltEnum.PROTO,
         ]
     },
 }
-module$exports$eeapiclient$ee_api_client.V1alphaApiClientImpl = function (
+module$exports$eeapiclient$ee_api_client.V1ApiClientImpl = function (
     gapiVersion,
     gapiRequestService,
     apiClientHookFactory
@@ -32198,7 +31493,7 @@ module$exports$eeapiclient$ee_api_client.V1alphaApiClientImpl = function (
             void 0 === apiClientHookFactory ? null : apiClientHookFactory
         )
 }
-module$exports$eeapiclient$ee_api_client.V1alphaApiClientImpl.prototype.getCapabilities =
+module$exports$eeapiclient$ee_api_client.V1ApiClientImpl.prototype.getCapabilities =
     function (namedParameters, passthroughNamedParameters) {
         namedParameters = void 0 === namedParameters ? {} : namedParameters
         passthroughNamedParameters =
@@ -32219,10 +31514,10 @@ module$exports$eeapiclient$ee_api_client.V1alphaApiClientImpl.prototype.getCapab
             responseCtor: module$exports$eeapiclient$ee_api_client.Capabilities,
         })
     }
-module$exports$eeapiclient$ee_api_client.V1alphaApiClient = function () {}
+module$exports$eeapiclient$ee_api_client.V1ApiClient = function () {}
 ee.api = module$exports$eeapiclient$ee_api_client
 var module$exports$ee$apiVersion = { V1ALPHA: 'v1alpha', V1: 'v1' }
-module$exports$ee$apiVersion.VERSION = module$exports$ee$apiVersion.V1ALPHA
+module$exports$ee$apiVersion.VERSION = module$exports$ee$apiVersion.V1
 var module$exports$eeapiclient$promise_request_service = {},
     module$contents$eeapiclient$promise_request_service_module =
         module$contents$eeapiclient$promise_request_service_module || {
@@ -34292,8 +33587,8 @@ goog.Promise.prototype.addChildPromise_ = function (
                   try {
                       var result = onFulfilled.call(opt_context, value)
                       resolve(result)
-                  } catch (err$53) {
-                      reject(err$53)
+                  } catch (err) {
+                      reject(err)
                   }
               }
             : resolve
@@ -34305,8 +33600,8 @@ goog.Promise.prototype.addChildPromise_ = function (
                       reason instanceof goog.Promise.CancellationError
                           ? reject(reason)
                           : resolve(result)
-                  } catch (err$54) {
-                      reject(err$54)
+                  } catch (err) {
+                      reject(err)
                   }
               }
             : reject
@@ -34449,8 +33744,8 @@ goog.Promise.prototype.executeCallback_ = function (
             callbackEntry.always
                 ? callbackEntry.onFulfilled.call(callbackEntry.context)
                 : goog.Promise.invokeCallback_(callbackEntry, state, result)
-        } catch (err$55) {
-            goog.Promise.handleRejection_.call(null, err$55)
+        } catch (err) {
+            goog.Promise.handleRejection_.call(null, err)
         }
     }
     goog.Promise.returnEntry_(callbackEntry)
@@ -35250,7 +34545,7 @@ goog.json.parse = goog.json.USE_NATIVE_JSON
                   var result = eval('(' + o + ')')
                   error && goog.json.errorLogger_('Invalid JSON: ' + o, error)
                   return result
-              } catch (ex$56) {}
+              } catch (ex) {}
           }
           throw Error('Invalid JSON string: ' + o)
       }
@@ -36046,7 +35341,7 @@ goog.net.XhrIo = function (opt_xmlHttpFactory) {
         this.progressEventsEnabled_ =
         this.withCredentials_ =
             !1
-    this.trustToken_ = null
+    this.attributionReportingOptions_ = this.trustToken_ = null
 }
 goog.inherits(goog.net.XhrIo, goog.events.EventTarget)
 goog.net.XhrIo.ResponseType = {
@@ -36126,6 +35421,11 @@ goog.net.XhrIo.prototype.getProgressEventsEnabled = function () {
 goog.net.XhrIo.prototype.setTrustToken = function (trustToken) {
     this.trustToken_ = trustToken
 }
+goog.net.XhrIo.prototype.setAttributionReporting = function (
+    attributionReportingOptions
+) {
+    this.attributionReportingOptions_ = attributionReportingOptions
+}
 goog.net.XhrIo.prototype.send = function (
     url,
     opt_method,
@@ -36167,12 +35467,12 @@ goog.net.XhrIo.prototype.send = function (
             (this.inOpen_ = !0),
             this.xhr_.open(method, String(url), !0),
             (this.inOpen_ = !1)
-    } catch (err$57) {
+    } catch (err) {
         goog.log.fine(
             this.logger_,
-            this.formatMsg_('Error opening Xhr: ' + err$57.message)
+            this.formatMsg_('Error opening Xhr: ' + err.message)
         )
-        this.error_(goog.net.ErrorCode.EXCEPTION, err$57)
+        this.error_(goog.net.ErrorCode.EXCEPTION, err)
         return
     }
     var content = opt_content || '',
@@ -36187,13 +35487,13 @@ goog.net.XhrIo.prototype.send = function (
             'function' === typeof opt_headers.get
         ) {
             for (
-                var $jscomp$iter$24 = $jscomp.makeIterator(opt_headers.keys()),
-                    $jscomp$key$key = $jscomp$iter$24.next();
+                var $jscomp$iter$31 = $jscomp.makeIterator(opt_headers.keys()),
+                    $jscomp$key$key = $jscomp$iter$31.next();
                 !$jscomp$key$key.done;
-                $jscomp$key$key = $jscomp$iter$24.next()
+                $jscomp$key$key = $jscomp$iter$31.next()
             ) {
-                var key$58 = $jscomp$key$key.value
-                headers.set(key$58, opt_headers.get(key$58))
+                var key$jscomp$0 = $jscomp$key$key.value
+                headers.set(key$jscomp$0, opt_headers.get(key$jscomp$0))
             }
         } else {
             throw Error(
@@ -36220,17 +35520,17 @@ goog.net.XhrIo.prototype.send = function (
             goog.net.XhrIo.FORM_CONTENT_TYPE
         )
     for (
-        var $jscomp$iter$25 = $jscomp.makeIterator(headers),
-            $jscomp$key$ = $jscomp$iter$25.next();
+        var $jscomp$iter$32 = $jscomp.makeIterator(headers),
+            $jscomp$key$ = $jscomp$iter$32.next();
         !$jscomp$key$.done;
-        $jscomp$key$ = $jscomp$iter$25.next()
+        $jscomp$key$ = $jscomp$iter$32.next()
     ) {
         var $jscomp$destructuring$var31 = $jscomp.makeIterator(
                 $jscomp$key$.value
             ),
-            key$59 = $jscomp$destructuring$var31.next().value,
+            key$jscomp$1 = $jscomp$destructuring$var31.next().value,
             value = $jscomp$destructuring$var31.next().value
-        this.xhr_.setRequestHeader(key$59, value)
+        this.xhr_.setRequestHeader(key$jscomp$1, value)
     }
     this.responseType_ && (this.xhr_.responseType = this.responseType_)
     'withCredentials' in this.xhr_ &&
@@ -36239,10 +35539,23 @@ goog.net.XhrIo.prototype.send = function (
     if ('setTrustToken' in this.xhr_ && this.trustToken_) {
         try {
             this.xhr_.setTrustToken(this.trustToken_)
-        } catch (err$60) {
+        } catch (err) {
             goog.log.fine(
                 this.logger_,
-                this.formatMsg_('Error SetTrustToken: ' + err$60.message)
+                this.formatMsg_('Error SetTrustToken: ' + err.message)
+            )
+        }
+    }
+    if (
+        'setAttributionReporting' in this.xhr_ &&
+        this.attributionReportingOptions_
+    ) {
+        try {
+            this.xhr_.setAttributionReporting(this.attributionReportingOptions_)
+        } catch (err) {
+            goog.log.fine(
+                this.logger_,
+                this.formatMsg_('Error SetAttributionReporting: ' + err.message)
             )
         }
     }
@@ -36277,12 +35590,12 @@ goog.net.XhrIo.prototype.send = function (
             (this.inSend_ = !0),
             this.xhr_.send(content),
             (this.inSend_ = !1)
-    } catch (err$61) {
+    } catch (err) {
         goog.log.fine(
             this.logger_,
-            this.formatMsg_('Send error: ' + err$61.message)
+            this.formatMsg_('Send error: ' + err.message)
         ),
-            this.error_(goog.net.ErrorCode.EXCEPTION, err$61)
+            this.error_(goog.net.ErrorCode.EXCEPTION, err)
     }
 }
 goog.net.XhrIo.shouldUseXhr2Timeout_ = function (xhr) {
@@ -36603,9 +35916,9 @@ goog.net.XhrIo.prototype.getResponseHeaders = function () {
                 value = keyValue[1]
             if ('string' === typeof value) {
                 value = value.trim()
-                var values$jscomp$0 = headersObject[key] || []
-                headersObject[key] = values$jscomp$0
-                values$jscomp$0.push(value)
+                var values = headersObject[key] || []
+                headersObject[key] = values
+                values.push(value)
             }
         }
     }
@@ -36646,8 +35959,8 @@ goog.debug.entryPointRegistry.register(function (transformer) {
 })
 ee.apiclient = {}
 var module$contents$ee$apiclient_apiclient = {}
-ee.apiclient.VERSION = module$exports$ee$apiVersion.V1ALPHA
-ee.apiclient.API_CLIENT_VERSION = '0.1.342'
+ee.apiclient.VERSION = module$exports$ee$apiVersion.V1
+ee.apiclient.API_CLIENT_VERSION = '0.1.377'
 ee.apiclient.NULL_VALUE = module$exports$eeapiclient$domain_object.NULL_VALUE
 ee.apiclient.PromiseRequestService =
     module$exports$eeapiclient$promise_request_service.PromiseRequestService
@@ -36662,6 +35975,12 @@ var module$contents$ee$apiclient_Call = function (callback, retries) {
         !callback,
         retries
     )
+}
+module$contents$ee$apiclient_Call.prototype.withDetectPartialError = function (
+    detectPartialError
+) {
+    this.requestService.detectPartialError = detectPartialError
+    return this
 }
 module$contents$ee$apiclient_Call.prototype.handle = function (response) {
     var $jscomp$this = this
@@ -36692,108 +36011,109 @@ module$contents$ee$apiclient_Call.prototype.projectsPath = function () {
 }
 module$contents$ee$apiclient_Call.prototype.algorithms = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsAlgorithmsApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.projects = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.assets = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsAssetsApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.operations = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsOperationsApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.value = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsValueApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.maps = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsMapsApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.map = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsMapApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.image = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsImageApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.table = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsTableApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.tables = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsTablesApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.video = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsVideoApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.videoMap = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsVideoMapApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.classifier = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsClassifierApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.featureView = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsFeatureViewApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.thumbnails = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsThumbnailsApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.videoThumbnails = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsVideoThumbnailsApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 module$contents$ee$apiclient_Call.prototype.filmstripThumbnails = function () {
     return new module$exports$eeapiclient$ee_api_client.ProjectsFilmstripThumbnailsApiClientImpl(
-        module$exports$ee$apiVersion.V1ALPHA,
+        module$exports$ee$apiVersion.V1,
         this.requestService
     )
 }
 var module$contents$ee$apiclient_EERequestService = function (sync, retries) {
     this.sync = sync = void 0 === sync ? !1 : sync
+    this.detectPartialError = void 0
     this.retries =
         null != retries
             ? retries
@@ -36824,9 +36144,10 @@ module$contents$ee$apiclient_EERequestService.prototype.send = function (
                 void 0,
                 params.httpMethod,
                 body,
-                this.retries
+                this.retries,
+                this.detectPartialError
             ),
-            value$62 = responseCtor
+            value = responseCtor
                 ? module$contents$eeapiclient$domain_object_deserialize(
                       responseCtor,
                       raw
@@ -36839,7 +36160,7 @@ module$contents$ee$apiclient_EERequestService.prototype.send = function (
                     },
                 }
             }
-        return thenable(value$62)
+        return thenable(value)
     }
     return new Promise(function (resolve, reject) {
         module$contents$ee$apiclient_apiclient.send(
@@ -36850,7 +36171,8 @@ module$contents$ee$apiclient_EERequestService.prototype.send = function (
             },
             params.httpMethod,
             body,
-            $jscomp$this.retries
+            $jscomp$this.retries,
+            $jscomp$this.detectPartialError
         )
     }).then(function (r) {
         return responseCtor
@@ -36867,11 +36189,17 @@ module$contents$ee$apiclient_EERequestService.prototype.makeRequest = function (
 var module$contents$ee$apiclient_BatchCall = function (callback) {
     module$contents$ee$apiclient_Call.call(this, callback)
     this.requestService = new module$contents$ee$apiclient_BatchRequestService()
+    this.detectPartialError = void 0
 }
 $jscomp.inherits(
     module$contents$ee$apiclient_BatchCall,
     module$contents$ee$apiclient_Call
 )
+module$contents$ee$apiclient_BatchCall.prototype.withDetectPartialError =
+    function (detectPartialError) {
+        this.detectPartialError = detectPartialError
+        return this
+    }
 module$contents$ee$apiclient_BatchCall.prototype.send = function (
     parts,
     getResponse
@@ -36932,7 +36260,9 @@ module$contents$ee$apiclient_BatchCall.prototype.send = function (
                   )
               },
               'multipart/mixed; boundary=batch_EARTHENGINE_batch',
-              body
+              body,
+              void 0,
+              this.detectPartialError
           ),
           null)
         : deserializeResponses(
@@ -36941,7 +36271,9 @@ module$contents$ee$apiclient_BatchCall.prototype.send = function (
                   null,
                   void 0,
                   'multipart/mixed; boundary=batch_EARTHENGINE_batch',
-                  body
+                  body,
+                  void 0,
+                  this.detectPartialError
               )
           )
 }
@@ -36970,12 +36302,12 @@ module$contents$ee$apiclient_apiclient.parseBatchReply = function (
 ) {
     for (
         var boundary = contentType.split('; boundary=')[1],
-            $jscomp$iter$26 = $jscomp.makeIterator(
+            $jscomp$iter$33 = $jscomp.makeIterator(
                 responseText.split('--' + boundary)
             ),
-            $jscomp$key$part = $jscomp$iter$26.next();
+            $jscomp$key$part = $jscomp$iter$33.next();
         !$jscomp$key$part.done;
-        $jscomp$key$part = $jscomp$iter$26.next()
+        $jscomp$key$part = $jscomp$iter$33.next()
     ) {
         var groups = $jscomp$key$part.value.split('\r\n\r\n')
         if (!(3 > groups.length)) {
@@ -37056,7 +36388,7 @@ module$contents$ee$apiclient_apiclient.setAuthToken = function (
         ? callback && callback()
         : module$contents$ee$apiclient_apiclient.ensureAuthLibLoaded_(
               function () {
-                  goog.global.gapi.auth.setToken(tokenObject)
+                  goog.global.gapi.client.setToken(tokenObject)
                   callback && callback()
               }
           )
@@ -37075,6 +36407,7 @@ module$contents$ee$apiclient_apiclient.refreshAuthToken = function (
             ),
             immediate: !0,
             scope: module$contents$ee$apiclient_apiclient.authScopes_.join(' '),
+            plugin_name: 'earthengine',
         }
         module$contents$ee$apiclient_apiclient.authTokenRefresher_(
             authArgs,
@@ -37087,7 +36420,9 @@ module$contents$ee$apiclient_apiclient.refreshAuthToken = function (
                             module$contents$ee$apiclient_apiclient.ensureAuthLibLoaded_(
                                 function () {
                                     try {
-                                        goog.global.gapi.auth.setToken(result),
+                                        goog.global.gapi.client.setToken(
+                                            result
+                                        ),
                                             module$contents$ee$apiclient_apiclient.handleAuthResult_(
                                                 success,
                                                 error,
@@ -37205,7 +36540,8 @@ module$contents$ee$apiclient_apiclient.send = function (
     callback,
     method,
     body,
-    retries
+    retries,
+    detectPartialError
 ) {
     module$contents$ee$apiclient_apiclient.initialize()
     var profileHookAtCallTime =
@@ -37218,8 +36554,8 @@ module$contents$ee$apiclient_apiclient.send = function (
             ((contentType = method), (method = 'POST')))
     method = method || 'POST'
     var headers = { 'Content-Type': contentType },
-        version = '0.1.342'
-    '0.1.342' === version && (version = 'latest')
+        version = '0.1.377'
+    '0.1.377' === version && (version = 'latest')
     headers[module$contents$ee$apiclient_apiclient.API_CLIENT_VERSION_HEADER] =
         'ee-js/' + version
     var authToken = module$contents$ee$apiclient_apiclient.getAuthToken()
@@ -37290,7 +36626,8 @@ module$contents$ee$apiclient_apiclient.send = function (
                     method,
                     requestData,
                     headers,
-                    retries
+                    retries,
+                    detectPartialError
                 )
             ),
             module$contents$ee$apiclient_apiclient.RequestThrottle_.fire(),
@@ -37332,7 +36669,8 @@ module$contents$ee$apiclient_apiclient.send = function (
         profileHookAtCallTime,
         void 0,
         url,
-        method
+        method,
+        detectPartialError
     )
 }
 module$contents$ee$apiclient_apiclient.buildAsyncRequest_ = function (
@@ -37341,7 +36679,8 @@ module$contents$ee$apiclient_apiclient.buildAsyncRequest_ = function (
     method,
     content,
     headers,
-    retries
+    retries,
+    detectPartialError
 ) {
     var retryCount = 0,
         request = {
@@ -37376,7 +36715,8 @@ module$contents$ee$apiclient_apiclient.buildAsyncRequest_ = function (
                   profileHookAtCallTime,
                   callback,
                   url,
-                  method
+                  method,
+                  detectPartialError
               )
     }
     return request
@@ -37397,13 +36737,14 @@ module$contents$ee$apiclient_apiclient.withProfiling = function (
     }
 }
 module$contents$ee$apiclient_apiclient.handleResponse_ = function (
-    status$jscomp$0,
+    status,
     getResponseHeader,
     responseText,
     profileHook,
     callback,
     url,
-    method
+    method,
+    detectPartialError
 ) {
     var profileId = profileHook
         ? getResponseHeader(
@@ -37414,11 +36755,14 @@ module$contents$ee$apiclient_apiclient.handleResponse_ = function (
     var parseJson = function (body) {
             try {
                 var response = JSON.parse(body)
-                return goog.isObject(response) &&
+                return !(
+                    goog.isObject(response) &&
                     'error' in response &&
                     'message' in response.error
-                    ? response.error.message
-                    : { parsed: response }
+                ) ||
+                    (detectPartialError && detectPartialError(response))
+                    ? { parsed: response }
+                    : response.error.message
             } catch (e) {
                 return 'Invalid JSON: ' + body
             }
@@ -37439,17 +36783,12 @@ module$contents$ee$apiclient_apiclient.handleResponse_ = function (
             }
         },
         errorMessage,
+        data,
         typeHeader = getResponseHeader('Content-Type') || 'application/json',
         contentType = typeHeader.replace(/;.*/, '')
     if ('application/json' === contentType || 'text/json' === contentType) {
-        var response$jscomp$0 = parseJson(responseText)
-        if (response$jscomp$0.parsed) {
-            var data = response$jscomp$0.parsed
-            void 0 === data &&
-                (errorMessage = 'Malformed response: ' + responseText)
-        } else {
-            errorMessage = response$jscomp$0
-        }
+        var response = parseJson(responseText)
+        response.parsed ? (data = response.parsed) : (errorMessage = response)
     } else if ('multipart/mixed' === contentType) {
         data = {}
         var errors = []
@@ -37468,7 +36807,7 @@ module$contents$ee$apiclient_apiclient.handleResponse_ = function (
     } else {
         var typeError = 'Response was unexpectedly not JSON, but ' + contentType
     }
-    errorMessage = errorMessage || statusError(status$jscomp$0) || typeError
+    errorMessage = errorMessage || statusError(status) || typeError
     if (callback) {
         return callback(data, errorMessage), null
     }
@@ -37484,14 +36823,14 @@ module$contents$ee$apiclient_apiclient.ensureAuthLibLoaded_ = function (
         goog.global.gapi.config.update('client/cors', !0)
         module$contents$ee$apiclient_apiclient.authTokenRefresher_ ||
             module$contents$ee$apiclient_apiclient.setAuthTokenRefresher(
-                goog.global.gapi.auth.authorize
+                goog.global.gapi.auth2.authorize
             )
         callback()
     }
     if (
         goog.isObject(goog.global.gapi) &&
-        goog.isObject(goog.global.gapi.auth) &&
-        'function' === typeof goog.global.gapi.auth.authorize
+        goog.isObject(goog.global.gapi.auth2) &&
+        'function' === typeof goog.global.gapi.auth2.authorize
     ) {
         done()
     } else {
@@ -37540,10 +36879,10 @@ module$contents$ee$apiclient_apiclient.handleAuthResult_ = function (
 module$contents$ee$apiclient_apiclient.makeRequest_ = function (params) {
     for (
         var request = new goog.Uri.QueryData(),
-            $jscomp$iter$27 = $jscomp.makeIterator(Object.entries(params)),
-            $jscomp$key$ = $jscomp$iter$27.next();
+            $jscomp$iter$34 = $jscomp.makeIterator(Object.entries(params)),
+            $jscomp$key$ = $jscomp$iter$34.next();
         !$jscomp$key$.done;
-        $jscomp$key$ = $jscomp$iter$27.next()
+        $jscomp$key$ = $jscomp$iter$34.next()
     ) {
         var $jscomp$destructuring$var39 = $jscomp.makeIterator(
                 $jscomp$key$.value
@@ -37559,7 +36898,7 @@ module$contents$ee$apiclient_apiclient.setupMockSend = function (calls) {
         url = url
             .replace(apiBaseUrl, '')
             .replace(
-                module$exports$ee$apiVersion.V1ALPHA +
+                module$exports$ee$apiVersion.V1 +
                     '/projects/' +
                     module$contents$ee$apiclient_apiclient.DEFAULT_PROJECT_ +
                     '/',
@@ -37830,6 +37169,11 @@ goog.exportSymbol(
     module$exports$eeapiclient$ee_api_client.FeatureViewLocation
 )
 ee.Encodable = function () {}
+ee.Encodable.prototype.getSourceFrame = function () {
+    return null
+}
+ee.Encodable.SourceFrame = function () {}
+goog.exportSymbol('ee.Encodable.SourceFrame', ee.Encodable.SourceFrame)
 ee.rpc_node = {}
 ee.rpc_node.constant = function (obj) {
     if (void 0 === obj || null === obj) {
@@ -38012,21 +37356,21 @@ ee.rpc_convert.pairedValues = function (obj, a, b) {
         bValues = ee.rpc_convert.csvToNumbers(obj[b])
     if (0 === aValues.length) {
         return bValues.map(function (value) {
-            var $jscomp$compprop8 = {}
+            var $jscomp$compprop14 = {}
             return (
-                ($jscomp$compprop8[a] = 0),
-                ($jscomp$compprop8[b] = value),
-                $jscomp$compprop8
+                ($jscomp$compprop14[a] = 0),
+                ($jscomp$compprop14[b] = value),
+                $jscomp$compprop14
             )
         })
     }
     if (0 === bValues.length) {
         return aValues.map(function (value) {
-            var $jscomp$compprop9 = {}
+            var $jscomp$compprop15 = {}
             return (
-                ($jscomp$compprop9[a] = value),
-                ($jscomp$compprop9[b] = 1),
-                $jscomp$compprop9
+                ($jscomp$compprop15[a] = value),
+                ($jscomp$compprop15[b] = 1),
+                $jscomp$compprop15
             )
         })
     }
@@ -38034,11 +37378,11 @@ ee.rpc_convert.pairedValues = function (obj, a, b) {
         throw Error('Length of ' + a + ' and ' + b + ' must match.')
     }
     return aValues.map(function (value, index) {
-        var $jscomp$compprop10 = {}
+        var $jscomp$compprop16 = {}
         return (
-            ($jscomp$compprop10[a] = value),
-            ($jscomp$compprop10[b] = bValues[index]),
-            $jscomp$compprop10
+            ($jscomp$compprop16[a] = value),
+            ($jscomp$compprop16[b] = bValues[index]),
+            $jscomp$compprop16
         )
     })
 }
@@ -38074,14 +37418,14 @@ ee.rpc_convert.algorithms = function (result) {
                 return internalAlgorithm
             },
             internalAlgorithms = {},
-            $jscomp$iter$28 = $jscomp.makeIterator(result.algorithms || []),
-            $jscomp$key$algorithm = $jscomp$iter$28.next();
+            $jscomp$iter$35 = $jscomp.makeIterator(result.algorithms || []),
+            $jscomp$key$algorithm = $jscomp$iter$35.next();
         !$jscomp$key$algorithm.done;
-        $jscomp$key$algorithm = $jscomp$iter$28.next()
+        $jscomp$key$algorithm = $jscomp$iter$35.next()
     ) {
-        var algorithm$jscomp$0 = $jscomp$key$algorithm.value,
-            name = algorithm$jscomp$0.name.replace(/^algorithms\//, '')
-        internalAlgorithms[name] = convertAlgorithm(algorithm$jscomp$0)
+        var algorithm = $jscomp$key$algorithm.value,
+            name = algorithm.name.replace(/^algorithms\//, '')
+        internalAlgorithms[name] = convertAlgorithm(algorithm)
     }
     return internalAlgorithms
 }
@@ -38183,10 +37527,14 @@ ee.rpc_convert.assetToLegacyResult = function (result) {
     result.endTime &&
         (properties['system:time_end'] = Date.parse(result.endTime))
     result.geometry && (properties['system:footprint'] = result.geometry)
-    'string' === typeof result.title &&
-        (properties['system:title'] = result.title)
-    'string' === typeof result.description &&
-        (properties['system:description'] = result.description)
+    'string' === typeof result.title
+        ? (properties['system:title'] = result.title)
+        : 'string' === typeof properties.title &&
+          (properties['system:title'] = properties.title)
+    'string' === typeof result.description
+        ? (properties['system:description'] = result.description)
+        : 'string' === typeof properties.description &&
+          (properties['system:description'] = properties.description)
     result.updateTime && (asset.version = 1e3 * Date.parse(result.updateTime))
     asset.properties = properties
     result.bands &&
@@ -38243,29 +37591,28 @@ ee.rpc_convert.legacyPropertiesToAssetUpdate = function (legacyProperties) {
                 : void 0
         },
         properties = Object.assign({}, legacyProperties),
-        value$jscomp$0,
+        value,
         extractValue = function (key) {
-            value$jscomp$0 = properties[key]
+            value = properties[key]
             delete properties[key]
-            return value$jscomp$0
+            return value
         }
     void 0 !== extractValue('system:asset_size') &&
-        (asset.sizeBytes = asNull(value$jscomp$0) || String(value$jscomp$0))
+        (asset.sizeBytes = asNull(value) || String(value))
     void 0 !== extractValue('system:time_start') &&
-        (asset.startTime =
-            asNull(value$jscomp$0) || toTimestamp(value$jscomp$0))
+        (asset.startTime = asNull(value) || toTimestamp(value))
     void 0 !== extractValue('system:time_end') &&
-        (asset.endTime = asNull(value$jscomp$0) || toTimestamp(value$jscomp$0))
+        (asset.endTime = asNull(value) || toTimestamp(value))
     void 0 !== extractValue('system:footprint') &&
-        (asset.geometry = asNull(value$jscomp$0) || value$jscomp$0)
+        (asset.geometry = asNull(value) || value)
     extractValue('system:title')
-    ;('string' !== typeof value$jscomp$0 && null !== value$jscomp$0) ||
+    ;('string' !== typeof value && null !== value) ||
         null != properties.title ||
-        (properties.title = asNull(value$jscomp$0) || value$jscomp$0)
+        (properties.title = asNull(value) || value)
     extractValue('system:description')
-    ;('string' !== typeof value$jscomp$0 && null !== value$jscomp$0) ||
+    ;('string' !== typeof value && null !== value) ||
         null != properties.description ||
-        (properties.description = asNull(value$jscomp$0) || value$jscomp$0)
+        (properties.description = asNull(value) || value)
     Object.entries(properties).forEach(function ($jscomp$destructuring$var40) {
         var $jscomp$destructuring$var41 = $jscomp.makeIterator(
                 $jscomp$destructuring$var40
@@ -38299,14 +37646,14 @@ ee.rpc_convert.getListToListAssets = function (param) {
         console.warn('Multiple request parameters converted to region')
     for (
         var allKeys = 'id num starttime endtime bbox region'.split(' '),
-            $jscomp$iter$29 = $jscomp.makeIterator(
+            $jscomp$iter$36 = $jscomp.makeIterator(
                 Object.keys(param).filter(function (k) {
                     return !allKeys.includes(k)
                 })
             ),
-            $jscomp$key$key = $jscomp$iter$29.next();
+            $jscomp$key$key = $jscomp$iter$36.next();
         !$jscomp$key$key.done;
-        $jscomp$key$key = $jscomp$iter$29.next()
+        $jscomp$key$key = $jscomp$iter$36.next()
     ) {
         console.warn('Unrecognized key ' + $jscomp$key$key.value + ' ignored')
     }
@@ -38459,6 +37806,8 @@ ee.rpc_convert.operationToTask = function (result) {
     internalTask.task_type = metadata.type || 'UNKNOWN'
     internalTask.output_url = metadata.destinationUris
     internalTask.source_url = metadata.scriptUri
+    null != metadata.batchEecuUsageSeconds &&
+        (internalTask.batch_eecu_usage_seconds = metadata.batchEecuUsageSeconds)
     return internalTask
 }
 ee.rpc_convert.operationToProcessingResponse = function (operation) {
@@ -38671,10 +38020,10 @@ ee.rpc_convert.parseFilterParamsFromListImages_ = function (params) {
             )
         }
         for (
-            var $jscomp$iter$30 = $jscomp.makeIterator(params.properties),
-                $jscomp$key$propertyQuery = $jscomp$iter$30.next();
+            var $jscomp$iter$37 = $jscomp.makeIterator(params.properties),
+                $jscomp$key$propertyQuery = $jscomp$iter$37.next();
             !$jscomp$key$propertyQuery.done;
-            $jscomp$key$propertyQuery = $jscomp$iter$30.next()
+            $jscomp$key$propertyQuery = $jscomp$iter$37.next()
         ) {
             queryStrings.push(
                 $jscomp$key$propertyQuery.value
@@ -38946,6 +38295,7 @@ ee.Serializer = function (opt_isCompound) {
     this.encoded_ = {}
     this.withHashes_ = []
     this.hashes_ = new WeakMap()
+    this.sourceNodeMap_ = new WeakMap()
     this.unboundName = void 0
 }
 goog.exportSymbol('ee.Serializer', ee.Serializer)
@@ -39073,9 +38423,29 @@ ee.Serializer.encodeCloudApi = function (obj) {
 }
 goog.exportSymbol('ee.Serializer.encodeCloudApi', ee.Serializer.encodeCloudApi)
 ee.Serializer.encodeCloudApiExpression = function (obj, unboundName) {
-    var serializer = new ee.Serializer(!0)
+    return ee.Serializer.encodeCloudApiExpressionWithSerializer(
+        new ee.Serializer(!0),
+        obj,
+        unboundName
+    )
+}
+ee.Serializer.encodeCloudApiExpressionWithSerializer = function (
+    serializer,
+    obj,
+    unboundName
+) {
     serializer.unboundName = unboundName
     return serializer.encodeForCloudApi_(obj)
+}
+ee.Serializer.prototype.encodeSourceCodeNodes = function (expression) {
+    var sourceCodeNodes = {},
+        valueNodes = expression.values,
+        id
+    for (id in valueNodes) {
+        var sourceFrame = this.sourceNodeMap_.get(valueNodes[id])
+        sourceCodeNodes[id] = Object.assign({}, sourceFrame)
+    }
+    return sourceCodeNodes
 }
 ee.Serializer.encodeCloudApiPretty = function (obj) {
     var encoded = new ee.Serializer(!1).encodeForCloudApi_(obj),
@@ -39091,14 +38461,14 @@ ee.Serializer.encodeCloudApiPretty = function (obj) {
                         Object.getPrototypeOf(
                             module$exports$eeapiclient$ee_api_client.ValueNode
                         ),
-                    $jscomp$iter$31 = $jscomp.makeIterator(
+                    $jscomp$iter$38 = $jscomp.makeIterator(
                         Object.entries(
                             isNode ? object.Serializable$values : object
                         )
                     ),
-                    $jscomp$key$ = $jscomp$iter$31.next();
+                    $jscomp$key$ = $jscomp$iter$38.next();
                 !$jscomp$key$.done;
-                $jscomp$key$ = $jscomp$iter$31.next()
+                $jscomp$key$ = $jscomp$iter$38.next()
             ) {
                 var $jscomp$destructuring$var43 = $jscomp.makeIterator(
                         $jscomp$key$.value
@@ -39159,7 +38529,8 @@ ee.Serializer.prototype.encodeForCloudApi_ = function (obj) {
         return new ExpressionOptimizer(
             result,
             this.scope_,
-            this.isCompound_
+            this.isCompound_,
+            this.sourceNodeMap_
         ).optimize()
     } finally {
         ;(this.hashes_ = new WeakMap()),
@@ -39198,7 +38569,10 @@ ee.Serializer.prototype.makeReference = function (obj) {
         )
     }
     if (obj instanceof ee.Encodable) {
-        return makeRef(obj.encodeCloudValue(this))
+        var value = obj.encodeCloudValue(this),
+            sourceFrame = obj.getSourceFrame()
+        null !== sourceFrame && this.sourceNodeMap_.set(value, sourceFrame)
+        return makeRef(value)
     }
     if (Array.isArray(obj)) {
         return makeRef(
@@ -39222,7 +38596,12 @@ ee.Serializer.prototype.makeReference = function (obj) {
     }
     throw Error("Can't encode object: " + obj)
 }
-var ExpressionOptimizer = function (rootReference, values, isCompound) {
+var ExpressionOptimizer = function (
+    rootReference,
+    values,
+    isCompound,
+    sourceNodeMap
+) {
     var $jscomp$this = this
     this.rootReference = rootReference
     this.values = {}
@@ -39233,6 +38612,7 @@ var ExpressionOptimizer = function (rootReference, values, isCompound) {
     this.optimizedValues = {}
     this.referenceMap = {}
     this.nextMappedRef = 0
+    this.sourceNodeMap = sourceNodeMap
 }
 ExpressionOptimizer.prototype.optimize = function () {
     var result = this.optimizeReference(this.rootReference)
@@ -39259,6 +38639,16 @@ ExpressionOptimizer.prototype.optimizeValue = function (value, depth) {
             return v === module$exports$eeapiclient$domain_object.NULL_VALUE
                 ? null
                 : v
+        },
+        storeInSourceMap = function (parentValue, valueNode) {
+            $jscomp$this.sourceNodeMap &&
+                $jscomp$this.sourceNodeMap.has(parentValue) &&
+                !$jscomp$this.sourceNodeMap.has(valueNode) &&
+                $jscomp$this.sourceNodeMap.set(
+                    valueNode,
+                    $jscomp$this.sourceNodeMap.get(parentValue)
+                )
+            return valueNode
         }
     if (
         isConst(value) ||
@@ -39269,80 +38659,92 @@ ExpressionOptimizer.prototype.optimizeValue = function (value, depth) {
         return value
     }
     if (null != value.valueReference) {
-        var val = this.values[value.valueReference]
-        return null === this.referenceCounts ||
+        var referencedValue = this.values[value.valueReference]
+        if (
+            null === this.referenceCounts ||
             (50 > depth && 1 === this.referenceCounts[value.valueReference])
-            ? this.optimizeValue(val, depth)
-            : ExpressionOptimizer.isAlwaysLiftable(val)
-            ? val
-            : ee.rpc_node.reference(
-                  this.optimizeReference(value.valueReference)
-              )
+        ) {
+            var optimized = this.optimizeValue(referencedValue, depth)
+            return storeInSourceMap(value, optimized)
+        }
+        if (ExpressionOptimizer.isAlwaysLiftable(referencedValue)) {
+            return storeInSourceMap(value, referencedValue)
+        }
+        var optimized$jscomp$0 = ee.rpc_node.reference(
+            this.optimizeReference(value.valueReference)
+        )
+        return storeInSourceMap(value, optimized$jscomp$0)
     }
     if (null != value.arrayValue) {
         var arr = value.arrayValue.values.map(function (v) {
-            return $jscomp$this.optimizeValue(v, depth + 3)
-        })
-        return arr.every(isConst)
-            ? ee.rpc_node.constant(
-                  arr.map(function (v) {
-                      return serializeConst(v.constantValue)
-                  })
-              )
-            : ee.rpc_node.array(arr)
+                return $jscomp$this.optimizeValue(v, depth + 3)
+            }),
+            optimized$jscomp$1 = arr.every(isConst)
+                ? ee.rpc_node.constant(
+                      arr.map(function (v) {
+                          return serializeConst(v.constantValue)
+                      })
+                  )
+                : ee.rpc_node.array(arr)
+        return storeInSourceMap(value, optimized$jscomp$1)
     }
     if (null != value.dictionaryValue) {
         for (
             var values = {},
                 constantValues = {},
-                $jscomp$iter$32 = $jscomp.makeIterator(
+                $jscomp$iter$39 = $jscomp.makeIterator(
                     Object.entries(value.dictionaryValue.values || {})
                 ),
-                $jscomp$key$ = $jscomp$iter$32.next();
+                $jscomp$key$ = $jscomp$iter$39.next();
             !$jscomp$key$.done;
-            $jscomp$key$ = $jscomp$iter$32.next()
+            $jscomp$key$ = $jscomp$iter$39.next()
         ) {
             var $jscomp$destructuring$var45 = $jscomp.makeIterator(
                     $jscomp$key$.value
                 ),
                 k = $jscomp$destructuring$var45.next().value,
-                v$jscomp$0 = $jscomp$destructuring$var45.next().value
-            values[k] = this.optimizeValue(v$jscomp$0, depth + 3)
+                v = $jscomp$destructuring$var45.next().value
+            values[k] = this.optimizeValue(v, depth + 3)
             null !== constantValues && isConst(values[k])
                 ? (constantValues[k] = serializeConst(values[k].constantValue))
                 : (constantValues = null)
         }
         return null !== constantValues
-            ? ee.rpc_node.constant(constantValues)
-            : ee.rpc_node.dictionary(values)
+            ? storeInSourceMap(value, ee.rpc_node.constant(constantValues))
+            : storeInSourceMap(values, ee.rpc_node.dictionary(values))
     }
     if (null != value.functionDefinitionValue) {
-        var def = value.functionDefinitionValue
-        return ee.rpc_node.functionDefinition(
-            def.argumentNames || [],
-            this.optimizeReference(def.body || '')
-        )
+        var def = value.functionDefinitionValue,
+            optimized$jscomp$2 = ee.rpc_node.functionDefinition(
+                def.argumentNames || [],
+                this.optimizeReference(def.body || '')
+            )
+        return storeInSourceMap(value, optimized$jscomp$2)
     }
     if (null != value.functionInvocationValue) {
         for (
             var inv = value.functionInvocationValue,
                 args = {},
-                $jscomp$iter$33 = $jscomp.makeIterator(
+                $jscomp$iter$40 = $jscomp.makeIterator(
                     Object.keys(inv.arguments || {})
                 ),
-                $jscomp$key$k = $jscomp$iter$33.next();
+                $jscomp$key$k = $jscomp$iter$40.next();
             !$jscomp$key$k.done;
-            $jscomp$key$k = $jscomp$iter$33.next()
+            $jscomp$key$k = $jscomp$iter$40.next()
         ) {
-            var k$63 = $jscomp$key$k.value
-            args[k$63] = this.optimizeValue(inv.arguments[k$63], depth + 3)
+            var k$jscomp$0 = $jscomp$key$k.value
+            args[k$jscomp$0] = this.optimizeValue(
+                inv.arguments[k$jscomp$0],
+                depth + 3
+            )
         }
-        return inv.functionName
+        var optimized$jscomp$3 = inv.functionName
             ? ee.rpc_node.functionByName(inv.functionName, args)
             : ee.rpc_node.functionByReference(
                   this.optimizeReference(inv.functionReference || ''),
                   args
               )
+        return storeInSourceMap(value, optimized$jscomp$3)
     }
     throw Error("Can't optimize value: " + value)
 }
@@ -39565,6 +38967,13 @@ function stringOrNull_(value) {
 function numberOrNull_(value) {
     return null != value ? Number(value) : null
 }
+function noDataOrNull_(value) {
+    return null != value
+        ? new module$exports$eeapiclient$ee_api_client.Number({
+              floatValue: Number(value),
+          })
+        : null
+}
 ee.rpc_convert_batch.guessDestination_ = function (params) {
     var destination = ee.rpc_convert_batch.ExportDestination.DRIVE
     if (null == params) {
@@ -39597,6 +39006,7 @@ ee.rpc_convert_batch.buildGeoTiffFormatOptions_ = function (params) {
                 params.fileDimensions || params.tiffFileDimensions
             ),
             tileSize: numberOrNull_(tileSize),
+            noData: noDataOrNull_(params.tiffNoData),
         }
     )
 }
@@ -39671,7 +39081,7 @@ ee.rpc_convert_batch.buildImageAssetExportOptions_ = function (params) {
     var allPolicies = params.pyramidingPolicy || {}
     try {
         allPolicies = JSON.parse(allPolicies)
-    } catch ($jscomp$unused$catch) {}
+    } catch ($jscomp$unused$catch$m1946089996$0) {}
     var defaultPyramidingPolicy = 'PYRAMIDING_POLICY_UNSPECIFIED'
     'string' === typeof allPolicies
         ? ((defaultPyramidingPolicy = allPolicies), (allPolicies = {}))
@@ -39883,6 +39293,7 @@ ee.rpc_convert_batch.buildBigQueryDestination_ = function (params) {
     return new module$exports$eeapiclient$ee_api_client.BigQueryDestination({
         table: stringOrNull_(params.table),
         overwrite: !!params.overwrite,
+        append: !!params.append,
     })
 }
 ee.rpc_convert_batch.buildFeatureViewIngestionTimeParameters_ = function (
@@ -40074,7 +39485,7 @@ ee.data.authenticate = function (
 }
 goog.exportSymbol('ee.data.authenticate', ee.data.authenticate)
 ee.data.authenticateViaPopup = function (opt_success, opt_error) {
-    goog.global.gapi.auth.authorize(
+    goog.global.gapi.auth2.authorize(
         {
             client_id: module$contents$ee$apiclient_apiclient.getAuthClientId(),
             immediate: !1,
@@ -40188,6 +39599,11 @@ ee.data.getAlgorithms = function (opt_callback) {
             .then(ee.rpc_convert.algorithms)
     )
 }
+ee.data.getSourceFrame = function () {
+    return null == ee.data.sourceFrameGenerator_
+        ? null
+        : ee.data.sourceFrameGenerator_()
+}
 ee.data.getMapId = function (params, opt_callback) {
     if ('string' === typeof params.image) {
         throw Error('Image as JSON string not supported.')
@@ -40236,7 +39652,7 @@ ee.data.makeMapId_ = function (mapid, token, opt_urlFormat) {
             ? base + '/map/' + mapid + '/{z}/{x}/{y}?token=' + token
             : base +
               '/' +
-              module$exports$ee$apiVersion.V1ALPHA +
+              module$exports$ee$apiVersion.V1 +
               '/' +
               mapid +
               '/tiles/{z}/{x}/{y}'
@@ -40282,7 +39698,7 @@ ee.data.getFeatureViewTilesKey = function (params, opt_callback) {
                         return (
                             module$contents$ee$apiclient_apiclient.getTileBaseUrl() +
                             '/' +
-                            module$exports$ee$apiVersion.V1ALPHA +
+                            module$exports$ee$apiVersion.V1 +
                             '/' +
                             response.name +
                             '/tiles/' +
@@ -40309,10 +39725,18 @@ ee.data.listFeatures = function (asset, params, opt_callback) {
 }
 goog.exportSymbol('ee.data.listFeatures', ee.data.listFeatures)
 ee.data.computeValue = function (obj, opt_callback) {
+    var serializer = new ee.Serializer(!0),
+        expression = ee.Serializer.encodeCloudApiExpressionWithSerializer(
+            serializer,
+            obj,
+            void 0
+        ),
+        extraMetadata = {},
+        sourceCodeNodes = serializer.encodeSourceCodeNodes(expression)
+    Object.keys(sourceCodeNodes).length &&
+        (extraMetadata = { __source_code_nodes__: sourceCodeNodes })
     var request = {
-            expression: ee.data.expressionAugmenter_(
-                ee.Serializer.encodeCloudApiExpression(obj)
-            ),
+            expression: ee.data.expressionAugmenter_(expression, extraMetadata),
         },
         workloadTag = ee.data.getWorkloadTag()
     workloadTag && (request.workloadTag = workloadTag)
@@ -40435,7 +39859,7 @@ ee.data.makeThumbUrl = function (id) {
     return (
         module$contents$ee$apiclient_apiclient.getTileBaseUrl() +
         '/' +
-        module$exports$ee$apiVersion.V1ALPHA +
+        module$exports$ee$apiVersion.V1 +
         '/' +
         id.thumbid +
         ':getPixels'
@@ -40494,7 +39918,7 @@ ee.data.getDownloadId = function (params, opt_callback) {
     if ('string' === typeof params.crs_transform) {
         try {
             params.crs_transform = JSON.parse(params.crs_transform)
-        } catch (e$64) {}
+        } catch (e) {}
     }
     var image = ee.data.images.buildDownloadIdImage(params.image, params),
         thumbnail = new module$exports$eeapiclient$ee_api_client.Thumbnail({
@@ -40532,7 +39956,7 @@ ee.data.makeDownloadUrl = function (id) {
     return (
         module$contents$ee$apiclient_apiclient.getTileBaseUrl() +
         '/' +
-        module$exports$ee$apiVersion.V1ALPHA +
+        module$exports$ee$apiVersion.V1 +
         '/' +
         id.docid +
         ':getPixels'
@@ -40584,7 +40008,7 @@ ee.data.makeTableDownloadUrl = function (id) {
     return (
         module$contents$ee$apiclient_apiclient.getTileBaseUrl() +
         '/' +
-        module$exports$ee$apiVersion.V1ALPHA +
+        module$exports$ee$apiVersion.V1 +
         '/' +
         id.docid +
         ':getFeatures'
@@ -40617,14 +40041,19 @@ ee.data.newTaskId = function (opt_count, opt_callback) {
     return opt_callback ? opt_callback(uuids) : uuids
 }
 goog.exportSymbol('ee.data.newTaskId', ee.data.newTaskId)
+ee.data.isOperationError_ = function (response) {
+    return response.name && response.done && response.error
+}
 ee.data.getTaskStatus = function (taskId, opt_callback) {
     var opNames = ee.data
         .makeStringArray_(taskId)
         .map(ee.rpc_convert.taskIdToOperationName)
     if (1 === opNames.length) {
-        var call$66 = new module$contents$ee$apiclient_Call(opt_callback)
-        return call$66.handle(
-            call$66
+        var call = new module$contents$ee$apiclient_Call(
+            opt_callback
+        ).withDetectPartialError(ee.data.isOperationError_)
+        return call.handle(
+            call
                 .operations()
                 .get(opNames[0])
                 .then(function (op) {
@@ -40632,9 +40061,11 @@ ee.data.getTaskStatus = function (taskId, opt_callback) {
                 })
         )
     }
-    var call = new module$contents$ee$apiclient_BatchCall(opt_callback),
-        operations = call.operations()
-    return call.send(
+    var call$jscomp$0 = new module$contents$ee$apiclient_BatchCall(
+            opt_callback
+        ).withDetectPartialError(ee.data.isOperationError_),
+        operations = call$jscomp$0.operations()
+    return call$jscomp$0.send(
         opNames.map(function (op) {
             return [op, operations.get(op)]
         }),
@@ -40703,16 +40134,20 @@ ee.data.listOperations = function (opt_limit, opt_callback) {
 }
 goog.exportSymbol('ee.data.listOperations', ee.data.listOperations)
 ee.data.cancelOperation = function (operationName, opt_callback) {
-    var opNames = ee.data.makeStringArray_(operationName),
+    var opNames = ee.data
+            .makeStringArray_(operationName)
+            .map(ee.rpc_convert.taskIdToOperationName),
         request =
             new module$exports$eeapiclient$ee_api_client.CancelOperationRequest()
     if (1 === opNames.length) {
-        var call$67 = new module$contents$ee$apiclient_Call(opt_callback)
-        call$67.handle(call$67.operations().cancel(opNames[0], request))
+        var call = new module$contents$ee$apiclient_Call(opt_callback)
+        call.handle(call.operations().cancel(opNames[0], request))
     } else {
-        var call = new module$contents$ee$apiclient_BatchCall(opt_callback),
-            operations = call.operations()
-        call.send(
+        var call$jscomp$0 = new module$contents$ee$apiclient_BatchCall(
+                opt_callback
+            ),
+            operations = call$jscomp$0.operations()
+        call$jscomp$0.send(
             opNames.map(function (op) {
                 return [op, operations.cancel(op, request)]
             })
@@ -40725,12 +40160,16 @@ ee.data.getOperation = function (operationName, opt_callback) {
         .makeStringArray_(operationName)
         .map(ee.rpc_convert.taskIdToOperationName)
     if (!Array.isArray(operationName)) {
-        var call$68 = new module$contents$ee$apiclient_Call(opt_callback)
-        return call$68.handle(call$68.operations().get(opNames[0]))
+        var call = new module$contents$ee$apiclient_Call(
+            opt_callback
+        ).withDetectPartialError(ee.data.isOperationError_)
+        return call.handle(call.operations().get(opNames[0]))
     }
-    var call = new module$contents$ee$apiclient_BatchCall(opt_callback),
-        operations = call.operations()
-    return call.send(
+    var call$jscomp$0 = new module$contents$ee$apiclient_BatchCall(
+            opt_callback
+        ).withDetectPartialError(ee.data.isOperationError_),
+        operations = call$jscomp$0.operations()
+    return call$jscomp$0.send(
         opNames.map(function (op) {
             return [op, operations.get(op)]
         })
@@ -40883,7 +40322,8 @@ ee.data.prepareExportClassifierRequest_ = function (taskConfig, metadata) {
     var classifierRequest =
         ee.rpc_convert_batch.taskToExportClassifierRequest(taskConfig)
     classifierRequest.expression = ee.data.expressionAugmenter_(
-        classifierRequest.expression
+        classifierRequest.expression,
+        metadata
     )
     taskConfig.workloadTag &&
         (classifierRequest.workloadTag = taskConfig.workloadTag)
@@ -40955,6 +40395,17 @@ ee.data.startTableIngestion = function (taskId, request, opt_callback) {
     )
 }
 goog.exportSymbol('ee.data.startTableIngestion', ee.data.startTableIngestion)
+ee.data.withSourceFrame = function (sourceFrameHook, body, thisObject) {
+    var saved = ee.data.sourceFrameGenerator_
+    try {
+        return (
+            (ee.data.sourceFrameGenerator_ = sourceFrameHook),
+            body.call(thisObject)
+        )
+    } finally {
+        ee.data.sourceFrameGenerator_ = saved
+    }
+}
 ee.data.getAsset = function (id, opt_callback) {
     var call = new module$contents$ee$apiclient_Call(opt_callback),
         name = ee.rpc_convert.assetIdToAssetName(id)
@@ -41084,6 +40535,44 @@ ee.data.createAsset = function (
     if (-1 === split) {
         throw Error('Asset name must contain /assets/.')
     }
+    value = Object.assign({}, value)
+    value.tilestoreEntry &&
+        !value.tilestoreLocation &&
+        ((value.tilestoreLocation = value.tilestoreEntry),
+        delete value.tilestoreEntry)
+    value.tilestoreLocation &&
+        (value.tilestoreLocation =
+            new module$exports$eeapiclient$ee_api_client.TilestoreLocation(
+                value.tilestoreLocation
+            ))
+    value.gcsLocation &&
+        !value.cloudStorageLocation &&
+        ((value.cloudStorageLocation = value.gcsLocation),
+        delete value.gcsLocation)
+    value.cloudStorageLocation &&
+        (value.cloudStorageLocation =
+            new module$exports$eeapiclient$ee_api_client.CloudStorageLocation(
+                value.cloudStorageLocation
+            ))
+    opt_properties &&
+        !value.properties &&
+        (value.properties = Object.assign({}, opt_properties))
+    for (
+        var $jscomp$iter$41 = $jscomp.makeIterator(['title', 'description']),
+            $jscomp$key$prop = $jscomp$iter$41.next();
+        !$jscomp$key$prop.done;
+        $jscomp$key$prop = $jscomp$iter$41.next()
+    ) {
+        var prop = $jscomp$key$prop.value
+        if (value[prop]) {
+            var $jscomp$compprop17 = {}
+            value.properties = Object.assign(
+                (($jscomp$compprop17[prop] = value[prop]), $jscomp$compprop17),
+                value.properties || {}
+            )
+            delete value[prop]
+        }
+    }
     var asset = new module$exports$eeapiclient$ee_api_client.EarthEngineAsset(
             value
         ),
@@ -41091,7 +40580,6 @@ ee.data.createAsset = function (
         assetId = name.slice(split + 8)
     asset.id = null
     asset.name = null
-    opt_properties && !asset.properties && (asset.properties = opt_properties)
     asset.type = ee.rpc_convert.assetTypeForCreate(asset.type)
     var call = new module$contents$ee$apiclient_Call(opt_callback)
     return call.handle(
@@ -41286,11 +40774,11 @@ ee.data.WorkloadTag.prototype.validate = function (tag) {
         return ''
     }
     tag = String(tag)
-    if (!/^([a-z0-9]|[a-z0-9][-_\.a-z0-9]{0,61}[a-z0-9])$/g.test(tag)) {
+    if (!/^([a-z0-9]|[a-z0-9][-_a-z0-9]{0,61}[a-z0-9])$/g.test(tag)) {
         throw Error(
             'Invalid tag, "' +
                 tag +
-                '". Tags must be 1-63 characters, beginning and ending with a lowercase alphanumeric character([a-z0-9]) with dashes (-), underscores (_), dots (.), andlowercase alphanumerics between.'
+                '". Tags must be 1-63 characters, beginning and ending with a lowercase alphanumeric character ([a-z0-9]) with dashes (-), underscores (_), and lowercase alphanumerics between.'
         )
     }
     return tag
@@ -41381,6 +40869,7 @@ ee.data.AssetAcl = function () {}
 ee.data.AssetAclUpdate = function () {}
 ee.data.AssetQuotaEntry = function () {}
 ee.data.AssetQuotaDetails = function () {}
+ee.data.sourceFrameGenerator_ = null
 ee.data.FeatureViewDescription = function () {}
 ee.data.FolderDescription = function () {}
 ee.data.FeatureCollectionDescription = function () {}
@@ -41449,9 +40938,13 @@ ee.ComputedObject = function (func, args, opt_varName) {
     this.func = func
     this.args = args
     this.varName = opt_varName || null
+    this.sourceFrame = ee.data.getSourceFrame()
 }
 goog.inherits(ee.ComputedObject, ee.Encodable)
 goog.exportSymbol('ee.ComputedObject', ee.ComputedObject)
+ee.ComputedObject.prototype.getSourceFrame = function () {
+    return this.sourceFrame
+}
 ee.ComputedObject.prototype.evaluate = function (callback) {
     if (!callback || 'function' !== typeof callback) {
         throw Error('evaluate() requires a callback function.')
@@ -41497,11 +40990,11 @@ ee.ComputedObject.prototype.encodeCloudValue = function (serializer) {
         return ee.rpc_node.argumentReference(name)
     }
     var encodedArgs = {},
-        name$69
-    for (name$69 in this.args) {
-        void 0 !== this.args[name$69] &&
-            (encodedArgs[name$69] = ee.rpc_node.reference(
-                serializer.makeReference(this.args[name$69])
+        name$jscomp$0
+    for (name$jscomp$0 in this.args) {
+        void 0 !== this.args[name$jscomp$0] &&
+            (encodedArgs[name$jscomp$0] = ee.rpc_node.reference(
+                serializer.makeReference(this.args[name$jscomp$0])
             ))
     }
     return 'string' === typeof this.func
@@ -41919,7 +41412,7 @@ ee.ApiFunction.importApi = function (target, prefix, typeName, opt_prepend) {
         }
     )
 }
-ee.ApiFunction.clearApi = function (target$jscomp$0) {
+ee.ApiFunction.clearApi = function (target) {
     var clear = function (target) {
         for (var name in target) {
             'function' === typeof target[name] &&
@@ -41927,8 +41420,8 @@ ee.ApiFunction.clearApi = function (target$jscomp$0) {
                 delete target[name]
         }
     }
-    clear(target$jscomp$0)
-    clear(target$jscomp$0.prototype || {})
+    clear(target)
+    clear(target.prototype || {})
 }
 ee.arguments = {}
 ee.arguments.extractFromFunction = function (fn, originalArgs) {
@@ -42281,13 +41774,18 @@ ee.Geometry.BBox = function (west, south, east, north) {
     if (!(this instanceof ee.Geometry.BBox)) {
         return ee.Geometry.createInstance_(ee.Geometry.BBox, arguments)
     }
+    var args = ee.arguments.extractFromFunction(ee.Geometry.BBox, arguments)
+    west = args.west
+    south = args.south
+    east = args.east
+    north = args.north
     var coordinates = [west, south, east, north]
     if (ee.Geometry.hasServerValue_(coordinates)) {
-        var $jscomp$spread$args6
-        return ($jscomp$spread$args6 = new ee.ApiFunction(
+        var $jscomp$spread$args12
+        return ($jscomp$spread$args12 = new ee.ApiFunction(
             'GeometryConstructors.BBox'
         )).call.apply(
-            $jscomp$spread$args6,
+            $jscomp$spread$args12,
             $jscomp.arrayFromIterable(coordinates)
         )
     }
@@ -43169,7 +42667,7 @@ ee.data.images.bboxToGeometry = function (bbox) {
     if ('string' === typeof bbox) {
         try {
             bboxArray = JSON.parse(bbox)
-        } catch ($jscomp$unused$catch) {
+        } catch ($jscomp$unused$catch$m1198758050$0) {
             bboxArray = bbox.split(/\s*,\s*/).map(Number)
         }
     }
@@ -43594,10 +43092,9 @@ ee.Image.prototype.expression = function (expression, opt_map) {
         eeArgs = { DEFAULT_EXPRESSION_IMAGE: this }
     if (originalArgs.map) {
         var map = originalArgs.map,
-            name$jscomp$0
-        for (name$jscomp$0 in map) {
-            vars.push(name$jscomp$0),
-                (eeArgs[name$jscomp$0] = new ee.Image(map[name$jscomp$0]))
+            name
+        for (name in map) {
+            vars.push(name), (eeArgs[name] = new ee.Image(map[name]))
         }
     }
     var body = ee.ApiFunction._call(
@@ -44070,6 +43567,32 @@ goog.exportProperty(
     'select',
     ee.ImageCollection.prototype.select
 )
+ee.ImageCollection.prototype.linkCollection = function (
+    imageCollection,
+    opt_linkedBands,
+    opt_linkedProperties,
+    opt_matchPropertyName
+) {
+    var args = ee.arguments.extractFromFunction(
+        ee.ImageCollection.prototype.linkCollection,
+        arguments
+    )
+    return this.map(function (obj) {
+        return ee.ApiFunction._call(
+            'Image.linkCollection',
+            obj,
+            args.imageCollection,
+            args.linkedBands,
+            args.linkedProperties,
+            args.matchPropertyName
+        )
+    })
+}
+goog.exportProperty(
+    ee.ImageCollection.prototype,
+    'linkCollection',
+    ee.ImageCollection.prototype.linkCollection
+)
 ee.ImageCollection.prototype.first = function () {
     return new ee.Image(ee.ApiFunction._call('Collection.first', this))
 }
@@ -44116,29 +43639,35 @@ module$contents$ee$batch_ExportTask.prototype.start = function (
         this.config_,
         'Task config must be specified for tasks to be started.'
     )
+    this.id = this.id || ee.data.newTaskId(1)[0]
+    goog.asserts.assertString(this.id, 'Failed to obtain task ID.')
     if (opt_success) {
-        var startProcessing = function () {
-            goog.asserts.assertString($jscomp$this.id)
-            ee.data.startProcessing(
-                $jscomp$this.id,
-                $jscomp$this.config_,
-                function (_, error) {
-                    error ? opt_error(error) : opt_success()
+        ee.data.startProcessing(
+            this.id,
+            this.config_,
+            function (response, error) {
+                if (error) {
+                    opt_error(error)
+                } else {
+                    var $jscomp$nullish$tmp7
+                    $jscomp$this.id =
+                        null != ($jscomp$nullish$tmp7 = response.taskId)
+                            ? $jscomp$nullish$tmp7
+                            : null
+                    opt_success()
                 }
-            )
-        }
-        this.id
-            ? startProcessing()
-            : ee.data.newTaskId(1, function (ids) {
-                  var id = ids && ids[0]
-                  id
-                      ? (($jscomp$this.id = id), startProcessing())
-                      : opt_error('Failed to obtain task ID.')
-              })
+            }
+        )
     } else {
-        ;(this.id = this.id || ee.data.newTaskId(1)[0]),
-            goog.asserts.assertString(this.id, 'Failed to obtain task ID.'),
-            ee.data.startProcessing(this.id, this.config_)
+        var $jscomp$nullish$tmp6
+        this.id =
+            null !=
+            ($jscomp$nullish$tmp6 = ee.data.startProcessing(
+                this.id,
+                this.config_
+            ).taskId)
+                ? $jscomp$nullish$tmp6
+                : null
     }
 }
 goog.exportProperty(
@@ -44366,6 +43895,8 @@ module$contents$ee$batch_Export.table.toBigQuery = function (
     collection,
     opt_description,
     opt_table,
+    opt_overwrite,
+    opt_append,
     opt_selectors,
     opt_maxVertices
 ) {
@@ -44380,6 +43911,10 @@ module$contents$ee$batch_Export.table.toBigQuery = function (
         )
     return module$contents$ee$batch_ExportTask.create(serverConfig)
 }
+goog.exportSymbol(
+    'module$contents$ee$batch_Export.table.toBigQuery',
+    module$contents$ee$batch_Export.table.toBigQuery
+)
 module$contents$ee$batch_Export.video.toCloudStorage = function (
     collection,
     opt_description,
@@ -44799,7 +44334,7 @@ var module$contents$ee$batch_VideoFormat = {
     },
     module$contents$ee$batch_VideoMapVersion = { V1: 'V1', V2: 'V2' },
     module$contents$ee$batch_FORMAT_OPTIONS_MAP = {
-        GEO_TIFF: ['cloudOptimized', 'fileDimensions', 'shardSize'],
+        GEO_TIFF: ['cloudOptimized', 'fileDimensions', 'noData', 'shardSize'],
         TF_RECORD_IMAGE:
             'patchDimensions kernelSize compressed maxFileSize defaultValue tensorDepths sequenceData collapseBands maskedThreshold'.split(
                 ' '
@@ -44963,33 +44498,30 @@ module$contents$ee$batch_Export.prefixImageFormatOptions_ = function (
             validOptionKeys =
                 module$contents$ee$batch_FORMAT_OPTIONS_MAP[imageFormat],
             prefixedOptions = {},
-            $jscomp$iter$34 = $jscomp.makeIterator(
+            $jscomp$iter$42 = $jscomp.makeIterator(
                 Object.entries(formatOptions)
             ),
-            $jscomp$key$ = $jscomp$iter$34.next();
+            $jscomp$key$ = $jscomp$iter$42.next();
         !$jscomp$key$.done;
-        $jscomp$key$ = $jscomp$iter$34.next()
+        $jscomp$key$ = $jscomp$iter$42.next()
     ) {
         var $jscomp$destructuring$var50 = $jscomp.makeIterator(
                 $jscomp$key$.value
             ),
-            key$jscomp$0 = $jscomp$destructuring$var50.next().value,
+            key = $jscomp$destructuring$var50.next().value,
             value = $jscomp$destructuring$var50.next().value
-        if (
-            !module$contents$goog$array_contains(validOptionKeys, key$jscomp$0)
-        ) {
+        if (!module$contents$goog$array_contains(validOptionKeys, key)) {
             var validKeysMsg = validOptionKeys.join(', ')
             throw Error(
                 '"' +
-                    key$jscomp$0 +
+                    key +
                     '" is not a valid option, the image format "' +
                     imageFormat +
                     '""may have the following options: ' +
                     (validKeysMsg + '".')
             )
         }
-        var prefixedKey =
-            prefix + key$jscomp$0[0].toUpperCase() + key$jscomp$0.substring(1)
+        var prefixedKey = prefix + key[0].toUpperCase() + key.substring(1)
         Array.isArray(value)
             ? (prefixedOptions[prefixedKey] = value.join())
             : (prefixedOptions[prefixedKey] = value)
@@ -45156,7 +44688,7 @@ ee.CustomFunction.prototype.encodeCloudInvocation = function (
 ee.CustomFunction.prototype.getSignature = function () {
     return this.signature_
 }
-ee.CustomFunction.variable = function (type, name$jscomp$0) {
+ee.CustomFunction.variable = function (type, name) {
     type = type || Object
     if (!(type.prototype instanceof ee.ComputedObject)) {
         if (type && type != Object) {
@@ -45180,7 +44712,7 @@ ee.CustomFunction.variable = function (type, name$jscomp$0) {
         this.varName = name
     }
     klass.prototype = type.prototype
-    return new klass(name$jscomp$0)
+    return new klass(name)
 }
 ee.CustomFunction.create = function (func, returnType, arg_types) {
     var stringifyType = function (type) {
@@ -45233,12 +44765,12 @@ ee.CustomFunction.resolveNamelessArgs_ = function (signature, vars, body) {
                     )
                 ) +
                 '_',
-            i$70 = 0;
-        i$70 < namelessArgIndices.length;
-        i$70++
+            i$jscomp$0 = 0;
+        i$jscomp$0 < namelessArgIndices.length;
+        i$jscomp$0++
     ) {
-        var index = namelessArgIndices[i$70],
-            name = baseName + i$70
+        var index = namelessArgIndices[i$jscomp$0],
+            name = baseName + i$jscomp$0
         vars[index].varName = name
         signature.args[index].name = name
     }
@@ -45433,9 +44965,9 @@ ee.Deserializer.roundTrip_ = function (node, value) {
     }
     return new Reencoder()
 }
-ee.Deserializer.invocation_ = function (func, args$jscomp$0) {
+ee.Deserializer.invocation_ = function (func, args) {
     if (func instanceof ee.Function) {
-        return func.apply(args$jscomp$0)
+        return func.apply(args)
     }
     if (func instanceof ee.ComputedObject) {
         var ComputedFunction = function () {
@@ -45454,7 +44986,7 @@ ee.Deserializer.invocation_ = function (func, args$jscomp$0) {
                 args
             )
         }
-        return new ee.ComputedObject(new ComputedFunction(), args$jscomp$0)
+        return new ee.ComputedObject(new ComputedFunction(), args)
     }
     throw Error('Invalid function value')
 }
@@ -46353,33 +45885,33 @@ goog.fs.Error.getNameFromCode_ = function (code) {
 goog.fs.Error.getCodeFromName_ = function (name) {
     return goog.fs.Error.NameToCodeMap_[name]
 }
-var $jscomp$compprop11 = {}
+var $jscomp$compprop18 = {}
 goog.fs.Error.NameToCodeMap_ =
-    (($jscomp$compprop11[goog.fs.Error.ErrorName.ABORT] =
+    (($jscomp$compprop18[goog.fs.Error.ErrorName.ABORT] =
         goog.fs.Error.ErrorCode.ABORT),
-    ($jscomp$compprop11[goog.fs.Error.ErrorName.ENCODING] =
+    ($jscomp$compprop18[goog.fs.Error.ErrorName.ENCODING] =
         goog.fs.Error.ErrorCode.ENCODING),
-    ($jscomp$compprop11[goog.fs.Error.ErrorName.INVALID_MODIFICATION] =
+    ($jscomp$compprop18[goog.fs.Error.ErrorName.INVALID_MODIFICATION] =
         goog.fs.Error.ErrorCode.INVALID_MODIFICATION),
-    ($jscomp$compprop11[goog.fs.Error.ErrorName.INVALID_STATE] =
+    ($jscomp$compprop18[goog.fs.Error.ErrorName.INVALID_STATE] =
         goog.fs.Error.ErrorCode.INVALID_STATE),
-    ($jscomp$compprop11[goog.fs.Error.ErrorName.NOT_FOUND] =
+    ($jscomp$compprop18[goog.fs.Error.ErrorName.NOT_FOUND] =
         goog.fs.Error.ErrorCode.NOT_FOUND),
-    ($jscomp$compprop11[goog.fs.Error.ErrorName.NOT_READABLE] =
+    ($jscomp$compprop18[goog.fs.Error.ErrorName.NOT_READABLE] =
         goog.fs.Error.ErrorCode.NOT_READABLE),
-    ($jscomp$compprop11[goog.fs.Error.ErrorName.NO_MODIFICATION_ALLOWED] =
+    ($jscomp$compprop18[goog.fs.Error.ErrorName.NO_MODIFICATION_ALLOWED] =
         goog.fs.Error.ErrorCode.NO_MODIFICATION_ALLOWED),
-    ($jscomp$compprop11[goog.fs.Error.ErrorName.PATH_EXISTS] =
+    ($jscomp$compprop18[goog.fs.Error.ErrorName.PATH_EXISTS] =
         goog.fs.Error.ErrorCode.PATH_EXISTS),
-    ($jscomp$compprop11[goog.fs.Error.ErrorName.QUOTA_EXCEEDED] =
+    ($jscomp$compprop18[goog.fs.Error.ErrorName.QUOTA_EXCEEDED] =
         goog.fs.Error.ErrorCode.QUOTA_EXCEEDED),
-    ($jscomp$compprop11[goog.fs.Error.ErrorName.SECURITY] =
+    ($jscomp$compprop18[goog.fs.Error.ErrorName.SECURITY] =
         goog.fs.Error.ErrorCode.SECURITY),
-    ($jscomp$compprop11[goog.fs.Error.ErrorName.SYNTAX] =
+    ($jscomp$compprop18[goog.fs.Error.ErrorName.SYNTAX] =
         goog.fs.Error.ErrorCode.SYNTAX),
-    ($jscomp$compprop11[goog.fs.Error.ErrorName.TYPE_MISMATCH] =
+    ($jscomp$compprop18[goog.fs.Error.ErrorName.TYPE_MISMATCH] =
         goog.fs.Error.ErrorCode.TYPE_MISMATCH),
-    $jscomp$compprop11)
+    $jscomp$compprop18)
 goog.fs.ProgressEvent = function (event, target) {
     goog.events.Event.call(this, event.type, target)
     this.event_ = event
@@ -48290,6 +47822,3043 @@ goog.net.ImageLoader.prototype.disposeInternal = function () {
     module$contents$goog$dispose_dispose(this.handler_)
     goog.net.ImageLoader.superClass_.disposeInternal.call(this)
 }
+/*
+
+ SPDX-License-Identifier: Apache-2.0
+*/
+var module$exports$safevalues$builders$sensitive_attributes = {},
+    module$contents$safevalues$builders$sensitive_attributes_module =
+        module$contents$safevalues$builders$sensitive_attributes_module || {
+            id: 'third_party/javascript/safevalues/builders/sensitive_attributes.closure.js',
+        }
+module$exports$safevalues$builders$sensitive_attributes.SECURITY_SENSITIVE_ATTRIBUTES =
+    'src srcdoc codebase data href rel action formaction sandbox cite poster icon'.split(
+        ' '
+    )
+var module$contents$safevalues$environment$dev_module =
+    module$contents$safevalues$environment$dev_module || {
+        id: 'third_party/javascript/safevalues/environment/dev.closure.js',
+    }
+var module$exports$safevalues$internals$secrets = {},
+    module$contents$safevalues$internals$secrets_module =
+        module$contents$safevalues$internals$secrets_module || {
+            id: 'third_party/javascript/safevalues/internals/secrets.closure.js',
+        }
+module$exports$safevalues$internals$secrets.secretToken = {}
+function module$contents$safevalues$internals$secrets_ensureTokenIsValid(
+    token
+) {
+    if (
+        goog.DEBUG &&
+        token !== module$exports$safevalues$internals$secrets.secretToken
+    ) {
+        throw Error('Bad secret')
+    }
+}
+module$exports$safevalues$internals$secrets.ensureTokenIsValid =
+    module$contents$safevalues$internals$secrets_ensureTokenIsValid
+var module$exports$safevalues$internals$attribute_impl = {},
+    module$contents$safevalues$internals$attribute_impl_module =
+        module$contents$safevalues$internals$attribute_impl_module || {
+            id: 'third_party/javascript/safevalues/internals/attribute_impl.closure.js',
+        }
+module$exports$safevalues$internals$attribute_impl.SafeAttributePrefix =
+    function () {}
+var module$contents$safevalues$internals$attribute_impl_AttributePrefixImpl =
+    function (attrPrefix, token) {
+        module$contents$safevalues$internals$secrets_ensureTokenIsValid(token)
+        this.privateDoNotAccessOrElseWrappedAttrPrefix = attrPrefix
+    }
+$jscomp.inherits(
+    module$contents$safevalues$internals$attribute_impl_AttributePrefixImpl,
+    module$exports$safevalues$internals$attribute_impl.SafeAttributePrefix
+)
+module$contents$safevalues$internals$attribute_impl_AttributePrefixImpl.prototype.toString =
+    function () {
+        return this.privateDoNotAccessOrElseWrappedAttrPrefix
+    }
+function module$contents$safevalues$internals$attribute_impl_createAttributePrefixInternal(
+    attrPrefix
+) {
+    return new module$contents$safevalues$internals$attribute_impl_AttributePrefixImpl(
+        attrPrefix,
+        module$exports$safevalues$internals$secrets.secretToken
+    )
+}
+module$exports$safevalues$internals$attribute_impl.createAttributePrefixInternal =
+    module$contents$safevalues$internals$attribute_impl_createAttributePrefixInternal
+function module$contents$safevalues$internals$attribute_impl_unwrapAttributePrefix(
+    value
+) {
+    if (
+        value instanceof
+        module$contents$safevalues$internals$attribute_impl_AttributePrefixImpl
+    ) {
+        return value.privateDoNotAccessOrElseWrappedAttrPrefix
+    }
+    var message = ''
+    goog.DEBUG &&
+        (message = 'Unexpected type when unwrapping SafeAttributePrefix')
+    throw Error(message)
+}
+module$exports$safevalues$internals$attribute_impl.unwrapAttributePrefix =
+    module$contents$safevalues$internals$attribute_impl_unwrapAttributePrefix
+var $jscomp$templatelit$m425881384$0 = $jscomp.createTemplateTagFirstArg(['']),
+    $jscomp$templatelit$m425881384$1 = $jscomp.createTemplateTagFirstArgWithRaw(
+        ['\x00'],
+        ['\\0']
+    ),
+    $jscomp$templatelit$m425881384$2 = $jscomp.createTemplateTagFirstArgWithRaw(
+        ['\n'],
+        ['\\n']
+    ),
+    $jscomp$templatelit$m425881384$3 = $jscomp.createTemplateTagFirstArgWithRaw(
+        ['\x00'],
+        ['\\u0000']
+    ),
+    $jscomp$templatelit$m425881384$4 = $jscomp.createTemplateTagFirstArg(['']),
+    $jscomp$templatelit$m425881384$5 = $jscomp.createTemplateTagFirstArgWithRaw(
+        ['\x00'],
+        ['\\0']
+    ),
+    $jscomp$templatelit$m425881384$6 = $jscomp.createTemplateTagFirstArgWithRaw(
+        ['\n'],
+        ['\\n']
+    ),
+    $jscomp$templatelit$m425881384$7 = $jscomp.createTemplateTagFirstArgWithRaw(
+        ['\x00'],
+        ['\\u0000']
+    ),
+    module$contents$safevalues$internals$string_literal_module =
+        module$contents$safevalues$internals$string_literal_module || {
+            id: 'third_party/javascript/safevalues/internals/string_literal.closure.js',
+        }
+function module$contents$safevalues$internals$string_literal_assertIsTemplateObject(
+    templateObj,
+    numExprs
+) {
+    if (
+        !module$contents$safevalues$internals$string_literal_isTemplateObject(
+            templateObj
+        ) ||
+        numExprs + 1 !== templateObj.length
+    ) {
+        throw new TypeError(
+            '\n    ############################## ERROR ##############################\n\n    It looks like you are trying to call a template tag function (fn`...`)\n    using the normal function syntax (fn(...)), which is not supported.\n\n    The functions in the safevalues library are not designed to be called\n    like normal functions, and doing so invalidates the security guarantees\n    that safevalues provides.\n\n    If you are stuck and not sure how to proceed, please reach out to us\n    instead through:\n     - go/ise-hardening-yaqs (preferred) // LINE-INTERNAL\n     - g/ise-hardening // LINE-INTERNAL\n     - https://github.com/google/safevalues/issues\n\n    ############################## ERROR ##############################'
+        )
+    }
+}
+function module$contents$safevalues$internals$string_literal_checkFrozen(
+    templateObj
+) {
+    return Object.isFrozen(templateObj) && Object.isFrozen(templateObj.raw)
+}
+var module$contents$safevalues$internals$string_literal_TagFn
+function module$contents$safevalues$internals$string_literal_checkTranspiled(
+    fn
+) {
+    return -1 === fn.toString().indexOf('`')
+}
+var module$contents$safevalues$internals$string_literal_isTranspiled =
+        module$contents$safevalues$internals$string_literal_checkTranspiled(
+            function (tag) {
+                return tag($jscomp$templatelit$m425881384$0)
+            }
+        ) ||
+        module$contents$safevalues$internals$string_literal_checkTranspiled(
+            function (tag) {
+                return tag($jscomp$templatelit$m425881384$1)
+            }
+        ) ||
+        module$contents$safevalues$internals$string_literal_checkTranspiled(
+            function (tag) {
+                return tag($jscomp$templatelit$m425881384$2)
+            }
+        ) ||
+        module$contents$safevalues$internals$string_literal_checkTranspiled(
+            function (tag) {
+                return tag($jscomp$templatelit$m425881384$3)
+            }
+        ),
+    module$contents$safevalues$internals$string_literal_frozenTSA =
+        module$contents$safevalues$internals$string_literal_checkFrozen(
+            $jscomp$templatelit$m425881384$4
+        ) &&
+        module$contents$safevalues$internals$string_literal_checkFrozen(
+            $jscomp$templatelit$m425881384$5
+        ) &&
+        module$contents$safevalues$internals$string_literal_checkFrozen(
+            $jscomp$templatelit$m425881384$6
+        ) &&
+        module$contents$safevalues$internals$string_literal_checkFrozen(
+            $jscomp$templatelit$m425881384$7
+        )
+function module$contents$safevalues$internals$string_literal_isTemplateObject(
+    templateObj
+) {
+    return Array.isArray(templateObj) &&
+        Array.isArray(templateObj.raw) &&
+        templateObj.length === templateObj.raw.length &&
+        (module$contents$safevalues$internals$string_literal_isTranspiled ||
+            templateObj !== templateObj.raw) &&
+        ((module$contents$safevalues$internals$string_literal_isTranspiled &&
+            !module$contents$safevalues$internals$string_literal_frozenTSA) ||
+            module$contents$safevalues$internals$string_literal_checkFrozen(
+                templateObj
+            ))
+        ? !0
+        : !1
+}
+var module$contents$safevalues$builders$attribute_builders_module =
+    module$contents$safevalues$builders$attribute_builders_module || {
+        id: 'third_party/javascript/safevalues/builders/attribute_builders.closure.js',
+    }
+function module$contents$safevalues$builders$attribute_builders_safeAttrPrefix(
+    templ
+) {
+    goog.DEBUG &&
+        module$contents$safevalues$internals$string_literal_assertIsTemplateObject(
+            templ,
+            0
+        )
+    var attrPrefix = templ[0].toLowerCase()
+    if (goog.DEBUG) {
+        if (0 === attrPrefix.indexOf('on') || 0 === 'on'.indexOf(attrPrefix)) {
+            throw Error(
+                "Prefix '" +
+                    templ[0] +
+                    "' does not guarantee the attribute to be safe as it is also a prefix for event handler attributesPlease use 'addEventListener' to set event handlers."
+            )
+        }
+        module$exports$safevalues$builders$sensitive_attributes.SECURITY_SENSITIVE_ATTRIBUTES.forEach(
+            function (sensitiveAttr) {
+                if (0 === sensitiveAttr.indexOf(attrPrefix)) {
+                    throw Error(
+                        "Prefix '" +
+                            templ[0] +
+                            "' does not guarantee the attribute to be safe as it is also a prefix for the security sensitive attribute '" +
+                            (sensitiveAttr +
+                                "'. Please use native or safe DOM APIs to set the attribute.")
+                    )
+                }
+            }
+        )
+    }
+    return module$contents$safevalues$internals$attribute_impl_createAttributePrefixInternal(
+        attrPrefix
+    )
+}
+var module$contents$safevalues$internals$pure_module =
+    module$contents$safevalues$internals$pure_module || {
+        id: 'third_party/javascript/safevalues/internals/pure.closure.js',
+    }
+function module$contents$safevalues$internals$pure_pure(valueOf) {
+    return { valueOf: valueOf }.valueOf()
+}
+var module$exports$goog$html$internals = {}
+module$exports$goog$html$internals.createSafeHtml =
+    module$contents$goog$html$SafeHtml_SafeHtml.createSafeHtmlSecurityPrivateDoNotAccessOrElse
+module$exports$goog$html$internals.createSafeScript =
+    module$contents$goog$html$SafeScript_SafeScript.createSafeScriptSecurityPrivateDoNotAccessOrElse
+module$exports$goog$html$internals.createSafeStyle =
+    module$contents$goog$html$SafeStyle_SafeStyle.createSafeStyleSecurityPrivateDoNotAccessOrElse
+module$exports$goog$html$internals.createSafeStyleSheet =
+    module$contents$goog$html$SafeStyleSheet_SafeStyleSheet.createSafeStyleSheetSecurityPrivateDoNotAccessOrElse
+module$exports$goog$html$internals.createSafeUrl =
+    goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse
+module$exports$goog$html$internals.createTrustedResourceUrl =
+    goog.html.TrustedResourceUrl.createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse
+var module$exports$safevalues$internals$url_impl = {},
+    module$contents$safevalues$internals$url_impl_module =
+        module$contents$safevalues$internals$url_impl_module || {
+            id: 'third_party/javascript/safevalues/internals/url_impl.closure.js',
+        }
+module$exports$safevalues$internals$url_impl.SafeUrl = goog.html.SafeUrl
+function module$contents$safevalues$internals$url_impl_createUrlInternal(url) {
+    return (0, goog.html.SafeUrl.createSafeUrlSecurityPrivateDoNotAccessOrElse)(
+        url
+    )
+}
+module$exports$safevalues$internals$url_impl.createUrlInternal =
+    module$contents$safevalues$internals$url_impl_createUrlInternal
+module$exports$safevalues$internals$url_impl.ABOUT_BLANK =
+    goog.html.SafeUrl.ABOUT_BLANK
+module$exports$safevalues$internals$url_impl.INNOCUOUS_URL =
+    goog.html.SafeUrl.INNOCUOUS_URL
+function module$contents$safevalues$internals$url_impl_isUrl(value) {
+    return value instanceof goog.html.SafeUrl
+}
+module$exports$safevalues$internals$url_impl.isUrl =
+    module$contents$safevalues$internals$url_impl_isUrl
+function module$contents$safevalues$internals$url_impl_unwrapUrl(value) {
+    return goog.html.SafeUrl.unwrap(value)
+}
+module$exports$safevalues$internals$url_impl.unwrapUrl =
+    module$contents$safevalues$internals$url_impl_unwrapUrl
+var module$exports$safevalues$builders$url_sanitizer = {},
+    module$contents$safevalues$builders$url_sanitizer_module =
+        module$contents$safevalues$builders$url_sanitizer_module || {
+            id: 'third_party/javascript/safevalues/builders/url_sanitizer.closure.js',
+        },
+    module$contents$safevalues$builders$url_sanitizer_ASSUME_IMPLEMENTS_URL_API =
+        2020 <= goog.FEATURESET_YEAR,
+    module$contents$safevalues$builders$url_sanitizer_supportsURLAPI =
+        module$contents$safevalues$internals$pure_pure(function () {
+            return module$contents$safevalues$builders$url_sanitizer_ASSUME_IMPLEMENTS_URL_API
+                ? !0
+                : 'function' === typeof URL
+        })
+function module$contents$safevalues$builders$url_sanitizer_legacyExtractScheme(
+    url
+) {
+    var aTag = document.createElement('a')
+    try {
+        aTag.href = url
+    } catch (e) {
+        return
+    }
+    var protocol = aTag.protocol
+    return ':' === protocol || '' === protocol ? 'https:' : protocol
+}
+var module$contents$safevalues$builders$url_sanitizer_JavaScriptUrlSanitizationCallback
+function module$contents$safevalues$builders$url_sanitizer_extractScheme(url) {
+    if (!module$contents$safevalues$builders$url_sanitizer_supportsURLAPI) {
+        return module$contents$safevalues$builders$url_sanitizer_legacyExtractScheme(
+            url
+        )
+    }
+    try {
+        var parsedUrl = new URL(url)
+    } catch (e) {
+        return 'https:'
+    }
+    return parsedUrl.protocol
+}
+module$exports$safevalues$builders$url_sanitizer.extractScheme =
+    module$contents$safevalues$builders$url_sanitizer_extractScheme
+var module$contents$safevalues$builders$url_sanitizer_ALLOWED_SCHEMES = [
+    'data:',
+    'http:',
+    'https:',
+    'mailto:',
+    'ftp:',
+]
+function module$contents$safevalues$builders$url_sanitizer_sanitizeJavaScriptUrl(
+    url
+) {
+    if (
+        'javascript:' ===
+        module$contents$safevalues$builders$url_sanitizer_extractScheme(url)
+    ) {
+        module$contents$safevalues$builders$url_sanitizer_triggerCallbacks(url)
+    } else {
+        return url
+    }
+}
+module$exports$safevalues$builders$url_sanitizer.sanitizeJavaScriptUrl =
+    module$contents$safevalues$builders$url_sanitizer_sanitizeJavaScriptUrl
+module$exports$safevalues$builders$url_sanitizer.unwrapUrlOrSanitize =
+    function (url) {
+        return url instanceof goog.html.SafeUrl
+            ? module$contents$safevalues$internals$url_impl_unwrapUrl(url)
+            : module$contents$safevalues$builders$url_sanitizer_sanitizeJavaScriptUrl(
+                  url
+              )
+    }
+function module$contents$safevalues$builders$url_sanitizer_restrictivelySanitizeUrl(
+    url
+) {
+    var parsedScheme =
+        module$contents$safevalues$builders$url_sanitizer_extractScheme(url)
+    return void 0 !== parsedScheme &&
+        -1 !==
+            module$contents$safevalues$builders$url_sanitizer_ALLOWED_SCHEMES.indexOf(
+                parsedScheme.toLowerCase()
+            )
+        ? url
+        : 'about:invalid#zClosurez'
+}
+module$exports$safevalues$builders$url_sanitizer.restrictivelySanitizeUrl =
+    module$contents$safevalues$builders$url_sanitizer_restrictivelySanitizeUrl
+module$exports$safevalues$builders$url_sanitizer.JAVASCRIPT_URL_SCHEME_PATTERN =
+    /^(?!javascript:)(?:[a-z0-9+.-]+:|[^&:\/?#]*(?:[\/?#]|$))/i
+var module$contents$safevalues$builders$url_sanitizer_sanitizationCallbacks =
+        [],
+    module$contents$safevalues$builders$url_sanitizer_triggerCallbacks =
+        function (url) {}
+goog.DEBUG &&
+    module$contents$safevalues$builders$url_sanitizer_addJavaScriptUrlSanitizationCallback(
+        function (url) {
+            ;(0, goog.log.warning)(
+                (0, goog.log.getLogger)('safevalues'),
+                "A URL with content '" + url + "' was sanitized away."
+            )
+        }
+    )
+function module$contents$safevalues$builders$url_sanitizer_addJavaScriptUrlSanitizationCallback(
+    callback
+) {
+    ;-1 ===
+        module$contents$safevalues$builders$url_sanitizer_sanitizationCallbacks.indexOf(
+            callback
+        ) &&
+        module$contents$safevalues$builders$url_sanitizer_sanitizationCallbacks.push(
+            callback
+        )
+    module$contents$safevalues$builders$url_sanitizer_triggerCallbacks =
+        function (url) {
+            module$contents$safevalues$builders$url_sanitizer_sanitizationCallbacks.forEach(
+                function (callback) {
+                    callback(url)
+                }
+            )
+        }
+}
+module$exports$safevalues$builders$url_sanitizer.addJavaScriptUrlSanitizationCallback =
+    module$contents$safevalues$builders$url_sanitizer_addJavaScriptUrlSanitizationCallback
+function module$contents$safevalues$builders$url_sanitizer_removeJavaScriptUrlSanitizationCallback(
+    callback
+) {
+    var callbackIndex =
+        module$contents$safevalues$builders$url_sanitizer_sanitizationCallbacks.indexOf(
+            callback
+        )
+    ;-1 !== callbackIndex &&
+        module$contents$safevalues$builders$url_sanitizer_sanitizationCallbacks.splice(
+            callbackIndex,
+            1
+        )
+}
+module$exports$safevalues$builders$url_sanitizer.removeJavaScriptUrlSanitizationCallback =
+    module$contents$safevalues$builders$url_sanitizer_removeJavaScriptUrlSanitizationCallback
+var module$exports$safevalues$internals$html_impl = {},
+    module$contents$safevalues$internals$html_impl_module =
+        module$contents$safevalues$internals$html_impl_module || {
+            id: 'third_party/javascript/safevalues/internals/html_impl.closure.js',
+        }
+module$exports$safevalues$internals$html_impl.SafeHtml =
+    module$contents$goog$html$SafeHtml_SafeHtml
+function module$contents$safevalues$internals$html_impl_createHtmlInternal(
+    html
+) {
+    return (0, module$exports$goog$html$internals.createSafeHtml)(html)
+}
+module$exports$safevalues$internals$html_impl.createHtmlInternal =
+    module$contents$safevalues$internals$html_impl_createHtmlInternal
+module$exports$safevalues$internals$html_impl.EMPTY_HTML =
+    module$contents$goog$html$SafeHtml_SafeHtml.EMPTY
+function module$contents$safevalues$internals$html_impl_isHtml(value) {
+    return value instanceof module$contents$goog$html$SafeHtml_SafeHtml
+}
+module$exports$safevalues$internals$html_impl.isHtml =
+    module$contents$safevalues$internals$html_impl_isHtml
+function module$contents$safevalues$internals$html_impl_unwrapHtml(value) {
+    return module$contents$goog$html$SafeHtml_SafeHtml.unwrapTrustedHTML(value)
+}
+module$exports$safevalues$internals$html_impl.unwrapHtml =
+    module$contents$safevalues$internals$html_impl_unwrapHtml
+var module$exports$safevalues$internals$resource_url_impl = {},
+    module$contents$safevalues$internals$resource_url_impl_module =
+        module$contents$safevalues$internals$resource_url_impl_module || {
+            id: 'third_party/javascript/safevalues/internals/resource_url_impl.closure.js',
+        }
+module$exports$safevalues$internals$resource_url_impl.TrustedResourceUrl =
+    goog.html.TrustedResourceUrl
+function module$contents$safevalues$internals$resource_url_impl_createResourceUrlInternal(
+    url
+) {
+    return (0,
+    goog.html.TrustedResourceUrl
+        .createTrustedResourceUrlSecurityPrivateDoNotAccessOrElse)(url)
+}
+module$exports$safevalues$internals$resource_url_impl.createResourceUrlInternal =
+    module$contents$safevalues$internals$resource_url_impl_createResourceUrlInternal
+function module$contents$safevalues$internals$resource_url_impl_isResourceUrl(
+    value
+) {
+    return value instanceof goog.html.TrustedResourceUrl
+}
+module$exports$safevalues$internals$resource_url_impl.isResourceUrl =
+    module$contents$safevalues$internals$resource_url_impl_isResourceUrl
+function module$contents$safevalues$internals$resource_url_impl_unwrapResourceUrl(
+    value
+) {
+    return goog.html.TrustedResourceUrl.unwrapTrustedScriptURL(value)
+}
+module$exports$safevalues$internals$resource_url_impl.unwrapResourceUrl =
+    module$contents$safevalues$internals$resource_url_impl_unwrapResourceUrl
+var module$exports$safevalues$internals$script_impl = {},
+    module$contents$safevalues$internals$script_impl_module =
+        module$contents$safevalues$internals$script_impl_module || {
+            id: 'third_party/javascript/safevalues/internals/script_impl.closure.js',
+        }
+module$exports$safevalues$internals$script_impl.SafeScript =
+    module$contents$goog$html$SafeScript_SafeScript
+function module$contents$safevalues$internals$script_impl_createScriptInternal(
+    script
+) {
+    return (0, module$exports$goog$html$internals.createSafeScript)(script)
+}
+module$exports$safevalues$internals$script_impl.createScriptInternal =
+    module$contents$safevalues$internals$script_impl_createScriptInternal
+module$exports$safevalues$internals$script_impl.EMPTY_SCRIPT =
+    module$contents$goog$html$SafeScript_SafeScript.EMPTY
+function module$contents$safevalues$internals$script_impl_isScript(value) {
+    return value instanceof module$contents$goog$html$SafeScript_SafeScript
+}
+module$exports$safevalues$internals$script_impl.isScript =
+    module$contents$safevalues$internals$script_impl_isScript
+function module$contents$safevalues$internals$script_impl_unwrapScript(value) {
+    return module$contents$goog$html$SafeScript_SafeScript.unwrapTrustedScript(
+        value
+    )
+}
+module$exports$safevalues$internals$script_impl.unwrapScript =
+    module$contents$safevalues$internals$script_impl_unwrapScript
+var module$exports$safevalues$internals$style_impl = {},
+    module$contents$safevalues$internals$style_impl_module =
+        module$contents$safevalues$internals$style_impl_module || {
+            id: 'third_party/javascript/safevalues/internals/style_impl.closure.js',
+        }
+module$exports$safevalues$internals$style_impl.SafeStyle =
+    module$contents$goog$html$SafeStyle_SafeStyle
+function module$contents$safevalues$internals$style_impl_createStyleInternal(
+    style
+) {
+    return (0, module$exports$goog$html$internals.createSafeStyle)(style)
+}
+module$exports$safevalues$internals$style_impl.createStyleInternal =
+    module$contents$safevalues$internals$style_impl_createStyleInternal
+function module$contents$safevalues$internals$style_impl_isStyle(value) {
+    return value instanceof module$contents$goog$html$SafeStyle_SafeStyle
+}
+module$exports$safevalues$internals$style_impl.isStyle =
+    module$contents$safevalues$internals$style_impl_isStyle
+function module$contents$safevalues$internals$style_impl_unwrapStyle(value) {
+    return module$contents$goog$html$SafeStyle_SafeStyle.unwrap(value)
+}
+module$exports$safevalues$internals$style_impl.unwrapStyle =
+    module$contents$safevalues$internals$style_impl_unwrapStyle
+var module$exports$safevalues$builders$html_builders = {},
+    module$contents$safevalues$builders$html_builders_module =
+        module$contents$safevalues$builders$html_builders_module || {
+            id: 'third_party/javascript/safevalues/builders/html_builders.closure.js',
+        }
+function module$contents$safevalues$builders$html_builders_htmlEscape(
+    value,
+    options
+) {
+    options = void 0 === options ? {} : options
+    if (module$contents$safevalues$internals$html_impl_isHtml(value)) {
+        return value
+    }
+    var htmlEscapedString =
+        module$contents$safevalues$builders$html_builders_htmlEscapeToString(
+            String(value)
+        )
+    options.preserveSpaces &&
+        (htmlEscapedString = htmlEscapedString.replace(
+            /(^|[\r\n\t ]) /g,
+            '$1&#160;'
+        ))
+    options.preserveNewlines &&
+        (htmlEscapedString = htmlEscapedString.replace(/(\r\n|\n|\r)/g, '<br>'))
+    options.preserveTabs &&
+        (htmlEscapedString = htmlEscapedString.replace(
+            /(\t+)/g,
+            '<span style="white-space:pre">$1</span>'
+        ))
+    return module$contents$safevalues$internals$html_impl_createHtmlInternal(
+        htmlEscapedString
+    )
+}
+module$exports$safevalues$builders$html_builders.htmlEscape =
+    module$contents$safevalues$builders$html_builders_htmlEscape
+module$exports$safevalues$builders$html_builders.scriptToHtml = function (
+    script,
+    options
+) {
+    options = void 0 === options ? {} : options
+    var unwrappedScript =
+            module$contents$safevalues$internals$script_impl_unwrapScript(
+                script
+            ).toString(),
+        stringTag = '<script'
+    options.id &&
+        (stringTag +=
+            ' id="' +
+            module$contents$safevalues$builders$html_builders_htmlEscapeToString(
+                options.id
+            ) +
+            '"')
+    options.nonce &&
+        (stringTag +=
+            ' nonce="' +
+            module$contents$safevalues$builders$html_builders_htmlEscapeToString(
+                options.nonce
+            ) +
+            '"')
+    options.type &&
+        (stringTag +=
+            ' type="' +
+            module$contents$safevalues$builders$html_builders_htmlEscapeToString(
+                options.type
+            ) +
+            '"')
+    options.defer && (stringTag += ' defer')
+    return module$contents$safevalues$internals$html_impl_createHtmlInternal(
+        stringTag + ('>' + unwrappedScript + '\x3c/script>')
+    )
+}
+module$exports$safevalues$builders$html_builders.scriptUrlToHtml = function (
+    src,
+    options
+) {
+    options = void 0 === options ? {} : options
+    var unwrappedSrc =
+            module$contents$safevalues$internals$resource_url_impl_unwrapResourceUrl(
+                src
+            ).toString(),
+        stringTag =
+            '<script src="' +
+            module$contents$safevalues$builders$html_builders_htmlEscapeToString(
+                unwrappedSrc
+            ) +
+            '"'
+    options.async && (stringTag += ' async')
+    options.nonce &&
+        (stringTag +=
+            ' nonce="' +
+            module$contents$safevalues$builders$html_builders_htmlEscapeToString(
+                options.nonce
+            ) +
+            '"')
+    return module$contents$safevalues$internals$html_impl_createHtmlInternal(
+        stringTag + '>\x3c/script>'
+    )
+}
+function module$contents$safevalues$builders$html_builders_htmlEscapeToString(
+    text
+) {
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&apos;')
+}
+function module$contents$safevalues$builders$html_builders_concatHtmls(htmls) {
+    return module$contents$safevalues$builders$html_builders_joinHtmls(
+        '',
+        htmls
+    )
+}
+module$exports$safevalues$builders$html_builders.concatHtmls =
+    module$contents$safevalues$builders$html_builders_concatHtmls
+function module$contents$safevalues$builders$html_builders_joinHtmls(
+    separator,
+    htmls
+) {
+    var separatorHtml =
+        module$contents$safevalues$builders$html_builders_htmlEscape(separator)
+    return module$contents$safevalues$internals$html_impl_createHtmlInternal(
+        htmls
+            .map(function (value) {
+                return module$contents$safevalues$internals$html_impl_unwrapHtml(
+                    module$contents$safevalues$builders$html_builders_htmlEscape(
+                        value
+                    )
+                )
+            })
+            .join(
+                module$contents$safevalues$internals$html_impl_unwrapHtml(
+                    separatorHtml
+                ).toString()
+            )
+    )
+}
+module$exports$safevalues$builders$html_builders.joinHtmls =
+    module$contents$safevalues$builders$html_builders_joinHtmls
+var module$contents$safevalues$builders$html_builders_AttributeValue,
+    module$contents$safevalues$builders$html_builders_TextOrHtml,
+    module$contents$safevalues$builders$html_builders_VALID_TAG_OR_ATTRIBUTE_NAMES =
+        /^[a-z][a-z\d-]*$/i,
+    module$contents$safevalues$builders$html_builders_DISALLOWED_TAG_NAMES =
+        'APPLET BASE EMBED IFRAME LINK MATH META OBJECT SCRIPT STYLE SVG TEMPLATE'.split(
+            ' '
+        ),
+    module$contents$safevalues$builders$html_builders_VOID_TAG_NAMES =
+        'AREA BR COL COMMAND HR IMG INPUT KEYGEN PARAM SOURCE TRACK WBR'.split(
+            ' '
+        ),
+    module$contents$safevalues$builders$html_builders_URL_ATTRIBUTES = [
+        'action',
+        'formaction',
+        'href',
+    ]
+function module$contents$safevalues$builders$html_builders_verifyTagName(
+    tagName
+) {
+    if (
+        !module$contents$safevalues$builders$html_builders_VALID_TAG_OR_ATTRIBUTE_NAMES.test(
+            tagName
+        )
+    ) {
+        throw Error(goog.DEBUG ? 'Invalid tag name <' + tagName + '>.' : '')
+    }
+    if (
+        -1 !==
+        module$contents$safevalues$builders$html_builders_DISALLOWED_TAG_NAMES.indexOf(
+            tagName.toUpperCase()
+        )
+    ) {
+        throw Error(
+            goog.DEBUG
+                ? 'Tag name <' + tagName + '> is not allowed for createHtml.'
+                : ''
+        )
+    }
+}
+module$exports$safevalues$builders$html_builders.createHtml = function (
+    tagName,
+    attributes,
+    content
+) {
+    module$contents$safevalues$builders$html_builders_verifyTagName(tagName)
+    var result = '<' + tagName
+    attributes &&
+        (result +=
+            module$contents$safevalues$builders$html_builders_stringifyAttributes(
+                tagName,
+                attributes
+            ))
+    Array.isArray(content) || (content = void 0 === content ? [] : [content])
+    if (
+        -1 !==
+        module$contents$safevalues$builders$html_builders_VOID_TAG_NAMES.indexOf(
+            tagName.toUpperCase()
+        )
+    ) {
+        if (goog.DEBUG && 0 < content.length) {
+            throw Error('Void tag <' + tagName + '> does not allow content.')
+        }
+        result += '>'
+    } else {
+        var html =
+            module$contents$safevalues$builders$html_builders_concatHtmls(
+                content.map(function (value) {
+                    return module$contents$safevalues$internals$html_impl_isHtml(
+                        value
+                    )
+                        ? value
+                        : module$contents$safevalues$builders$html_builders_htmlEscape(
+                              String(value)
+                          )
+                })
+            )
+        result += '>' + html.toString() + '</' + tagName + '>'
+    }
+    return module$contents$safevalues$internals$html_impl_createHtmlInternal(
+        result
+    )
+}
+function module$contents$safevalues$builders$html_builders_stringifyAttributes(
+    tagName,
+    attributes
+) {
+    for (
+        var result = '', attrNames = Object.keys(attributes), i = 0;
+        i < attrNames.length;
+        i++
+    ) {
+        var name = attrNames[i],
+            value = attributes[name]
+        if (
+            !module$contents$safevalues$builders$html_builders_VALID_TAG_OR_ATTRIBUTE_NAMES.test(
+                name
+            )
+        ) {
+            throw Error(
+                goog.DEBUG ? 'Invalid attribute name "' + name + '".' : ''
+            )
+        }
+        void 0 !== value &&
+            null !== value &&
+            (result +=
+                ' ' +
+                module$contents$safevalues$builders$html_builders_getAttrNameAndValue(
+                    tagName,
+                    name,
+                    value
+                ))
+    }
+    return result
+}
+function module$contents$safevalues$builders$html_builders_getAttrNameAndValue(
+    tagName,
+    name,
+    value
+) {
+    if (/^on/i.test(name)) {
+        throw Error(
+            goog.DEBUG
+                ? 'Attribute "' +
+                      name +
+                      " is forbidden. Inline event handlers can lead to XSS. Please use the 'addEventListener' API instead."
+                : ''
+        )
+    }
+    ;-1 !==
+        module$contents$safevalues$builders$html_builders_URL_ATTRIBUTES.indexOf(
+            name.toLowerCase()
+        ) &&
+        (value = module$contents$safevalues$internals$url_impl_isUrl(value)
+            ? value.toString()
+            : module$contents$safevalues$builders$url_sanitizer_sanitizeJavaScriptUrl(
+                  String(value)
+              ) || 'about:invalid#zClosurez')
+    if (
+        goog.DEBUG &&
+        !module$contents$safevalues$internals$url_impl_isUrl(value) &&
+        !module$contents$safevalues$internals$html_impl_isHtml(value) &&
+        !module$contents$safevalues$internals$style_impl_isStyle(value) &&
+        'string' !== typeof value &&
+        'number' !== typeof value
+    ) {
+        throw Error(
+            'String or number value expected, got ' +
+                typeof value +
+                " with value '" +
+                value +
+                "' given."
+        )
+    }
+    return (
+        name +
+        '="' +
+        module$contents$safevalues$builders$html_builders_htmlEscape(
+            String(value)
+        ) +
+        '"'
+    )
+}
+var module$contents$safevalues$dom$globals$range_module =
+    module$contents$safevalues$dom$globals$range_module || {
+        id: 'third_party/javascript/safevalues/dom/globals/range.closure.js',
+    }
+function module$contents$safevalues$dom$globals$range_createContextualFragment(
+    range,
+    html
+) {
+    return range.createContextualFragment(
+        module$contents$safevalues$internals$html_impl_unwrapHtml(html)
+    )
+}
+var module$contents$safevalues$builders$html_sanitizer$inert_fragment_module =
+    module$contents$safevalues$builders$html_sanitizer$inert_fragment_module || {
+        id: 'third_party/javascript/safevalues/builders/html_sanitizer/inert_fragment.closure.js',
+    }
+function module$contents$safevalues$builders$html_sanitizer$inert_fragment_createInertFragment(
+    dirtyHtml
+) {
+    var doc = document.implementation.createHTMLDocument(''),
+        range = doc.createRange()
+    range.selectNode(doc.body)
+    var temporarySafeHtml =
+        module$contents$safevalues$internals$html_impl_createHtmlInternal(
+            dirtyHtml
+        )
+    return module$contents$safevalues$dom$globals$range_createContextualFragment(
+        range,
+        temporarySafeHtml
+    )
+}
+var module$exports$safevalues$builders$html_sanitizer$no_clobber = {},
+    module$contents$safevalues$builders$html_sanitizer$no_clobber_module =
+        module$contents$safevalues$builders$html_sanitizer$no_clobber_module || {
+            id: 'third_party/javascript/safevalues/builders/html_sanitizer/no_clobber.closure.js',
+        }
+function module$contents$safevalues$builders$html_sanitizer$no_clobber_getNodeName(
+    node
+) {
+    var nodeName = node.nodeName
+    return 'string' === typeof nodeName ? nodeName : 'FORM'
+}
+module$exports$safevalues$builders$html_sanitizer$no_clobber.getNodeName =
+    module$contents$safevalues$builders$html_sanitizer$no_clobber_getNodeName
+function module$contents$safevalues$builders$html_sanitizer$no_clobber_isText(
+    node
+) {
+    return 3 === node.nodeType
+}
+module$exports$safevalues$builders$html_sanitizer$no_clobber.isText =
+    module$contents$safevalues$builders$html_sanitizer$no_clobber_isText
+function module$contents$safevalues$builders$html_sanitizer$no_clobber_isElement(
+    node
+) {
+    var nodeType = node.nodeType
+    return 1 === nodeType || 'number' !== typeof nodeType
+}
+module$exports$safevalues$builders$html_sanitizer$no_clobber.isElement =
+    module$contents$safevalues$builders$html_sanitizer$no_clobber_isElement
+var module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table =
+        {},
+    module$contents$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table_module =
+        module$contents$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table_module || {
+            id: 'third_party/javascript/safevalues/builders/html_sanitizer/sanitizer_table/sanitizer_table.closure.js',
+        }
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable =
+    function (
+        allowedElements,
+        elementPolicies,
+        allowedGlobalAttributes,
+        globalAttributePolicies,
+        globallyAllowedAttributePrefixes
+    ) {
+        this.allowedElements = allowedElements
+        this.elementPolicies = elementPolicies
+        this.allowedGlobalAttributes = allowedGlobalAttributes
+        this.globalAttributePolicies = globalAttributePolicies
+        this.globallyAllowedAttributePrefixes = globallyAllowedAttributePrefixes
+    }
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable.prototype.isAllowedElement =
+    function (elementName) {
+        return (
+            'FORM' !== elementName &&
+            (this.allowedElements.has(elementName) ||
+                this.elementPolicies.has(elementName))
+        )
+    }
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable.prototype.getAttributePolicy =
+    function (attributeName, elementName) {
+        var elementPolicy = this.elementPolicies.get(elementName)
+        if (null == elementPolicy ? 0 : elementPolicy.has(attributeName)) {
+            return elementPolicy.get(attributeName)
+        }
+        if (this.allowedGlobalAttributes.has(attributeName)) {
+            return {
+                policyAction:
+                    module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                        .AttributePolicyAction.KEEP,
+            }
+        }
+        var globalPolicy = this.globalAttributePolicies.get(attributeName)
+        return globalPolicy
+            ? globalPolicy
+            : this.globallyAllowedAttributePrefixes &&
+              []
+                  .concat(
+                      $jscomp.arrayFromIterable(
+                          this.globallyAllowedAttributePrefixes
+                      )
+                  )
+                  .some(function (prefix) {
+                      return 0 === attributeName.indexOf(prefix)
+                  })
+            ? {
+                  policyAction:
+                      module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                          .AttributePolicyAction.KEEP,
+              }
+            : {
+                  policyAction:
+                      module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                          .AttributePolicyAction.DROP,
+              }
+    }
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.AttributePolicyAction =
+    {
+        DROP: 0,
+        KEEP: 1,
+        KEEP_AND_SANITIZE_URL: 2,
+        KEEP_AND_NORMALIZE: 3,
+        KEEP_AND_SANITIZE_STYLE: 4,
+    }
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.AttributePolicyAction[
+    module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.AttributePolicyAction.DROP
+] = 'DROP'
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.AttributePolicyAction[
+    module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.AttributePolicyAction.KEEP
+] = 'KEEP'
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.AttributePolicyAction[
+    module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.AttributePolicyAction.KEEP_AND_SANITIZE_URL
+] = 'KEEP_AND_SANITIZE_URL'
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.AttributePolicyAction[
+    module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.AttributePolicyAction.KEEP_AND_NORMALIZE
+] = 'KEEP_AND_NORMALIZE'
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.AttributePolicyAction[
+    module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.AttributePolicyAction.KEEP_AND_SANITIZE_STYLE
+] = 'KEEP_AND_SANITIZE_STYLE'
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.AttributePolicy =
+    function () {}
+var module$contents$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table_FORBIDDEN_CUSTOM_ELEMENT_NAMES =
+    new Set(
+        'ANNOTATION-XML COLOR-PROFILE FONT-FACE FONT-FACE-SRC FONT-FACE-URI FONT-FACE-FORMAT FONT-FACE-NAME MISSING-GLYPH'.split(
+            ' '
+        )
+    )
+function module$contents$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table_isCustomElement(
+    tag
+) {
+    return (
+        !module$contents$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table_FORBIDDEN_CUSTOM_ELEMENT_NAMES.has(
+            tag.toUpperCase()
+        ) && /^[a-z][-_.a-z0-9]*-[-_.a-z0-9]*$/i.test(tag)
+    )
+}
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.isCustomElement =
+    module$contents$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table_isCustomElement
+var module$exports$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table =
+        {},
+    module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_module =
+        module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_module || {
+            id: 'third_party/javascript/safevalues/builders/html_sanitizer/sanitizer_table/default_sanitizer_table.closure.js',
+        },
+    module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_ALLOWED_ELEMENTS =
+        'ARTICLE SECTION NAV ASIDE H1 H2 H3 H4 H5 H6 HEADER FOOTER ADDRESS P HR PRE BLOCKQUOTE OL UL LH LI DL DT DD FIGURE FIGCAPTION MAIN DIV EM STRONG SMALL S CITE Q DFN ABBR RUBY RB RT RTC RP DATA TIME CODE VAR SAMP KBD SUB SUP I B U MARK BDI BDO SPAN BR WBR INS DEL PICTURE PARAM TRACK MAP TABLE CAPTION COLGROUP COL TBODY THEAD TFOOT TR TD TH SELECT DATALIST OPTGROUP OPTION OUTPUT PROGRESS METER FIELDSET LEGEND DETAILS SUMMARY MENU DIALOG SLOT CANVAS FONT CENTER ACRONYM BASEFONT BIG DIR HGROUP STRIKE TT'.split(
+            ' '
+        ),
+    module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_ELEMENT_POLICIES =
+        [
+            [
+                'A',
+                new Map([
+                    [
+                        'href',
+                        {
+                            policyAction:
+                                module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                                    .AttributePolicyAction
+                                    .KEEP_AND_SANITIZE_URL,
+                        },
+                    ],
+                ]),
+            ],
+            [
+                'AREA',
+                new Map([
+                    [
+                        'href',
+                        {
+                            policyAction:
+                                module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                                    .AttributePolicyAction
+                                    .KEEP_AND_SANITIZE_URL,
+                        },
+                    ],
+                ]),
+            ],
+            [
+                'LINK',
+                new Map([
+                    [
+                        'href',
+                        {
+                            policyAction:
+                                module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                                    .AttributePolicyAction
+                                    .KEEP_AND_SANITIZE_URL,
+                            conditions: new Map([
+                                [
+                                    'rel',
+                                    new Set(
+                                        'alternate author bookmark canonical cite help icon license next prefetch dns-prefetch prerender preconnect preload prev search subresource'.split(
+                                            ' '
+                                        )
+                                    ),
+                                ],
+                            ]),
+                        },
+                    ],
+                ]),
+            ],
+            [
+                'SOURCE',
+                new Map([
+                    [
+                        'src',
+                        {
+                            policyAction:
+                                module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                                    .AttributePolicyAction.KEEP,
+                        },
+                    ],
+                ]),
+            ],
+            [
+                'IMG',
+                new Map([
+                    [
+                        'src',
+                        {
+                            policyAction:
+                                module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                                    .AttributePolicyAction.KEEP,
+                        },
+                    ],
+                ]),
+            ],
+            [
+                'VIDEO',
+                new Map([
+                    [
+                        'src',
+                        {
+                            policyAction:
+                                module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                                    .AttributePolicyAction.KEEP,
+                        },
+                    ],
+                ]),
+            ],
+            [
+                'AUDIO',
+                new Map([
+                    [
+                        'src',
+                        {
+                            policyAction:
+                                module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                                    .AttributePolicyAction.KEEP,
+                        },
+                    ],
+                ]),
+            ],
+        ],
+    module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_ALLOWED_GLOBAL_ATTRIBUTES =
+        'title aria-atomic aria-autocomplete aria-busy aria-checked aria-current aria-disabled aria-dropeffect aria-expanded aria-haspopup aria-hidden aria-invalid aria-label aria-level aria-live aria-multiline aria-multiselectable aria-orientation aria-posinset aria-pressed aria-readonly aria-relevant aria-required aria-selected aria-setsize aria-sort aria-valuemax aria-valuemin aria-valuenow aria-valuetext alt align autocapitalize autocomplete autocorrect autofocus autoplay bgcolor border cellpadding cellspacing checked color cols colspan controls datetime disabled download draggable enctype face formenctype frameborder height hreflang hidden ismap label lang loop max maxlength media minlength min multiple muted nonce open placeholder preload rel required reversed role rows rowspan selected shape size sizes slot span spellcheck start step summary translate type valign value width wrap itemscope itemtype itemid itemprop itemref'.split(
+            ' '
+        ),
+    module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_GLOBAL_ATTRIBUTE_POLICIES =
+        [
+            [
+                'dir',
+                {
+                    policyAction:
+                        module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                            .AttributePolicyAction.KEEP_AND_NORMALIZE,
+                    conditions: module$contents$safevalues$internals$pure_pure(
+                        function () {
+                            return new Map([
+                                ['dir', new Set(['auto', 'ltr', 'rtl'])],
+                            ])
+                        }
+                    ),
+                },
+            ],
+            [
+                'async',
+                {
+                    policyAction:
+                        module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                            .AttributePolicyAction.KEEP_AND_NORMALIZE,
+                    conditions: module$contents$safevalues$internals$pure_pure(
+                        function () {
+                            return new Map([['async', new Set(['async'])]])
+                        }
+                    ),
+                },
+            ],
+            [
+                'cite',
+                {
+                    policyAction:
+                        module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                            .AttributePolicyAction.KEEP_AND_SANITIZE_URL,
+                },
+            ],
+            [
+                'loading',
+                {
+                    policyAction:
+                        module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                            .AttributePolicyAction.KEEP_AND_NORMALIZE,
+                    conditions: module$contents$safevalues$internals$pure_pure(
+                        function () {
+                            return new Map([
+                                ['loading', new Set(['eager', 'lazy'])],
+                            ])
+                        }
+                    ),
+                },
+            ],
+            [
+                'poster',
+                {
+                    policyAction:
+                        module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                            .AttributePolicyAction.KEEP_AND_SANITIZE_URL,
+                },
+            ],
+            [
+                'target',
+                {
+                    policyAction:
+                        module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                            .AttributePolicyAction.KEEP_AND_NORMALIZE,
+                    conditions: module$contents$safevalues$internals$pure_pure(
+                        function () {
+                            return new Map([
+                                ['target', new Set(['_self', '_blank'])],
+                            ])
+                        }
+                    ),
+                },
+            ],
+        ]
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table.defaultSanitizerTable =
+    new module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable(
+        new Set(
+            module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_ALLOWED_ELEMENTS
+        ),
+        new Map(
+            module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_ELEMENT_POLICIES
+        ),
+        new Set(
+            module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_ALLOWED_GLOBAL_ATTRIBUTES
+        ),
+        new Map(
+            module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_GLOBAL_ATTRIBUTE_POLICIES
+        )
+    )
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table.lenientSanitizerTable =
+    new module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable(
+        new Set(
+            module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_ALLOWED_ELEMENTS
+        ),
+        new Map(
+            module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_ELEMENT_POLICIES
+        ),
+        new Set(
+            module$contents$safevalues$internals$pure_pure(function () {
+                return module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_ALLOWED_GLOBAL_ATTRIBUTES.concat(
+                    ['class', 'id']
+                )
+            })
+        ),
+        new Map(
+            module$contents$safevalues$internals$pure_pure(function () {
+                return module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_GLOBAL_ATTRIBUTE_POLICIES.concat(
+                    [
+                        [
+                            'style',
+                            {
+                                policyAction:
+                                    module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                                        .AttributePolicyAction
+                                        .KEEP_AND_SANITIZE_STYLE,
+                            },
+                        ],
+                    ]
+                )
+            })
+        )
+    )
+module$exports$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table.superLenientSanitizerTable =
+    new module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable(
+        new Set(
+            module$contents$safevalues$internals$pure_pure(function () {
+                return module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_ALLOWED_ELEMENTS.concat(
+                    'STYLE TITLE INPUT TEXTAREA BUTTON LABEL'.split(' ')
+                )
+            })
+        ),
+        new Map(
+            module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_ELEMENT_POLICIES
+        ),
+        new Set(
+            module$contents$safevalues$internals$pure_pure(function () {
+                return module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_ALLOWED_GLOBAL_ATTRIBUTES.concat(
+                    ['class', 'id', 'tabindex', 'contenteditable', 'name']
+                )
+            })
+        ),
+        new Map(
+            module$contents$safevalues$internals$pure_pure(function () {
+                return module$contents$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table_GLOBAL_ATTRIBUTE_POLICIES.concat(
+                    [
+                        [
+                            'style',
+                            {
+                                policyAction:
+                                    module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                                        .AttributePolicyAction
+                                        .KEEP_AND_SANITIZE_STYLE,
+                            },
+                        ],
+                    ]
+                )
+            })
+        ),
+        new Set(['data-', 'aria-'])
+    )
+var module$exports$safevalues$builders$html_sanitizer$html_sanitizer = {},
+    module$contents$safevalues$builders$html_sanitizer$html_sanitizer_module =
+        module$contents$safevalues$builders$html_sanitizer$html_sanitizer_module || {
+            id: 'third_party/javascript/safevalues/builders/html_sanitizer/html_sanitizer.closure.js',
+        }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizer =
+    function () {}
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizerImpl =
+    function (sanitizerTable, token) {
+        this.sanitizerTable = sanitizerTable
+        this.changes = []
+        module$contents$safevalues$internals$secrets_ensureTokenIsValid(token)
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizerImpl.prototype.sanitizeAssertUnchanged =
+    function (html) {
+        this.changes = []
+        var sanitizedHtml = this.sanitize(html)
+        if (0 !== this.changes.length) {
+            var message = ''
+            goog.DEBUG &&
+                (message =
+                    'Unexpected change to HTML value as a result of sanitization. Input: "' +
+                    (html +
+                        '", sanitized output: "' +
+                        sanitizedHtml +
+                        '"\nList of changes:') +
+                    this.changes.join('\n'))
+            throw Error(message)
+        }
+        return sanitizedHtml
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizerImpl.prototype.sanitize =
+    function (html) {
+        var fakeRoot = document.createElement('span')
+        fakeRoot.appendChild(this.sanitizeToFragment(html))
+        var serializedNewTree = new XMLSerializer().serializeToString(fakeRoot)
+        serializedNewTree = serializedNewTree.slice(
+            serializedNewTree.indexOf('>') + 1,
+            serializedNewTree.lastIndexOf('</')
+        )
+        return module$contents$safevalues$internals$html_impl_createHtmlInternal(
+            serializedNewTree
+        )
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizerImpl.prototype.sanitizeToFragment =
+    function (html) {
+        for (
+            var $jscomp$this = this,
+                dirtyFragment =
+                    module$contents$safevalues$builders$html_sanitizer$inert_fragment_createInertFragment(
+                        html
+                    ),
+                treeWalker = document.createTreeWalker(
+                    dirtyFragment,
+                    5,
+                    function (n) {
+                        return $jscomp$this.nodeFilter(n)
+                    },
+                    !1
+                ),
+                currentNode = treeWalker.nextNode(),
+                sanitizedFragment = document.createDocumentFragment(),
+                sanitizedParent = sanitizedFragment;
+            null !== currentNode;
+
+        ) {
+            var sanitizedNode = void 0
+            if (
+                module$contents$safevalues$builders$html_sanitizer$no_clobber_isText(
+                    currentNode
+                )
+            ) {
+                sanitizedNode = this.sanitizeTextNode(currentNode)
+            } else if (
+                module$contents$safevalues$builders$html_sanitizer$no_clobber_isElement(
+                    currentNode
+                )
+            ) {
+                sanitizedNode = this.sanitizeElementNode(currentNode)
+            } else {
+                var message = ''
+                goog.DEBUG && (message = 'Node is not of type text or element')
+                throw Error(message)
+            }
+            sanitizedParent.appendChild(sanitizedNode)
+            if ((currentNode = treeWalker.firstChild())) {
+                sanitizedParent = sanitizedNode
+            } else {
+                for (
+                    ;
+                    !(currentNode = treeWalker.nextSibling()) &&
+                    (currentNode = treeWalker.parentNode());
+
+                ) {
+                    sanitizedParent = sanitizedParent.parentNode
+                }
+            }
+        }
+        return sanitizedFragment
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizerImpl.prototype.sanitizeTextNode =
+    function (textNode) {
+        return document.createTextNode(textNode.data)
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizerImpl.prototype.sanitizeElementNode =
+    function (elementNode) {
+        for (
+            var elementName =
+                    module$contents$safevalues$builders$html_sanitizer$no_clobber_getNodeName(
+                        elementNode
+                    ),
+                newNode = document.createElement(elementName),
+                dirtyAttributes = elementNode.attributes,
+                $jscomp$iter$43 = $jscomp.makeIterator(dirtyAttributes),
+                $jscomp$key$ = $jscomp$iter$43.next();
+            !$jscomp$key$.done;
+            $jscomp$key$ = $jscomp$iter$43.next()
+        ) {
+            var $jscomp$destructuring$var52 = $jscomp$key$.value,
+                name = $jscomp$destructuring$var52.name,
+                value = $jscomp$destructuring$var52.value,
+                policy = this.sanitizerTable.getAttributePolicy(
+                    name,
+                    elementName
+                )
+            if (
+                this.satisfiesAllConditions(policy.conditions, dirtyAttributes)
+            ) {
+                switch (policy.policyAction) {
+                    case module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                        .AttributePolicyAction.KEEP:
+                        module$contents$safevalues$builders$html_sanitizer$html_sanitizer_setAttribute(
+                            newNode,
+                            name,
+                            value
+                        )
+                        break
+                    case module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                        .AttributePolicyAction.KEEP_AND_SANITIZE_URL:
+                        var sanitizedAttrUrl =
+                            module$contents$safevalues$builders$url_sanitizer_restrictivelySanitizeUrl(
+                                value
+                            )
+                        sanitizedAttrUrl !== value &&
+                            this.recordChange(
+                                'Url in attribute ' +
+                                    name +
+                                    ' was modified during sanitization. Original url:"' +
+                                    value +
+                                    '" was sanitized to: "' +
+                                    sanitizedAttrUrl +
+                                    '"'
+                            )
+                        module$contents$safevalues$builders$html_sanitizer$html_sanitizer_setAttribute(
+                            newNode,
+                            name,
+                            sanitizedAttrUrl
+                        )
+                        break
+                    case module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                        .AttributePolicyAction.KEEP_AND_NORMALIZE:
+                        module$contents$safevalues$builders$html_sanitizer$html_sanitizer_setAttribute(
+                            newNode,
+                            name,
+                            value.toLowerCase()
+                        )
+                        break
+                    case module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                        .AttributePolicyAction.KEEP_AND_SANITIZE_STYLE:
+                        module$contents$safevalues$builders$html_sanitizer$html_sanitizer_setAttribute(
+                            newNode,
+                            name,
+                            value
+                        )
+                        break
+                    case module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                        .AttributePolicyAction.DROP:
+                        this.recordChange('Attribute: ' + name + ' was dropped')
+                        break
+                    default:
+                        goog.DEBUG &&
+                            module$contents$safevalues$builders$html_sanitizer$html_sanitizer_checkExhaustive(
+                                policy.policyAction,
+                                'Unhandled AttributePolicyAction case'
+                            )
+                }
+            } else {
+                this.recordChange(
+                    'Not all conditions satisfied for attribute: ' + name + '.'
+                )
+            }
+        }
+        return newNode
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizerImpl.prototype.nodeFilter =
+    function (node) {
+        if (
+            module$contents$safevalues$builders$html_sanitizer$no_clobber_isText(
+                node
+            )
+        ) {
+            return 1
+        }
+        if (
+            !module$contents$safevalues$builders$html_sanitizer$no_clobber_isElement(
+                node
+            )
+        ) {
+            return 2
+        }
+        var nodeName =
+            module$contents$safevalues$builders$html_sanitizer$no_clobber_getNodeName(
+                node
+            )
+        if (null === nodeName) {
+            return this.recordChange('Node name was null for node: ' + node), 2
+        }
+        if (this.sanitizerTable.isAllowedElement(nodeName)) {
+            return 1
+        }
+        this.recordChange('Element: ' + nodeName + ' was dropped')
+        return 2
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizerImpl.prototype.recordChange =
+    function (errorMessage) {
+        goog.DEBUG
+            ? this.changes.push(errorMessage)
+            : 0 === this.changes.length && this.changes.push('')
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizerImpl.prototype.satisfiesAllConditions =
+    function (conditions, attrs) {
+        if (!conditions) {
+            return !0
+        }
+        for (
+            var $jscomp$iter$44 = $jscomp.makeIterator(conditions),
+                $jscomp$key$ = $jscomp$iter$44.next();
+            !$jscomp$key$.done;
+            $jscomp$key$ = $jscomp$iter$44.next()
+        ) {
+            var $jscomp$destructuring$var54 = $jscomp.makeIterator(
+                    $jscomp$key$.value
+                ),
+                attrName__tsickle_destructured_1 =
+                    $jscomp$destructuring$var54.next().value,
+                expectedValues = $jscomp$destructuring$var54.next().value,
+                $jscomp$optchain$tmpm1085474118$0 = void 0,
+                value =
+                    null ==
+                    ($jscomp$optchain$tmpm1085474118$0 = attrs.getNamedItem(
+                        attrName__tsickle_destructured_1
+                    ))
+                        ? void 0
+                        : $jscomp$optchain$tmpm1085474118$0.value
+            if (value && !expectedValues.has(value)) {
+                return !1
+            }
+        }
+        return !0
+    }
+function module$contents$safevalues$builders$html_sanitizer$html_sanitizer_setAttribute(
+    el,
+    name,
+    value
+) {
+    el.setAttribute(name, value)
+}
+var module$contents$safevalues$builders$html_sanitizer$html_sanitizer_defaultHtmlSanitizer =
+    module$contents$safevalues$internals$pure_pure(function () {
+        return new module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizerImpl(
+            module$exports$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table.defaultSanitizerTable,
+            module$exports$safevalues$internals$secrets.secretToken
+        )
+    })
+function module$contents$safevalues$builders$html_sanitizer$html_sanitizer_sanitizeHtml(
+    html
+) {
+    return module$contents$safevalues$builders$html_sanitizer$html_sanitizer_defaultHtmlSanitizer.sanitize(
+        html
+    )
+}
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.sanitizeHtml =
+    module$contents$safevalues$builders$html_sanitizer$html_sanitizer_sanitizeHtml
+function module$contents$safevalues$builders$html_sanitizer$html_sanitizer_sanitizeHtmlAssertUnchanged(
+    html
+) {
+    return module$contents$safevalues$builders$html_sanitizer$html_sanitizer_defaultHtmlSanitizer.sanitizeAssertUnchanged(
+        html
+    )
+}
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.sanitizeHtmlAssertUnchanged =
+    module$contents$safevalues$builders$html_sanitizer$html_sanitizer_sanitizeHtmlAssertUnchanged
+function module$contents$safevalues$builders$html_sanitizer$html_sanitizer_sanitizeHtmlToFragment(
+    html
+) {
+    return module$contents$safevalues$builders$html_sanitizer$html_sanitizer_defaultHtmlSanitizer.sanitizeToFragment(
+        html
+    )
+}
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.sanitizeHtmlToFragment =
+    module$contents$safevalues$builders$html_sanitizer$html_sanitizer_sanitizeHtmlToFragment
+var module$contents$safevalues$builders$html_sanitizer$html_sanitizer_lenientHtmlSanitizer =
+    module$contents$safevalues$internals$pure_pure(function () {
+        return new module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizerImpl(
+            module$exports$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table.lenientSanitizerTable,
+            module$exports$safevalues$internals$secrets.secretToken
+        )
+    })
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.lenientlySanitizeHtml =
+    function (html) {
+        return module$contents$safevalues$builders$html_sanitizer$html_sanitizer_lenientHtmlSanitizer.sanitize(
+            html
+        )
+    }
+function module$contents$safevalues$builders$html_sanitizer$html_sanitizer_lenientlySanitizeHtmlAssertUnchanged(
+    html
+) {
+    return module$contents$safevalues$builders$html_sanitizer$html_sanitizer_lenientHtmlSanitizer.sanitizeAssertUnchanged(
+        html
+    )
+}
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.lenientlySanitizeHtmlAssertUnchanged =
+    module$contents$safevalues$builders$html_sanitizer$html_sanitizer_lenientlySanitizeHtmlAssertUnchanged
+var module$contents$safevalues$builders$html_sanitizer$html_sanitizer_superLenientHtmlSanitizer =
+    module$contents$safevalues$internals$pure_pure(function () {
+        return new module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizerImpl(
+            module$exports$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table.superLenientSanitizerTable,
+            module$exports$safevalues$internals$secrets.secretToken
+        )
+    })
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.superLenientlySanitizeHtml =
+    function (html) {
+        return module$contents$safevalues$builders$html_sanitizer$html_sanitizer_superLenientHtmlSanitizer.sanitize(
+            html
+        )
+    }
+function module$contents$safevalues$builders$html_sanitizer$html_sanitizer_superLenientlySanitizeHtmlAssertUnchanged(
+    html
+) {
+    return module$contents$safevalues$builders$html_sanitizer$html_sanitizer_superLenientHtmlSanitizer.sanitizeAssertUnchanged(
+        html
+    )
+}
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer.superLenientlySanitizeHtmlAssertUnchanged =
+    module$contents$safevalues$builders$html_sanitizer$html_sanitizer_superLenientlySanitizeHtmlAssertUnchanged
+function module$contents$safevalues$builders$html_sanitizer$html_sanitizer_checkExhaustive(
+    value,
+    msg
+) {
+    throw Error(void 0 === msg ? 'unexpected value ' + value + '!' : msg)
+}
+var module$exports$safevalues$builders$html_sanitizer$html_sanitizer_builder =
+        {},
+    module$contents$safevalues$builders$html_sanitizer$html_sanitizer_builder_module =
+        module$contents$safevalues$builders$html_sanitizer$html_sanitizer_builder_module || {
+            id: 'third_party/javascript/safevalues/builders/html_sanitizer/html_sanitizer_builder.closure.js',
+        }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer_builder.HtmlSanitizerBuilder =
+    function () {
+        this.calledBuild = !1
+        this.sanitizerTable =
+            module$exports$safevalues$builders$html_sanitizer$sanitizer_table$default_sanitizer_table.defaultSanitizerTable
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer_builder.HtmlSanitizerBuilder.prototype.onlyAllowElements =
+    function (elementSet) {
+        for (
+            var allowedElements = new Set(),
+                allowedElementPolicies = new Map(),
+                $jscomp$iter$45 = $jscomp.makeIterator(elementSet),
+                $jscomp$key$element = $jscomp$iter$45.next();
+            !$jscomp$key$element.done;
+            $jscomp$key$element = $jscomp$iter$45.next()
+        ) {
+            var element = $jscomp$key$element.value
+            element = element.toUpperCase()
+            if (!this.sanitizerTable.isAllowedElement(element)) {
+                throw Error(
+                    'Element: ' +
+                        element +
+                        ', is not allowed by html5_contract.textpb'
+                )
+            }
+            var elementPolicy = this.sanitizerTable.elementPolicies.get(element)
+            void 0 !== elementPolicy
+                ? allowedElementPolicies.set(element, elementPolicy)
+                : allowedElements.add(element)
+        }
+        this.sanitizerTable =
+            new module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable(
+                allowedElements,
+                allowedElementPolicies,
+                this.sanitizerTable.allowedGlobalAttributes,
+                this.sanitizerTable.globalAttributePolicies
+            )
+        return this
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer_builder.HtmlSanitizerBuilder.prototype.allowCustomElement =
+    function (element, allowedAttributes) {
+        var allowedElements = new Set(this.sanitizerTable.allowedElements),
+            allowedElementPolicies = new Map(
+                this.sanitizerTable.elementPolicies
+            )
+        element = element.toUpperCase()
+        if (
+            !module$contents$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table_isCustomElement(
+                element
+            )
+        ) {
+            throw Error('Element: ' + element + ' is not a custom element')
+        }
+        if (allowedAttributes) {
+            for (
+                var elementPolicy = new Map(),
+                    $jscomp$iter$46 = $jscomp.makeIterator(allowedAttributes),
+                    $jscomp$key$attribute = $jscomp$iter$46.next();
+                !$jscomp$key$attribute.done;
+                $jscomp$key$attribute = $jscomp$iter$46.next()
+            ) {
+                elementPolicy.set($jscomp$key$attribute.value, {
+                    policyAction:
+                        module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                            .AttributePolicyAction.KEEP,
+                })
+            }
+            allowedElementPolicies.set(element, elementPolicy)
+        } else {
+            allowedElements.add(element)
+        }
+        this.sanitizerTable =
+            new module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable(
+                allowedElements,
+                allowedElementPolicies,
+                this.sanitizerTable.allowedGlobalAttributes,
+                this.sanitizerTable.globalAttributePolicies
+            )
+        return this
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer_builder.HtmlSanitizerBuilder.prototype.onlyAllowAttributes =
+    function (attributeSet) {
+        for (
+            var allowedGlobalAttributes = new Set(),
+                globalAttributePolicies = new Map(),
+                elementPolicies = new Map(),
+                $jscomp$iter$47 = $jscomp.makeIterator(attributeSet),
+                $jscomp$key$attribute = $jscomp$iter$47.next();
+            !$jscomp$key$attribute.done;
+            $jscomp$key$attribute = $jscomp$iter$47.next()
+        ) {
+            var attribute = $jscomp$key$attribute.value
+            this.sanitizerTable.allowedGlobalAttributes.has(attribute) &&
+                allowedGlobalAttributes.add(attribute)
+            this.sanitizerTable.globalAttributePolicies.has(attribute) &&
+                globalAttributePolicies.set(
+                    attribute,
+                    this.sanitizerTable.globalAttributePolicies.get(attribute)
+                )
+        }
+        for (
+            var $jscomp$iter$49 = $jscomp.makeIterator(
+                    this.sanitizerTable.elementPolicies.entries()
+                ),
+                $jscomp$key$ = $jscomp$iter$49.next();
+            !$jscomp$key$.done;
+            $jscomp$key$ = $jscomp$iter$49.next()
+        ) {
+            for (
+                var $jscomp$destructuring$var56 = $jscomp.makeIterator(
+                        $jscomp$key$.value
+                    ),
+                    elementName__tsickle_destructured_1 =
+                        $jscomp$destructuring$var56.next().value,
+                    originalElementPolicy__tsickle_destructured_2 =
+                        $jscomp$destructuring$var56.next().value,
+                    elementName = elementName__tsickle_destructured_1,
+                    newElementPolicy = new Map(),
+                    $jscomp$iter$48 = $jscomp.makeIterator(
+                        originalElementPolicy__tsickle_destructured_2.entries()
+                    ),
+                    $jscomp$key$$jscomp$0 = $jscomp$iter$48.next();
+                !$jscomp$key$$jscomp$0.done;
+                $jscomp$key$$jscomp$0 = $jscomp$iter$48.next()
+            ) {
+                var $jscomp$destructuring$var58 = $jscomp.makeIterator(
+                        $jscomp$key$$jscomp$0.value
+                    ),
+                    attribute__tsickle_destructured_3 =
+                        $jscomp$destructuring$var58.next().value,
+                    attributePolicy__tsickle_destructured_4 =
+                        $jscomp$destructuring$var58.next().value,
+                    attribute$jscomp$0 = attribute__tsickle_destructured_3,
+                    attributePolicy = attributePolicy__tsickle_destructured_4
+                attributeSet.has(attribute$jscomp$0) &&
+                    newElementPolicy.set(attribute$jscomp$0, attributePolicy)
+            }
+            elementPolicies.set(elementName, newElementPolicy)
+        }
+        this.sanitizerTable =
+            new module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable(
+                this.sanitizerTable.allowedElements,
+                elementPolicies,
+                allowedGlobalAttributes,
+                globalAttributePolicies
+            )
+        return this
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer_builder.HtmlSanitizerBuilder.prototype.allowDataAttributes =
+    function (attributes) {
+        for (
+            var allowedGlobalAttributes = new Set(
+                    this.sanitizerTable.allowedGlobalAttributes
+                ),
+                $jscomp$iter$50 = $jscomp.makeIterator(attributes),
+                $jscomp$key$attribute = $jscomp$iter$50.next();
+            !$jscomp$key$attribute.done;
+            $jscomp$key$attribute = $jscomp$iter$50.next()
+        ) {
+            var attribute = $jscomp$key$attribute.value
+            if (0 !== attribute.indexOf('data-')) {
+                throw Error(
+                    'data attribute: ' +
+                        attribute +
+                        ' does not begin with the prefix "data-"'
+                )
+            }
+            allowedGlobalAttributes.add(attribute)
+        }
+        this.sanitizerTable =
+            new module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable(
+                this.sanitizerTable.allowedElements,
+                this.sanitizerTable.elementPolicies,
+                allowedGlobalAttributes,
+                this.sanitizerTable.globalAttributePolicies
+            )
+        return this
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer_builder.HtmlSanitizerBuilder.prototype.allowStyleAttributes =
+    function () {
+        var globalAttributePolicies = new Map(
+            this.sanitizerTable.globalAttributePolicies
+        )
+        globalAttributePolicies.set('style', {
+            policyAction:
+                module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table
+                    .AttributePolicyAction.KEEP_AND_SANITIZE_STYLE,
+        })
+        this.sanitizerTable =
+            new module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable(
+                this.sanitizerTable.allowedElements,
+                this.sanitizerTable.elementPolicies,
+                this.sanitizerTable.allowedGlobalAttributes,
+                globalAttributePolicies
+            )
+        return this
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer_builder.HtmlSanitizerBuilder.prototype.allowClassAttributes =
+    function () {
+        var allowedGlobalAttributes = new Set(
+            this.sanitizerTable.allowedGlobalAttributes
+        )
+        allowedGlobalAttributes.add('class')
+        this.sanitizerTable =
+            new module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable(
+                this.sanitizerTable.allowedElements,
+                this.sanitizerTable.elementPolicies,
+                allowedGlobalAttributes,
+                this.sanitizerTable.globalAttributePolicies
+            )
+        return this
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer_builder.HtmlSanitizerBuilder.prototype.allowIdAttributes =
+    function () {
+        var allowedGlobalAttributes = new Set(
+            this.sanitizerTable.allowedGlobalAttributes
+        )
+        allowedGlobalAttributes.add('id')
+        this.sanitizerTable =
+            new module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable(
+                this.sanitizerTable.allowedElements,
+                this.sanitizerTable.elementPolicies,
+                allowedGlobalAttributes,
+                this.sanitizerTable.globalAttributePolicies
+            )
+        return this
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer_builder.HtmlSanitizerBuilder.prototype.allowIdReferenceAttributes =
+    function () {
+        var allowedGlobalAttributes = new Set(
+            this.sanitizerTable.allowedGlobalAttributes
+        )
+        allowedGlobalAttributes
+            .add('aria-activedescendant')
+            .add('aria-controls')
+            .add('aria-labelledby')
+            .add('aria-owns')
+            .add('for')
+            .add('list')
+        this.sanitizerTable =
+            new module$exports$safevalues$builders$html_sanitizer$sanitizer_table$sanitizer_table.SanitizerTable(
+                this.sanitizerTable.allowedElements,
+                this.sanitizerTable.elementPolicies,
+                allowedGlobalAttributes,
+                this.sanitizerTable.globalAttributePolicies
+            )
+        return this
+    }
+module$exports$safevalues$builders$html_sanitizer$html_sanitizer_builder.HtmlSanitizerBuilder.prototype.build =
+    function () {
+        if (this.calledBuild) {
+            throw Error('this sanitizer has already called build')
+        }
+        this.calledBuild = !0
+        return new module$exports$safevalues$builders$html_sanitizer$html_sanitizer.HtmlSanitizerImpl(
+            this.sanitizerTable,
+            module$exports$safevalues$internals$secrets.secretToken
+        )
+    }
+var module$exports$safevalues$builders$resource_url_builders = {},
+    module$contents$safevalues$builders$resource_url_builders_module =
+        module$contents$safevalues$builders$resource_url_builders_module || {
+            id: 'third_party/javascript/safevalues/builders/resource_url_builders.closure.js',
+        },
+    module$contents$safevalues$builders$resource_url_builders_Primitive
+function module$contents$safevalues$builders$resource_url_builders_hasValidOrigin(
+    base
+) {
+    if (!/^https:\/\//.test(base) && !/^\/\//.test(base)) {
+        return !1
+    }
+    var originStart = base.indexOf('//') + 2,
+        originEnd = base.indexOf('/', originStart)
+    if (originEnd <= originStart) {
+        throw Error(
+            "Can't interpolate data in a url's origin, Please make sure to fully specify the origin, terminated with '/'."
+        )
+    }
+    var origin = base.substring(originStart, originEnd)
+    if (!/^[0-9a-z.:-]+$/i.test(origin)) {
+        throw Error('The origin contains unsupported characters.')
+    }
+    if (!/^[^:]*(:[0-9]+)?$/i.test(origin)) {
+        throw Error('Invalid port number.')
+    }
+    if (!/(^|\.)[a-z][^.]*$/i.test(origin)) {
+        throw Error('The top-level domain must start with a letter.')
+    }
+    return !0
+}
+function module$contents$safevalues$builders$resource_url_builders_isValidAboutUrl(
+    base
+) {
+    if (!/^about:blank/.test(base)) {
+        return !1
+    }
+    if ('about:blank' !== base && !/^about:blank#/.test(base)) {
+        throw Error('The about url is invalid.')
+    }
+    return !0
+}
+function module$contents$safevalues$builders$resource_url_builders_isValidPathStart(
+    base
+) {
+    if (!/^\//.test(base)) {
+        return !1
+    }
+    if (
+        '/' === base ||
+        (1 < base.length && '/' !== base[1] && '\\' !== base[1])
+    ) {
+        return !0
+    }
+    throw Error('The path start in the url is invalid.')
+}
+function module$contents$safevalues$builders$resource_url_builders_trustedResourceUrl(
+    templateObj
+) {
+    var rest = $jscomp.getRestArguments.apply(1, arguments)
+    goog.DEBUG &&
+        module$contents$safevalues$internals$string_literal_assertIsTemplateObject(
+            templateObj,
+            rest.length
+        )
+    if (0 === rest.length) {
+        return module$contents$safevalues$internals$resource_url_impl_createResourceUrlInternal(
+            templateObj[0]
+        )
+    }
+    var base = templateObj[0].toLowerCase()
+    if (goog.DEBUG) {
+        if (/^data:/.test(base)) {
+            throw Error(
+                'Data URLs cannot have expressions in the template literal input.'
+            )
+        }
+        if (
+            !module$contents$safevalues$builders$resource_url_builders_hasValidOrigin(
+                base
+            ) &&
+            !module$contents$safevalues$builders$resource_url_builders_isValidPathStart(
+                base
+            ) &&
+            !module$contents$safevalues$builders$resource_url_builders_isValidAboutUrl(
+                base
+            )
+        ) {
+            throw Error(
+                'Trying to interpolate expressions in an unsupported url format.'
+            )
+        }
+    }
+    for (var url = templateObj[0], i = 0; i < rest.length; i++) {
+        url += encodeURIComponent(rest[i]) + templateObj[i + 1]
+    }
+    return module$contents$safevalues$internals$resource_url_impl_createResourceUrlInternal(
+        url
+    )
+}
+module$exports$safevalues$builders$resource_url_builders.trustedResourceUrl =
+    module$contents$safevalues$builders$resource_url_builders_trustedResourceUrl
+function module$contents$safevalues$builders$resource_url_builders_appendParams(
+    trustedUrl,
+    params
+) {
+    var url =
+        module$contents$safevalues$internals$resource_url_impl_unwrapResourceUrl(
+            trustedUrl
+        ).toString()
+    if (/#/.test(url)) {
+        var message = ''
+        goog.DEBUG &&
+            (message =
+                'Found a hash in url (' + url + '), appending not supported')
+        throw Error(message)
+    }
+    var separator = /\?/.test(url) ? '&' : '?'
+    params.forEach(function (value, key) {
+        for (
+            var values = value instanceof Array ? value : [value], i = 0;
+            i < values.length;
+            i++
+        ) {
+            var v = values[i]
+            null !== v &&
+                void 0 !== v &&
+                ((url +=
+                    separator +
+                    encodeURIComponent(key) +
+                    '=' +
+                    encodeURIComponent(String(v))),
+                (separator = '&'))
+        }
+    })
+    return module$contents$safevalues$internals$resource_url_impl_createResourceUrlInternal(
+        url
+    )
+}
+module$exports$safevalues$builders$resource_url_builders.appendParams =
+    module$contents$safevalues$builders$resource_url_builders_appendParams
+var module$contents$safevalues$builders$resource_url_builders_BEFORE_FRAGMENT_REGEXP =
+    /[^#]*/
+function module$contents$safevalues$builders$resource_url_builders_replaceFragment(
+    trustedUrl,
+    fragment
+) {
+    var urlString =
+        module$contents$safevalues$internals$resource_url_impl_unwrapResourceUrl(
+            trustedUrl
+        ).toString()
+    return module$contents$safevalues$internals$resource_url_impl_createResourceUrlInternal(
+        module$contents$safevalues$builders$resource_url_builders_BEFORE_FRAGMENT_REGEXP.exec(
+            urlString
+        )[0] +
+            '#' +
+            fragment
+    )
+}
+module$exports$safevalues$builders$resource_url_builders.replaceFragment =
+    module$contents$safevalues$builders$resource_url_builders_replaceFragment
+function module$contents$safevalues$builders$resource_url_builders_appendPathSegment(
+    trustedUrl,
+    pathSegment
+) {
+    var originalUrl =
+            module$contents$safevalues$internals$resource_url_impl_unwrapResourceUrl(
+                trustedUrl
+            ).toString(),
+        urlSegments = originalUrl.split(/\?|#/),
+        basePath = urlSegments[0],
+        paramVals = /\?/.test(originalUrl) ? urlSegments[1] : void 0,
+        fragVal = /#/.test(originalUrl)
+            ? paramVals
+                ? urlSegments[2]
+                : urlSegments[1]
+            : void 0,
+        url =
+            basePath +
+            ('/' === basePath.charAt(basePath.length - 1) ? '' : '/') +
+            encodeURIComponent(pathSegment)
+    void 0 !== paramVals && (url += '?' + paramVals)
+    void 0 !== fragVal && (url += '#' + fragVal)
+    return module$contents$safevalues$internals$resource_url_impl_createResourceUrlInternal(
+        url
+    )
+}
+module$exports$safevalues$builders$resource_url_builders.appendPathSegment =
+    module$contents$safevalues$builders$resource_url_builders_appendPathSegment
+function module$contents$safevalues$builders$resource_url_builders_objectUrlFromScript(
+    safeScript
+) {
+    var scriptContent =
+        module$contents$safevalues$internals$script_impl_unwrapScript(
+            safeScript
+        ).toString()
+    return module$contents$safevalues$internals$resource_url_impl_createResourceUrlInternal(
+        URL.createObjectURL(
+            new Blob([scriptContent], { type: 'text/javascript' })
+        )
+    )
+}
+module$exports$safevalues$builders$resource_url_builders.objectUrlFromScript =
+    module$contents$safevalues$builders$resource_url_builders_objectUrlFromScript
+var module$exports$safevalues$builders$script_builders = {},
+    module$contents$safevalues$builders$script_builders_module =
+        module$contents$safevalues$builders$script_builders_module || {
+            id: 'third_party/javascript/safevalues/builders/script_builders.closure.js',
+        },
+    module$contents$safevalues$builders$script_builders_Primitive,
+    module$contents$safevalues$builders$script_builders_Serializable
+function module$contents$safevalues$builders$script_builders_safeScript(
+    templateObj
+) {
+    goog.DEBUG &&
+        module$contents$safevalues$internals$string_literal_assertIsTemplateObject(
+            templateObj,
+            0
+        )
+    return module$contents$safevalues$internals$script_impl_createScriptInternal(
+        templateObj[0]
+    )
+}
+module$exports$safevalues$builders$script_builders.safeScript =
+    module$contents$safevalues$builders$script_builders_safeScript
+function module$contents$safevalues$builders$script_builders_concatScripts(
+    scripts
+) {
+    return module$contents$safevalues$internals$script_impl_createScriptInternal(
+        scripts
+            .map(module$contents$safevalues$internals$script_impl_unwrapScript)
+            .join('')
+    )
+}
+module$exports$safevalues$builders$script_builders.concatScripts =
+    module$contents$safevalues$builders$script_builders_concatScripts
+function module$contents$safevalues$builders$script_builders_valueAsScript(
+    value
+) {
+    return module$contents$safevalues$internals$script_impl_createScriptInternal(
+        JSON.stringify(value).replace(/</g, '\\u003C')
+    )
+}
+module$exports$safevalues$builders$script_builders.valueAsScript =
+    module$contents$safevalues$builders$script_builders_valueAsScript
+function module$contents$safevalues$builders$script_builders_safeScriptWithArgs(
+    templateObj
+) {
+    var emptyArgs = $jscomp.getRestArguments.apply(1, arguments)
+    if (goog.DEBUG) {
+        if (
+            emptyArgs.some(function (a) {
+                return '' !== a
+            })
+        ) {
+            throw Error(
+                'safeScriptWithArgs only allows empty string expressions to enable inline comments.'
+            )
+        }
+        module$contents$safevalues$internals$string_literal_assertIsTemplateObject(
+            templateObj,
+            emptyArgs.length
+        )
+    }
+    return function () {
+        var values = $jscomp.getRestArguments
+            .apply(0, arguments)
+            .map(function (v) {
+                return module$contents$safevalues$builders$script_builders_valueAsScript(
+                    v
+                ).toString()
+            })
+        return module$contents$safevalues$internals$script_impl_createScriptInternal(
+            '(' + templateObj.join('') + ')(' + values.join(',') + ')'
+        )
+    }
+}
+module$exports$safevalues$builders$script_builders.safeScriptWithArgs =
+    module$contents$safevalues$builders$script_builders_safeScriptWithArgs
+var module$exports$safevalues$builders$style_builders = {},
+    module$contents$safevalues$builders$style_builders_module =
+        module$contents$safevalues$builders$style_builders_module || {
+            id: 'third_party/javascript/safevalues/builders/style_builders.closure.js',
+        }
+function module$contents$safevalues$builders$style_builders_safeStyle(
+    templateObj
+) {
+    var rest = $jscomp.getRestArguments.apply(1, arguments)
+    goog.DEBUG &&
+        module$contents$safevalues$internals$string_literal_assertIsTemplateObject(
+            templateObj,
+            rest.length
+        )
+    for (
+        var stringifiedStyle = templateObj[0], i = 0;
+        i < templateObj.length - 1;
+        i++
+    ) {
+        stringifiedStyle += String(rest[i]) + templateObj[i + 1]
+    }
+    if (/[<>]/.test(stringifiedStyle)) {
+        throw Error('Forbidden characters in style string: ' + stringifiedStyle)
+    }
+    if (goog.DEBUG) {
+        if (0 === stringifiedStyle.length) {
+            return module$contents$safevalues$internals$style_impl_createStyleInternal(
+                stringifiedStyle
+            )
+        }
+        if (!/;$/.test(stringifiedStyle)) {
+            throw Error(
+                'Style string does not end with ";": ' + stringifiedStyle
+            )
+        }
+        if (!/:/.test(stringifiedStyle)) {
+            throw Error(
+                'Style string should contain one or more ":": ' +
+                    stringifiedStyle
+            )
+        }
+    }
+    return module$contents$safevalues$internals$style_impl_createStyleInternal(
+        stringifiedStyle
+    )
+}
+module$exports$safevalues$builders$style_builders.safeStyle =
+    module$contents$safevalues$builders$style_builders_safeStyle
+function module$contents$safevalues$builders$style_builders_concatStyles(
+    styles
+) {
+    return module$contents$safevalues$internals$style_impl_createStyleInternal(
+        styles
+            .map(module$contents$safevalues$internals$style_impl_unwrapStyle)
+            .join('')
+    )
+}
+module$exports$safevalues$builders$style_builders.concatStyles =
+    module$contents$safevalues$builders$style_builders_concatStyles
+var module$exports$safevalues$internals$style_sheet_impl = {},
+    module$contents$safevalues$internals$style_sheet_impl_module =
+        module$contents$safevalues$internals$style_sheet_impl_module || {
+            id: 'third_party/javascript/safevalues/internals/style_sheet_impl.closure.js',
+        }
+module$exports$safevalues$internals$style_sheet_impl.SafeStyleSheet =
+    module$contents$goog$html$SafeStyleSheet_SafeStyleSheet
+function module$contents$safevalues$internals$style_sheet_impl_createStyleSheetInternal(
+    styleSheet
+) {
+    return (0, module$exports$goog$html$internals.createSafeStyleSheet)(
+        styleSheet
+    )
+}
+module$exports$safevalues$internals$style_sheet_impl.createStyleSheetInternal =
+    module$contents$safevalues$internals$style_sheet_impl_createStyleSheetInternal
+function module$contents$safevalues$internals$style_sheet_impl_isStyleSheet(
+    value
+) {
+    return (
+        value instanceof module$contents$goog$html$SafeStyleSheet_SafeStyleSheet
+    )
+}
+module$exports$safevalues$internals$style_sheet_impl.isStyleSheet =
+    module$contents$safevalues$internals$style_sheet_impl_isStyleSheet
+function module$contents$safevalues$internals$style_sheet_impl_unwrapStyleSheet(
+    value
+) {
+    return module$contents$goog$html$SafeStyleSheet_SafeStyleSheet.unwrap(value)
+}
+module$exports$safevalues$internals$style_sheet_impl.unwrapStyleSheet =
+    module$contents$safevalues$internals$style_sheet_impl_unwrapStyleSheet
+var module$exports$safevalues$builders$style_sheet_builders = {},
+    module$contents$safevalues$builders$style_sheet_builders_module =
+        module$contents$safevalues$builders$style_sheet_builders_module || {
+            id: 'third_party/javascript/safevalues/builders/style_sheet_builders.closure.js',
+        },
+    module$contents$safevalues$builders$style_sheet_builders_Primitive
+module$exports$safevalues$builders$style_sheet_builders.safeStyleRule =
+    function (templateObj) {
+        var rest = $jscomp.getRestArguments.apply(1, arguments)
+        goog.DEBUG &&
+            module$contents$safevalues$internals$string_literal_assertIsTemplateObject(
+                templateObj,
+                rest.length
+            )
+        for (
+            var stringifiedRule = templateObj[0], i = 0;
+            i < templateObj.length - 1;
+            i++
+        ) {
+            ;(stringifiedRule += String(rest[i])),
+                (stringifiedRule += templateObj[i + 1])
+        }
+        var doc = document.implementation.createHTMLDocument(''),
+            styleEl = doc.createElement('style')
+        doc.head.appendChild(styleEl)
+        var styleSheet = styleEl.sheet
+        styleSheet.insertRule(stringifiedRule, 0)
+        if (1 !== styleSheet.cssRules.length) {
+            if (goog.DEBUG) {
+                throw Error(
+                    'safeStyleRule can be used to construct only 1 CSSStyleRule at a time. Use the concatStyle function to create sheet with several rules. Tried to parse: ' +
+                        stringifiedRule +
+                        ('which has ' +
+                            styleSheet.cssRules.length +
+                            ' rules: ' +
+                            styleSheet.cssRules[0].cssText +
+                            ' #$% ' +
+                            styleSheet.cssRules[1].cssText +
+                            '.')
+                )
+            }
+        } else {
+            var styleSheetRule = styleSheet.cssRules[0]
+            if (styleSheetRule instanceof CSSStyleRule) {
+                return module$contents$safevalues$internals$style_sheet_impl_createStyleSheetInternal(
+                    styleSheetRule.cssText.replace(/</g, '\\3C ')
+                )
+            }
+            if (goog.DEBUG) {
+                throw Error(
+                    'safeStyleRule can be used to construct a CSSStyleRule. @-rules should be constructed with the safeStyleSheet builder. Tried to parse: ' +
+                        stringifiedRule
+                )
+            }
+        }
+    }
+module$exports$safevalues$builders$style_sheet_builders.safeStyleSheet =
+    function (templateObj) {
+        goog.DEBUG &&
+            module$contents$safevalues$internals$string_literal_assertIsTemplateObject(
+                templateObj,
+                0
+            )
+        var styleSheet = templateObj[0]
+        if (goog.DEBUG && /</.test(styleSheet)) {
+            throw Error(
+                "'<' character is forbidden in styleSheet string: " + styleSheet
+            )
+        }
+        return module$contents$safevalues$internals$style_sheet_impl_createStyleSheetInternal(
+            styleSheet
+        )
+    }
+module$exports$safevalues$builders$style_sheet_builders.concatStyleSheets =
+    function (sheets) {
+        return module$contents$safevalues$internals$style_sheet_impl_createStyleSheetInternal(
+            sheets
+                .map(
+                    module$contents$safevalues$internals$style_sheet_impl_unwrapStyleSheet
+                )
+                .join('')
+        )
+    }
+var module$exports$safevalues$builders$url_builders = {},
+    module$contents$safevalues$builders$url_builders_module =
+        module$contents$safevalues$builders$url_builders_module || {
+            id: 'third_party/javascript/safevalues/builders/url_builders.closure.js',
+        }
+function module$contents$safevalues$builders$url_builders_isSafeMimeType(
+    mimeType
+) {
+    var match = mimeType.match(/^([^;]+)(?:;\w+=(?:\w+|"[\w;,= ]+"))*$/i)
+    return (
+        2 === (null == match ? void 0 : match.length) &&
+        (module$contents$safevalues$builders$url_builders_isSafeImageMimeType(
+            match[1]
+        ) ||
+            module$contents$safevalues$builders$url_builders_isSafeVideoMimeType(
+                match[1]
+            ) ||
+            module$contents$safevalues$builders$url_builders_isSafeAudioMimeType(
+                match[1]
+            ) ||
+            module$contents$safevalues$builders$url_builders_isSafeFontMimeType(
+                match[1]
+            ))
+    )
+}
+function module$contents$safevalues$builders$url_builders_isSafeImageMimeType(
+    mimeType
+) {
+    return /^image\/(?:bmp|gif|jpeg|jpg|png|tiff|webp|x-icon|heic|heif|avif|x-ms-bmp)$/i.test(
+        mimeType
+    )
+}
+function module$contents$safevalues$builders$url_builders_isSafeVideoMimeType(
+    mimeType
+) {
+    return /^video\/(?:mpeg|mp4|ogg|webm|x-matroska|quicktime|x-ms-wmv)$/i.test(
+        mimeType
+    )
+}
+function module$contents$safevalues$builders$url_builders_isSafeAudioMimeType(
+    mimeType
+) {
+    return /^audio\/(?:3gpp2|3gpp|aac|amr|L16|midi|mp3|mp4|mpeg|oga|ogg|opus|x-m4a|x-matroska|x-wav|wav|webm)$/i.test(
+        mimeType
+    )
+}
+function module$contents$safevalues$builders$url_builders_isSafeFontMimeType(
+    mimeType
+) {
+    return /^font\/\w+/i.test(mimeType)
+}
+module$exports$safevalues$builders$url_builders.Scheme = function () {}
+var module$contents$safevalues$builders$url_builders_SchemeImpl = function (
+    isValid
+) {
+    this.isValid = isValid
+}
+function module$contents$safevalues$builders$url_builders_isValidScheme(
+    scheme
+) {
+    return (
+        scheme instanceof
+        module$contents$safevalues$builders$url_builders_SchemeImpl
+    )
+}
+function module$contents$safevalues$builders$url_builders_simpleScheme(scheme) {
+    return new module$contents$safevalues$builders$url_builders_SchemeImpl(
+        function (url) {
+            return (
+                url.substr(0, scheme.length + 1).toLowerCase() === scheme + ':'
+            )
+        }
+    )
+}
+module$exports$safevalues$builders$url_builders.SanitizableUrlScheme = {
+    TEL: module$contents$safevalues$builders$url_builders_simpleScheme('tel'),
+    CALLTO: new module$contents$safevalues$builders$url_builders_SchemeImpl(
+        function (url) {
+            return /^callto:\+?\d*$/i.test(url)
+        }
+    ),
+    SSH: new module$contents$safevalues$builders$url_builders_SchemeImpl(
+        function (url) {
+            return 0 === url.indexOf('ssh://')
+        }
+    ),
+    RTSP: module$contents$safevalues$builders$url_builders_simpleScheme('rtsp'),
+    DATA: module$contents$safevalues$builders$url_builders_simpleScheme('data'),
+    HTTP: module$contents$safevalues$builders$url_builders_simpleScheme('http'),
+    HTTPS: module$contents$safevalues$builders$url_builders_simpleScheme(
+        'https'
+    ),
+    EXTENSION: new module$contents$safevalues$builders$url_builders_SchemeImpl(
+        function (url) {
+            return (
+                0 === url.indexOf('chrome-extension://') ||
+                0 === url.indexOf('moz-extension://') ||
+                0 === url.indexOf('ms-browser-extension://')
+            )
+        }
+    ),
+    FTP: module$contents$safevalues$builders$url_builders_simpleScheme('ftp'),
+    RELATIVE: new module$contents$safevalues$builders$url_builders_SchemeImpl(
+        function (url) {
+            return /^[^:]*([/?#]|$)/.test(url)
+        }
+    ),
+    MAILTO: module$contents$safevalues$builders$url_builders_simpleScheme(
+        'mailto'
+    ),
+    INTENT: module$contents$safevalues$builders$url_builders_simpleScheme(
+        'intent'
+    ),
+    MARKET: module$contents$safevalues$builders$url_builders_simpleScheme(
+        'market'
+    ),
+    ITMS: module$contents$safevalues$builders$url_builders_simpleScheme('itms'),
+    ITMS_APPSS:
+        module$contents$safevalues$builders$url_builders_simpleScheme(
+            'itms-appss'
+        ),
+    ITMS_SERVICES:
+        module$contents$safevalues$builders$url_builders_simpleScheme(
+            'itms-services'
+        ),
+    FACEBOOK_MESSENGER:
+        module$contents$safevalues$builders$url_builders_simpleScheme(
+            'fb-messenger'
+        ),
+    WHATSAPP:
+        module$contents$safevalues$builders$url_builders_simpleScheme(
+            'whatsapp'
+        ),
+    SIP: new module$contents$safevalues$builders$url_builders_SchemeImpl(
+        function (url) {
+            return 0 === url.indexOf('sip://') || 0 === url.indexOf('sips://')
+        }
+    ),
+    SMS: module$contents$safevalues$builders$url_builders_simpleScheme('sms'),
+    VND_YOUTUBE:
+        module$contents$safevalues$builders$url_builders_simpleScheme(
+            'vnd.youtube'
+        ),
+}
+var module$contents$safevalues$builders$url_builders_DEFAULT_SCHEMES = [
+    module$exports$safevalues$builders$url_builders.SanitizableUrlScheme.DATA,
+    module$exports$safevalues$builders$url_builders.SanitizableUrlScheme.HTTP,
+    module$exports$safevalues$builders$url_builders.SanitizableUrlScheme.HTTPS,
+    module$exports$safevalues$builders$url_builders.SanitizableUrlScheme.MAILTO,
+    module$exports$safevalues$builders$url_builders.SanitizableUrlScheme.FTP,
+    module$exports$safevalues$builders$url_builders.SanitizableUrlScheme
+        .RELATIVE,
+]
+function module$contents$safevalues$builders$url_builders_trySanitizeUrl(
+    url,
+    allowedSchemes
+) {
+    allowedSchemes =
+        void 0 === allowedSchemes
+            ? module$contents$safevalues$builders$url_builders_DEFAULT_SCHEMES
+            : allowedSchemes
+    if (module$contents$safevalues$internals$url_impl_isUrl(url)) {
+        return url
+    }
+    for (var i = 0; i < allowedSchemes.length; ++i) {
+        var scheme = allowedSchemes[i]
+        if (
+            module$contents$safevalues$builders$url_builders_isValidScheme(
+                scheme
+            ) &&
+            scheme.isValid(url)
+        ) {
+            return module$contents$safevalues$internals$url_impl_createUrlInternal(
+                url
+            )
+        }
+    }
+}
+module$exports$safevalues$builders$url_builders.trySanitizeUrl =
+    module$contents$safevalues$builders$url_builders_trySanitizeUrl
+function module$contents$safevalues$builders$url_builders_sanitizeUrl(
+    url,
+    allowedSchemes
+) {
+    allowedSchemes =
+        void 0 === allowedSchemes
+            ? module$contents$safevalues$builders$url_builders_DEFAULT_SCHEMES
+            : allowedSchemes
+    return (
+        module$contents$safevalues$builders$url_builders_trySanitizeUrl(
+            url,
+            allowedSchemes
+        ) || goog.html.SafeUrl.INNOCUOUS_URL
+    )
+}
+module$exports$safevalues$builders$url_builders.sanitizeUrl =
+    module$contents$safevalues$builders$url_builders_sanitizeUrl
+function module$contents$safevalues$builders$url_builders_objectUrlFromSafeSource(
+    source
+) {
+    if ('undefined' !== typeof MediaSource && source instanceof MediaSource) {
+        return module$contents$safevalues$internals$url_impl_createUrlInternal(
+            URL.createObjectURL(source)
+        )
+    }
+    if (
+        !module$contents$safevalues$builders$url_builders_isSafeMimeType(
+            source.type
+        )
+    ) {
+        var message = ''
+        goog.DEBUG && (message = 'unsafe blob MIME type: ' + source.type)
+        throw Error(message)
+    }
+    return module$contents$safevalues$internals$url_impl_createUrlInternal(
+        URL.createObjectURL(source)
+    )
+}
+module$exports$safevalues$builders$url_builders.objectUrlFromSafeSource =
+    module$contents$safevalues$builders$url_builders_objectUrlFromSafeSource
+function module$contents$safevalues$builders$url_builders_fromMediaSource(
+    media
+) {
+    if ('undefined' !== typeof MediaSource && media instanceof MediaSource) {
+        return module$contents$safevalues$internals$url_impl_createUrlInternal(
+            URL.createObjectURL(media)
+        )
+    }
+    var message = ''
+    goog.DEBUG &&
+        (message =
+            'fromMediaSource only accepts MediaSource instances, but was called with ' +
+            media +
+            '.')
+    throw Error(message)
+}
+module$exports$safevalues$builders$url_builders.fromMediaSource =
+    module$contents$safevalues$builders$url_builders_fromMediaSource
+function module$contents$safevalues$builders$url_builders_fromTrustedResourceUrl(
+    url
+) {
+    return module$contents$safevalues$internals$url_impl_createUrlInternal(
+        module$contents$safevalues$internals$resource_url_impl_unwrapResourceUrl(
+            url
+        ).toString()
+    )
+}
+module$exports$safevalues$builders$url_builders.fromTrustedResourceUrl =
+    module$contents$safevalues$builders$url_builders_fromTrustedResourceUrl
+function module$contents$safevalues$builders$url_builders_isSafeUrlPrefix(
+    prefix,
+    isWholeUrl
+) {
+    var markerIdx = prefix.search(/[:/?#]/)
+    if (0 > markerIdx) {
+        return isWholeUrl
+    }
+    if (':' !== prefix.charAt(markerIdx)) {
+        return !0
+    }
+    var scheme = prefix.substring(0, markerIdx).toLowerCase()
+    return /^[a-z][a-z\d+.-]*$/.test(scheme) && 'javascript' !== scheme
+}
+function module$contents$safevalues$builders$url_builders_safeUrl(templateObj) {
+    var rest = $jscomp.getRestArguments.apply(1, arguments)
+    goog.DEBUG &&
+        module$contents$safevalues$internals$string_literal_assertIsTemplateObject(
+            templateObj,
+            rest.length
+        )
+    var prefix = templateObj[0]
+    if (
+        goog.DEBUG &&
+        !module$contents$safevalues$builders$url_builders_isSafeUrlPrefix(
+            prefix,
+            0 === rest.length
+        )
+    ) {
+        throw Error('Trying to interpolate with unsupported prefix: ' + prefix)
+    }
+    for (var urlParts = [prefix], i = 0; i < rest.length; i++) {
+        urlParts.push(String(rest[i])), urlParts.push(templateObj[i + 1])
+    }
+    return module$contents$safevalues$internals$url_impl_createUrlInternal(
+        urlParts.join('')
+    )
+}
+module$exports$safevalues$builders$url_builders.safeUrl =
+    module$contents$safevalues$builders$url_builders_safeUrl
+var module$exports$safevalues$reporting$reporting = {},
+    module$contents$safevalues$reporting$reporting_module =
+        module$contents$safevalues$reporting$reporting_module || {
+            id: 'third_party/javascript/safevalues/reporting/reporting.closure.js',
+        },
+    module$contents$safevalues$reporting$reporting_REPORTING_ID_PREFIX_TO_SAMPLING_RATE =
+        { 0: 1, 1: 1 },
+    module$contents$safevalues$reporting$reporting_REPORTING_ID_PREFIX_TO_HEARTBEAT_RATE =
+        { 0: 0.1, 1: 0.1 }
+module$exports$safevalues$reporting$reporting.ReportingOptions = function () {}
+function module$contents$safevalues$reporting$reporting_reportOnlyHtmlPassthrough(
+    s,
+    options
+) {
+    if (
+        !options ||
+        !module$contents$safevalues$reporting$reporting_isCallSampled(
+            options
+        ) ||
+        module$contents$safevalues$reporting$reporting_isReportingDisabled() ||
+        module$contents$safevalues$reporting$reporting_isBrowserIncompatibleWithSanitizing()
+    ) {
+        return s
+    }
+    module$contents$safevalues$reporting$reporting_maybeSendHeartbeat(options)
+    module$contents$safevalues$reporting$reporting_isChangedBySanitizing(
+        s,
+        options
+    ) ||
+        module$contents$safevalues$reporting$reporting_isChangedByEscaping(
+            s,
+            options
+        )
+    return s
+}
+module$exports$safevalues$reporting$reporting.reportOnlyHtmlPassthrough =
+    module$contents$safevalues$reporting$reporting_reportOnlyHtmlPassthrough
+function module$contents$safevalues$reporting$reporting_isBrowserIncompatibleWithSanitizing() {
+    return !('DocumentFragment' in window)
+}
+function module$contents$safevalues$reporting$reporting_isCallSampled(options) {
+    var $jscomp$nullish$tmp8, $jscomp$nullish$tmp9
+    return (
+        Math.random() <
+        (null !=
+        ($jscomp$nullish$tmp9 =
+            null != ($jscomp$nullish$tmp8 = options.samplingRate)
+                ? $jscomp$nullish$tmp8
+                : module$contents$safevalues$reporting$reporting_REPORTING_ID_PREFIX_TO_SAMPLING_RATE[
+                      options.reportingId[0]
+                  ])
+            ? $jscomp$nullish$tmp9
+            : 0)
+    )
+}
+function module$contents$safevalues$reporting$reporting_isReportingDisabled() {
+    return !1 === window.SAFEVALUES_REPORTING
+}
+function module$contents$safevalues$reporting$reporting_maybeSendHeartbeat(
+    options
+) {
+    var $jscomp$nullish$tmp10, $jscomp$nullish$tmp11
+    Math.random() <
+        (null !=
+        ($jscomp$nullish$tmp11 =
+            null != ($jscomp$nullish$tmp10 = options.heartbeatRate)
+                ? $jscomp$nullish$tmp10
+                : module$contents$safevalues$reporting$reporting_REPORTING_ID_PREFIX_TO_HEARTBEAT_RATE[
+                      options.reportingId[0]
+                  ])
+            ? $jscomp$nullish$tmp11
+            : 0) &&
+        module$contents$safevalues$reporting$reporting_reportLegacyConversion(
+            options,
+            module$contents$safevalues$reporting$reporting_ReportingType.HEARTBEAT
+        )
+}
+function module$contents$safevalues$reporting$reporting_isChangedByEscaping(
+    s,
+    options
+) {
+    return (0, module$exports$safevalues$builders$html_builders.htmlEscape)(
+        s
+    ).toString() !== s
+        ? (module$contents$safevalues$reporting$reporting_reportLegacyConversion(
+              options,
+              module$contents$safevalues$reporting$reporting_ReportingType.HTML_CHANGED_BY_ESCAPING
+          ),
+          !0)
+        : !1
+}
+function module$contents$safevalues$reporting$reporting_isChangedBySanitizing(
+    s,
+    options
+) {
+    try {
+        module$contents$safevalues$builders$html_sanitizer$html_sanitizer_superLenientlySanitizeHtmlAssertUnchanged(
+            s
+        )
+    } catch (e) {
+        var corpRe =
+            /([.]corp[.]google[.]com|[.]proxy[.]googleprod[.]com|[.]googlers[.]com)$/
+        goog.DEBUG &&
+        corpRe.test(window.location.hostname) &&
+        e instanceof Error
+            ? module$contents$safevalues$reporting$reporting_reportLegacyConversion(
+                  options,
+                  module$contents$safevalues$reporting$reporting_ReportingType.HTML_CHANGED_BY_SUPER_LENIENT_SANITIZING,
+                  e.message
+              )
+            : module$contents$safevalues$reporting$reporting_reportLegacyConversion(
+                  options,
+                  module$contents$safevalues$reporting$reporting_ReportingType.HTML_CHANGED_BY_SUPER_LENIENT_SANITIZING
+              )
+        return !0
+    }
+    try {
+        module$contents$safevalues$builders$html_sanitizer$html_sanitizer_lenientlySanitizeHtmlAssertUnchanged(
+            s
+        )
+    } catch ($jscomp$unused$catch$696273141$0) {
+        return (
+            module$contents$safevalues$reporting$reporting_reportLegacyConversion(
+                options,
+                module$contents$safevalues$reporting$reporting_ReportingType.HTML_CHANGED_BY_RELAXED_SANITIZING
+            ),
+            !0
+        )
+    }
+    try {
+        module$contents$safevalues$builders$html_sanitizer$html_sanitizer_sanitizeHtmlAssertUnchanged(
+            s
+        )
+    } catch ($jscomp$unused$catch$696273141$1) {
+        return (
+            module$contents$safevalues$reporting$reporting_reportLegacyConversion(
+                options,
+                module$contents$safevalues$reporting$reporting_ReportingType.HTML_CHANGED_BY_SANITIZING
+            ),
+            !0
+        )
+    }
+    return !1
+}
+var module$contents$safevalues$reporting$reporting_ReportingType = {
+    HEARTBEAT: 'HEARTBEAT',
+    CRASHED: 'CRASHED',
+    HTML_CHANGED_BY_ESCAPING: 'H_ESCAPE',
+    HTML_CHANGED_BY_SANITIZING: 'H_SANITIZE',
+    HTML_CHANGED_BY_RELAXED_SANITIZING: 'H_RSANITIZE',
+    HTML_CHANGED_BY_SUPER_LENIENT_SANITIZING: 'H_SLSANITIZE',
+}
+function module$contents$safevalues$reporting$reporting_reportLegacyConversion(
+    options,
+    type,
+    additionalData
+) {
+    var sendReport = void 0
+    sendReport = module$exports$safevalues$reporting$reporting.TEST_ONLY
+        .sendReport
+        ? module$exports$safevalues$reporting$reporting.TEST_ONLY.sendReport
+        : 'undefined' !== typeof window &&
+          window.navigator &&
+          void 0 !== window.navigator.sendBeacon
+        ? navigator.sendBeacon.bind(navigator)
+        : module$contents$safevalues$reporting$reporting_sendBeaconPolyfill
+    sendReport(
+        'https://csp.withgoogle.com/csp/lcreport/' + options.reportingId,
+        JSON.stringify({
+            host: window.location.hostname,
+            type: type,
+            additionalData: additionalData,
+        })
+    )
+}
+function module$contents$safevalues$reporting$reporting_sendBeaconPolyfill(
+    url,
+    body
+) {
+    var req = new XMLHttpRequest()
+    req.open('POST', url)
+    req.setRequestHeader('Content-Type', 'application/json')
+    req.send(body)
+}
+function module$contents$safevalues$reporting$reporting_TestOnlyOptions() {}
+module$exports$safevalues$reporting$reporting.TEST_ONLY = {
+    reset: function () {
+        module$exports$safevalues$reporting$reporting.TEST_ONLY.sendReport =
+            void 0
+    },
+}
+var module$exports$safevalues$index = {},
+    module$contents$safevalues$index_module =
+        module$contents$safevalues$index_module || {
+            id: 'third_party/javascript/safevalues/index.closure.js',
+        }
+module$exports$safevalues$index.safeAttrPrefix =
+    module$contents$safevalues$builders$attribute_builders_safeAttrPrefix
+module$exports$safevalues$index.concatHtmls =
+    module$exports$safevalues$builders$html_builders.concatHtmls
+module$exports$safevalues$index.htmlEscape =
+    module$exports$safevalues$builders$html_builders.htmlEscape
+module$exports$safevalues$index.joinHtmls =
+    module$exports$safevalues$builders$html_builders.joinHtmls
+module$exports$safevalues$index.scriptToHtml =
+    module$exports$safevalues$builders$html_builders.scriptToHtml
+module$exports$safevalues$index.scriptUrlToHtml =
+    module$exports$safevalues$builders$html_builders.scriptUrlToHtml
+module$exports$safevalues$index.sanitizeHtml =
+    module$contents$safevalues$builders$html_sanitizer$html_sanitizer_sanitizeHtml
+module$exports$safevalues$index.sanitizeHtmlAssertUnchanged =
+    module$contents$safevalues$builders$html_sanitizer$html_sanitizer_sanitizeHtmlAssertUnchanged
+module$exports$safevalues$index.sanitizeHtmlToFragment =
+    module$contents$safevalues$builders$html_sanitizer$html_sanitizer_sanitizeHtmlToFragment
+module$exports$safevalues$index.HtmlSanitizerBuilder =
+    module$exports$safevalues$builders$html_sanitizer$html_sanitizer_builder.HtmlSanitizerBuilder
+module$exports$safevalues$index.appendParams =
+    module$contents$safevalues$builders$resource_url_builders_appendParams
+module$exports$safevalues$index.appendPathSegment =
+    module$contents$safevalues$builders$resource_url_builders_appendPathSegment
+module$exports$safevalues$index.objectUrlFromScript =
+    module$contents$safevalues$builders$resource_url_builders_objectUrlFromScript
+module$exports$safevalues$index.replaceFragment =
+    module$contents$safevalues$builders$resource_url_builders_replaceFragment
+module$exports$safevalues$index.trustedResourceUrl =
+    module$contents$safevalues$builders$resource_url_builders_trustedResourceUrl
+module$exports$safevalues$index.concatScripts =
+    module$contents$safevalues$builders$script_builders_concatScripts
+module$exports$safevalues$index.safeScript =
+    module$contents$safevalues$builders$script_builders_safeScript
+module$exports$safevalues$index.safeScriptWithArgs =
+    module$contents$safevalues$builders$script_builders_safeScriptWithArgs
+module$exports$safevalues$index.valueAsScript =
+    module$contents$safevalues$builders$script_builders_valueAsScript
+module$exports$safevalues$index.concatStyles =
+    module$contents$safevalues$builders$style_builders_concatStyles
+module$exports$safevalues$index.safeStyle =
+    module$contents$safevalues$builders$style_builders_safeStyle
+module$exports$safevalues$index.concatStyleSheets =
+    module$exports$safevalues$builders$style_sheet_builders.concatStyleSheets
+module$exports$safevalues$index.safeStyleSheet =
+    module$exports$safevalues$builders$style_sheet_builders.safeStyleSheet
+module$exports$safevalues$index.fromMediaSource =
+    module$contents$safevalues$builders$url_builders_fromMediaSource
+module$exports$safevalues$index.fromTrustedResourceUrl =
+    module$contents$safevalues$builders$url_builders_fromTrustedResourceUrl
+module$exports$safevalues$index.objectUrlFromSafeSource =
+    module$contents$safevalues$builders$url_builders_objectUrlFromSafeSource
+module$exports$safevalues$index.safeUrl =
+    module$contents$safevalues$builders$url_builders_safeUrl
+module$exports$safevalues$index.SanitizableUrlScheme =
+    module$exports$safevalues$builders$url_builders.SanitizableUrlScheme
+module$exports$safevalues$index.sanitizeUrl =
+    module$contents$safevalues$builders$url_builders_sanitizeUrl
+module$exports$safevalues$index.trySanitizeUrl =
+    module$contents$safevalues$builders$url_builders_trySanitizeUrl
+module$exports$safevalues$index.addJavaScriptUrlSanitizationCallback =
+    module$contents$safevalues$builders$url_sanitizer_addJavaScriptUrlSanitizationCallback
+module$exports$safevalues$index.removeJavaScriptUrlSanitizationCallback =
+    module$contents$safevalues$builders$url_sanitizer_removeJavaScriptUrlSanitizationCallback
+module$exports$safevalues$index.SafeAttributePrefix =
+    module$exports$safevalues$internals$attribute_impl.SafeAttributePrefix
+module$exports$safevalues$index.unwrapAttributePrefix =
+    module$contents$safevalues$internals$attribute_impl_unwrapAttributePrefix
+module$exports$safevalues$index.EMPTY_HTML =
+    module$exports$safevalues$internals$html_impl.EMPTY_HTML
+module$exports$safevalues$index.isHtml =
+    module$contents$safevalues$internals$html_impl_isHtml
+module$exports$safevalues$index.SafeHtml =
+    module$contents$goog$html$SafeHtml_SafeHtml
+module$exports$safevalues$index.unwrapHtml =
+    module$contents$safevalues$internals$html_impl_unwrapHtml
+module$exports$safevalues$index.isResourceUrl =
+    module$contents$safevalues$internals$resource_url_impl_isResourceUrl
+module$exports$safevalues$index.TrustedResourceUrl =
+    goog.html.TrustedResourceUrl
+module$exports$safevalues$index.unwrapResourceUrl =
+    module$contents$safevalues$internals$resource_url_impl_unwrapResourceUrl
+module$exports$safevalues$index.EMPTY_SCRIPT =
+    module$exports$safevalues$internals$script_impl.EMPTY_SCRIPT
+module$exports$safevalues$index.isScript =
+    module$contents$safevalues$internals$script_impl_isScript
+module$exports$safevalues$index.SafeScript =
+    module$contents$goog$html$SafeScript_SafeScript
+module$exports$safevalues$index.unwrapScript =
+    module$contents$safevalues$internals$script_impl_unwrapScript
+module$exports$safevalues$index.isStyle =
+    module$contents$safevalues$internals$style_impl_isStyle
+module$exports$safevalues$index.SafeStyle =
+    module$contents$goog$html$SafeStyle_SafeStyle
+module$exports$safevalues$index.unwrapStyle =
+    module$contents$safevalues$internals$style_impl_unwrapStyle
+module$exports$safevalues$index.isStyleSheet =
+    module$contents$safevalues$internals$style_sheet_impl_isStyleSheet
+module$exports$safevalues$index.SafeStyleSheet =
+    module$contents$goog$html$SafeStyleSheet_SafeStyleSheet
+module$exports$safevalues$index.unwrapStyleSheet =
+    module$contents$safevalues$internals$style_sheet_impl_unwrapStyleSheet
+module$exports$safevalues$index.ABOUT_BLANK = goog.html.SafeUrl.ABOUT_BLANK
+module$exports$safevalues$index.INNOCUOUS_URL = goog.html.SafeUrl.INNOCUOUS_URL
+module$exports$safevalues$index.isUrl =
+    module$contents$safevalues$internals$url_impl_isUrl
+module$exports$safevalues$index.SafeUrl = goog.html.SafeUrl
+module$exports$safevalues$index.unwrapUrl =
+    module$contents$safevalues$internals$url_impl_unwrapUrl
+module$exports$safevalues$index.reportOnlyHtmlPassthrough =
+    module$contents$safevalues$reporting$reporting_reportOnlyHtmlPassthrough
+module$exports$safevalues$index.createHtml =
+    module$exports$safevalues$builders$html_builders.createHtml
+module$exports$safevalues$index.safeStyleRule =
+    module$exports$safevalues$builders$style_sheet_builders.safeStyleRule
+var safevalues = {}
+safevalues.safeAttrPrefix =
+    module$contents$safevalues$builders$attribute_builders_safeAttrPrefix
+safevalues.concatHtmls = module$exports$safevalues$index.concatHtmls
+safevalues.htmlEscape = module$exports$safevalues$index.htmlEscape
+safevalues.joinHtmls = module$exports$safevalues$index.joinHtmls
+safevalues.scriptToHtml = module$exports$safevalues$index.scriptToHtml
+safevalues.scriptUrlToHtml = module$exports$safevalues$index.scriptUrlToHtml
+safevalues.HtmlSanitizer = module$exports$safevalues$index.HtmlSanitizer
+safevalues.sanitizeHtml =
+    module$contents$safevalues$builders$html_sanitizer$html_sanitizer_sanitizeHtml
+safevalues.sanitizeHtmlAssertUnchanged =
+    module$contents$safevalues$builders$html_sanitizer$html_sanitizer_sanitizeHtmlAssertUnchanged
+safevalues.sanitizeHtmlToFragment =
+    module$contents$safevalues$builders$html_sanitizer$html_sanitizer_sanitizeHtmlToFragment
+safevalues.HtmlSanitizerBuilder =
+    module$exports$safevalues$builders$html_sanitizer$html_sanitizer_builder.HtmlSanitizerBuilder
+safevalues.appendParams =
+    module$contents$safevalues$builders$resource_url_builders_appendParams
+safevalues.appendPathSegment =
+    module$contents$safevalues$builders$resource_url_builders_appendPathSegment
+safevalues.objectUrlFromScript =
+    module$contents$safevalues$builders$resource_url_builders_objectUrlFromScript
+safevalues.replaceFragment =
+    module$contents$safevalues$builders$resource_url_builders_replaceFragment
+safevalues.trustedResourceUrl =
+    module$contents$safevalues$builders$resource_url_builders_trustedResourceUrl
+safevalues.concatScripts =
+    module$contents$safevalues$builders$script_builders_concatScripts
+safevalues.safeScript =
+    module$contents$safevalues$builders$script_builders_safeScript
+safevalues.safeScriptWithArgs =
+    module$contents$safevalues$builders$script_builders_safeScriptWithArgs
+safevalues.valueAsScript =
+    module$contents$safevalues$builders$script_builders_valueAsScript
+safevalues.concatStyles =
+    module$contents$safevalues$builders$style_builders_concatStyles
+safevalues.safeStyle =
+    module$contents$safevalues$builders$style_builders_safeStyle
+safevalues.concatStyleSheets = module$exports$safevalues$index.concatStyleSheets
+safevalues.safeStyleSheet = module$exports$safevalues$index.safeStyleSheet
+safevalues.fromMediaSource =
+    module$contents$safevalues$builders$url_builders_fromMediaSource
+safevalues.fromTrustedResourceUrl =
+    module$contents$safevalues$builders$url_builders_fromTrustedResourceUrl
+safevalues.objectUrlFromSafeSource =
+    module$contents$safevalues$builders$url_builders_objectUrlFromSafeSource
+safevalues.safeUrl = module$contents$safevalues$builders$url_builders_safeUrl
+safevalues.SanitizableUrlScheme =
+    module$exports$safevalues$builders$url_builders.SanitizableUrlScheme
+safevalues.sanitizeUrl =
+    module$contents$safevalues$builders$url_builders_sanitizeUrl
+safevalues.Scheme = module$exports$safevalues$index.Scheme
+safevalues.trySanitizeUrl =
+    module$contents$safevalues$builders$url_builders_trySanitizeUrl
+safevalues.addJavaScriptUrlSanitizationCallback =
+    module$contents$safevalues$builders$url_sanitizer_addJavaScriptUrlSanitizationCallback
+safevalues.removeJavaScriptUrlSanitizationCallback =
+    module$contents$safevalues$builders$url_sanitizer_removeJavaScriptUrlSanitizationCallback
+safevalues.SafeAttributePrefix =
+    module$exports$safevalues$internals$attribute_impl.SafeAttributePrefix
+safevalues.unwrapAttributePrefix =
+    module$contents$safevalues$internals$attribute_impl_unwrapAttributePrefix
+safevalues.EMPTY_HTML = module$exports$safevalues$internals$html_impl.EMPTY_HTML
+safevalues.isHtml = module$contents$safevalues$internals$html_impl_isHtml
+safevalues.SafeHtml = module$contents$goog$html$SafeHtml_SafeHtml
+safevalues.unwrapHtml =
+    module$contents$safevalues$internals$html_impl_unwrapHtml
+safevalues.isResourceUrl =
+    module$contents$safevalues$internals$resource_url_impl_isResourceUrl
+safevalues.TrustedResourceUrl = goog.html.TrustedResourceUrl
+safevalues.unwrapResourceUrl =
+    module$contents$safevalues$internals$resource_url_impl_unwrapResourceUrl
+safevalues.EMPTY_SCRIPT =
+    module$exports$safevalues$internals$script_impl.EMPTY_SCRIPT
+safevalues.isScript = module$contents$safevalues$internals$script_impl_isScript
+safevalues.SafeScript = module$contents$goog$html$SafeScript_SafeScript
+safevalues.unwrapScript =
+    module$contents$safevalues$internals$script_impl_unwrapScript
+safevalues.isStyle = module$contents$safevalues$internals$style_impl_isStyle
+safevalues.SafeStyle = module$contents$goog$html$SafeStyle_SafeStyle
+safevalues.unwrapStyle =
+    module$contents$safevalues$internals$style_impl_unwrapStyle
+safevalues.isStyleSheet =
+    module$contents$safevalues$internals$style_sheet_impl_isStyleSheet
+safevalues.SafeStyleSheet =
+    module$contents$goog$html$SafeStyleSheet_SafeStyleSheet
+safevalues.unwrapStyleSheet =
+    module$contents$safevalues$internals$style_sheet_impl_unwrapStyleSheet
+safevalues.ABOUT_BLANK = goog.html.SafeUrl.ABOUT_BLANK
+safevalues.INNOCUOUS_URL = goog.html.SafeUrl.INNOCUOUS_URL
+safevalues.isUrl = module$contents$safevalues$internals$url_impl_isUrl
+safevalues.SafeUrl = goog.html.SafeUrl
+safevalues.unwrapUrl = module$contents$safevalues$internals$url_impl_unwrapUrl
+safevalues.reportOnlyHtmlPassthrough =
+    module$contents$safevalues$reporting$reporting_reportOnlyHtmlPassthrough
+safevalues.createHtml = module$exports$safevalues$index.createHtml
+safevalues.safeStyleRule = module$exports$safevalues$index.safeStyleRule
 ee.layers.ImageOverlay = function (tileSource, opt_options) {
     ee.layers.AbstractOverlay.call(this, tileSource, opt_options)
 }
@@ -48312,10 +50881,14 @@ ee.layers.ImageTile = function (coord, zoom, ownerDocument, uniqueId) {
 $jscomp.inherits(ee.layers.ImageTile, ee.layers.AbstractTile)
 ee.layers.ImageTile.prototype.finishLoad = function () {
     try {
-        var safeUrl = goog.html.SafeUrl.fromBlob(this.sourceData)
-        this.objectUrl_ = goog.html.SafeUrl.unwrap(safeUrl)
+        var safeUrl =
+            module$contents$safevalues$builders$url_builders_objectUrlFromSafeSource(
+                this.sourceData
+            )
+        this.objectUrl_ =
+            module$contents$safevalues$internals$url_impl_unwrapUrl(safeUrl)
         var imageUrl =
-            this.objectUrl_ !== goog.html.SafeUrl.INNOCUOUS_STRING
+            this.objectUrl_ !== goog.html.SafeUrl.INNOCUOUS_URL.toString()
                 ? this.objectUrl_
                 : this.sourceUrl
     } catch (e) {
@@ -48717,8 +51290,8 @@ module$contents$goog$structs$Heap_Heap.prototype.insertAll = function (heap) {
         ;(keys = module$contents$goog$object_getKeys(heap)),
             (values = module$contents$goog$object_getValues(heap))
     }
-    for (var i$71 = 0; i$71 < keys.length; i$71++) {
-        this.insert(keys[i$71], values[i$71])
+    for (var i$jscomp$0 = 0; i$jscomp$0 < keys.length; i$jscomp$0++) {
+        this.insert(keys[i$jscomp$0], values[i$jscomp$0])
     }
 }
 module$contents$goog$structs$Heap_Heap.prototype.remove = function () {
@@ -49251,11 +51824,15 @@ ee.MapTileManager.Request_.prototype.start_ = function () {
                         ) || null
                     if (200 <= xhrIo.getStatus() && 300 > xhrIo.getStatus()) {
                         try {
-                            var objectUrl = goog.html.SafeUrl.unwrap(
-                                goog.html.SafeUrl.fromBlob(xhrIo.getResponse())
-                            )
+                            var objectUrl =
+                                module$contents$safevalues$internals$url_impl_unwrapUrl(
+                                    module$contents$safevalues$builders$url_builders_objectUrlFromSafeSource(
+                                        xhrIo.getResponse()
+                                    )
+                                )
                             var ok =
-                                objectUrl !== goog.html.SafeUrl.INNOCUOUS_STRING
+                                objectUrl !==
+                                goog.html.SafeUrl.INNOCUOUS_URL.toString()
                         } catch (e) {}
                     }
                     actuallyLoadImage(ok ? objectUrl : sourceUrl)
@@ -49652,31 +52229,21 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
 ;(function () {
     var exportedFnInfo = {},
         orderedFnNames =
-            'ee.ApiFunction.lookup ee.ApiFunction._apply ee.ApiFunction._call ee.batch.Export.image.toDrive ee.batch.Export.table.toAsset ee.batch.Export.classifier.toAsset ee.batch.Export.table.toDrive ee.batch.Export.video.toDrive ee.batch.Export.table.toFeatureView ee.batch.Export.videoMap.toCloudStorage ee.batch.Export.image.toAsset ee.batch.Export.image.toCloudStorage ee.batch.Export.video.toCloudStorage ee.batch.Export.map.toCloudStorage ee.batch.Export.table.toCloudStorage ee.Collection.prototype.map ee.Collection.prototype.filter ee.Collection.prototype.limit ee.Collection.prototype.iterate ee.Collection.prototype.filterMetadata ee.Collection.prototype.filterDate ee.Collection.prototype.sort ee.Collection.prototype.filterBounds ee.ComputedObject.prototype.evaluate ee.ComputedObject.prototype.aside ee.ComputedObject.prototype.getInfo ee.ComputedObject.prototype.serialize ee.data.getOperation ee.data.getList ee.data.listAssets ee.data.makeDownloadUrl ee.data.getAssetRoots ee.data.getMapId ee.data.startIngestion ee.data.createAssetHome ee.data.getAssetAcl ee.data.cancelOperation ee.data.listOperations ee.data.authenticate ee.data.listFeatures ee.data.setAssetAcl ee.data.getTaskList ee.data.createAsset ee.data.deleteAsset ee.data.makeThumbUrl ee.data.authenticateViaOauth ee.data.getFilmstripThumbId ee.data.getVideoThumbId ee.data.resetWorkloadTag ee.data.getThumbId ee.data.getFeatureViewTilesKey ee.data.setDefaultWorkloadTag ee.data.createFolder ee.data.setWorkloadTag ee.data.authenticateViaPopup ee.data.updateTask ee.data.startProcessing ee.data.copyAsset ee.data.getWorkloadTag ee.data.renameAsset ee.data.getTaskListWithLimit ee.data.getTileUrl ee.data.getTableDownloadId ee.data.computeValue ee.data.authenticateViaPrivateKey ee.data.getTaskStatus ee.data.getInfo ee.data.updateAsset ee.data.makeTableDownloadUrl ee.data.setAssetProperties ee.data.getAsset ee.data.getAssetRootQuota ee.data.startTableIngestion ee.data.listImages ee.data.newTaskId ee.data.cancelTask ee.data.listBuckets ee.data.getDownloadId ee.Date ee.Deserializer.fromCloudApiJSON ee.Deserializer.decode ee.Deserializer.fromJSON ee.Deserializer.decodeCloudApi ee.Dictionary ee.apply ee.call ee.initialize ee.TILE_SIZE ee.Algorithms ee.reset ee.InitState ee.Element.prototype.set ee.Feature ee.Feature.prototype.getMap ee.Feature.prototype.getInfo ee.FeatureCollection.prototype.select ee.FeatureCollection ee.FeatureCollection.prototype.getInfo ee.FeatureCollection.prototype.getDownloadURL ee.FeatureCollection.prototype.getMap ee.Filter.lt ee.Filter.and ee.Filter.or ee.Filter.gte ee.Filter.date ee.Filter.inList ee.Filter.prototype.not ee.Filter ee.Filter.metadata ee.Filter.eq ee.Filter.neq ee.Filter.bounds ee.Filter.gt ee.Filter.lte ee.Function.prototype.call ee.Function.prototype.apply ee.Geometry.Polygon ee.Geometry.prototype.toGeoJSON ee.Geometry.prototype.toGeoJSONString ee.Geometry.BBox ee.Geometry.LinearRing ee.Geometry.Point ee.Geometry.prototype.serialize ee.Geometry.MultiPolygon ee.Geometry ee.Geometry.MultiPoint ee.Geometry.MultiLineString ee.Geometry.Rectangle ee.Geometry.LineString ee.Image.prototype.clip ee.Image.prototype.expression ee.Image.prototype.rename ee.Image ee.Image.prototype.getMap ee.Image.prototype.getDownloadURL ee.Image.rgb ee.Image.prototype.getInfo ee.Image.prototype.getThumbURL ee.Image.prototype.getThumbId ee.Image.prototype.select ee.Image.cat ee.ImageCollection.prototype.getFilmstripThumbURL ee.ImageCollection.prototype.getVideoThumbURL ee.ImageCollection.prototype.getMap ee.ImageCollection.prototype.getInfo ee.ImageCollection.prototype.first ee.ImageCollection.prototype.select ee.ImageCollection ee.List ee.Number ee.Serializer.encode ee.Serializer.toJSON ee.Serializer.toReadableJSON ee.Serializer.encodeCloudApi ee.Serializer.toReadableCloudApiJSON ee.Serializer.encodeCloudApiPretty ee.Serializer.toCloudApiJSON ee.String ee.Terrain'.split(
+            'ee.ApiFunction.lookup ee.ApiFunction._apply ee.ApiFunction._call ee.batch.Export.table.toDrive ee.batch.Export.table.toAsset ee.batch.Export.table.toFeatureView ee.batch.Export.table.toBigQuery ee.batch.Export.image.toCloudStorage ee.batch.Export.video.toCloudStorage ee.batch.Export.map.toCloudStorage ee.batch.Export.video.toDrive ee.batch.Export.classifier.toAsset ee.batch.Export.image.toAsset ee.batch.Export.videoMap.toCloudStorage ee.batch.Export.table.toCloudStorage ee.batch.Export.image.toDrive ee.Collection.prototype.filterBounds ee.Collection.prototype.limit ee.Collection.prototype.map ee.Collection.prototype.filter ee.Collection.prototype.sort ee.Collection.prototype.iterate ee.Collection.prototype.filterDate ee.Collection.prototype.filterMetadata ee.ComputedObject.prototype.getInfo ee.ComputedObject.prototype.aside ee.ComputedObject.prototype.serialize ee.ComputedObject.prototype.evaluate ee.data.getFeatureViewTilesKey ee.data.createAsset ee.data.getList ee.data.getAssetAcl ee.data.listAssets ee.data.authenticate ee.data.makeTableDownloadUrl ee.data.listFeatures ee.data.getWorkloadTag ee.data.createAssetHome ee.data.makeDownloadUrl ee.data.getThumbId ee.data.getAssetRootQuota ee.data.getTableDownloadId ee.data.getVideoThumbId ee.data.getFilmstripThumbId ee.data.startIngestion ee.data.makeThumbUrl ee.data.computeValue ee.data.authenticateViaPrivateKey ee.data.getAssetRoots ee.data.listImages ee.data.setAssetProperties ee.data.getInfo ee.data.listBuckets ee.data.getDownloadId ee.data.setAssetAcl ee.data.getTaskListWithLimit ee.data.deleteAsset ee.data.cancelOperation ee.data.listOperations ee.data.getTaskList ee.data.copyAsset ee.data.resetWorkloadTag ee.data.updateAsset ee.data.renameAsset ee.data.getAsset ee.data.cancelTask ee.data.getMapId ee.data.newTaskId ee.data.createFolder ee.data.getOperation ee.data.setWorkloadTag ee.data.startTableIngestion ee.data.authenticateViaPopup ee.data.getTileUrl ee.data.setDefaultWorkloadTag ee.data.startProcessing ee.data.updateTask ee.data.getTaskStatus ee.data.authenticateViaOauth ee.Date ee.Deserializer.decodeCloudApi ee.Deserializer.decode ee.Deserializer.fromJSON ee.Deserializer.fromCloudApiJSON ee.Dictionary ee.InitState ee.TILE_SIZE ee.reset ee.call ee.initialize ee.apply ee.Algorithms ee.Element.prototype.set ee.Encodable.SourceFrame ee.Feature ee.Feature.prototype.getMap ee.Feature.prototype.getInfo ee.FeatureCollection.prototype.select ee.FeatureCollection ee.FeatureCollection.prototype.getInfo ee.FeatureCollection.prototype.getDownloadURL ee.FeatureCollection.prototype.getMap ee.Filter.gt ee.Filter.lte ee.Filter.lt ee.Filter.and ee.Filter.or ee.Filter.gte ee.Filter.date ee.Filter.inList ee.Filter ee.Filter.prototype.not ee.Filter.metadata ee.Filter.eq ee.Filter.neq ee.Filter.bounds ee.Function.prototype.apply ee.Function.prototype.call ee.Geometry.MultiLineString ee.Geometry.Rectangle ee.Geometry.LineString ee.Geometry.Polygon ee.Geometry.prototype.toGeoJSON ee.Geometry.prototype.toGeoJSONString ee.Geometry.Point ee.Geometry.BBox ee.Geometry.LinearRing ee.Geometry.prototype.serialize ee.Geometry.MultiPolygon ee.Geometry ee.Geometry.MultiPoint ee.Image.cat ee.Image.prototype.expression ee.Image ee.Image.prototype.rename ee.Image.prototype.getMap ee.Image.prototype.getDownloadURL ee.Image.prototype.getInfo ee.Image.rgb ee.Image.prototype.getThumbURL ee.Image.prototype.getThumbId ee.Image.prototype.clip ee.Image.prototype.select ee.ImageCollection.prototype.getFilmstripThumbURL ee.ImageCollection.prototype.getVideoThumbURL ee.ImageCollection.prototype.getMap ee.ImageCollection.prototype.getInfo ee.ImageCollection.prototype.linkCollection ee.ImageCollection.prototype.select ee.ImageCollection.prototype.first ee.ImageCollection ee.List ee.Number ee.Serializer.toReadableCloudApiJSON ee.Serializer.encode ee.Serializer.toJSON ee.Serializer.encodeCloudApiPretty ee.Serializer.encodeCloudApi ee.Serializer.toReadableJSON ee.Serializer.toCloudApiJSON ee.String ee.Terrain'.split(
                 ' '
             ),
         orderedParamLists = [
             ['name'],
             ['name', 'namedArgs'],
             ['name', 'var_args'],
-            'image opt_description opt_folder opt_fileNamePrefix opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_shardSize opt_fileDimensions opt_skipEmptyTiles opt_fileFormat opt_formatOptions'.split(
-                ' '
-            ),
-            ['collection', 'opt_description', 'opt_assetId', 'opt_maxVertices'],
-            ['classifier', 'opt_description', 'opt_assetId'],
             'collection opt_description opt_folder opt_fileNamePrefix opt_fileFormat opt_selectors opt_maxVertices'.split(
                 ' '
             ),
-            'collection opt_description opt_folder opt_fileNamePrefix opt_framesPerSecond opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_maxFrames'.split(
-                ' '
-            ),
+            ['collection', 'opt_description', 'opt_assetId', 'opt_maxVertices'],
             'collection opt_description opt_assetId opt_maxFeaturesPerTile opt_thinningStrategy opt_thinningRanking opt_zOrderRanking'.split(
                 ' '
             ),
-            'collection opt_description opt_bucket opt_fileNamePrefix opt_framesPerSecond opt_writePublicTiles opt_minZoom opt_maxZoom opt_scale opt_region opt_skipEmptyTiles opt_minTimeMachineZoomSubset opt_maxTimeMachineZoomSubset opt_tileWidth opt_tileHeight opt_tileStride opt_videoFormat opt_version opt_mapsApiKey opt_bucketCorsUris'.split(
-                ' '
-            ),
-            'image opt_description opt_assetId opt_pyramidingPolicy opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_shardSize'.split(
+            'collection opt_description opt_table opt_overwrite opt_append opt_selectors opt_maxVertices'.split(
                 ' '
             ),
             'image opt_description opt_bucket opt_fileNamePrefix opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_shardSize opt_fileDimensions opt_skipEmptyTiles opt_fileFormat opt_formatOptions'.split(
@@ -49688,42 +52255,35 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
             'image opt_description opt_bucket opt_fileFormat opt_path opt_writePublicTiles opt_scale opt_maxZoom opt_minZoom opt_region opt_skipEmptyTiles opt_mapsApiKey opt_bucketCorsUris'.split(
                 ' '
             ),
+            'collection opt_description opt_folder opt_fileNamePrefix opt_framesPerSecond opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_maxFrames'.split(
+                ' '
+            ),
+            ['classifier', 'opt_description', 'opt_assetId'],
+            'image opt_description opt_assetId opt_pyramidingPolicy opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_shardSize'.split(
+                ' '
+            ),
+            'collection opt_description opt_bucket opt_fileNamePrefix opt_framesPerSecond opt_writePublicTiles opt_minZoom opt_maxZoom opt_scale opt_region opt_skipEmptyTiles opt_minTimeMachineZoomSubset opt_maxTimeMachineZoomSubset opt_tileWidth opt_tileHeight opt_tileStride opt_videoFormat opt_version opt_mapsApiKey opt_bucketCorsUris'.split(
+                ' '
+            ),
             'collection opt_description opt_bucket opt_fileNamePrefix opt_fileFormat opt_selectors opt_maxVertices'.split(
                 ' '
             ),
+            'image opt_description opt_folder opt_fileNamePrefix opt_dimensions opt_region opt_scale opt_crs opt_crsTransform opt_maxPixels opt_shardSize opt_fileDimensions opt_skipEmptyTiles opt_fileFormat opt_formatOptions'.split(
+                ' '
+            ),
+            ['geometry'],
+            ['max', 'opt_property', 'opt_ascending'],
             ['algorithm', 'opt_dropNulls'],
             ['filter'],
-            ['max', 'opt_property', 'opt_ascending'],
-            ['algorithm', 'opt_first'],
-            ['name', 'operator', 'value'],
-            ['start', 'opt_end'],
             ['property', 'opt_ascending'],
-            ['geometry'],
-            ['callback'],
+            ['algorithm', 'opt_first'],
+            ['start', 'opt_end'],
+            ['name', 'operator', 'value'],
+            ['opt_callback'],
             ['func', 'var_args'],
-            ['opt_callback'],
             ['legacy'],
-            ['operationName', 'opt_callback'],
+            ['callback'],
             ['params', 'opt_callback'],
-            ['parent', 'opt_params', 'opt_callback'],
-            ['id'],
-            ['opt_callback'],
-            ['params', 'opt_callback'],
-            ['taskId', 'request', 'opt_callback'],
-            ['requestedId', 'opt_callback'],
-            ['assetId', 'opt_callback'],
-            ['operationName', 'opt_callback'],
-            ['opt_limit', 'opt_callback'],
-            [
-                'clientId',
-                'success',
-                'opt_error',
-                'opt_extraScopes',
-                'opt_onImmediateFailed',
-            ],
-            ['asset', 'params', 'opt_callback'],
-            ['assetId', 'aclUpdate', 'opt_callback'],
-            ['opt_callback'],
             [
                 'value',
                 'opt_path',
@@ -49731,28 +52291,28 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
                 'opt_properties',
                 'opt_callback',
             ],
+            ['params', 'opt_callback'],
             ['assetId', 'opt_callback'],
+            ['parent', 'opt_params', 'opt_callback'],
+            [
+                'clientId',
+                'success',
+                'opt_error',
+                'opt_extraScopes',
+                'opt_onImmediateFailed',
+            ],
             ['id'],
-            'clientId success opt_error opt_extraScopes opt_onImmediateFailed opt_suppressDefaultScopes'.split(
-                ' '
-            ),
-            ['params', 'opt_callback'],
-            ['params', 'opt_callback'],
-            ['opt_resetDefault'],
-            ['params', 'opt_callback'],
-            ['params', 'opt_callback'],
-            ['tag'],
-            ['path', 'opt_force', 'opt_callback'],
-            ['tag'],
-            ['opt_success', 'opt_error'],
-            ['taskId', 'action', 'opt_callback'],
-            ['taskId', 'params', 'opt_callback'],
-            ['sourceId', 'destinationId', 'opt_overwrite', 'opt_callback'],
+            ['asset', 'params', 'opt_callback'],
             [],
-            ['sourceId', 'destinationId', 'opt_callback'],
-            ['opt_limit', 'opt_callback'],
-            ['id', 'x', 'y', 'z'],
+            ['requestedId', 'opt_callback'],
+            ['id'],
             ['params', 'opt_callback'],
+            ['rootId', 'opt_callback'],
+            ['params', 'opt_callback'],
+            ['params', 'opt_callback'],
+            ['params', 'opt_callback'],
+            ['taskId', 'request', 'opt_callback'],
+            ['id'],
             ['obj', 'opt_callback'],
             [
                 'privateKey',
@@ -49761,35 +52321,56 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
                 'opt_extraScopes',
                 'opt_suppressDefaultScopes',
             ],
-            ['taskId', 'opt_callback'],
-            ['id', 'opt_callback'],
-            ['assetId', 'asset', 'updateFields', 'opt_callback'],
-            ['id'],
+            ['opt_callback'],
+            ['parent', 'opt_params', 'opt_callback'],
             ['assetId', 'properties', 'opt_callback'],
             ['id', 'opt_callback'],
-            ['rootId', 'opt_callback'],
-            ['taskId', 'request', 'opt_callback'],
-            ['parent', 'opt_params', 'opt_callback'],
-            ['opt_count', 'opt_callback'],
-            ['taskId', 'opt_callback'],
             ['project', 'opt_callback'],
             ['params', 'opt_callback'],
+            ['assetId', 'aclUpdate', 'opt_callback'],
+            ['opt_limit', 'opt_callback'],
+            ['assetId', 'opt_callback'],
+            ['operationName', 'opt_callback'],
+            ['opt_limit', 'opt_callback'],
+            ['opt_callback'],
+            ['sourceId', 'destinationId', 'opt_overwrite', 'opt_callback'],
+            ['opt_resetDefault'],
+            ['assetId', 'asset', 'updateFields', 'opt_callback'],
+            ['sourceId', 'destinationId', 'opt_callback'],
+            ['id', 'opt_callback'],
+            ['taskId', 'opt_callback'],
+            ['params', 'opt_callback'],
+            ['opt_count', 'opt_callback'],
+            ['path', 'opt_force', 'opt_callback'],
+            ['operationName', 'opt_callback'],
+            ['tag'],
+            ['taskId', 'request', 'opt_callback'],
+            ['opt_success', 'opt_error'],
+            ['id', 'x', 'y', 'z'],
+            ['tag'],
+            ['taskId', 'params', 'opt_callback'],
+            ['taskId', 'action', 'opt_callback'],
+            ['taskId', 'opt_callback'],
+            'clientId success opt_error opt_extraScopes opt_onImmediateFailed opt_suppressDefaultScopes'.split(
+                ' '
+            ),
             ['date', 'opt_tz'],
             ['json'],
             ['json'],
             ['json'],
             ['json'],
             ['opt_dict'],
-            ['func', 'namedArgs'],
+            [],
+            [],
+            [],
             ['func', 'var_args'],
             'opt_baseurl opt_tileurl opt_successCallback opt_errorCallback opt_xsrfToken opt_project'.split(
                 ' '
             ),
-            [],
-            [],
-            [],
+            ['func', 'namedArgs'],
             [],
             ['var_args'],
+            [],
             ['geometry', 'opt_properties'],
             ['opt_visParams', 'opt_callback'],
             ['opt_callback'],
@@ -49798,6 +52379,8 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
             ['opt_callback'],
             ['opt_format', 'opt_selectors', 'opt_filename', 'opt_callback'],
             ['opt_visParams', 'opt_callback'],
+            ['name', 'value'],
+            ['name', 'value'],
             ['name', 'value'],
             ['var_args'],
             ['var_args'],
@@ -49809,16 +52392,17 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
                 'opt_rightField',
                 'opt_leftValue',
             ],
-            [],
             ['opt_filter'],
+            [],
             ['name', 'operator', 'value'],
             ['name', 'value'],
             ['name', 'value'],
             ['geometry', 'opt_errorMargin'],
-            ['name', 'value'],
-            ['name', 'value'],
-            ['var_args'],
             ['namedArgs'],
+            ['var_args'],
+            ['coords', 'opt_proj', 'opt_geodesic', 'opt_maxError'],
+            ['coords', 'opt_proj', 'opt_geodesic', 'opt_evenOdd'],
+            ['coords', 'opt_proj', 'opt_geodesic', 'opt_maxError'],
             [
                 'coords',
                 'opt_proj',
@@ -49828,9 +52412,9 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
             ],
             [],
             [],
+            ['coords', 'opt_proj'],
             ['west', 'south', 'east', 'north'],
             ['coords', 'opt_proj', 'opt_geodesic', 'opt_maxError'],
-            ['coords', 'opt_proj'],
             ['legacy'],
             [
                 'coords',
@@ -49841,32 +52425,35 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
             ],
             ['geoJson', 'opt_proj', 'opt_geodesic', 'opt_evenOdd'],
             ['coords', 'opt_proj'],
-            ['coords', 'opt_proj', 'opt_geodesic', 'opt_maxError'],
-            ['coords', 'opt_proj', 'opt_geodesic', 'opt_evenOdd'],
-            ['coords', 'opt_proj', 'opt_geodesic', 'opt_maxError'],
-            ['geometry'],
+            ['var_args'],
             ['expression', 'opt_map'],
-            ['var_args'],
             ['opt_args'],
+            ['var_args'],
             ['opt_visParams', 'opt_callback'],
             ['params', 'opt_callback'],
+            ['opt_callback'],
             ['r', 'g', 'b'],
-            ['opt_callback'],
             ['params', 'opt_callback'],
             ['params', 'opt_callback'],
-            ['var_args'],
+            ['geometry'],
             ['var_args'],
             ['params', 'opt_callback'],
             ['params', 'opt_callback'],
             ['opt_visParams', 'opt_callback'],
             ['opt_callback'],
-            [],
+            [
+                'imageCollection',
+                'opt_linkedBands',
+                'opt_linkedProperties',
+                'opt_matchPropertyName',
+            ],
             ['selectors', 'opt_names'],
+            [],
             ['args'],
             ['list'],
             ['number'],
-            ['obj', 'opt_isCompound'],
             ['obj'],
+            ['obj', 'opt_isCompound'],
             ['obj'],
             ['obj'],
             ['obj'],
@@ -49879,95 +52466,97 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
         ee.ApiFunction.lookup,
         ee.ApiFunction._apply,
         ee.ApiFunction._call,
-        module$contents$ee$batch_Export.image.toDrive,
-        module$contents$ee$batch_Export.table.toAsset,
-        module$contents$ee$batch_Export.classifier.toAsset,
         module$contents$ee$batch_Export.table.toDrive,
-        module$contents$ee$batch_Export.video.toDrive,
+        module$contents$ee$batch_Export.table.toAsset,
         module$contents$ee$batch_Export.table.toFeatureView,
-        module$contents$ee$batch_Export.videoMap.toCloudStorage,
-        module$contents$ee$batch_Export.image.toAsset,
+        module$contents$ee$batch_Export.table.toBigQuery,
         module$contents$ee$batch_Export.image.toCloudStorage,
         module$contents$ee$batch_Export.video.toCloudStorage,
         module$contents$ee$batch_Export.map.toCloudStorage,
+        module$contents$ee$batch_Export.video.toDrive,
+        module$contents$ee$batch_Export.classifier.toAsset,
+        module$contents$ee$batch_Export.image.toAsset,
+        module$contents$ee$batch_Export.videoMap.toCloudStorage,
         module$contents$ee$batch_Export.table.toCloudStorage,
+        module$contents$ee$batch_Export.image.toDrive,
+        ee.Collection.prototype.filterBounds,
+        ee.Collection.prototype.limit,
         ee.Collection.prototype.map,
         ee.Collection.prototype.filter,
-        ee.Collection.prototype.limit,
-        ee.Collection.prototype.iterate,
-        ee.Collection.prototype.filterMetadata,
-        ee.Collection.prototype.filterDate,
         ee.Collection.prototype.sort,
-        ee.Collection.prototype.filterBounds,
-        ee.ComputedObject.prototype.evaluate,
-        ee.ComputedObject.prototype.aside,
+        ee.Collection.prototype.iterate,
+        ee.Collection.prototype.filterDate,
+        ee.Collection.prototype.filterMetadata,
         ee.ComputedObject.prototype.getInfo,
+        ee.ComputedObject.prototype.aside,
         ee.ComputedObject.prototype.serialize,
-        ee.data.getOperation,
-        ee.data.getList,
-        ee.data.listAssets,
-        ee.data.makeDownloadUrl,
-        ee.data.getAssetRoots,
-        ee.data.getMapId,
-        ee.data.startIngestion,
-        ee.data.createAssetHome,
-        ee.data.getAssetAcl,
-        ee.data.cancelOperation,
-        ee.data.listOperations,
-        ee.data.authenticate,
-        ee.data.listFeatures,
-        ee.data.setAssetAcl,
-        ee.data.getTaskList,
-        ee.data.createAsset,
-        ee.data.deleteAsset,
-        ee.data.makeThumbUrl,
-        ee.data.authenticateViaOauth,
-        ee.data.getFilmstripThumbId,
-        ee.data.getVideoThumbId,
-        ee.data.resetWorkloadTag,
-        ee.data.getThumbId,
+        ee.ComputedObject.prototype.evaluate,
         ee.data.getFeatureViewTilesKey,
-        ee.data.setDefaultWorkloadTag,
-        ee.data.createFolder,
-        ee.data.setWorkloadTag,
-        ee.data.authenticateViaPopup,
-        ee.data.updateTask,
-        ee.data.startProcessing,
-        ee.data.copyAsset,
+        ee.data.createAsset,
+        ee.data.getList,
+        ee.data.getAssetAcl,
+        ee.data.listAssets,
+        ee.data.authenticate,
+        ee.data.makeTableDownloadUrl,
+        ee.data.listFeatures,
         ee.data.getWorkloadTag,
-        ee.data.renameAsset,
-        ee.data.getTaskListWithLimit,
-        ee.data.getTileUrl,
+        ee.data.createAssetHome,
+        ee.data.makeDownloadUrl,
+        ee.data.getThumbId,
+        ee.data.getAssetRootQuota,
         ee.data.getTableDownloadId,
+        ee.data.getVideoThumbId,
+        ee.data.getFilmstripThumbId,
+        ee.data.startIngestion,
+        ee.data.makeThumbUrl,
         ee.data.computeValue,
         ee.data.authenticateViaPrivateKey,
-        ee.data.getTaskStatus,
-        ee.data.getInfo,
-        ee.data.updateAsset,
-        ee.data.makeTableDownloadUrl,
-        ee.data.setAssetProperties,
-        ee.data.getAsset,
-        ee.data.getAssetRootQuota,
-        ee.data.startTableIngestion,
+        ee.data.getAssetRoots,
         ee.data.listImages,
-        ee.data.newTaskId,
-        ee.data.cancelTask,
+        ee.data.setAssetProperties,
+        ee.data.getInfo,
         ee.data.listBuckets,
         ee.data.getDownloadId,
+        ee.data.setAssetAcl,
+        ee.data.getTaskListWithLimit,
+        ee.data.deleteAsset,
+        ee.data.cancelOperation,
+        ee.data.listOperations,
+        ee.data.getTaskList,
+        ee.data.copyAsset,
+        ee.data.resetWorkloadTag,
+        ee.data.updateAsset,
+        ee.data.renameAsset,
+        ee.data.getAsset,
+        ee.data.cancelTask,
+        ee.data.getMapId,
+        ee.data.newTaskId,
+        ee.data.createFolder,
+        ee.data.getOperation,
+        ee.data.setWorkloadTag,
+        ee.data.startTableIngestion,
+        ee.data.authenticateViaPopup,
+        ee.data.getTileUrl,
+        ee.data.setDefaultWorkloadTag,
+        ee.data.startProcessing,
+        ee.data.updateTask,
+        ee.data.getTaskStatus,
+        ee.data.authenticateViaOauth,
         ee.Date,
-        ee.Deserializer.fromCloudApiJSON,
+        ee.Deserializer.decodeCloudApi,
         ee.Deserializer.decode,
         ee.Deserializer.fromJSON,
-        ee.Deserializer.decodeCloudApi,
+        ee.Deserializer.fromCloudApiJSON,
         ee.Dictionary,
-        ee.apply,
+        ee.InitState,
+        ee.TILE_SIZE,
+        ee.reset,
         ee.call,
         ee.initialize,
-        ee.TILE_SIZE,
+        ee.apply,
         ee.Algorithms,
-        ee.reset,
-        ee.InitState,
         ee.Element.prototype.set,
+        ee.Encodable.SourceFrame,
         ee.Feature,
         ee.Feature.prototype.getMap,
         ee.Feature.prototype.getInfo,
@@ -49976,62 +52565,63 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
         ee.FeatureCollection.prototype.getInfo,
         ee.FeatureCollection.prototype.getDownloadURL,
         ee.FeatureCollection.prototype.getMap,
+        ee.Filter.gt,
+        ee.Filter.lte,
         ee.Filter.lt,
         ee.Filter.and,
         ee.Filter.or,
         ee.Filter.gte,
         ee.Filter.date,
         ee.Filter.inList,
-        ee.Filter.prototype.not,
         ee.Filter,
+        ee.Filter.prototype.not,
         ee.Filter.metadata,
         ee.Filter.eq,
         ee.Filter.neq,
         ee.Filter.bounds,
-        ee.Filter.gt,
-        ee.Filter.lte,
-        ee.Function.prototype.call,
         ee.Function.prototype.apply,
+        ee.Function.prototype.call,
+        ee.Geometry.MultiLineString,
+        ee.Geometry.Rectangle,
+        ee.Geometry.LineString,
         ee.Geometry.Polygon,
         ee.Geometry.prototype.toGeoJSON,
         ee.Geometry.prototype.toGeoJSONString,
+        ee.Geometry.Point,
         ee.Geometry.BBox,
         ee.Geometry.LinearRing,
-        ee.Geometry.Point,
         ee.Geometry.prototype.serialize,
         ee.Geometry.MultiPolygon,
         ee.Geometry,
         ee.Geometry.MultiPoint,
-        ee.Geometry.MultiLineString,
-        ee.Geometry.Rectangle,
-        ee.Geometry.LineString,
-        ee.Image.prototype.clip,
+        ee.Image.cat,
         ee.Image.prototype.expression,
-        ee.Image.prototype.rename,
         ee.Image,
+        ee.Image.prototype.rename,
         ee.Image.prototype.getMap,
         ee.Image.prototype.getDownloadURL,
-        ee.Image.rgb,
         ee.Image.prototype.getInfo,
+        ee.Image.rgb,
         ee.Image.prototype.getThumbURL,
         ee.Image.prototype.getThumbId,
+        ee.Image.prototype.clip,
         ee.Image.prototype.select,
-        ee.Image.cat,
         ee.ImageCollection.prototype.getFilmstripThumbURL,
         ee.ImageCollection.prototype.getVideoThumbURL,
         ee.ImageCollection.prototype.getMap,
         ee.ImageCollection.prototype.getInfo,
-        ee.ImageCollection.prototype.first,
+        ee.ImageCollection.prototype.linkCollection,
         ee.ImageCollection.prototype.select,
+        ee.ImageCollection.prototype.first,
         ee.ImageCollection,
         ee.List,
         ee.Number,
+        ee.Serializer.toReadableCloudApiJSON,
         ee.Serializer.encode,
         ee.Serializer.toJSON,
-        ee.Serializer.toReadableJSON,
-        ee.Serializer.encodeCloudApi,
-        ee.Serializer.toReadableCloudApiJSON,
         ee.Serializer.encodeCloudApiPretty,
+        ee.Serializer.encodeCloudApi,
+        ee.Serializer.toReadableJSON,
         ee.Serializer.toCloudApiJSON,
         ee.String,
         ee.Terrain,
