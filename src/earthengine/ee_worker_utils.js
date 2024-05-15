@@ -1,4 +1,4 @@
-import ee from './ee_api_js_worker'
+import ee from '@google/earthengine/build/browser.js' // this is a patched version of the ee module
 
 const squareMetersToHectares = value => value / 10000
 
