@@ -1,6 +1,5 @@
 import { expose } from 'comlink'
-import ee from './ee_api_js_worker' // https://github.com/google/earthengine-api/pull/173
-// import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
+import ee from '@google/earthengine/build/browser.js' // this is a patched version of the ee module
 import {
     getInfo,
     getScale,
@@ -14,9 +13,6 @@ import {
     applyCloudMask,
 } from './ee_worker_utils'
 import { getBufferGeometry } from '../utils/buffers'
-
-// Why we need to "hack" the '@google/earthengine bundle:
-// https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
 
 const IMAGE = 'Image'
 const IMAGE_COLLECTION = 'ImageCollection'
