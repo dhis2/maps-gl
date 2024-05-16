@@ -343,7 +343,8 @@ class Layer extends Evented {
             const { properties } = feature
             const content = (hoverLabel || label).replace(
                 /\{ *([\w_-]+) *\}/g,
-                (str, key) => properties[key] || (key === 'value' ? 'no data' : '')
+                (str, key) =>
+                    properties[key] || (key === 'value' ? 'no data' : '')
             )
 
             this._map.showLabel(content, evt.lngLat)
