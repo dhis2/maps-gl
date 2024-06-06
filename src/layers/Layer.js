@@ -36,6 +36,8 @@ class Layer extends Evented {
         const layers = this.getLayers()
         const beforeId = map.getBeforeLayerId()
 
+        this.locale = mapgl._getUIString.bind(mapgl)
+
         if (images) {
             try {
                 await addImages(mapgl, images)
@@ -343,7 +345,9 @@ class Layer extends Evented {
             const { properties } = feature
             const content = (hoverLabel || label).replace(
                 /\{ *([\w_-]+) *\}/g,
-                (str, key) => properties[key] || ''
+                (str, key) =>
+                    properties[key] ||
+                    (key === 'value' ? this.locale('HoverLabel.NoData') : '')
             )
 
             this._map.showLabel(content, evt.lngLat)
