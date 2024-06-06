@@ -1,3 +1,10 @@
+## [3.9.2](https://github.com/dhis2/maps-gl/compare/v3.9.1...v3.9.2) (2024-06-06)
+
+
+### Bug Fixes
+
+* unclear 'show no data' ([#573](https://github.com/dhis2/maps-gl/issues/573)) ([1c31fcc](https://github.com/dhis2/maps-gl/commit/1c31fcc20b700e5dadeec1d6c6e4f82484f262f5))
+
 ## [3.9.1](https://github.com/dhis2/maps-gl/compare/v3.9.0...v3.9.1) (2024-03-13)
 
 
