@@ -46,7 +46,7 @@ To test changes in a development branch, change the maps-gl dependency of packag
 
 ```
 "dependencies": {
-        "@dhis2/analytics": "git+https://github.com/d2-ci/maps-gl.git#70249ebe8be39051fa10142f850de449e1ec488c",
+        "@dhis2/maps-gl": "git+https://github.com/d2-ci/maps-gl.git#70249ebe8be39051fa10142f850de449e1ec488c",
         ...
 }
 ```
@@ -55,7 +55,7 @@ To test changes in a development branch, change the maps-gl dependency of packag
 
 ```
 "dependencies": {
-        "@dhis2/analytics": "git+https://github.com/d2-ci/maps-gl.git#chore/some-chore",
+        "@dhis2/maps-gl": "git+https://github.com/d2-ci/maps-gl.git#chore/some-chore",
         ...
 }
 ```
