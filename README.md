@@ -36,6 +36,30 @@ Both of these commands will run the javascript files in the `src` directory thro
 
 Publication is done automatically by a GitHub action for all commits on the `master` branch. Commits (including pull-request squashed commits) should follow the [Conventional Commit](https://www.conventionalcommits.org/en/v1.0.0/) guidelines so that the release bot can determine which version to cut - breaking, feature, or bug
 
+## Publishing pre-release versions during app development
+
+Builds for all non-production branches are automatically copied to [d2-ci/maps-gl](https://github.com/d2-ci/maps-gl) for use during development and testing, prior to production release.
+
+To test changes in a development branch, change the maps-gl dependency of package.json of the app you are testing with. There are a few options:
+
+1. point to a specific commit:
+
+```
+"dependencies": {
+        "@dhis2/analytics": "git+https://github.com/d2-ci/maps-gl.git#70249ebe8be39051fa10142f850de449e1ec488c",
+        ...
+}
+```
+
+2. point to a branch:
+
+```
+"dependencies": {
+        "@dhis2/analytics": "git+https://github.com/d2-ci/maps-gl.git#chore/some-chore",
+        ...
+}
+```
+
 ## Report an issue
 
 The issue tracker can be found in [DHIS2 JIRA](https://jira.dhis2.org)
