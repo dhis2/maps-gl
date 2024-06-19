@@ -7,13 +7,13 @@ updates:
       open-pull-requests-limit: 5
       versioning-strategy: increase
       groups:
-          dependencies:
-              applies-to: version-updates
+          security:
+              applies-to: security-updates
               update-types:
                   - minor
                   - patch
-          security:
-              applies-to: security-updates
+          dependencies:
+              applies-to: version-updates
               update-types:
                   - minor
                   - patch
