@@ -9,6 +9,7 @@ import {
     getClassifiedImage,
     getHistogramStatistics,
     getFeatureCollectionProperties,
+    getFeatureCollectionPropertiesArray,
 } from './ee_worker_utils'
 import { getBufferGeometry } from '../utils/buffers'
 
@@ -317,6 +318,74 @@ class EarthEngineWorker {
                 return getInfo(aggFeatures).then(getFeatureCollectionProperties)
             } else throw new Error('Aggregation type is not valid')
         } else throw new Error('Missing org unit features')
+    }
+
+    // Returns time series data for a geometry supporting multiple bands and reducers
+    async getTimeSeries(config, geometry) {
+        const {
+            datasetId,
+            band,
+            filters = [],
+            reducer = 'mean',
+            sharedInputs = false,
+        } = config
+
+        let collection = ee.ImageCollection(datasetId)
+
+        const eeScale = getScale(collection.first())
+
+        if (band) {
+            collection = collection.select(band)
+        }
+
+        // Apply array of filters
+        filters.forEach(f => {
+            collection = collection.filter(
+                ee.Filter[f.type].apply(this, f.arguments)
+            )
+        })
+
+        const { type, coordinates } = geometry
+        const eeGeometry = ee.Geometry[type](coordinates)
+
+        let eeReducer
+
+        if (Array.isArray(reducer)) {
+            // Combine multiple reducers
+            // sharedInputs = true means that all reducers are applied to all bands
+            // sharedInouts = false means one reducer for each band
+            eeReducer = reducer.reduce(
+                (r, t, i) =>
+                    i === 0
+                        ? r[t]().unweighted()
+                        : r.combine({
+                              reducer2: ee.Reducer[t]().unweighted(),
+                              outputPrefix: sharedInputs ? '' : String(i),
+                              sharedInputs,
+                          }),
+                ee.Reducer
+            )
+
+            if (!sharedInputs && Array.isArray(band)) {
+                // Use band names as output names
+                eeReducer = eeReducer.setOutputs(band)
+            }
+        } else {
+            // Single reducer
+            eeReducer = ee.Reducer[reducer]()
+        }
+
+        // Retruns a time series array of objects
+        return getInfo(
+            ee.FeatureCollection(
+                collection.map(image =>
+                    ee.Feature(
+                        null,
+                        image.reduceRegion(eeReducer, eeGeometry, eeScale)
+                    )
+                )
+            )
+        ).then(getFeatureCollectionPropertiesArray)
     }
 }
 
