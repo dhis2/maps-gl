@@ -1253,7 +1253,7 @@
     minimatch "^3.0.4"
     strip-json-comments "^3.1.1"
 
-"@google/earthengine@^0.1.402":
+"@google/earthengine@^0.1.408":
   version "0.1.408"
   resolved "https://registry.yarnpkg.com/@google/earthengine/-/earthengine-0.1.408.tgz#8ef9ac43cc4626dc1ab23aa422def2cfac463090"
   integrity sha512-hdEcceCv4dACPcv7rRFRZ/4ghF68mBNbUpdqtJoYHCmgQwpRFb07/ZcffxC+YEbPLmQfffG5tmjuzhOEMpwVCg==

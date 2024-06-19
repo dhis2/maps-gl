@@ -18,7 +18,7 @@
     ],
     "license": "BSD-3-Clause",
     "dependencies": {
-        "@google/earthengine": "^0.1.402",
+        "@google/earthengine": "^0.1.408",
         "@mapbox/sphericalmercator": "^1.2.0",
         "@turf/area": "^6.5.0",
         "@turf/bbox": "^6.5.0",
