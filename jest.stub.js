@@ -6,6 +6,7 @@ global.mockMapGL = {
     getLayer: jest.fn(),
     getSource: jest.fn(),
     setFeatureState: jest.fn(),
+    _getUIString: jest.fn(),
 }
 
 global.mockMap = {
