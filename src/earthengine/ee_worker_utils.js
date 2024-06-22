@@ -161,9 +161,9 @@ export const applyMethods = (eeImage, methods = []) => {
 
 // Mask out clouds from satellite images
 export const applyCloudMask = (collection, cloudScore) => {
-    const { datasetId, band, clearTreshold } = cloudScore
+    const { datasetId, band, clearThreshold } = cloudScore
 
     return collection
         .linkCollection(ee.ImageCollection(datasetId), [band])
-        .map(img => img.updateMask(img.select(band).gte(clearTreshold)))
+        .map(img => img.updateMask(img.select(band).gte(clearThreshold)))
 }
