@@ -1,8 +1,8 @@
 diff --git a/node_modules/@google/earthengine/build/browser.js b/node_modules/@google/earthengine/build/browser.js
-index 1513223..18b6d65 100644
+index 99457a7..e371e77 100644
 --- a/node_modules/@google/earthengine/build/browser.js
 +++ b/node_modules/@google/earthengine/build/browser.js
-@@ -26821,6 +26821,12 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format("json");
+@@ -26828,6 +26828,12 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format("json");
    goog.global.EXPORTED_FN_INFO = exportedFnInfo;
  })();
  

@@ -6,8 +6,6 @@ export const numberPrecision = d => {
 
     const m = Math.pow(10, d)
 
-    console.log('numberPrecision', d, m)
-
     return n => Math.round(n * m) / m
 }
 
@@ -23,3 +21,7 @@ export const setPrecision = (value, precision) =>
     )(value)
 
 export const kmToMiles = value => value * 0.621371192
+
+export const squareMetersToHectares = value => value / 10000
+
+export const squareMetersToAcres = value => value / 4046.8564224

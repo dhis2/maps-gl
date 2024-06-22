@@ -1,8 +1,5 @@
 import ee from '@google/earthengine/build/browser.js' // this is a patched version of the ee module
-
-const squareMetersToHectares = value => value / 10000
-
-const squareMetersToAcres = value => value / 4046.8564224
+import { squareMetersToHectares, squareMetersToAcres } from '../utils/numbers'
 
 const classAggregation = ['percentage', 'hectares', 'acres']
 
