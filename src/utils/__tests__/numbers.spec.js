@@ -28,6 +28,13 @@ describe('numbers', () => {
         expect(setPrecision(78.312321312)).toBe(78.3)
         expect(setPrecision(8.312321312)).toBe(8.31)
         expect(setPrecision(0.312321312)).toBe(0.312)
+
+        expect(setPrecision(0.12345, 0)).toBe(0)
+        expect(setPrecision(0.12345, 1)).toBe(0.1)
+        expect(setPrecision(0.12345, 2)).toBe(0.12)
+        expect(setPrecision(0.12345, 3)).toBe(0.123)
+        expect(setPrecision(0.12345, 4)).toBe(0.1234) // ???
+        expect(setPrecision(0.12345, 5)).toBe(0.12345)
     })
 
     it('Should convert km to miles', () => {
