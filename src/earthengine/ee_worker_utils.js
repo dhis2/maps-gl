@@ -1,8 +1,5 @@
 import ee from '@google/earthengine/build/browser.js' // this is a patched version of the ee module
-
-const squareMetersToHectares = value => value / 10000
-
-const squareMetersToAcres = value => value / 4046.8564224
+import { squareMetersToHectares, squareMetersToAcres } from '../utils/numbers'
 
 const classAggregation = ['percentage', 'hectares', 'acres']
 
@@ -164,9 +161,9 @@ export const applyMethods = (eeImage, methods = []) => {
 
 // Mask out clouds from satellite images
 export const applyCloudMask = (collection, cloudScore) => {
-    const { datasetId, band, clearTreshold } = cloudScore
+    const { datasetId, band, clearThreshold } = cloudScore
 
     return collection
         .linkCollection(ee.ImageCollection(datasetId), [band])
-        .map(img => img.updateMask(img.select(band).gte(clearTreshold)))
+        .map(img => img.updateMask(img.select(band).gte(clearThreshold)))
 }
