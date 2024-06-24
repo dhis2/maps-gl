@@ -61,7 +61,6 @@
         "build:modules": "BABEL_ENV=modules babel src --out-dir ./build/es --copy-files --verbose",
         "build": "NODE_ENV=production yarn clean && yarn build:commonjs && yarn build:modules",
         "watch": "NODE_ENV=development yarn clean && concurrently -n watch-cjs,watch-es \"yarn build:commonjs --watch\" \"yarn build:modules --watch\"",
-        "postinstall": "patch-package",
         "test": "jest src/*",
         "prepare": "husky"
     },
