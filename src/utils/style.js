@@ -16,7 +16,8 @@ export const clusterCountColor = '#000000'
 export const opacity = 1
 
 export const defaultGlyphs =
-    'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf'
+    'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf' // support: Open
+//'https://demotiles.maplibre.org/{fontstack}/{range}.pbf' // support: Noto
 
 export const mapStyle = ({ glyphs = defaultGlyphs }) => ({
     version: 8,

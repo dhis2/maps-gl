@@ -4,10 +4,11 @@ import { featureCollection } from './geometry'
 import defaults from './style'
 
 // Default fonts
+const fontName = 'Noto' // 'Open' / 'Noto'
 const fonts = {
-    'normal-normal': 'Open Sans Regular',
-    'normal-bold': 'Open Sans Bold',
-    'italic-normal': 'Open Sans Italic',
+    'normal-normal': `${fontName} Sans Regular`,
+    'normal-bold': `${fontName} Sans Bold`,
+    'italic-normal': `${fontName} Sans Italic`,
     'italic-bold': 'Open Sans Bold Italic',
 }
 
@@ -55,7 +56,9 @@ export const labelLayer = ({
         id: `${id}-label`,
         source: `${id}-label`,
         layout: {
-            'text-field': label || '{name}',
+            'text-field':
+                'L+ຂໍ້ມູນ J+よっ国連 C+人生而自發布掰 A+يولد M+နိုင်ငံ B+সমতন E+የሰውል ' +
+                (label || '{name}'),
             'text-font': [fonts[font]],
             'text-size': size,
             'text-anchor': ['get', 'anchor'],
