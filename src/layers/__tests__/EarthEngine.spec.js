@@ -61,7 +61,7 @@ const params = {
     palette: '#ffffd4,#fee391,#fec44f,#fe9929,#d95f0e,#993404',
 }
 
-const legend = [
+const style = [
     { color: '#ffffd4', from: 0, to: 300 },
     { color: '#fee391', from: 300, to: 600 },
     { color: '#fec44f', from: 600, to: 900 },
@@ -78,7 +78,7 @@ const options = {
     filter,
     data,
     params,
-    legend,
+    style,
     buffer,
     onLoad,
 }
