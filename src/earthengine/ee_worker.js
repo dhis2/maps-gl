@@ -1,5 +1,5 @@
 import { expose } from 'comlink'
-import ee from '@google/earthengine/build/browser.js' // this is a patched version of the ee module
+import ee from './ee_api_js_worker' // https://github.com/google/earthengine-api/pull/173
 import {
     getInfo,
     getScale,

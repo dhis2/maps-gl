@@ -1,4 +1,4 @@
-import ee from '@google/earthengine/build/browser.js' // this is a patched version of the ee module
+import ee from './ee_api_js_worker'
 import { squareMetersToHectares, squareMetersToAcres } from '../utils/numbers'
 
 const classAggregation = ['percentage', 'hectares', 'acres']
