@@ -26,7 +26,7 @@
         "@turf/circle": "^6.5.0",
         "@turf/length": "^6.5.0",
         "comlink": "^4.4.1",
-        "fetch-jsonp": "^1.3.0",
+        "fetch-jsonp": "^1.2.3",
         "lodash.throttle": "^4.1.1",
         "maplibre-gl": "^2.4.0",
         "polylabel": "^1.1.0",
