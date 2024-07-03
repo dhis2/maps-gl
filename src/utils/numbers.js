@@ -1,5 +1,6 @@
 // Rounds a number to d decimals
 export const numberPrecision = d => {
+    console.log('numberPrecision')
     if (d === undefined) {
         return n => n
     }
