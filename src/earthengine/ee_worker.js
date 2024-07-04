@@ -1,5 +1,7 @@
 import { expose } from 'comlink'
-import ee from './ee_api_js_worker' // https://github.com/google/earthengine-api/pull/173
+import { getBufferGeometry } from '../utils/buffers.js'
+import ee from './ee_api_js_worker.js' // https://github.com/google/earthengine-api/pull/173
+// import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
 import {
     getInfo,
     getScale,
@@ -11,8 +13,7 @@ import {
     applyFilter,
     applyMethods,
     applyCloudMask,
-} from './ee_worker_utils'
-import { getBufferGeometry } from '../utils/buffers'
+} from './ee_worker_utils.js'
 
 const IMAGE = 'Image'
 const IMAGE_COLLECTION = 'ImageCollection'
@@ -375,13 +376,18 @@ class EarthEngineWorker {
                 aggFeatures = aggFeatures.select(props, null, false)
 
                 return getInfo(aggFeatures).then(getFeatureCollectionProperties)
-            } else throw new Error('Aggregation type is not valid')
-        } else throw new Error('Missing org unit features')
+            } else {
+                throw new Error('Aggregation type is not valid')
+            }
+        } else {
+            throw new Error('Missing org unit features')
+        }
     }
 }
 
 // Service Worker not supported in Safari
 if (typeof onconnect !== 'undefined') {
+    // eslint-disable-next-line no-undef
     onconnect = evt => expose(EarthEngineWorker, evt.ports[0])
 } else {
     expose(EarthEngineWorker)
