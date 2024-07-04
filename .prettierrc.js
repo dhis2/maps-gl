@@ -1,4 +1,7 @@
+const { config } = require('@dhis2/cli-style')
+
 module.exports = {
+    ...require(config.prettier),
     printWidth: 80,
     tabWidth: 4,
     useTabs: false,
@@ -6,7 +9,7 @@ module.exports = {
     singleQuote: true,
     trailingComma: 'es5',
     bracketSpacing: true,
-    jsxBracketSameLine: false,
+    bracketSameLine: false,
     jsxSingleQuote: false,
     arrowParens: 'avoid',
     rangeStart: 0,
