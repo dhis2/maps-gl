@@ -1,11 +1,11 @@
-import Layer from './Layer'
-import getEarthEngineWorker from '../earthengine'
-import { defaultOptions, getWorkerOptions } from '../utils/earthengine'
-import { isPoint, featureCollection } from '../utils/geometry'
-import { getBufferGeometry } from '../utils/buffers'
-import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers'
-import { setPrecision } from '../utils/numbers'
-import { setTemplate } from '../utils/core'
+import getEarthEngineWorker from '../earthengine/index.js'
+import { getBufferGeometry } from '../utils/buffers.js'
+import { setTemplate } from '../utils/core.js'
+import { defaultOptions, getWorkerOptions } from '../utils/earthengine.js'
+import { isPoint, featureCollection } from '../utils/geometry.js'
+import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers.js'
+import { setPrecision } from '../utils/numbers.js'
+import Layer from './Layer.js'
 
 class EarthEngine extends Layer {
     constructor(options) {
