@@ -194,7 +194,7 @@ class EarthEngineWorker {
 
         return new Promise((resolve, reject) => {
             switch (format) {
-                case FEATURE_COLLECTION:
+                case FEATURE_COLLECTION: {
                     let dataset = ee.FeatureCollection(datasetId)
 
                     dataset = applyFilter(dataset, filter).draw({
@@ -213,8 +213,10 @@ class EarthEngineWorker {
                     )
 
                     break
+                }
                 case IMAGE:
-                case IMAGE_COLLECTION:
+                case IMAGE_COLLECTION: {
+                    // eslint-disable-next-line prefer-const
                     let { eeImage, params } = getClassifiedImage(
                         this.getImage(),
                         this.options
@@ -231,6 +233,7 @@ class EarthEngineWorker {
                         .getMap(null, response => resolve(response.urlFormat))
 
                     break
+                }
                 default:
                     reject(new Error('Unknown format'))
             }
