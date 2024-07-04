@@ -3,8 +3,6 @@ import {
     getPrecision,
     setPrecision,
     kmToMiles,
-    squareMetersToHectares,
-    squareMetersToAcres,
 } from '../numbers'
 
 describe('numbers', () => {

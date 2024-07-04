@@ -46,20 +46,21 @@
         "babel-jest": "^29.7.0",
         "babel-plugin-transform-import-meta": "^2.2.1",
         "concurrently": "^7.6.0",
-        "husky": "^9.0.11",
         "identity-obj-proxy": "^3.0.0",
         "jest": "^27.5.1",
         "rimraf": "^5.0.7"
     },
     "scripts": {
-        "format": "d2-style apply js --all --no-stage",
+        "lint": "yarn d2-style check",
+        "lint:staged": "yarn lint --staged",
+        "format": "yarn d2-style apply",
+        "format:staged": "yarn format --staged",
         "clean": "rimraf ./build/*",
         "build:commonjs": "BABEL_ENV=commonjs babel src --out-dir ./build/cjs --copy-files --verbose",
         "build:modules": "BABEL_ENV=modules babel src --out-dir ./build/es --copy-files --verbose",
         "build": "NODE_ENV=production yarn clean && yarn build:commonjs && yarn build:modules",
         "watch": "NODE_ENV=development yarn clean && concurrently -n watch-cjs,watch-es \"yarn build:commonjs --watch\" \"yarn build:modules --watch\"",
-        "test": "jest src/*",
-        "prepare": "husky"
+        "test": "jest src/*"
     },
     "jest": {
         "setupFiles": [
