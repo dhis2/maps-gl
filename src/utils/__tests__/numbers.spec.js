@@ -3,7 +3,9 @@ import {
     getPrecision,
     setPrecision,
     kmToMiles,
-} from '../numbers'
+    squareMetersToHectares,
+    squareMetersToAcres,
+} from '../numbers.js'
 
 describe('numbers', () => {
     it('numberPrecision should round number to x decimals', () => {
