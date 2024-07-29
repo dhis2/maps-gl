@@ -297,7 +297,7 @@ class EarthEngineWorker {
         // We need to unmask the image to get the correct population density
         if (unmaskAggregation || typeof unmaskAggregation === 'number') {
             image = image.unmask(
-                typeof unmaskAggregation === number
+                typeof unmaskAggregation === 'number'
                     ? unmaskAggregation
                     : DEFAULT_UNMASK_VALUE
             )
