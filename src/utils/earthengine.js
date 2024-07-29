@@ -22,6 +22,7 @@ const workerOptions = [
     'periodReducer',
     'style',
     'tileScale',
+    'unmaskAggregation',
     'useCentroid',
 ]
 
