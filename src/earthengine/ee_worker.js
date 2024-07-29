@@ -177,13 +177,6 @@ class EarthEngineWorker {
         // Run methods on image
         eeImage = applyMethods(eeImage, methods)
 
-        // Use mask operator (e.g. mask out values below a certain threshold)
-        if (maskOperator && eeImage[maskOperator]) {
-            eeImage = eeImage.updateMask(
-                eeImage[maskOperator](style?.min || DEFAULT_MASK_VALUE)
-            )
-        }
-
         this.eeImage = eeImage
 
         return eeImage
@@ -191,7 +184,8 @@ class EarthEngineWorker {
 
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { datasetId, format, data, filter, style } = this.options
+        const { datasetId, format, data, filter, maskOperator, style } =
+            this.options
 
         return new Promise((resolve, reject) => {
             switch (format) {
@@ -217,6 +211,16 @@ class EarthEngineWorker {
                 }
                 case IMAGE:
                 case IMAGE_COLLECTION: {
+                    // Use mask operator (e.g. mask out values below a certain threshold)
+                    // Only applied for tiles, not aggregations
+                    if (maskOperator && eeImage[maskOperator]) {
+                        eeImage = eeImage.updateMask(
+                            eeImage[maskOperator](
+                                style?.min || DEFAULT_MASK_VALUE
+                            )
+                        )
+                    }
+
                     // eslint-disable-next-line prefer-const
                     let { eeImage, params } = getClassifiedImage(
                         this.getImage(),
