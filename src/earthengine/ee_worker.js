@@ -1,7 +1,6 @@
 import { expose } from 'comlink'
 import { getBufferGeometry } from '../utils/buffers.js'
 import ee from './ee_api_js_worker.js' // https://github.com/google/earthengine-api/pull/173
-// import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
 import {
     getInfo,
     getScale,
@@ -27,6 +26,8 @@ const DEFAULT_FEATURE_STYLE = {
     pointRadius: 5,
 }
 const DEFAULT_TILE_SCALE = 1
+
+const DEFAULT_UNMASK_VALUE = 0
 
 class EarthEngineWorker {
     constructor(options = {}) {
@@ -294,8 +295,12 @@ class EarthEngineWorker {
 
         // Used for "constrained" WorldPop layers
         // We need to unmask the image to get the correct population density
-        if (unmaskAggregation) {
-            image = image.unmask(0)
+        if (unmaskAggregation || typeof unmaskAggregation === 'number') {
+            image = image.unmask(
+                typeof unmaskAggregation === number
+                    ? unmaskAggregation
+                    : DEFAULT_UNMASK_VALUE
+            )
         }
 
         if (collection) {
