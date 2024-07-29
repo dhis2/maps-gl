@@ -28,8 +28,6 @@ const DEFAULT_FEATURE_STYLE = {
 }
 const DEFAULT_TILE_SCALE = 1
 
-const DEFAULT_MASK_VALUE = 0
-
 class EarthEngineWorker {
     constructor(options = {}) {
         this.options = options
@@ -122,9 +120,7 @@ class EarthEngineWorker {
             mosaic,
             band,
             bandReducer,
-            maskOperator,
             methods,
-            style,
             cloudScore,
         } = this.options
 
@@ -184,8 +180,7 @@ class EarthEngineWorker {
 
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { datasetId, format, data, filter, maskOperator, style } =
-            this.options
+        const { datasetId, format, data, filter, style } = this.options
 
         return new Promise((resolve, reject) => {
             switch (format) {
@@ -211,16 +206,6 @@ class EarthEngineWorker {
                 }
                 case IMAGE:
                 case IMAGE_COLLECTION: {
-                    // Use mask operator (e.g. mask out values below a certain threshold)
-                    // Only applied for tiles, not aggregations
-                    if (maskOperator && eeImage[maskOperator]) {
-                        eeImage = eeImage.updateMask(
-                            eeImage[maskOperator](
-                                style?.min || DEFAULT_MASK_VALUE
-                            )
-                        )
-                    }
-
                     // eslint-disable-next-line prefer-const
                     let { eeImage, params } = getClassifiedImage(
                         this.getImage(),
@@ -296,15 +281,22 @@ class EarthEngineWorker {
             useCentroid,
             style,
             tileScale = DEFAULT_TILE_SCALE,
+            unmaskAggregation,
         } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
             singleAggregation &&
             hasClasses(aggregationType) &&
             Array.isArray(style)
-        const image = await this.getImage()
         const scale = this.eeScale
         const collection = this.getFeatureCollection()
+        let image = await this.getImage()
+
+        // Used for "constrained" WorldPop layers
+        // We need to unmask the image to get the correct population density
+        if (unmaskAggregation) {
+            image = image.unmask(0)
+        }
 
         if (collection) {
             if (format === FEATURE_COLLECTION) {
