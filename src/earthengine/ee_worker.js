@@ -1,6 +1,6 @@
 import { expose } from 'comlink'
-import ee from './ee_api_js_worker' // https://github.com/google/earthengine-api/pull/173
-// import { ee } from '@google/earthengine/build/ee_api_js_debug' // Run "yarn add @google/earthengine"
+import { getBufferGeometry } from '../utils/buffers.js'
+import ee from './ee_api_js_worker.js' // https://github.com/google/earthengine-api/pull/173
 import {
     getInfo,
     getScale,
@@ -9,14 +9,25 @@ import {
     getClassifiedImage,
     getHistogramStatistics,
     getFeatureCollectionProperties,
-} from './ee_worker_utils'
-import { getBufferGeometry } from '../utils/buffers'
+    applyFilter,
+    applyMethods,
+    applyCloudMask,
+} from './ee_worker_utils.js'
 
-// Why we need to "hack" the '@google/earthengine bundle:
-// https://groups.google.com/g/google-earth-engine-developers/c/nvlbqxrnzDk/m/QuyWxGt9AQAJ
+const IMAGE = 'Image'
+const IMAGE_COLLECTION = 'ImageCollection'
+const FEATURE_COLLECTION = 'FeatureCollection'
 
-const FEATURE_STYLE = { color: 'FFA500', strokeWidth: 2 }
+// Options are defined here:
+// https://developers.google.com/earth-engine/apidocs/ee-featurecollection-draw
+const DEFAULT_FEATURE_STYLE = {
+    color: '#FFA500',
+    strokeWidth: 2,
+    pointRadius: 5,
+}
 const DEFAULT_TILE_SCALE = 1
+
+const DEFAULT_UNMASK_VALUE = 0
 
 class EarthEngineWorker {
     constructor(options = {}) {
@@ -102,12 +113,21 @@ class EarthEngineWorker {
             return this.eeImage
         }
 
-        const { datasetId, filter, mosaic, band, bandReducer, mask, methods } =
-            this.options
+        const {
+            datasetId,
+            format,
+            filter,
+            periodReducer,
+            mosaic,
+            band,
+            bandReducer,
+            methods,
+            cloudScore,
+        } = this.options
 
         let eeImage
 
-        if (!filter) {
+        if (format === IMAGE) {
             // Single image
             eeImage = ee.Image(datasetId)
             this.eeScale = getScale(eeImage)
@@ -119,18 +139,26 @@ class EarthEngineWorker {
             this.eeScale = getScale(collection.first())
 
             // Apply array of filters (e.g. period)
-            filter.forEach(f => {
-                collection = collection.filter(
-                    ee.Filter[f.type].apply(this, f.arguments)
-                )
-            })
+            collection = applyFilter(collection, filter)
 
-            eeImage = mosaic
-                ? collection.mosaic() // Composite all images inn a collection (e.g. per country)
-                : ee.Image(collection.first()) // There should only be one image after applying the filters
+            // Mask out clouds from satellite images
+            if (cloudScore) {
+                collection = applyCloudMask(collection, cloudScore)
+            }
+
+            if (periodReducer) {
+                // Apply period reducer (e.g. going from daily to monthly)
+                eeImage = collection[periodReducer]()
+            } else if (mosaic) {
+                // Composite all images inn a collection (e.g. per country)
+                eeImage = collection.mosaic()
+            } else {
+                // There should only be one image after applying the filters
+                eeImage = ee.Image(collection.first())
+            }
         }
 
-        // // Select band (e.g. age group)
+        // Select band (e.g. age group)
         if (band) {
             eeImage = eeImage.select(band)
 
@@ -143,19 +171,8 @@ class EarthEngineWorker {
             }
         }
 
-        // Mask out 0-values
-        if (mask) {
-            eeImage = eeImage.updateMask(eeImage.gt(0))
-        }
-
         // Run methods on image
-        if (methods) {
-            Object.keys(methods).forEach(method => {
-                if (eeImage[method]) {
-                    eeImage = eeImage[method].apply(eeImage, methods[method])
-                }
-            })
-        }
+        eeImage = applyMethods(eeImage, methods)
 
         this.eeImage = eeImage
 
@@ -164,38 +181,52 @@ class EarthEngineWorker {
 
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { format, data } = this.options
+        const { datasetId, format, data, filter, style } = this.options
 
-        return new Promise(resolve => {
-            if (format === 'FeatureCollection') {
-                const { datasetId } = this.options
+        return new Promise((resolve, reject) => {
+            switch (format) {
+                case FEATURE_COLLECTION: {
+                    let dataset = ee.FeatureCollection(datasetId)
 
-                let dataset = ee
-                    .FeatureCollection(datasetId)
-                    .draw(FEATURE_STYLE)
+                    dataset = applyFilter(dataset, filter).draw({
+                        ...DEFAULT_FEATURE_STYLE,
+                        ...style,
+                    })
 
-                if (data) {
-                    dataset = dataset.clipToCollection(
-                        this.getFeatureCollection()
+                    if (data) {
+                        dataset = dataset.clipToCollection(
+                            this.getFeatureCollection()
+                        )
+                    }
+
+                    dataset.getMap(null, response =>
+                        resolve(response.urlFormat)
                     )
+
+                    break
                 }
-
-                dataset.getMap(null, response => resolve(response.urlFormat))
-            } else {
-                let { eeImage, params } = getClassifiedImage(
-                    this.getImage(),
-                    this.options
-                )
-
-                if (data) {
-                    eeImage = eeImage.clipToCollection(
-                        this.getFeatureCollection()
+                case IMAGE:
+                case IMAGE_COLLECTION: {
+                    // eslint-disable-next-line prefer-const
+                    let { eeImage, params } = getClassifiedImage(
+                        this.getImage(),
+                        this.options
                     )
-                }
 
-                eeImage
-                    .visualize(params)
-                    .getMap(null, response => resolve(response.urlFormat))
+                    if (data) {
+                        eeImage = eeImage.clipToCollection(
+                            this.getFeatureCollection()
+                        )
+                    }
+
+                    eeImage
+                        .visualize(params)
+                        .getMap(null, response => resolve(response.urlFormat))
+
+                    break
+                }
+                default:
+                    reject(new Error('Unknown format'))
             }
         })
     }
@@ -219,9 +250,24 @@ class EarthEngineWorker {
 
         const featureCollection = ee
             .FeatureCollection(imageCollection)
-            .select(['system:time_start', 'system:time_end'], null, false)
+            .select(
+                ['system:time_start', 'system:time_end', 'year'],
+                null,
+                false
+            )
 
         return getInfo(featureCollection)
+    }
+
+    // Returns min and max timestamp for an image collection
+    getTimeRange(eeId) {
+        const collection = ee.ImageCollection(eeId)
+
+        const range = collection.reduceColumns(ee.Reducer.minMax(), [
+            'system:time_start',
+        ])
+
+        return getInfo(range)
     }
 
     // Returns aggregated values for org unit features
@@ -233,20 +279,36 @@ class EarthEngineWorker {
             format,
             aggregationType,
             band,
-            legend,
+            useCentroid,
+            style,
             tileScale = DEFAULT_TILE_SCALE,
+            unmaskAggregation,
         } = this.options
         const singleAggregation = !Array.isArray(aggregationType)
         const useHistogram =
-            singleAggregation && hasClasses(aggregationType) && legend
-        const image = await this.getImage()
+            singleAggregation &&
+            hasClasses(aggregationType) &&
+            Array.isArray(style)
         const scale = this.eeScale
-        const collection = this.getFeatureCollection() // TODO: Throw error if no feature collection
+        const collection = this.getFeatureCollection()
+        let image = await this.getImage()
+
+        // Used for "constrained" WorldPop layers
+        // We need to unmask the image to get the correct population density
+        if (unmaskAggregation || typeof unmaskAggregation === 'number') {
+            image = image.unmask(
+                typeof unmaskAggregation === 'number'
+                    ? unmaskAggregation
+                    : DEFAULT_UNMASK_VALUE
+            )
+        }
 
         if (collection) {
-            if (format === 'FeatureCollection') {
-                const { datasetId } = this.options
-                const dataset = ee.FeatureCollection(datasetId)
+            if (format === FEATURE_COLLECTION) {
+                const { datasetId, filter } = this.options
+                let dataset = ee.FeatureCollection(datasetId)
+
+                dataset = applyFilter(dataset, filter)
 
                 const aggFeatures = collection
                     .map(feature => {
@@ -279,11 +341,11 @@ class EarthEngineWorker {
                         data,
                         scale: scaleValue,
                         aggregationType,
-                        legend,
+                        style,
                     })
                 )
             } else if (!singleAggregation && aggregationType.length) {
-                const reducer = combineReducers(ee)(aggregationType)
+                const reducer = combineReducers(aggregationType, useCentroid)
                 const props = [...aggregationType]
 
                 let aggFeatures = image.reduceRegions({
@@ -315,13 +377,18 @@ class EarthEngineWorker {
                 aggFeatures = aggFeatures.select(props, null, false)
 
                 return getInfo(aggFeatures).then(getFeatureCollectionProperties)
-            } else throw new Error('Aggregation type is not valid')
-        } else throw new Error('Missing org unit features')
+            } else {
+                throw new Error('Aggregation type is not valid')
+            }
+        } else {
+            throw new Error('Missing org unit features')
+        }
     }
 }
 
 // Service Worker not supported in Safari
 if (typeof onconnect !== 'undefined') {
+    // eslint-disable-next-line no-undef
     onconnect = evt => expose(EarthEngineWorker, evt.ports[0])
 } else {
     expose(EarthEngineWorker)

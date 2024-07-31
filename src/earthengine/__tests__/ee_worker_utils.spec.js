@@ -2,14 +2,14 @@ import { hasClasses, getHistogramStatistics } from '../ee_worker_utils'
 
 const scale = 1000
 
-const legend = [
+const style = [
     {
-        id: 9,
+        value: 9,
         name: 'Savannas',
         color: '#d99125',
     },
     {
-        id: 13,
+        value: 13,
         name: 'Urban and built-up',
         color: '#cc0202',
     },
@@ -76,14 +76,14 @@ describe('earthengine', () => {
             data,
             scale,
             aggregationType,
-            legend,
+            style,
         })
 
         const itemA = result['O6uvpzGd5pu']
         const itemB = result['fdc6uOvgoji']
 
         expect(ids).toEqual(Object.keys(result))
-        expect(Object.keys(itemA).length).toBe(legend.length)
+        expect(Object.keys(itemA).length).toBe(style.length)
         expect(itemA['9']).toBe(toPercent(0))
         expect(itemA['13']).toBe(toPercent(7))
         expect(itemB['9']).toBe(toPercent(5))
@@ -97,7 +97,7 @@ describe('earthengine', () => {
             data,
             scale,
             aggregationType,
-            legend,
+            style,
         })
 
         const itemA = result['O6uvpzGd5pu']
@@ -116,7 +116,7 @@ describe('earthengine', () => {
             data,
             scale,
             aggregationType,
-            legend,
+            style,
         })
 
         const itemA = result['O6uvpzGd5pu']
