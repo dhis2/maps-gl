@@ -1,3 +1,15 @@
+# [4.0.0](https://github.com/dhis2/maps-gl/compare/v3.9.2...v4.0.0) (2024-07-31)
+
+
+### Features
+
+* new Earth Engine format and functions ([c97b9c6](https://github.com/dhis2/maps-gl/commit/c97b9c6817ba00090600b51850b6cdc0be53c5d5))
+
+
+### BREAKING CHANGES
+
+* Update to the EarthEngineWorker
+
 ## [3.9.2](https://github.com/dhis2/maps-gl/compare/v3.9.1...v3.9.2) (2024-06-06)
 
 
