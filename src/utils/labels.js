@@ -15,7 +15,12 @@ const fonts = {
 const getOffsetEms = (type, radius = 5, fontSize = 11) =>
     type === 'Point' ? radius / parseInt(fontSize, 10) + 0.4 : 0
 
-export const labelSource = (features, { fontSize }, isBoundary) => ({
+export const labelSource = (
+    features,
+    { fontSize },
+    isBoundary,
+    labelNoData
+) => ({
     type: 'geojson',
     data: featureCollection(
         features.map(({ geometry, properties }) => ({
@@ -32,7 +37,7 @@ export const labelSource = (features, { fontSize }, isBoundary) => ({
                     getOffsetEms(geometry.type, properties.radius, fontSize),
                 ],
                 color: isBoundary ? properties.color : '#333',
-                value: properties.value,
+                value: properties.value ?? labelNoData,
             },
         }))
     ),

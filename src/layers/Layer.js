@@ -128,7 +128,10 @@ class Layer extends Evented {
         }
 
         if (label) {
-            this.setSource(`${id}-label`, labelSource(features, labelStyle))
+            this.setSource(
+                `${id}-label`,
+                labelSource(features, labelStyle, this.locale('Label.NoData'))
+            )
         }
     }
 
@@ -347,7 +350,7 @@ class Layer extends Evented {
                 /\{ *([\w_-]+) *\}/g,
                 (str, key) =>
                     properties[key] ??
-                    (key === 'value' ? this.locale('HoverLabel.NoData') : '')
+                    (key === 'value' ? this.locale('Label.NoData') : '')
             )
 
             this._map.showLabel(content, evt.lngLat)
