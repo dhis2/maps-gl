@@ -1,9 +1,9 @@
-import { v4 as uuid } from 'uuid'
 import bbox from '@turf/bbox'
 import { Evented } from 'maplibre-gl'
-import { addImages } from '../utils/images'
-import { featureCollection } from '../utils/geometry'
+import { v4 as uuid } from 'uuid'
 import { bufferSource } from '../utils/buffers'
+import { featureCollection } from '../utils/geometry'
+import { addImages } from '../utils/images'
 import { labelSource } from '../utils/labels'
 import { setLayersOpacity } from '../utils/opacity'
 
@@ -346,7 +346,7 @@ class Layer extends Evented {
             const content = (hoverLabel || label).replace(
                 /\{ *([\w_-]+) *\}/g,
                 (str, key) =>
-                    properties[key] ||
+                    properties[key] ??
                     (key === 'value' ? this.locale('HoverLabel.NoData') : '')
             )
 
