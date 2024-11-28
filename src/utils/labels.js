@@ -19,34 +19,28 @@ export const labelSource = (
     features,
     { fontSize, labelNoData = '' },
     isBoundary
-) => {
-    return {
-        type: 'geojson',
-        data: featureCollection(
-            features.map(({ geometry, properties }) => ({
-                type: 'Feature',
-                geometry: {
-                    type: 'Point',
-                    coordinates: getLabelPosition(geometry),
-                },
-                properties: {
-                    name: properties.name,
-                    anchor: geometry.type === 'Point' ? 'top' : 'center',
-                    offset: [
-                        0,
-                        getOffsetEms(
-                            geometry.type,
-                            properties.radius,
-                            fontSize
-                        ),
-                    ],
-                    color: isBoundary ? properties.color : '#333',
-                    value: properties.value ?? labelNoData,
-                },
-            }))
-        ),
-    }
-}
+) => ({
+    type: 'geojson',
+    data: featureCollection(
+        features.map(({ geometry, properties }) => ({
+            type: 'Feature',
+            geometry: {
+                type: 'Point',
+                coordinates: getLabelPosition(geometry),
+            },
+            properties: {
+                name: properties.name,
+                anchor: geometry.type === 'Point' ? 'top' : 'center',
+                offset: [
+                    0,
+                    getOffsetEms(geometry.type, properties.radius, fontSize),
+                ],
+                color: isBoundary ? properties.color : '#333',
+                value: properties.value ?? labelNoData,
+            },
+        }))
+    ),
+})
 
 export const labelLayer = ({
     id,
