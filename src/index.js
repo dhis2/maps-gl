@@ -1,7 +1,7 @@
-import Map from './Map'
-import supportedLayers from './layers/layerTypes'
 import supportedControls from './controls/controlTypes'
 import getEarthEngineWorker from './earthengine'
+import supportedLayers from './layers/layerTypes'
+import Map from './Map'
 import { getLabelPosition } from './utils/labels'
 
 /**

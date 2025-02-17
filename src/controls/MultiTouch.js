@@ -20,7 +20,7 @@ class MultiTouch {
         let x = 0
         let y = 0
 
-        ;[].forEach.call(event.touches, touch => {
+        ;[].forEach.call(event.touches, (touch) => {
             x += touch.screenX
             y += touch.screenY
         })
@@ -44,7 +44,7 @@ class MultiTouch {
         let x = 0
         let y = 0
 
-        ;[].forEach.call(event.touches, touch => {
+        ;[].forEach.call(event.touches, (touch) => {
             x += touch.screenX
             y += touch.screenY
         })

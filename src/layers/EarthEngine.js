@@ -15,14 +15,14 @@ class EarthEngine extends Layer {
         })
     }
 
-    addTo = map =>
+    addTo = (map) =>
         new Promise((resolve, reject) => {
             this._map = map
 
             if (map.styleIsLoaded()) {
                 this._isLoading = true
                 this.getWorkerInstance()
-                    .then(async worker => {
+                    .then(async (worker) => {
                         this.worker = worker
 
                         if (!this._tileUrl) {
@@ -49,7 +49,7 @@ class EarthEngine extends Layer {
 
                         resolve()
                     })
-                    .catch(error => {
+                    .catch((error) => {
                         this._isLoading = false
                         reject(error)
                     })
@@ -68,7 +68,7 @@ class EarthEngine extends Layer {
         if (!this._workerPromise) {
             this._workerPromise = new Promise((resolve, reject) =>
                 getEarthEngineWorker(this.options.getAuthToken)
-                    .then(EarthEngineWorker => {
+                    .then((EarthEngineWorker) => {
                         new EarthEngineWorker(
                             getWorkerOptions(this.options)
                         ).then(resolve)
@@ -149,20 +149,21 @@ class EarthEngine extends Layer {
     }
 
     // Returns value at at position
-    getValue = async lnglat => {
+    getValue = async (lnglat) => {
         const { band, style } = this.options
         const data = await this.worker.getValue(lnglat)
         const value = data[band] || Object.values(data)[0]
 
         // Used for landcover
-        const item = Array.isArray(style) && style.find(i => i.value === value)
+        const item =
+            Array.isArray(style) && style.find((i) => i.value === value)
 
         return item ? item.name : value
     }
 
     // TODO: Move popup handling to the maps app
     showValue = (latlng, precision) =>
-        this.getValue(latlng).then(value => {
+        this.getValue(latlng).then((value) => {
             const { lng, lat } = latlng
             const options = this.options
             let content
@@ -210,7 +211,7 @@ class EarthEngine extends Layer {
         const ids = this._filteredFeatureIds
 
         return Array.isArray(ids)
-            ? features.filter(f => ids.includes(f.properties.id))
+            ? features.filter((f) => ids.includes(f.properties.id))
             : features
     }
 

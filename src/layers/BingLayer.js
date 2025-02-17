@@ -1,6 +1,6 @@
 import fetchJsonp from 'fetch-jsonp'
-import Layer from './Layer'
 import { bboxIntersect } from '../utils/geo'
+import Layer from './Layer'
 import './BingLayer.css'
 
 // https://docs.microsoft.com/en-us/bingmaps/rest-services/directly-accessing-the-bing-maps-tiles
@@ -14,7 +14,7 @@ class BingLayer extends Layer {
         this.setSource(this.getId(), {
             type: 'raster',
             tiles: imageUrlSubdomains.map(
-                subdomain => imageUrl.replace('{subdomain}', subdomain) //  + '&dpi=d2&device=mobile' // TODO
+                (subdomain) => imageUrl.replace('{subdomain}', subdomain) //  + '&dpi=d2&device=mobile' // TODO
             ),
             tileSize: 256, // default is 512
         })
@@ -79,11 +79,11 @@ class BingLayer extends Layer {
         const metaDataUrl = `https://dev.virtualearth.net/REST/V1/Imagery/Metadata/${style}?output=json&include=ImageryProviders&culture=${culture}&key=${apiKey}&uriScheme=https`
 
         return fetchJsonp(metaDataUrl, { jsonpCallback: 'jsonp' })
-            .then(response => response.json())
+            .then((response) => response.json())
             .then(this.onMetaDataLoad)
     }
 
-    onMetaDataLoad = metaData => {
+    onMetaDataLoad = (metaData) => {
         if (metaData.statusCode !== 200) {
             throw new Error(
                 'Bing Imagery Metadata error: \n' +
@@ -122,7 +122,7 @@ class BingLayer extends Layer {
             )
         )
 
-        return providers.map(p => p.attribution).join(', ')
+        return providers.map((p) => p.attribution).join(', ')
     }
 
     updateAttribution = () => {

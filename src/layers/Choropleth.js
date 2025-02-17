@@ -1,6 +1,6 @@
-import Layer from './Layer'
-import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
 import { labelLayer } from '../utils/labels'
+import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
+import Layer from './Layer'
 
 class Choropleth extends Layer {
     constructor(options) {

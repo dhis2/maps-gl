@@ -1,18 +1,18 @@
 import { Evented, Map } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
+import controlsLocale from './controls/controlsLocale'
+import controlTypes from './controls/controlTypes'
+import MultiTouch from './controls/MultiTouch'
 import Layer from './layers/Layer'
 import layerTypes from './layers/layerTypes'
-import controlTypes from './controls/controlTypes'
-import controlsLocale from './controls/controlsLocale'
-import MultiTouch from './controls/MultiTouch'
-import { transformRequest } from './utils/images'
-import { mapStyle } from './utils/style'
-import { getBoundsFromLayers } from './utils/geometry'
-import syncMaps from './utils/sync'
-import { getFeaturesString } from './utils/core'
-import { OVERLAY_START_POSITION } from './utils/layers'
-import Popup from './ui/Popup'
 import Label from './ui/Label'
+import Popup from './ui/Popup'
+import { getFeaturesString } from './utils/core'
+import { getBoundsFromLayers } from './utils/geometry'
+import { transformRequest } from './utils/images'
+import { OVERLAY_START_POSITION } from './utils/layers'
+import { mapStyle } from './utils/style'
+import syncMaps from './utils/sync'
 import './Map.css'
 
 const renderedClass = 'dhis2-map-rendered'
@@ -51,7 +51,7 @@ export class MapGL extends Evented {
 
         // Translate strings
         if (locale) {
-            Object.keys(mapgl._locale).forEach(id => {
+            Object.keys(mapgl._locale).forEach((id) => {
                 const str = mapgl._locale[id]
                 if (locale[str]) {
                     mapgl._locale[id] = locale[str]
@@ -130,7 +130,7 @@ export class MapGL extends Evented {
     }
 
     async removeLayer(layer) {
-        this._layers = this._layers.filter(l => l !== layer)
+        this._layers = this._layers.filter((l) => l !== layer)
 
         await layer.removeFrom(this)
 
@@ -173,7 +173,7 @@ export class MapGL extends Evented {
     }
 
     hasLayer(layer) {
-        return !!this._layers.find(l => l === layer)
+        return !!this._layers.find((l) => l === layer)
     }
 
     addControl(config) {
@@ -223,7 +223,7 @@ export class MapGL extends Evented {
         this.fire('ready', this)
     }
 
-    onClick = evt => {
+    onClick = (evt) => {
         const eventObj = this._createClickEvent(evt)
         const { feature } = eventObj
 
@@ -238,7 +238,7 @@ export class MapGL extends Evented {
         this.fire('click', eventObj)
     }
 
-    onContextMenu = evt => {
+    onContextMenu = (evt) => {
         const eventObj = this._createClickEvent(evt)
 
         if (eventObj.feature) {
@@ -249,7 +249,7 @@ export class MapGL extends Evented {
         }
     }
 
-    onMouseMove = evt => {
+    onMouseMove = (evt) => {
         const feature = this.getEventFeature(evt)
         let layer
 
@@ -280,7 +280,7 @@ export class MapGL extends Evented {
 
     // Add rendered class if map is idle
     onIdle = () => {
-        if (this.getLayers().some(layer => layer._isLoading)) {
+        if (this.getLayers().some((layer) => layer._isLoading)) {
             return
         }
 
@@ -296,7 +296,7 @@ export class MapGL extends Evented {
         ) {
             if (this._hoverFeatures) {
                 // Clear state for existing hover features
-                this._hoverFeatures.forEach(feature =>
+                this._hoverFeatures.forEach((feature) =>
                     this.setFeatureState(feature, { hover: false })
                 )
                 this._hoverFeatures = null
@@ -304,7 +304,7 @@ export class MapGL extends Evented {
 
             if (Array.isArray(features)) {
                 this._hoverFeatures = features
-                features.forEach(feature =>
+                features.forEach((feature) =>
                     this.setFeatureState(feature, { hover: true })
                 )
             }
@@ -323,7 +323,7 @@ export class MapGL extends Evented {
 
     onMouseOut = () => this.hideLabel()
 
-    onError = evt => {
+    onError = (evt) => {
         // TODO: Use optional chaining when DHIS2 Maps 2.35 is not supported
         if (evt && evt.error && evt.error.message && console && console.error) {
             const { message } = evt.error
@@ -343,8 +343,8 @@ export class MapGL extends Evented {
     // TODO: throttle?
     getEventFeature(evt) {
         const layers = this.getLayers()
-            .filter(l => l.isInteractive())
-            .map(l => l.getInteractiveIds())
+            .filter((l) => l.isInteractive())
+            .map((l) => l.getInteractiveIds())
             .reduce((out, ids) => [...out, ...ids], [])
         let feature
 
@@ -358,7 +358,7 @@ export class MapGL extends Evented {
     }
 
     getLayerFromId(id) {
-        return this._layers.find(layer => layer.hasLayerId(id))
+        return this._layers.find((layer) => layer.hasLayerId(id))
     }
 
     getLayerAtIndex(index) {
@@ -396,7 +396,7 @@ export class MapGL extends Evented {
         return this._beforeId &&
             this.getMapGL()
                 .getStyle()
-                .layers.find(layer => layer.id === this._beforeId)
+                .layers.find((layer) => layer.id === this._beforeId)
             ? this._beforeId
             : undefined
     }

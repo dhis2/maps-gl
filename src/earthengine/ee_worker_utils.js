@@ -1,14 +1,14 @@
-import ee from './ee_api_js_worker'
 import { squareMetersToHectares, squareMetersToAcres } from '../utils/numbers'
+import ee from './ee_api_js_worker'
 
 const classAggregation = ['percentage', 'hectares', 'acres']
 
 const DEFAULT_MASK_VALUE = 0
 
-export const hasClasses = type => classAggregation.includes(type)
+export const hasClasses = (type) => classAggregation.includes(type)
 
 // Makes evaluate a promise
-export const getInfo = instance =>
+export const getInfo = (instance) =>
     new Promise((resolve, reject) =>
         instance.evaluate((data, error) => {
             if (error) {
@@ -38,7 +38,7 @@ export const combineReducers = (types, unweighted) =>
     )
 
 // Returns the linear scale in meters of the units of this projection
-export const getScale = image => image.select(0).projection().nominalScale()
+export const getScale = (image) => image.select(0).projection().nominalScale()
 
 // Returns histogram data (e.g. landcover) in percentage, hectares or acres
 export const getHistogramStatistics = ({
@@ -76,7 +76,7 @@ export const getHistogramStatistics = ({
     }, {})
 
 // Reduce a feature collection to an object of properties
-export const getFeatureCollectionProperties = data =>
+export const getFeatureCollectionProperties = (data) =>
     data.features.reduce(
         (obj, f) => ({
             ...obj,
@@ -102,14 +102,14 @@ export const getClassifiedImage = (
     if (Array.isArray(style)) {
         return {
             eeImage: eeImage.remap({
-                from: style.map(s => s.value),
+                from: style.map((s) => s.value),
                 to: [...Array(style.length).keys()],
                 bandName: band,
             }),
             params: {
                 min: 0,
                 max: style.length - 1,
-                palette: style.map(l => l.color).join(','),
+                palette: style.map((l) => l.color).join(','),
             },
         }
     } else if (style.bands) {
@@ -139,7 +139,7 @@ export const getClassifiedImage = (
 export const applyFilter = (collection, filter = []) => {
     let filtered = collection
 
-    filter.forEach(f => {
+    filter.forEach((f) => {
         if (ee.Filter[f.type]) {
             filtered = filtered.filter(
                 ee.Filter[f.type].apply(this, f.arguments)
@@ -155,14 +155,14 @@ export const applyMethods = (eeImage, methods = []) => {
     let image = eeImage
 
     if (Array.isArray(methods)) {
-        methods.forEach(m => {
+        methods.forEach((m) => {
             if (image[m.name]) {
                 image = image[m.name].apply(image, m.arguments)
             }
         })
     } else {
         // Backward compatibility for format used before 2.40
-        Object.keys(methods).forEach(m => {
+        Object.keys(methods).forEach((m) => {
             if (image[m]) {
                 image = image[m].apply(image, methods[m])
             }
@@ -178,5 +178,5 @@ export const applyCloudMask = (collection, cloudScore) => {
 
     return collection
         .linkCollection(ee.ImageCollection(datasetId), [band])
-        .map(img => img.updateMask(img.select(band).gte(clearThreshold)))
+        .map((img) => img.updateMask(img.select(band).gte(clearThreshold)))
 }

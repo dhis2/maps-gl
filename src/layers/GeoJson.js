@@ -1,4 +1,5 @@
-import Layer from './Layer'
+import { bufferLayer, bufferOutlineLayer } from '../utils/buffers'
+import { labelLayer } from '../utils/labels'
 import {
     pointLayer,
     lineLayer,
@@ -6,8 +7,7 @@ import {
     outlineLayer,
     symbolLayer,
 } from '../utils/layers'
-import { bufferLayer, bufferOutlineLayer } from '../utils/buffers'
-import { labelLayer } from '../utils/labels'
+import Layer from './Layer'
 
 class GeoJson extends Layer {
     constructor(options) {

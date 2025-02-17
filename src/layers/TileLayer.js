@@ -23,7 +23,7 @@ class TileLayer extends Layer {
                 `${url}?bbox={bbox-epsg-3857}&format=${format}&service=WMS&version=1.1.1&request=GetMap&srs=EPSG:3857&transparent=true&width=256&height=256&layers=${layers}`,
             ]
         } else if (url.includes('{s}')) {
-            tiles = ['a', 'b', 'c'].map(letter => url.replace('{s}', letter))
+            tiles = ['a', 'b', 'c'].map((letter) => url.replace('{s}', letter))
         } else {
             tiles = [url]
         }

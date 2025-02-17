@@ -1,16 +1,16 @@
-import VectorStyle from './VectorStyle'
-import TileLayer from './TileLayer'
-import Choropleth from './Choropleth'
+import BingLayer from './BingLayer'
 import Boundary from './Boundary'
-import Markers from './Markers'
-import Events from './Events'
+import Choropleth from './Choropleth'
 import ClientCluster from './ClientCluster'
 import DonutCluster from './DonutCluster'
-import ServerCluster from './ServerCluster'
 import EarthEngine from './EarthEngine'
-import BingLayer from './BingLayer'
+import Events from './Events'
 import GeoJson from './GeoJson'
 import LayerGroup from './LayerGroup'
+import Markers from './Markers'
+import ServerCluster from './ServerCluster'
+import TileLayer from './TileLayer'
+import VectorStyle from './VectorStyle'
 
 export default {
     vectorStyle: VectorStyle, //basemap /externalLayer

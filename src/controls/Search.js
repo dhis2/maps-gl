@@ -26,9 +26,9 @@ class SearchControl {
         const urlParams = new URLSearchParams(Object.entries(params))
 
         return fetch(`https://nominatim.openstreetmap.org/search?${urlParams}`)
-            .then(response => (response.ok ? response.json() : []))
-            .then(json =>
-                json.map(result => {
+            .then((response) => (response.ok ? response.json() : []))
+            .then((json) =>
+                json.map((result) => {
                     const {
                         display_name: name,
                         lon: lng,
@@ -88,7 +88,7 @@ class SearchControl {
             filter: false,
             limit: this.options.limit,
         })
-        this._typeahead.getItemValue = item => item.name
+        this._typeahead.getItemValue = (item) => item.name
 
         this._collapseSearchControl()
 
@@ -102,7 +102,7 @@ class SearchControl {
     }
 
     // Clear search list when input field is changing
-    _onKeyDown = evt =>
+    _onKeyDown = (evt) =>
         setTimeout(() => {
             const { selected } = this._typeahead
 
@@ -140,7 +140,7 @@ class SearchControl {
         this._loadingEl.style.display = 'block'
 
         this.geocodeRequest(searchInput, this._map.getBounds(), this.options)
-            .then(results => {
+            .then((results) => {
                 let items = results
 
                 this._loadingEl.style.display = 'none'
@@ -162,7 +162,7 @@ class SearchControl {
             .catch(() => (this._loadingEl.style.display = 'none'))
     }
 
-    _clear = evt => {
+    _clear = (evt) => {
         if (evt) {
             evt.preventDefault()
         }

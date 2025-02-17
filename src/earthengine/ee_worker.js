@@ -35,14 +35,14 @@ class EarthEngineWorker {
     }
 
     // Set EE API auth token if needed and run ee.initialize
-    static setAuthToken = getAuthToken =>
+    static setAuthToken = (getAuthToken) =>
         new Promise((resolve, reject) => {
             if (ee.data.getAuthToken()) {
                 // Already authenticated
                 ee.initialize(null, null, resolve, reject)
             } else {
                 getAuthToken()
-                    .then(token => {
+                    .then((token) => {
                         const {
                             client_id,
                             tokenType = 'Bearer',
@@ -92,7 +92,7 @@ class EarthEngineWorker {
         const { data, buffer } = this.options
         if (Array.isArray(data) && !this.eeFeatureCollection) {
             this.eeFeatureCollection = ee.FeatureCollection(
-                data.map(feature => ({
+                data.map((feature) => ({
                     ...feature,
                     id: feature.properties.id, // EE requires id to be string, MapLibre integer
                     // Translate points to buffer polygons
@@ -199,7 +199,7 @@ class EarthEngineWorker {
                         )
                     }
 
-                    dataset.getMap(null, response =>
+                    dataset.getMap(null, (response) =>
                         resolve(response.urlFormat)
                     )
 
@@ -221,7 +221,7 @@ class EarthEngineWorker {
 
                     eeImage
                         .visualize(params)
-                        .getMap(null, response => resolve(response.urlFormat))
+                        .getMap(null, (response) => resolve(response.urlFormat))
 
                     break
                 }
@@ -311,7 +311,7 @@ class EarthEngineWorker {
                 dataset = applyFilter(dataset, filter)
 
                 const aggFeatures = collection
-                    .map(feature => {
+                    .map((feature) => {
                         feature = ee.Feature(feature)
                         const count = dataset
                             .filterBounds(feature.geometry())
@@ -336,7 +336,7 @@ class EarthEngineWorker {
                             tileScale,
                         })
                         .select(['histogram'], null, false)
-                ).then(data =>
+                ).then((data) =>
                     getHistogramStatistics({
                         data,
                         scale: scaleValue,
@@ -363,8 +363,8 @@ class EarthEngineWorker {
                         tileScale,
                     })
 
-                    band.forEach(band =>
-                        aggregationType.forEach(type =>
+                    band.forEach((band) =>
+                        aggregationType.forEach((type) =>
                             props.push(
                                 aggregationType.length === 1
                                     ? band
@@ -389,7 +389,7 @@ class EarthEngineWorker {
 // Service Worker not supported in Safari
 if (typeof onconnect !== 'undefined') {
     // eslint-disable-next-line no-undef
-    onconnect = evt => expose(EarthEngineWorker, evt.ports[0])
+    onconnect = (evt) => expose(EarthEngineWorker, evt.ports[0])
 } else {
     expose(EarthEngineWorker)
 }

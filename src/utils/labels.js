@@ -80,7 +80,7 @@ export const getLabelPosition = ({ type, coordinates }) => {
     let polygon = coordinates
 
     if (type === 'MultiPolygon') {
-        const areas = coordinates.map(coords =>
+        const areas = coordinates.map((coords) =>
             area({
                 type: 'Polygon',
                 coordinates: coords,
