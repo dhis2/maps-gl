@@ -12,6 +12,6 @@ _text_
 
 ### TODO
 
--   [ ] Tests added
--   [ ] PRs for Maps app created
--   [ ] _todo_
+- [ ] Tests added
+- [ ] PRs for Maps app created
+- [ ] _todo_
