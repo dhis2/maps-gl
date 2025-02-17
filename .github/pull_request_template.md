@@ -1,6 +1,6 @@
 Implements _Jira issue link_
 
-**Relates to _maps-app PR_
+Relates to _maps-app PR_
 
 ---
 
