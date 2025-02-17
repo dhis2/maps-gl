@@ -7,6 +7,7 @@ import DonutCluster from './DonutCluster.js'
 import EarthEngine from './EarthEngine.js'
 import Events from './Events.js'
 import GeoJson from './GeoJson.js'
+import Heat from './Heat.js'
 import LayerGroup from './LayerGroup.js'
 import Markers from './Markers.js'
 import ServerCluster from './ServerCluster.js'
@@ -24,6 +25,7 @@ export default {
     events: Events, // event layer
     geoJson: GeoJson, // tracked entity layer
     group: LayerGroup, // tracked entity layer
+    heat: Heat, // event layer
     markers: Markers, // facility layer
     serverCluster: ServerCluster, // event layer
     tileLayer: TileLayer, // basemap / external layer
