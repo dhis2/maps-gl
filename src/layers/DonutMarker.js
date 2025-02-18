@@ -21,14 +21,14 @@ class DonutMarker extends Marker {
         this.getElement().style.display = isVisible ? 'block' : 'none'
     }
 
-    onClick = evt => {
+    onClick = (evt) => {
         evt.stopPropagation()
         this.fire('click')
     }
 }
 
 // Returns a SVG donut chart
-export const donutChart = segments => {
+export const donutChart = (segments) => {
     const total = segments.reduce((total, s) => total + s.count, 0)
     const fontSize =
         total >= 1000 ? 22 : total >= 100 ? 20 : total >= 10 ? 18 : 16
@@ -39,7 +39,7 @@ export const donutChart = segments => {
 
     let html = `<svg width="${w}" height="${w}" viewbox="0 0 ${w} ${w}" text-anchor="middle" style="font:${fontSize}px sans-serif;cursor:pointer;filter:drop-shadow(0 0 2px #777);">`
 
-    segments.forEach(segment => {
+    segments.forEach((segment) => {
         html += donutSegment(
             offset / total,
             (offset + segment.count) / total,
@@ -61,7 +61,9 @@ export const donutChart = segments => {
 
 // Returns a SVG donut chart segment
 export const donutSegment = (start, end, r, r0, color) => {
-    if (end - start === 1) end -= 0.00001
+    if (end - start === 1) {
+        end -= 0.00001
+    }
     const a0 = 2 * Math.PI * (start - 0.25)
     const a1 = 2 * Math.PI * (end - 0.25)
     const x0 = Math.cos(a0)

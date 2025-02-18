@@ -3,7 +3,7 @@ import { wrap, proxy } from 'comlink'
 let resolvedWorker
 
 // Return same worker if already authenticated
-const getEarthEngineWorker = getAuthToken =>
+const getEarthEngineWorker = (getAuthToken) =>
     new Promise((resolve, reject) => {
         if (resolvedWorker) {
             resolve(resolvedWorker)

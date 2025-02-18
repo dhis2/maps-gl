@@ -1,7 +1,7 @@
-import Layer from './Layer'
-import { symbolLayer } from '../utils/layers'
 import { bufferLayer, bufferOutlineLayer } from '../utils/buffers'
 import { labelLayer } from '../utils/labels'
+import { symbolLayer } from '../utils/layers'
+import Layer from './Layer'
 
 class Markers extends Layer {
     constructor(options) {

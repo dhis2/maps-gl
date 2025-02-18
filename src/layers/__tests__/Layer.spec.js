@@ -59,7 +59,7 @@ describe('Layer', () => {
     it('Should add an interactive layer', () => {
         const layer = new Layer()
 
-        mockMapGL.getLayer.mockImplementation(x => x === layer.getId())
+        mockMapGL.getLayer.mockImplementation((x) => x === layer.getId())
         const mockMapLayer = { id: 42 }
 
         layer.addTo(mockMap)
@@ -75,7 +75,7 @@ describe('Layer', () => {
         const features = layer.getFeatures()
 
         expect(features.length).toBe(data.length)
-        expect(features.every(f => typeof f.id === 'number')).toBe(true)
+        expect(features.every((f) => typeof f.id === 'number')).toBe(true)
         expect(layer.getFeaturesById(2)).toStrictEqual(
             layer.getFeaturesById('fdc6uOvgoji')
         )

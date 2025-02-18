@@ -6,7 +6,7 @@ const Spider = function (map, options) {
     let spider
     let spiderId
 
-    const initializeLeg = leg => {
+    const initializeLeg = (leg) => {
         const { feature, elements, param } = leg
         const { radius, fillColor, opacity } = options
         const color = feature.properties.color || fillColor
@@ -32,9 +32,11 @@ const Spider = function (map, options) {
         elements.pin.appendChild(marker)
     }
 
-    const setOpacity = opacity => {
+    const setOpacity = (opacity) => {
         if (spiderId) {
-            spider.each(leg => (leg.elements.container.style.opacity = opacity))
+            spider.each(
+                (leg) => (leg.elements.container.style.opacity = opacity)
+            )
         }
     }
 
@@ -61,7 +63,7 @@ const Spider = function (map, options) {
         }
     }
 
-    const isExpanded = clusterId => clusterId === spiderId
+    const isExpanded = (clusterId) => clusterId === spiderId
 
     const getId = () => spiderId
 

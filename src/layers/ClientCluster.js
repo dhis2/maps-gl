@@ -1,7 +1,7 @@
-import Cluster from './Cluster'
 import { featureCollection } from '../utils/geometry'
 import { clusterLayer, clusterCountLayer } from '../utils/layers'
 import { eventStrokeColor, clusterCountColor } from '../utils/style'
+import Cluster from './Cluster'
 
 class ClientCluster extends Cluster {
     createSource() {
@@ -55,7 +55,7 @@ class ClientCluster extends Cluster {
         }
     }
 
-    onClick = evt => {
+    onClick = (evt) => {
         const { feature } = evt
 
         if (!feature.properties.cluster) {
@@ -79,7 +79,7 @@ class ClientCluster extends Cluster {
         }
     }
 
-    onSourceData = evt => {
+    onSourceData = (evt) => {
         if (evt.sourceId === this.getId() && this.getSourceFeatures().length) {
             this.getMapGL().off('sourcedata', this.onSourceData)
             this.updatePolygons()
@@ -87,7 +87,7 @@ class ClientCluster extends Cluster {
     }
 
     // Returns all features in a cluster
-    getClusterFeatures = clusterId =>
+    getClusterFeatures = (clusterId) =>
         new Promise((resolve, reject) => {
             const mapgl = this.getMapGL()
             const source = mapgl.getSource(this.getId())

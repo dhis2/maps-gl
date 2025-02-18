@@ -1,10 +1,10 @@
 import centerOfMass from '@turf/center-of-mass'
-import Layer from './Layer'
-import Spider from './Spider'
-import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
 import { isClusterPoint } from '../utils/filters'
 import { featureCollection } from '../utils/geometry'
+import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
 import { eventStrokeColor } from '../utils/style'
+import Layer from './Layer'
+import Spider from './Spider'
 
 class Cluster extends Layer {
     constructor(options) {
@@ -17,14 +17,14 @@ class Cluster extends Layer {
     setFeatures(data = []) {
         super.setFeatures(data) // Assigns id to each feature
 
-        this._hasPolygons = data.some(f => f.geometry.type === 'Polygon')
+        this._hasPolygons = data.some((f) => f.geometry.type === 'Polygon')
 
         if (this._hasPolygons) {
             this._polygons = {}
             this._polygonsOnMap = []
 
             // Translate from polygon to point before clustering
-            this._features = this._features.map(f => {
+            this._features = this._features.map((f) => {
                 if (f.geometry.type === 'Polygon') {
                     this._polygons[f.id] = f
 
@@ -110,7 +110,9 @@ class Cluster extends Layer {
             const source = mapgl.getSource(this.getId())
 
             source.getClusterExpansionZoom(clusterId, (error, zoom) => {
-                if (error) return
+                if (error) {
+                    return
+                }
                 mapgl.easeTo({ center, zoom: zoom + 1 })
             })
         }
@@ -160,7 +162,7 @@ class Cluster extends Layer {
     }
 
     // Returns all features in a cluster
-    getClusterFeatures = clusterId =>
+    getClusterFeatures = (clusterId) =>
         new Promise((resolve, reject) => {
             const mapgl = this.getMapGL()
             const source = mapgl.getSource(this.getId())
@@ -173,18 +175,18 @@ class Cluster extends Layer {
         })
 
     // Overrided in DonutCluster
-    sortClusterFeatures = features => features
+    sortClusterFeatures = (features) => features
 
     updatePolygons = () => {
         // Returns polygons visible on the map (within the map view and not clustered)
         const polygons = this.getSourceFeatures().filter(
-            f => f.properties.isPolygon
+            (f) => f.properties.isPolygon
         )
         let polygonIds = []
 
         if (polygons.length) {
             // Using set as features might be returned multipe times due to tiling
-            polygonIds = [...new Set(polygons.map(f => f.id))].sort()
+            polygonIds = [...new Set(polygons.map((f) => f.id))].sort()
         }
 
         // Only update source if there is a change
@@ -194,7 +196,7 @@ class Cluster extends Layer {
         ) {
             this._polygonsOnMap = polygonIds
 
-            const features = polygonIds.map(id => this._polygons[id])
+            const features = polygonIds.map((id) => this._polygons[id])
             const source = this.getMapGL().getSource(`${this.getId()}-polygons`)
 
             source.setData(featureCollection(features))
@@ -206,7 +208,7 @@ class Cluster extends Layer {
         return this.getMapGL().querySourceFeatures(this.getId())
     }
 
-    onSpiderClose = clusterId => {
+    onSpiderClose = (clusterId) => {
         this.setClusterOpacity(clusterId)
     }
 

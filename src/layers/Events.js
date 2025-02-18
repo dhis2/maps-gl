@@ -1,7 +1,7 @@
-import Layer from './Layer'
-import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
 import { bufferLayer, bufferOutlineLayer } from '../utils/buffers'
+import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
 import { eventStrokeColor } from '../utils/style'
+import Layer from './Layer'
 
 class Events extends Layer {
     constructor(options) {

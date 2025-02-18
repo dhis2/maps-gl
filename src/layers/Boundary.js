@@ -1,5 +1,5 @@
-import Layer from './Layer'
 import { labelLayer } from '../utils/labels'
+import Layer from './Layer'
 
 class Boundary extends Layer {
     constructor(options) {

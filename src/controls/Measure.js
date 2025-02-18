@@ -1,9 +1,9 @@
-import turfLength from '@turf/length'
 import turfArea from '@turf/area'
 import bbox from '@turf/bbox'
+import turfLength from '@turf/length'
 import { createElement } from '../utils/dom'
-import { numberPrecision, kmToMiles } from '../utils/numbers'
 import { featureCollection } from '../utils/geometry'
+import { numberPrecision, kmToMiles } from '../utils/numbers'
 import './Measure.css'
 
 // Inspired by https://github.com/ljagis/leaflet-measure
@@ -235,7 +235,9 @@ class MeasureControl {
     _finishMeasure = () => {
         const mapgl = this._map.getMapGL()
         const geojson = this._geojson
-        const points = geojson.features.filter(f => f.geometry.type === 'Point')
+        const points = geojson.features.filter(
+            (f) => f.geometry.type === 'Point'
+        )
         const locale = this.locale
         const numFormat = this._numFormat
 
@@ -243,11 +245,11 @@ class MeasureControl {
             return this._endMeasure()
         } else if (points.length > 2) {
             const lineIndex = geojson.features.findIndex(
-                f => f === this._linestring
+                (f) => f === this._linestring
             )
 
             this._linestring.geometry.coordinates = [
-                ...points.map(point => point.geometry.coordinates),
+                ...points.map((point) => point.geometry.coordinates),
                 points[0].geometry.coordinates,
             ]
 
@@ -328,12 +330,12 @@ class MeasureControl {
         this._isActive ? this._startMeasure() : this._endMeasure()
     }
 
-    _onMapClick = evt => {
+    _onMapClick = (evt) => {
         const mapgl = this._map.getMapGL()
         const geojson = this._geojson
         const locale = this.locale
         const numFormat = this._numFormat
-        let points = geojson.features.filter(f => f.geometry.type === 'Point')
+        let points = geojson.features.filter((f) => f.geometry.type === 'Point')
 
         const clikedFeature = mapgl.queryRenderedFeatures(evt.point, {
             layers: ['measure-points'],
@@ -342,7 +344,7 @@ class MeasureControl {
         // If a feature was clicked, remove it from the map
         if (clikedFeature) {
             const { id } = clikedFeature.properties
-            points = points.filter(p => p.properties.id !== id)
+            points = points.filter((p) => p.properties.id !== id)
         } else {
             points = [
                 ...points,
@@ -367,7 +369,7 @@ class MeasureControl {
             )
         } else {
             this._linestring.geometry.coordinates = points.map(
-                point => point.geometry.coordinates
+                (point) => point.geometry.coordinates
             )
 
             geojson.features.push(this._linestring)
@@ -393,7 +395,7 @@ class MeasureControl {
         if (points.length > 2) {
             this._polygon.geometry.coordinates = [
                 [
-                    ...points.map(point => point.geometry.coordinates),
+                    ...points.map((point) => point.geometry.coordinates),
                     points[0].geometry.coordinates,
                 ],
             ]
@@ -421,7 +423,7 @@ class MeasureControl {
         mapgl.getSource('measure').setData(geojson)
     }
 
-    _onMouseMove = evt => {
+    _onMouseMove = (evt) => {
         const mapgl = this._map.getMapGL()
 
         const features = mapgl.queryRenderedFeatures(evt.point, {
@@ -438,7 +440,7 @@ class MeasureControl {
         const mapgl = this._map.getMapGL()
         const layers = ['measure-points', 'measure-line', 'measure-polygon']
 
-        layers.forEach(layer => {
+        layers.forEach((layer) => {
             if (mapgl.getLayer(layer)) {
                 mapgl.moveLayer(layer)
             }

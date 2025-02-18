@@ -45,7 +45,7 @@ const util = {
     },
     mapTimes: (count, iterator) => {
         const result = []
-        util.eachTimes(count, i => result.push(iterator(i)))
+        util.eachTimes(count, (i) => result.push(iterator(i)))
         return result
     },
 }
@@ -107,12 +107,12 @@ const spiderifier = (map, userOptions) => {
 
             options.initializeLeg(spiderLeg)
 
-            elements.container.onclick = e => options.onClick(e, spiderLeg)
+            elements.container.onclick = (e) => options.onClick(e, spiderLeg)
 
             return spiderLeg
         })
 
-        util.each(spiderLegs.reverse(), spiderLeg =>
+        util.each(spiderLegs.reverse(), (spiderLeg) =>
             spiderLeg.marker.addTo(map)
         )
 
@@ -133,7 +133,7 @@ const spiderifier = (map, userOptions) => {
         previousSpiderLegs = spiderLegs
     }
 
-    const generateSpiderLegParams = count => {
+    const generateSpiderLegParams = (count) => {
         if (count >= options.circleSpiralSwitchover) {
             return generateSpiralParams(count)
         } else {
@@ -141,11 +141,11 @@ const spiderifier = (map, userOptions) => {
         }
     }
 
-    const generateSpiralParams = count => {
+    const generateSpiralParams = (count) => {
         let legLength = options.spiralLengthStart
         let angle = 0
 
-        return util.mapTimes(count, index => {
+        return util.mapTimes(count, (index) => {
             angle =
                 angle +
                 (options.spiralFootSeparation / legLength + index * 0.0005)
@@ -164,12 +164,12 @@ const spiderifier = (map, userOptions) => {
         })
     }
 
-    const generateCircleParams = count => {
+    const generateCircleParams = (count) => {
         const circumference = options.circleFootSeparation * (2 + count)
         const legLength = circumference / twoPi // = radius from circumference
         const angleStep = twoPi / count
 
-        return util.mapTimes(count, index => {
+        return util.mapTimes(count, (index) => {
             const angle = index * angleStep
             const x = legLength * Math.cos(angle)
             const y = legLength * Math.sin(angle)
@@ -178,7 +178,7 @@ const spiderifier = (map, userOptions) => {
         })
     }
 
-    const createMarkerElements = spiderLegParam => {
+    const createMarkerElements = (spiderLegParam) => {
         const containerElem = document.createElement('div')
         const pinElem = document.createElement('div')
         const lineElem = document.createElement('div')
@@ -207,7 +207,7 @@ const spiderifier = (map, userOptions) => {
     return {
         spiderfy,
         unspiderfy,
-        each: callback => util.each(previousSpiderLegs, callback),
+        each: (callback) => util.each(previousSpiderLegs, callback),
     }
 }
 

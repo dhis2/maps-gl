@@ -40,7 +40,7 @@ class Popup extends PopupGL {
     }
 
     // Avoid closing a popup that was just opened
-    onMapClick = evt => {
+    onMapClick = (evt) => {
         if (!this._mapInstance.getEventFeature(evt)) {
             this.remove()
         }

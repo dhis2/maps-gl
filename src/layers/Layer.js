@@ -46,13 +46,13 @@ class Layer extends Evented {
             }
         }
 
-        Object.keys(source).forEach(id => {
+        Object.keys(source).forEach((id) => {
             if (map.styleIsLoaded() && !mapgl.getSource(id)) {
                 mapgl.addSource(id, source[id])
             }
         })
 
-        layers.forEach(layer => {
+        layers.forEach((layer) => {
             if (map.styleIsLoaded() && !mapgl.getLayer(layer.id)) {
                 mapgl.addLayer(layer, beforeId)
             }
@@ -86,13 +86,13 @@ class Layer extends Evented {
         this.onRemove()
 
         if (mapgl) {
-            layers.forEach(layer => {
+            layers.forEach((layer) => {
                 if (mapgl.getLayer(layer.id)) {
                     mapgl.removeLayer(layer.id)
                 }
             })
 
-            Object.keys(source).forEach(id => {
+            Object.keys(source).forEach((id) => {
                 if (mapgl.getSource(id)) {
                     mapgl.removeSource(id)
                 }
@@ -139,7 +139,7 @@ class Layer extends Evented {
             const layers = this.getLayers()
 
             if (mapgl && layers) {
-                layers.forEach(layer =>
+                layers.forEach((layer) =>
                     mapgl.setLayoutProperty(layer.id, 'visibility', value)
                 )
             }
@@ -167,7 +167,7 @@ class Layer extends Evented {
         return Boolean(
             map &&
                 map.styleIsLoaded() &&
-                this._layers.find(l => mapgl.getLayer(l.id))
+                this._layers.find((l) => mapgl.getLayer(l.id))
         )
     }
 
@@ -212,14 +212,14 @@ class Layer extends Evented {
     }
 
     hasLayerId(id) {
-        return this.getLayers().some(layer => layer.id === id)
+        return this.getLayers().some((layer) => layer.id === id)
     }
 
     move() {
         const mapgl = this.getMapGL()
         const beforeId = this._map.getBeforeLayerId()
 
-        this.getLayers().forEach(layer => {
+        this.getLayers().forEach((layer) => {
             mapgl.moveLayer(layer.id, beforeId)
         })
     }
@@ -232,10 +232,10 @@ class Layer extends Evented {
     getFeaturesById(id) {
         const features =
             typeof id === 'string'
-                ? this._features.filter(f => f.properties.id === id)
-                : this._features.filter(f => f.id === id)
+                ? this._features.filter((f) => f.properties.id === id)
+                : this._features.filter((f) => f.id === id)
 
-        return features.map(f => ({ ...f, source: this.getId() }))
+        return features.map((f) => ({ ...f, source: this.getId() }))
     }
 
     // Adds integer id for each feature (required by Feature State)
@@ -255,8 +255,8 @@ class Layer extends Evented {
         this._images = images || [
             ...new Set(
                 this.getFeatures()
-                    .filter(f => f.properties.iconUrl)
-                    .map(f => f.properties.iconUrl)
+                    .filter((f) => f.properties.iconUrl)
+                    .map((f) => f.properties.iconUrl)
             ),
         ]
     }
@@ -333,7 +333,7 @@ class Layer extends Evented {
     }
 
     // "Normalise" event before passing back to app
-    onClick = evt => this.fire('click', evt)
+    onClick = (evt) => this.fire('click', evt)
 
     // "Normalise" event before passing back to app
     onRightClick(evt) {}

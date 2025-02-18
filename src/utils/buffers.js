@@ -1,7 +1,7 @@
-import circle from '@turf/circle'
 import polygonBuffer from '@turf/buffer'
-import { featureCollection } from './geometry'
+import circle from '@turf/circle'
 import { colorExpr } from './expressions'
+import { featureCollection } from './geometry'
 
 const defaults = {
     color: '#95c8fb',
@@ -19,7 +19,7 @@ export const getBufferGeometry = ({ geometry }, buffer) =>
 export const bufferSource = (features, buffer) => ({
     type: 'geojson',
     data: featureCollection(
-        features.map(feature => ({
+        features.map((feature) => ({
             ...feature,
             geometry: getBufferGeometry(feature, buffer),
         }))

@@ -1,6 +1,8 @@
 import SphericalMercator from '@mapbox/sphericalmercator'
 import centroid from '@turf/centroid'
-import Cluster from './Cluster'
+import { isClusterPoint } from '../utils/filters'
+import { earthRadius } from '../utils/geo'
+import { featureCollection } from '../utils/geometry'
 import {
     pointLayer,
     polygonLayer,
@@ -8,10 +10,8 @@ import {
     clusterLayer,
     clusterCountLayer,
 } from '../utils/layers'
-import { isClusterPoint } from '../utils/filters'
-import { featureCollection } from '../utils/geometry'
 import { eventStrokeColor, clusterCountColor } from '../utils/style'
-import { earthRadius } from '../utils/geo'
+import Cluster from './Cluster'
 
 class ServerCluster extends Cluster {
     currentTiles = []
@@ -82,7 +82,7 @@ class ServerCluster extends Cluster {
     }
 
     // Meters per pixel
-    getResolution = zoom =>
+    getResolution = (zoom) =>
         (Math.PI * earthRadius * 2) / this.options.tileSize / Math.pow(2, zoom)
 
     getTileParams(tileId) {
@@ -99,7 +99,7 @@ class ServerCluster extends Cluster {
     }
 
     // Replace clusters within the same tile bounds
-    updateClusters = tiles => {
+    updateClusters = (tiles) => {
         const clusters = tiles.reduce((newClusters, tileId) => {
             const [z, x, y] = tileId.split('/')
             const isOutsideBounds = this.isOutsideBounds(
@@ -124,7 +124,7 @@ class ServerCluster extends Cluster {
         }
     }
 
-    onClick = evt => {
+    onClick = (evt) => {
         const { geometry, properties } = evt.feature
         const { cluster, bounds, id, cluster_id } = properties
 
@@ -159,7 +159,7 @@ class ServerCluster extends Cluster {
     }
 
     // Load clusters when new tiles are requested
-    onSourceData = evt => {
+    onSourceData = (evt) => {
         if (evt.sourceId === this.getId() && evt.tile) {
             const tileId = this.getTileId(evt.tile)
 
@@ -177,7 +177,7 @@ class ServerCluster extends Cluster {
         if (tiles.join('-') !== this.currentTiles.join('-')) {
             this.currentTiles = tiles
 
-            const cachedTiles = tiles.filter(id =>
+            const cachedTiles = tiles.filter((id) =>
                 Array.isArray(this.tileClusters[id])
             )
 
@@ -221,14 +221,14 @@ class ServerCluster extends Cluster {
     }
 
     // Called by parent class
-    getClusterFeatures = clusterId => {
-        const cluster = this.currentClusters.find(c => c.id === clusterId)
+    getClusterFeatures = (clusterId) => {
+        const cluster = this.currentClusters.find((c) => c.id === clusterId)
 
         if (cluster) {
             return cluster.properties.id
                 .split(',')
                 .slice(0, this.options.maxSpiderSize)
-                .map(id => ({
+                .map((id) => ({
                     type: 'Feature',
                     id,
                     geometry: cluster.geometry,
@@ -241,7 +241,7 @@ class ServerCluster extends Cluster {
 
     // Returms true if geometry is outside bounds
     isOutsideBounds =
-        bounds =>
+        (bounds) =>
         ({ geometry }) => {
             const { coordinates } =
                 geometry.type === 'Point'
@@ -259,16 +259,16 @@ class ServerCluster extends Cluster {
 
     getVisibleTiles = async () => {
         while (!this.areTilesUpdated()) {
-            await new Promise(r => setTimeout(r, 100))
+            await new Promise((r) => setTimeout(r, 100))
         }
 
         return this.getSourceCacheTiles().map(this.getTileId).sort()
     }
 
     // Returns sorted array of cluster ids
-    getClusterIds = clusters =>
+    getClusterIds = (clusters) =>
         clusters
-            .map(c => c.id)
+            .map((c) => c.id)
             .sort((a, b) => a - b)
             .join()
 

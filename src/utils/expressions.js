@@ -2,7 +2,7 @@ import { isHover } from './filters'
 import { strokeWidth, hoverStrokeMultiplier } from './style'
 
 // Returns color from feature with fallback
-export const colorExpr = color => [
+export const colorExpr = (color) => [
     'case',
     ['has', 'color'],
     ['get', 'color'],
@@ -17,7 +17,7 @@ export const widthExpr = (width = strokeWidth) => [
 ]
 
 // Returns radius from feature with fallback
-export const radiusExpr = radius => [
+export const radiusExpr = (radius) => [
     'case',
     ['has', 'radius'],
     ['get', 'radius'],

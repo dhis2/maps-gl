@@ -1,16 +1,16 @@
 import {
+    colorExpr,
+    widthExpr,
+    radiusExpr,
+    clusterRadiusExpr,
+} from './expressions'
+import {
     isPointNoSymbol,
     isPolygon,
     isLine,
     isCluster,
     isSymbol,
 } from './filters'
-import {
-    colorExpr,
-    widthExpr,
-    radiusExpr,
-    clusterRadiusExpr,
-} from './expressions'
 import defaults from './style'
 
 export const BASEMAP_POSITION = 0

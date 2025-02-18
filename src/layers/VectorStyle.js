@@ -1,6 +1,6 @@
 import { Evented } from 'maplibre-gl'
-import { mapStyle } from '../utils/style'
 import { BASEMAP_POSITION } from '../utils/layers'
+import { mapStyle } from '../utils/style'
 
 class VectorStyle extends Evented {
     constructor(options = {}) {
@@ -27,8 +27,8 @@ class VectorStyle extends Evented {
             this._visibleLayers = this._map
                 .getMapGL()
                 .getStyle()
-                .layers.filter(l => l.layout?.visibility !== 'none')
-                .map(l => l.id)
+                .layers.filter((l) => l.layout?.visibility !== 'none')
+                .map((l) => l.id)
         }
 
         this._isOnMap = isOnMap
@@ -65,7 +65,7 @@ class VectorStyle extends Evented {
                 .getMapGL()
                 .once('idle', resolve)
                 .setStyle(style, { diff: false })
-                .once('error', e => {
+                .once('error', (e) => {
                     let msg
                     if (e.error.message.includes('missing required property')) {
                         msg = 'The vector style is malformed or invalid.'
@@ -85,12 +85,12 @@ class VectorStyle extends Evented {
     getOtherLayers() {
         return this._map
             .getLayers()
-            .filter(layer => !(layer instanceof VectorStyle))
+            .filter((layer) => !(layer instanceof VectorStyle))
     }
 
     // Add other layers to the map after style is changed
     async addOtherLayers() {
-        this.getOtherLayers().forEach(async layer => {
+        this.getOtherLayers().forEach(async (layer) => {
             if (!layer.isOnMap()) {
                 await layer.addTo(this._map)
                 layer.setVisibility(layer.isVisible())
@@ -100,7 +100,7 @@ class VectorStyle extends Evented {
 
     // Remove other layers from the map before style is changed
     async removeOtherLayers() {
-        this.getOtherLayers().forEach(async layer => {
+        this.getOtherLayers().forEach(async (layer) => {
             if (layer.isOnMap()) {
                 await layer.removeFrom(this._map, true)
             }
@@ -108,7 +108,9 @@ class VectorStyle extends Evented {
     }
 
     mapHasVectorStyle() {
-        return this._map.getLayers().some(layer => layer instanceof VectorStyle)
+        return this._map
+            .getLayers()
+            .some((layer) => layer instanceof VectorStyle)
     }
 
     setIndex(index = BASEMAP_POSITION) {
@@ -125,7 +127,7 @@ class VectorStyle extends Evented {
             const mapgl = this._map.getMapGL()
             const value = isVisible ? 'visible' : 'none'
 
-            this._visibleLayers.forEach(id =>
+            this._visibleLayers.forEach((id) =>
                 mapgl.setLayoutProperty(id, 'visibility', value)
             )
         }

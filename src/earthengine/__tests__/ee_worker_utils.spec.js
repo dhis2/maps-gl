@@ -56,9 +56,9 @@ const data = {
 }
 
 const sum = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 // Sum of histogram values
-const toPercent = v => (v / sum) * 100
-const toHectares = v => Math.round((v * (scale * scale)) / 10000)
-const toAcres = v => Math.round((v * (scale * scale)) / 4046.8564224)
+const toPercent = (v) => (v / sum) * 100
+const toHectares = (v) => Math.round((v * (scale * scale)) / 10000)
+const toAcres = (v) => Math.round((v * (scale * scale)) / 4046.8564224)
 
 describe('earthengine', () => {
     it('Should return true if unit is class based', () => {
@@ -70,7 +70,7 @@ describe('earthengine', () => {
 
     it('Should calculate percentage', () => {
         const aggregationType = 'percentage'
-        const ids = data.features.map(f => f.id)
+        const ids = data.features.map((f) => f.id)
 
         const result = getHistogramStatistics({
             data,

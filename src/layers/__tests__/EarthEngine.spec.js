@@ -184,6 +184,6 @@ describe('EarthEngine', () => {
         const layer = new EarthEngine(options)
         const features = layer.getFeatures()
 
-        expect(features.some(f => f.geometry.type === 'Point')).toBe(false)
+        expect(features.some((f) => f.geometry.type === 'Point')).toBe(false)
     })
 })

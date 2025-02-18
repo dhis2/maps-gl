@@ -7,7 +7,7 @@ const moveToMapPosition = (master, clones) => {
     const bearing = master.getBearing()
     const pitch = master.getPitch()
 
-    clones.forEach(clone =>
+    clones.forEach((clone) =>
         clone.jumpTo({
             center: center,
             zoom: zoom,
@@ -23,7 +23,7 @@ const syncMaps = (() => {
     const syncedHandlersById = {}
 
     // Creates move handlers for masters and clones
-    const createHandlers = id => {
+    const createHandlers = (id) => {
         const syncedMaps = syncedMapsById[id]
         const syncedHandlers = (syncedHandlersById[id] = [])
 
@@ -53,7 +53,7 @@ const syncMaps = (() => {
         if (syncedMaps && syncedMaps.includes(map)) {
             updateMaps(
                 id,
-                syncedMaps.filter(m => m !== map)
+                syncedMaps.filter((m) => m !== map)
             )
         }
     }
@@ -74,10 +74,10 @@ const syncMaps = (() => {
     }
 
     // Enable move handlers (turn on)
-    const enableMapSync = id => toggleMapSync(id, true)
+    const enableMapSync = (id) => toggleMapSync(id, true)
 
     // Disable move handlers (turn off)
-    const disableMapSync = id => toggleMapSync(id, false)
+    const disableMapSync = (id) => toggleMapSync(id, false)
 
     // Sync handler between master and clones
     const sync = (id, master, clones) => {

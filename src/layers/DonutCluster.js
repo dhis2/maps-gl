@@ -1,7 +1,7 @@
 import throttle from 'lodash.throttle'
+import { featureCollection } from '../utils/geometry'
 import Cluster from './Cluster'
 import DonutMarker from './DonutMarker'
-import { featureCollection } from '../utils/geometry'
 
 class DonutCluster extends Cluster {
     clusters = {}
@@ -52,13 +52,13 @@ class DonutCluster extends Cluster {
         this.clusters = {}
     }
 
-    onSourceData = evt => {
+    onSourceData = (evt) => {
         if (evt.sourceId === this.getId() && this.getSourceFeatures().length) {
             this.updateClusters()
         }
     }
 
-    onClick = evt => {
+    onClick = (evt) => {
         const { feature } = evt
 
         if (!feature.properties.cluster) {
@@ -116,8 +116,8 @@ class DonutCluster extends Cluster {
     }
 
     // Sort cluster features after legend colors before spiderfy
-    sortClusterFeatures = features => {
-        const colors = this.options.groups.map(g => g.color)
+    sortClusterFeatures = (features) => {
+        const colors = this.options.groups.map((g) => g.color)
         return features.sort((f1, f2) => {
             const a = colors.indexOf(f1.properties.color)
             const b = colors.indexOf(f2.properties.color)
@@ -145,7 +145,7 @@ class DonutCluster extends Cluster {
             let cluster = this.clusters[cluster_id]
 
             if (!cluster) {
-                const segments = groups.map(group => ({
+                const segments = groups.map((group) => ({
                     ...group,
                     count: properties[group.color],
                 }))

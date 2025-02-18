@@ -8,7 +8,7 @@ const tile2lat = (y, z) => {
 }
 
 //  Returns resolution in meters at zoom
-export const getZoomResolution = zoom =>
+export const getZoomResolution = (zoom) =>
     (2 * Math.PI * earthRadius) / 256 / Math.pow(2, zoom)
 
 // Returns lng/lat bounds for a tile
