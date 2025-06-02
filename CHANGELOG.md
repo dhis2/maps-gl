@@ -1,3 +1,10 @@
+## [4.0.1](https://github.com/dhis2/maps-gl/compare/v4.0.0...v4.0.1) (2024-11-29)
+
+
+### Bug Fixes
+
+* update 'No data' handling ([#596](https://github.com/dhis2/maps-gl/issues/596)) ([1fbdb20](https://github.com/dhis2/maps-gl/commit/1fbdb20895f5c82ac1762d9a90eb0b1ae8129b05))
+
 # [4.0.0](https://github.com/dhis2/maps-gl/compare/v3.9.2...v4.0.0) (2024-07-31)
 
 
