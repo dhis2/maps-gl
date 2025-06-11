@@ -255,28 +255,30 @@ export class MapGL extends Evented {
     }
 
     onMouseMove = evt => {
-        if (this.mouseMoveEnabled) {
-            const feature = this.getEventFeature(evt)
-            let layer
-
-            if (feature) {
-                layer = this.getLayerFromId(feature.layer.id)
-
-                if (layer) {
-                    layer.onMouseMove(evt, feature)
-                }
-            } else {
-                this.hideLabel()
-            }
-
-            this.setHoverState(
-                layer && feature?.properties?.id
-                    ? layer.getFeaturesById(feature.properties.id)
-                    : null
-            )
-
-            this.getMapGL().getCanvas().style.cursor = feature ? 'pointer' : ''
+        if (!this.mouseMoveEnabled) {
+            return
         }
+
+        const feature = this.getEventFeature(evt)
+        let layer
+
+        if (feature) {
+            layer = this.getLayerFromId(feature.layer.id)
+
+            if (layer) {
+                layer.onMouseMove(evt, feature)
+            }
+        } else {
+            this.hideLabel()
+        }
+
+        this.setHoverState(
+            layer && feature?.properties?.id
+                ? layer.getFeaturesById(feature.properties.id)
+                : null
+        )
+
+        this.getMapGL().getCanvas().style.cursor = feature ? 'pointer' : ''
     }
 
     // Remove rendered class if rendering is happening
