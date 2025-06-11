@@ -255,7 +255,6 @@ export class MapGL extends Evented {
     }
 
     onMouseMove = evt => {
-        console.log('jj mapsgl mouseMoveEnabled', this.mouseMoveEnabled)
         if (this.mouseMoveEnabled) {
             const feature = this.getEventFeature(evt)
             let layer
