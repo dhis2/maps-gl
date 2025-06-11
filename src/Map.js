@@ -48,6 +48,7 @@ export class MapGL extends Evented {
         this._mapgl = mapgl
         this._glyphs = glyphs
         this._renderTimeout = null
+        this.mouseMoveDisabled = false
 
         // Translate strings
         if (locale) {
@@ -249,27 +250,34 @@ export class MapGL extends Evented {
         }
     }
 
+    setMouseMoveDisabled(disabled) {
+        this.mouseMoveDisabled = disabled
+    }
+
     onMouseMove = evt => {
-        const feature = this.getEventFeature(evt)
-        let layer
+        console.log('jj mapsgl onMouseMove', this.mouseMoveDisabled)
+        if (!this.mouseMoveDisabled) {
+            const feature = this.getEventFeature(evt)
+            let layer
 
-        if (feature) {
-            layer = this.getLayerFromId(feature.layer.id)
+            if (feature) {
+                layer = this.getLayerFromId(feature.layer.id)
 
-            if (layer) {
-                layer.onMouseMove(evt, feature)
+                if (layer) {
+                    layer.onMouseMove(evt, feature)
+                }
+            } else {
+                this.hideLabel()
             }
-        } else {
-            this.hideLabel()
+
+            this.setHoverState(
+                layer && feature?.properties?.id
+                    ? layer.getFeaturesById(feature.properties.id)
+                    : null
+            )
+
+            this.getMapGL().getCanvas().style.cursor = feature ? 'pointer' : ''
         }
-
-        this.setHoverState(
-            layer && feature?.properties?.id
-                ? layer.getFeaturesById(feature.properties.id)
-                : null
-        )
-
-        this.getMapGL().getCanvas().style.cursor = feature ? 'pointer' : ''
     }
 
     // Remove rendered class if rendering is happening
