@@ -65,7 +65,7 @@ export class MapGL extends Evented {
         mapgl.on('load', this.onLoad)
         mapgl.on('click', this.onClick)
         mapgl.on('contextmenu', this.onContextMenu)
-        mapgl.on('mousemove', this.onMouseMove)
+        mapgl.on('mousemove', this.onMouseMove.bind(this))
         mapgl.on('mouseout', this.onMouseOut)
         mapgl.on('error', this.onError)
         /* Data and dataloading events are an indication that

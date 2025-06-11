@@ -6,11 +6,12 @@ global.mockMapGL = {
     getLayer: jest.fn(),
     getSource: jest.fn(),
     setFeatureState: jest.fn(),
+    getCanvas: jest.fn(() => ({ style: {} })),
     _getUIString: jest.fn(),
 }
 
 global.mockMap = {
-    getMapGL: () => mockMapGL,
+    getMapGL: () => global.mockMapGL,
     setHoverState: jest.fn(),
     getBeforeLayerId: jest.fn(),
     styleIsLoaded: () => true,
