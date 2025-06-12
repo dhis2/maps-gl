@@ -3,7 +3,7 @@ import './AzureLayer.css'
 
 // https://learn.microsoft.com/en-us/rest/api/maps/render/get-map-tile
 class AzureLayer extends Layer {
-    async createSource() {
+    createSource() {
         const { apiKey, style } = this.options
 
         style.forEach(tilesetId => {
@@ -33,7 +33,7 @@ class AzureLayer extends Layer {
     async addTo(map) {
         this._isLoading = true
 
-        await this.createSource()
+        this.createSource()
 
         this.createLayer()
 
