@@ -1,3 +1,10 @@
+## [4.0.2](https://github.com/dhis2/maps-gl/compare/v4.0.1...v4.0.2) (2025-06-13)
+
+
+### Bug Fixes
+
+* add method to disable mouse move functionality [DHIS2-6683] ([#599](https://github.com/dhis2/maps-gl/issues/599)) ([c2673a5](https://github.com/dhis2/maps-gl/commit/c2673a531efd2029fba15864a04b7d33f2413aba))
+
 ## [4.0.1](https://github.com/dhis2/maps-gl/compare/v4.0.0...v4.0.1) (2024-11-29)
 
 
