@@ -48,7 +48,7 @@ export class MapGL extends Evented {
         this._mapgl = mapgl
         this._glyphs = glyphs
         this._renderTimeout = null
-        this.mouseMoveEnabled = true
+        this._mouseMoveEnabled = true
 
         // Translate strings
         if (locale) {
@@ -251,11 +251,11 @@ export class MapGL extends Evented {
     }
 
     setMouseMoveEnabled(val) {
-        this.mouseMoveEnabled = val
+        this._mouseMoveEnabled = val
     }
 
     onMouseMove = evt => {
-        if (!this.mouseMoveEnabled) {
+        if (!this._mouseMoveEnabled) {
             return
         }
 
