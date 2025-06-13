@@ -1,18 +1,18 @@
 import { Evented, Map } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
-import Layer from './layers/Layer'
-import layerTypes from './layers/layerTypes'
-import controlTypes from './controls/controlTypes'
-import controlsLocale from './controls/controlsLocale'
-import MultiTouch from './controls/MultiTouch'
-import { transformRequest } from './utils/images'
-import { mapStyle } from './utils/style'
-import { getBoundsFromLayers } from './utils/geometry'
-import syncMaps from './utils/sync'
-import { getFeaturesString } from './utils/core'
-import { OVERLAY_START_POSITION } from './utils/layers'
-import Popup from './ui/Popup'
-import Label from './ui/Label'
+import controlsLocale from './controls/controlsLocale.js'
+import controlTypes from './controls/controlTypes.js'
+import MultiTouch from './controls/MultiTouch.js'
+import Layer from './layers/Layer.js'
+import layerTypes from './layers/layerTypes.js'
+import Label from './ui/Label.js'
+import Popup from './ui/Popup.js'
+import { getFeaturesString } from './utils/core.js'
+import { getBoundsFromLayers } from './utils/geometry.js'
+import { transformRequest } from './utils/images.js'
+import { OVERLAY_START_POSITION } from './utils/layers.js'
+import { mapStyle } from './utils/style.js'
+import syncMaps from './utils/sync.js'
 import './Map.css'
 
 const renderedClass = 'dhis2-map-rendered'
@@ -48,6 +48,7 @@ export class MapGL extends Evented {
         this._mapgl = mapgl
         this._glyphs = glyphs
         this._renderTimeout = null
+        this._mouseMoveEnabled = true
 
         // Translate strings
         if (locale) {
@@ -64,7 +65,7 @@ export class MapGL extends Evented {
         mapgl.on('load', this.onLoad)
         mapgl.on('click', this.onClick)
         mapgl.on('contextmenu', this.onContextMenu)
-        mapgl.on('mousemove', this.onMouseMove)
+        mapgl.on('mousemove', this.onMouseMove.bind(this))
         mapgl.on('mouseout', this.onMouseOut)
         mapgl.on('error', this.onError)
         /* Data and dataloading events are an indication that
@@ -249,7 +250,15 @@ export class MapGL extends Evented {
         }
     }
 
+    setMouseMoveEnabled(val) {
+        this._mouseMoveEnabled = val
+    }
+
     onMouseMove = evt => {
+        if (!this._mouseMoveEnabled) {
+            return
+        }
+
         const feature = this.getEventFeature(evt)
         let layer
 
