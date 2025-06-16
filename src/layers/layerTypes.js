@@ -14,19 +14,19 @@ import TileLayer from './TileLayer.js'
 import VectorStyle from './VectorStyle.js'
 
 export default {
-    vectorStyle: VectorStyle, // basemap / externalLayer
-    tileLayer: TileLayer, // basemap / external layer
-    wmsLayer: TileLayer, // external layer
-    choropleth: Choropleth, // thematic layer
+    azureLayer: AzureLayer, // azure layer basemap
+    bingLayer: BingLayer, // bing layer basemap
     boundary: Boundary, // boundary layer
-    markers: Markers, // facility layer
-    events: Events, // event layer
+    choropleth: Choropleth, // thematic layer
     clientCluster: ClientCluster, // event layer
     donutCluster: DonutCluster, // event layer
-    serverCluster: ServerCluster, // event layer
     earthEngine: EarthEngine, // google earth engine layer
-    bingLayer: BingLayer, // bing layer basemap
-    azureLayer: AzureLayer, // azure layer basemap
+    events: Events, // event layer
     geoJson: GeoJson, // tracked entity layer
     group: LayerGroup, // tracked entity layer
+    markers: Markers, // facility layer
+    serverCluster: ServerCluster, // event layer
+    tileLayer: TileLayer, // basemap / external layer
+    vectorStyle: VectorStyle, // basemap / externalLayer
+    wmsLayer: TileLayer, // external layer
 }
