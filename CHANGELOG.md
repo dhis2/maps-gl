@@ -1,3 +1,10 @@
+# [4.1.0](https://github.com/dhis2/maps-gl/compare/v4.0.2...v4.1.0) (2025-06-17)
+
+
+### Features
+
+* azureLayer support [DHIS2-19152] ([#600](https://github.com/dhis2/maps-gl/issues/600)) ([6595ee3](https://github.com/dhis2/maps-gl/commit/6595ee3838177777e49c612b4017e9b987402f06))
+
 ## [4.0.2](https://github.com/dhis2/maps-gl/compare/v4.0.1...v4.0.2) (2025-06-13)
 
 
