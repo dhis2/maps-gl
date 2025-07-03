@@ -50046,9 +50046,4 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
 })()
 
 goog.Timer.defaultTimerObject = self
-
-export default ee;
-
-if (typeof globalThis !== 'undefined') {
-  globalThis.ee = ee;
-}
+module.exports = goog.global.ee = ee
