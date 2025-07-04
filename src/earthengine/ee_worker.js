@@ -394,4 +394,4 @@ if (typeof onconnect !== 'undefined') {
     expose(EarthEngineWorker)
 }
 
-export default null
+export default EarthEngineWorker
