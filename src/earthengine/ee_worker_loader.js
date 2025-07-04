@@ -1,4 +1,5 @@
 import { wrap, proxy } from 'comlink'
+import WorkerURL from './ee_worker.js?worker&url'
 
 let resolvedWorker
 
@@ -12,19 +13,13 @@ const getEarthEngineWorker = getAuthToken =>
             const EarthEngineWorker = wrap(
                 typeof SharedWorker !== 'undefined'
                     ? new SharedWorker(
-                          new URL(
-                              '../earthengine/ee_worker.js',
-                              import.meta.url
-                          ),
-                          { type: 'module' }
-                      ).port
+                        WorkerURL,
+                        { type: 'module' }
+                    ).port
                     : new Worker(
-                          new URL(
-                              '../earthengine/ee_worker.js',
-                              import.meta.url
-                          ),
-                          { type: 'module' }
-                      )
+                        WorkerURL,
+                        { type: 'module' }
+                    )
             )
 
             EarthEngineWorker.setAuthToken(proxy(getAuthToken))
