@@ -20,17 +20,14 @@ const opacityFactor = {
 const getOpacity = (key, opacity) => opacity * (opacityFactor[key] || 1)
 
 export const setLayersOpacity = (mapgl, id, opacity) => {
-    Object.keys(properties).forEach(key => {
-        const layerId = `${id}-${key}`
-
-        if (mapgl.getLayer(layerId)) {
-            properties[key].forEach(property =>
-                mapgl.setPaintProperty(
-                    layerId,
-                    property,
-                    getOpacity(key, opacity)
-                )
-            )
-        }
-    })
+    mapgl
+        .getStyle()
+        .layers.filter(layer => layer.id.startsWith(id))
+        .forEach(layer => {
+            const key = layer.id.split('-').pop()
+            const value = getOpacity(key, opacity)
+            properties[key]?.forEach(property => {
+                mapgl.setPaintProperty(layer.id, property, value)
+            })
+        })
 }

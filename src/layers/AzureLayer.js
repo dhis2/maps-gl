@@ -23,7 +23,7 @@ class AzureLayer extends Layer {
 
         style.forEach(tilesetId => {
             this.addLayer({
-                id: `${id}-${tilesetId}`,
+                id: `${id}-${tilesetId}-raster`,
                 type: 'raster',
                 source: `${id}-${tilesetId}`,
             })
