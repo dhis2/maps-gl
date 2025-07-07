@@ -1,3 +1,10 @@
+## [4.1.1](https://github.com/dhis2/maps-gl/compare/v4.1.0...v4.1.1) (2025-07-07)
+
+
+### Bug Fixes
+
+* setting opacity of azure layers ([#603](https://github.com/dhis2/maps-gl/issues/603)) ([9aeb678](https://github.com/dhis2/maps-gl/commit/9aeb67835ad587cb2e8813f0e8430d2ba79b74d4))
+
 # [4.1.0](https://github.com/dhis2/maps-gl/compare/v4.0.2...v4.1.0) (2025-06-17)
 
 
