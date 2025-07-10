@@ -15,13 +15,15 @@ const getEarthEngineWorker = getAuthToken =>
                           new URL(
                               '../earthengine/ee_worker.js',
                               import.meta.url
-                          )
+                          ),
+                          { type: 'module' }
                       ).port
                     : new Worker(
                           new URL(
                               '../earthengine/ee_worker.js',
                               import.meta.url
-                          )
+                          ),
+                          { type: 'module' }
                       )
             )
 
