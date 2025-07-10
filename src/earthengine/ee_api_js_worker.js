@@ -1,3 +1,4 @@
+/* eslint-disable */
 /*
 
  Copyright The Closure Library Authors.
