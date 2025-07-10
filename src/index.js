@@ -1,8 +1,8 @@
-import Map from './Map'
-import supportedLayers from './layers/layerTypes'
-import supportedControls from './controls/controlTypes'
-import getEarthEngineWorker from './earthengine'
-import { getLabelPosition } from './utils/labels'
+import supportedControls from './controls/controlTypes.js'
+import getEarthEngineWorker from './earthengine/index.js'
+import supportedLayers from './layers/layerTypes.js'
+import Map from './Map.js'
+import { getLabelPosition } from './utils/labels.js'
 
 /**
  *  Wrapper around MapLibre GL JS for DHIS2 Maps

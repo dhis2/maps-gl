@@ -1,5 +1,5 @@
-import { labelSource, labelLayer } from '../labels'
-import defaults from '../style'
+import { labelSource, labelLayer } from '../labels.js'
+import { textOpacity } from '../style.js'
 
 const id = 'abc'
 const opacity = 0.5
@@ -58,7 +58,13 @@ const features = [
         },
     },
 ]
-const generateLabelSourceItem = (coordinates, name, anchor, offset, value) => {
+const generateLabelSourceItem = ({
+    coordinates,
+    name,
+    anchor,
+    offset,
+    value,
+}) => {
     return {
         type: 'Feature',
         geometry: {
@@ -83,37 +89,37 @@ describe('labels', () => {
                 type: 'FeatureCollection',
                 features: [
                     // Label for a polygon
-                    generateLabelSourceItem(
-                        [0.5, 0.5],
-                        'Feature1',
-                        'center',
-                        [0, 0],
-                        1
-                    ),
+                    generateLabelSourceItem({
+                        coordinates: [0.5, 0.5],
+                        name: 'Feature1',
+                        anchor: 'center',
+                        offset: [0, 0],
+                        value: 1,
+                    }),
                     // Label for a point with a valid value which is not 0
-                    generateLabelSourceItem(
-                        [0, 0],
-                        'Feature2',
-                        'top',
-                        [0, 0.5],
-                        1
-                    ),
+                    generateLabelSourceItem({
+                        coordinates: [0, 0],
+                        name: 'Feature2',
+                        anchor: 'top',
+                        offset: [0, 0.5],
+                        value: 1,
+                    }),
                     // Label for a point with a valid value which is 0
-                    generateLabelSourceItem(
-                        [0, 0],
-                        'Feature3',
-                        'top',
-                        [0, 0.5],
-                        0
-                    ),
+                    generateLabelSourceItem({
+                        coordinates: [0, 0],
+                        name: 'Feature3',
+                        anchor: 'top',
+                        offset: [0, 0.5],
+                        value: 0,
+                    }),
                     // Label for a point with no value
-                    generateLabelSourceItem(
-                        [0, 0],
-                        'Feature4',
-                        'top',
-                        [0, 0.5],
-                        'No Data'
-                    ),
+                    generateLabelSourceItem({
+                        coordinates: [0, 0],
+                        name: 'Feature4',
+                        anchor: 'top',
+                        offset: [0, 0.5],
+                        value: 'No Data',
+                    }),
                 ],
             },
         }
@@ -133,6 +139,6 @@ describe('labels', () => {
     })
 
     it('Should set default opacity for label layer', () => {
-        expect(labelLayer({ id }).paint['text-opacity']).toBe(defaults.opacity)
+        expect(labelLayer({ id }).paint['text-opacity']).toBe(textOpacity)
     })
 })

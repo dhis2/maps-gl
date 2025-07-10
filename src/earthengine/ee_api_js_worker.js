@@ -1,3 +1,4 @@
+/* eslint-disable */
 /*
 
  Copyright The Closure Library Authors.
@@ -4137,7 +4138,7 @@ goog.string.internal.NULL_RE_ = /\x00/g
 goog.string.internal.ALL_RE_ = /[\x00&<>"']/
 goog.string.internal.whitespaceEscape = function (str, opt_xml) {
     return goog.string.internal.newLineToBr(
-        str.replace(/  /g, ' &#160;'),
+        str.replace(/ {2}/g, ' &#160;'),
         opt_xml
     )
 }
@@ -12506,7 +12507,7 @@ goog.string.unescapePureXmlEntities_ = function (str) {
 }
 goog.string.HTML_ENTITY_PATTERN_ = /&([^;\s<&]+);?/g
 goog.string.whitespaceEscape = function (str, opt_xml) {
-    return goog.string.newLineToBr(str.replace(/  /g, ' &#160;'), opt_xml)
+    return goog.string.newLineToBr(str.replace(/ {2}/g, ' &#160;'), opt_xml)
 }
 goog.string.preserveSpaces = function (str) {
     return str.replace(/(^|[\n ]) /g, '$1' + goog.string.Unicode.NBSP)
@@ -34787,7 +34788,7 @@ goog.async.Deferred.prototype.makeStackTraceLong_ = function (error) {
         this.constructorStack_ &&
         goog.isObject(error) &&
         error.stack &&
-        /^[^\n]+(\n   [^\n]+)+/.test(error.stack) &&
+        /^[^\n]+(\n {3}[^\n]+)+/.test(error.stack) &&
         (error.stack =
             error.stack + '\nDEFERRED OPERATION:\n' + this.constructorStack_)
 }

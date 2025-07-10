@@ -1,4 +1,4 @@
-import { hasClasses, getHistogramStatistics } from '../ee_worker_utils'
+import { hasClasses, getHistogramStatistics } from '../ee_worker_utils.js'
 
 const scale = 1000
 

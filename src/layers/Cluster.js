@@ -1,10 +1,10 @@
 import centerOfMass from '@turf/center-of-mass'
-import Layer from './Layer'
-import Spider from './Spider'
-import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers'
-import { isClusterPoint } from '../utils/filters'
-import { featureCollection } from '../utils/geometry'
-import { eventStrokeColor } from '../utils/style'
+import { isClusterPoint } from '../utils/filters.js'
+import { featureCollection } from '../utils/geometry.js'
+import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers.js'
+import { eventStrokeColor } from '../utils/style.js'
+import Layer from './Layer.js'
+import Spider from './Spider.js'
 
 class Cluster extends Layer {
     constructor(options) {
@@ -110,7 +110,9 @@ class Cluster extends Layer {
             const source = mapgl.getSource(this.getId())
 
             source.getClusterExpansionZoom(clusterId, (error, zoom) => {
-                if (error) return
+                if (error) {
+                    return
+                }
                 mapgl.easeTo({ center, zoom: zoom + 1 })
             })
         }

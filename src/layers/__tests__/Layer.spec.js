@@ -1,4 +1,5 @@
-import Layer from '../Layer'
+/* global mockMap, mockMapGL */
+import Layer from '../Layer.js'
 
 const data = [
     {

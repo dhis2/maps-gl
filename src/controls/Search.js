@@ -102,7 +102,7 @@ class SearchControl {
     }
 
     // Clear search list when input field is changing
-    _onKeyDown = evt =>
+    _onKeyDown = () =>
         setTimeout(() => {
             const { selected } = this._typeahead
 

@@ -1,11 +1,8 @@
 import { Point } from 'maplibre-gl'
-import spiderifier from '../utils/spiderifier'
-import { eventStrokeColor as strokeColor, strokeWidth } from '../utils/style'
+import spiderifier from '../utils/spiderifier.js'
+import { eventStrokeColor as strokeColor, strokeWidth } from '../utils/style.js'
 
 const Spider = function (map, options) {
-    let spider
-    let spiderId
-
     const initializeLeg = leg => {
         const { feature, elements, param } = leg
         const { radius, fillColor, opacity } = options
@@ -31,6 +28,36 @@ const Spider = function (map, options) {
         elements.container.style.opacity = opacity
         elements.pin.appendChild(marker)
     }
+
+    const onClick = (evt, leg) => {
+        evt.stopPropagation()
+
+        const { feature, marker, param } = leg
+        const { angle, legLength } = param
+        const length = legLength + options.radius
+        const offset = new Point(
+            length * Math.cos(angle),
+            length * Math.sin(angle)
+        )
+        const point = map.project(marker.getLngLat()).add(offset)
+        const { lng, lat } = map.unproject(point)
+
+        options.onClick({
+            type: 'click',
+            coordinates: [lng, lat],
+            position: [evt.x, evt.pageY || evt.y],
+            feature: feature,
+        })
+    }
+
+    const spider = spiderifier(map, {
+        animate: true,
+        animationSpeed: 200,
+        customPin: true,
+        initializeLeg: initializeLeg,
+        onClick: onClick,
+    })
+    let spiderId
 
     const setOpacity = opacity => {
         if (spiderId) {
@@ -64,35 +91,6 @@ const Spider = function (map, options) {
     const isExpanded = clusterId => clusterId === spiderId
 
     const getId = () => spiderId
-
-    const onClick = (evt, leg) => {
-        evt.stopPropagation()
-
-        const { feature, marker, param } = leg
-        const { angle, legLength } = param
-        const length = legLength + options.radius
-        const offset = new Point(
-            length * Math.cos(angle),
-            length * Math.sin(angle)
-        )
-        const point = map.project(marker.getLngLat()).add(offset)
-        const { lng, lat } = map.unproject(point)
-
-        options.onClick({
-            type: 'click',
-            coordinates: [lng, lat],
-            position: [evt.x, evt.pageY || evt.y],
-            feature: feature,
-        })
-    }
-
-    spider = spiderifier(map, {
-        animate: true,
-        animationSpeed: 200,
-        customPin: true,
-        initializeLeg: initializeLeg,
-        onClick: onClick,
-    })
 
     return {
         spiderfy,

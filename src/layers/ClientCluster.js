@@ -1,7 +1,7 @@
-import Cluster from './Cluster'
-import { featureCollection } from '../utils/geometry'
-import { clusterLayer, clusterCountLayer } from '../utils/layers'
-import { eventStrokeColor, clusterCountColor } from '../utils/style'
+import { featureCollection } from '../utils/geometry.js'
+import { clusterLayer, clusterCountLayer } from '../utils/layers.js'
+import { eventStrokeColor, clusterCountColor } from '../utils/style.js'
+import Cluster from './Cluster.js'
 
 class ClientCluster extends Cluster {
     createSource() {

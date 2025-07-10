@@ -1,5 +1,8 @@
-import ee from './ee_api_js_worker'
-import { squareMetersToHectares, squareMetersToAcres } from '../utils/numbers'
+import {
+    squareMetersToHectares,
+    squareMetersToAcres,
+} from '../utils/numbers.js'
+import ee from './ee_api_js_worker.js'
 
 const classAggregation = ['percentage', 'hectares', 'acres']
 

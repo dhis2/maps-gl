@@ -1,5 +1,5 @@
 import { Evented } from 'maplibre-gl'
-import { getBoundsFromLayers } from '../utils/geometry'
+import { getBoundsFromLayers } from '../utils/geometry.js'
 
 class LayerGroup extends Evented {
     constructor(options) {
