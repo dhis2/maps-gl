@@ -1,10 +1,10 @@
 import { ScaleControl } from 'maplibre-gl'
-import Attribution from './Attribution'
-import Navigation from './Navigation'
-import Search from './Search'
-import Measure from './Measure'
-import FitBounds from './FitBounds'
-import Fullscreen from './Fullscreen'
+import Attribution from './Attribution.js'
+import FitBounds from './FitBounds.js'
+import Fullscreen from './Fullscreen.js'
+import Measure from './Measure.js'
+import Navigation from './Navigation.js'
+import Search from './Search.js'
 import './Controls.css'
 
 export default {
