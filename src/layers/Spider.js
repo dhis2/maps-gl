@@ -3,15 +3,6 @@ import spiderifier from '../utils/spiderifier.js'
 import { eventStrokeColor as strokeColor, strokeWidth } from '../utils/style.js'
 
 const Spider = function (map, options) {
-    const spider = spiderifier(map, {
-        animate: true,
-        animationSpeed: 200,
-        customPin: true,
-        initializeLeg: initializeLeg,
-        onClick: onClick,
-    })
-    let spiderId
-
     const initializeLeg = leg => {
         const { feature, elements, param } = leg
         const { radius, fillColor, opacity } = options
@@ -58,6 +49,15 @@ const Spider = function (map, options) {
             feature: feature,
         })
     }
+
+    const spider = spiderifier(map, {
+        animate: true,
+        animationSpeed: 200,
+        customPin: true,
+        initializeLeg: initializeLeg,
+        onClick: onClick,
+    })
+    let spiderId
 
     const setOpacity = opacity => {
         if (spiderId) {
