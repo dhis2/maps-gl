@@ -1,17 +1,31 @@
 import {
+    colorExpr,
+    widthExpr,
+    radiusExpr,
+    clusterRadiusExpr,
+} from './expressions.js'
+import {
     isPointNoSymbol,
     isPolygon,
     isLine,
     isCluster,
     isSymbol,
-} from './filters'
+} from './filters.js'
 import {
-    colorExpr,
-    widthExpr,
-    radiusExpr,
-    clusterRadiusExpr,
-} from './expressions'
-import defaults from './style'
+    textFont,
+    textSize,
+    textColor,
+    textOpacity,
+    circleRadius,
+    circleStrokeColor,
+    circleOpacity,
+    lineStrokeColor,
+    lineOpacity,
+    fillOpacity,
+    iconOpacity,
+    noDataColor,
+    strokeWidth,
+} from './style.js'
 
 export const BASEMAP_POSITION = 0
 export const OVERLAY_START_POSITION = 1
@@ -31,12 +45,12 @@ export const pointLayer = ({
     type: 'circle',
     source: source || id,
     paint: {
-        'circle-color': colorExpr(color || defaults.noDataColor),
-        'circle-radius': radiusExpr(radius || defaults.radius),
-        'circle-opacity': opacity ?? defaults.opacity,
+        'circle-color': colorExpr(color || noDataColor),
+        'circle-radius': radiusExpr(radius || circleRadius),
+        'circle-opacity': opacity ?? circleOpacity,
         'circle-stroke-width': widthExpr(width),
-        'circle-stroke-color': strokeColor || defaults.strokeColor,
-        'circle-stroke-opacity': opacity ?? defaults.opacity,
+        'circle-stroke-color': strokeColor || circleStrokeColor,
+        'circle-stroke-opacity': opacity ?? circleOpacity,
     },
     filter: filter || isPointNoSymbol,
 })
@@ -47,9 +61,9 @@ export const lineLayer = ({ id, color, width, opacity, source, filter }) => ({
     type: 'line',
     source: source || id,
     paint: {
-        'line-color': color || defaults.strokeColor,
+        'line-color': color || lineStrokeColor,
         'line-width': widthExpr(width),
-        'line-opacity': opacity ?? defaults.opacity,
+        'line-opacity': opacity ?? lineOpacity,
     },
     layout: {
         'line-join': 'round',
@@ -64,8 +78,8 @@ export const polygonLayer = ({ id, color, opacity, source, filter }) => ({
     type: 'fill',
     source: source || id,
     paint: {
-        'fill-color': colorExpr(color || defaults.noDataColor),
-        'fill-opacity': opacity ?? defaults.opacity,
+        'fill-color': colorExpr(color || noDataColor),
+        'fill-opacity': opacity ?? fillOpacity,
     },
     filter: filter || isPolygon,
 })
@@ -84,9 +98,9 @@ export const outlineLayer = ({
     type: 'line',
     source: source || id,
     paint: {
-        'line-color': color || defaults.strokeColor,
+        'line-color': color || lineStrokeColor,
         'line-width': widthExpr(width),
-        'line-opacity': opacity ?? defaults.opacity,
+        'line-opacity': opacity ?? lineOpacity,
     },
     layout: {
         'line-join': 'round',
@@ -105,7 +119,7 @@ export const symbolLayer = ({ id, opacity, source, filter }) => ({
         'icon-allow-overlap': true,
     },
     paint: {
-        'icon-opacity': opacity ?? defaults.opacity,
+        'icon-opacity': opacity ?? iconOpacity,
     },
     filter: filter || isSymbol,
 })
@@ -119,10 +133,10 @@ export const clusterLayer = ({ id, color, strokeColor, opacity }) => ({
     paint: {
         'circle-color': color,
         'circle-radius': clusterRadiusExpr,
-        'circle-opacity': opacity ?? defaults.opacity,
+        'circle-opacity': opacity ?? circleOpacity,
         'circle-stroke-color': strokeColor,
-        'circle-stroke-width': defaults.strokeWidth,
-        'circle-stroke-opacity': opacity ?? defaults.opacity,
+        'circle-stroke-width': strokeWidth,
+        'circle-stroke-opacity': opacity ?? circleOpacity,
     },
 })
 
@@ -134,12 +148,12 @@ export const clusterCountLayer = ({ id, color, opacity }) => ({
     filter: isCluster,
     layout: {
         'text-field': '{point_count_abbreviated}',
-        'text-font': defaults.textFont,
-        'text-size': defaults.textSize,
+        'text-font': textFont,
+        'text-size': textSize,
         'text-allow-overlap': true,
     },
     paint: {
-        'text-color': color || defaults.textColor,
-        'text-opacity': opacity ?? defaults.opacity,
+        'text-color': color || textColor,
+        'text-opacity': opacity ?? textOpacity,
     },
 })

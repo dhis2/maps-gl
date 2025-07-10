@@ -1,4 +1,5 @@
-import EarthEngine from '../EarthEngine'
+/* global mockMap, mockMapGL */
+import EarthEngine from '../EarthEngine.js'
 
 const urlFormat =
     'https://earthengine.googleapis.com/v1alpha/projects/earthengine-legacy/maps/.../tiles/{z}/{x}/{y}'
