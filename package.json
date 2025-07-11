@@ -10,6 +10,13 @@
     ],
     "main": "build/cjs/index.js",
     "module": "build/es/index.js",
+    "exports": {
+        ".": {
+            "require": "./build/cjs/index.js",
+            "import": "./build/es/index.js"
+        },
+        "./build/es/earthengine/ee_worker.js": "./build/es/earthengine/ee_worker.js"
+    },
     "repository": "https://github.com/dhis2/maps-gl",
     "author": "Bjorn Sandvik <bjorn@dhis2.org>",
     "maintainers": [
