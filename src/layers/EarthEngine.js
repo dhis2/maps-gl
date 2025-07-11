@@ -1,4 +1,4 @@
-import getEarthEngineWorker from '../earthengine/index.js'
+import { getEarthEngineWorker } from '../earthengine/index.js'
 import { getBufferGeometry } from '../utils/buffers.js'
 import { setTemplate } from '../utils/core.js'
 import { defaultOptions, getWorkerOptions } from '../utils/earthengine.js'

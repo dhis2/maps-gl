@@ -3,7 +3,7 @@ import { wrap, proxy } from 'comlink'
 let resolvedWorker
 
 // Return same worker if already authenticated
-const getEarthEngineWorker = getAuthToken =>
+const getEarthEngineWorker = (workerUrl, getAuthToken) =>
     new Promise((resolve, reject) => {
         if (resolvedWorker) {
             resolve(resolvedWorker)
@@ -11,18 +11,12 @@ const getEarthEngineWorker = getAuthToken =>
             // Service Worker not supported in Safari
             const EarthEngineWorker = wrap(
                 typeof SharedWorker !== 'undefined'
-                    ? new SharedWorker(
-                          new URL(
-                              '../earthengine/ee_worker.js',
-                              import.meta.url
-                          )
-                      ).port
-                    : new Worker(
-                          new URL(
-                              '../earthengine/ee_worker.js',
-                              import.meta.url
-                          )
-                      )
+                    ? new SharedWorker(workerUrl, {
+                          type: 'module',
+                      }).port
+                    : new Worker(workerUrl, {
+                          type: 'module',
+                      })
             )
 
             EarthEngineWorker.setAuthToken(proxy(getAuthToken))
