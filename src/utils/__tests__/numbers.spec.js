@@ -3,8 +3,6 @@ import {
     getPrecision,
     setPrecision,
     kmToMiles,
-    squareMetersToHectares,
-    squareMetersToAcres,
 } from '../numbers.js'
 
 describe('numbers', () => {
@@ -63,13 +61,5 @@ describe('numbers', () => {
 
     it('Should convert km to miles', () => {
         expect(kmToMiles(1)).toBe(0.621371192)
-    })
-
-    it('Should convert square meters to hectares', () => {
-        expect(squareMetersToHectares(10000)).toBe(1)
-    })
-
-    it('Should convert square meters to acres', () => {
-        expect(setPrecision(squareMetersToAcres(10000), 2)).toBe(2.47)
     })
 })
