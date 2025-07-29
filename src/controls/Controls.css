@@ -106,7 +106,6 @@
 .dhis2-map-split-view
     .maplibregl-ctrl-attrib.maplibregl-compact:hover
     .maplibregl-ctrl-attrib-inner {
-    position: relative;
     right: 0;
     padding: 2px 8px;
 }
