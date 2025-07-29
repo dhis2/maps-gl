@@ -91,7 +91,7 @@
 }
 
 .dhis2-map-split-view .maplibregl-ctrl-attrib {
-    position: absolute;
+    position: absolute !important;
     right: 1px;
     bottom: 1px;
     font-size: 12px;
@@ -99,16 +99,19 @@
 }
 
 .dhis2-map-split-view .maplibregl-ctrl-attrib.maplibregl-compact:hover {
-    height: 24px;
-    padding-top: 4px;
+    height: 0;
 }
 
 .dhis2-map-split-view
     .maplibregl-ctrl-attrib.maplibregl-compact:hover
     .maplibregl-ctrl-attrib-inner {
-    position: absolute;
     right: 0;
-    padding: 2px 8px;
+}
+
+.dhis2-map-split-view
+    .maplibregl-ctrl-attrib.maplibregl-compact
+    .maplibregl-ctrl-attrib-inner {
+    padding-top: 4px;
 }
 
 .dhis2-map-split-view .maplibregl-ctrl-attrib.maplibregl-compact:after {
