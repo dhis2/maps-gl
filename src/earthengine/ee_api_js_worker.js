@@ -50047,5 +50047,5 @@ ee.data.Profiler.Format.JSON = new ee.data.Profiler.Format('json')
 })()
 
 goog.Timer.defaultTimerObject = self
-goog.global.ee = ee
-export default ee
+goog.global.ee = ee // Expose `ee` on the global object for legacy consumers
+export default ee // Export `ee` as the ES module default (replaces CommonJS export)
