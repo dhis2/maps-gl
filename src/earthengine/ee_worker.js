@@ -1,5 +1,6 @@
+import polygonBuffer from '@turf/buffer'
+import circle from '@turf/circle'
 import { expose } from 'comlink'
-import { getBufferGeometry } from '../utils/buffers.js'
 import ee from './ee_api_js_worker.js' // https://github.com/google/earthengine-api/pull/173
 import {
     getInfo,
@@ -17,6 +18,12 @@ import {
 const IMAGE = 'Image'
 const IMAGE_COLLECTION = 'ImageCollection'
 const FEATURE_COLLECTION = 'FeatureCollection'
+
+const getBufferGeometry = ({ geometry }, buffer) =>
+    (geometry.type === 'Point'
+        ? circle(geometry, buffer)
+        : polygonBuffer(geometry, buffer)
+    ).geometry
 
 // Options are defined here:
 // https://developers.google.com/earth-engine/apidocs/ee-featurecollection-draw
@@ -393,3 +400,5 @@ if (typeof onconnect !== 'undefined') {
 } else {
     expose(EarthEngineWorker)
 }
+
+export default ''
