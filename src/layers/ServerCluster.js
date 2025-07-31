@@ -1,17 +1,17 @@
 import SphericalMercator from '@mapbox/sphericalmercator'
 import centroid from '@turf/centroid'
-import Cluster from './Cluster'
+import { isClusterPoint } from '../utils/filters.js'
+import { earthRadius } from '../utils/geo.js'
+import { featureCollection } from '../utils/geometry.js'
 import {
     pointLayer,
     polygonLayer,
     outlineLayer,
     clusterLayer,
     clusterCountLayer,
-} from '../utils/layers'
-import { isClusterPoint } from '../utils/filters'
-import { featureCollection } from '../utils/geometry'
-import { eventStrokeColor, clusterCountColor } from '../utils/style'
-import { earthRadius } from '../utils/geo'
+} from '../utils/layers.js'
+import { eventStrokeColor, clusterCountColor } from '../utils/style.js'
+import Cluster from './Cluster.js'
 
 class ServerCluster extends Cluster {
     currentTiles = []
