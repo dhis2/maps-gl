@@ -1,3 +1,10 @@
+## [4.1.2](https://github.com/dhis2/maps-gl/compare/v4.1.1...v4.1.2) (2025-07-31)
+
+
+### Bug Fixes
+
+* update ee worker files and attributions style ([#602](https://github.com/dhis2/maps-gl/issues/602)) ([4a469c0](https://github.com/dhis2/maps-gl/commit/4a469c064069a0176b18ac8bd250d98bbc84fc81))
+
 ## [4.1.1](https://github.com/dhis2/maps-gl/compare/v4.1.0...v4.1.1) (2025-07-07)
 
 
