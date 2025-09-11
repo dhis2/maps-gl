@@ -1,4 +1,4 @@
-import Layer from './Layer'
+import Layer from './Layer.js'
 
 class TileLayer extends Layer {
     constructor(options) {

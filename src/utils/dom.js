@@ -1,4 +1,4 @@
-export const createElement = (element, className, text, appendTo) => {
+export const createElement = ({ element, className, text, appendTo }) => {
     const el = document.createElement(element)
 
     if (className) {

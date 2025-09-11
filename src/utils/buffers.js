@@ -1,7 +1,7 @@
-import circle from '@turf/circle'
 import polygonBuffer from '@turf/buffer'
-import { featureCollection } from './geometry'
-import { colorExpr } from './expressions'
+import circle from '@turf/circle'
+import { colorExpr } from './expressions.js'
+import { featureCollection } from './geometry.js'
 
 const defaults = {
     color: '#95c8fb',
