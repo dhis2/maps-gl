@@ -1,5 +1,5 @@
-import Layer from './Layer'
-import { heatLayer } from '../utils/layers'
+import { heatLayer } from '../utils/layers.js'
+import Layer from './Layer.js'
 
 class Heat extends Layer {
     constructor(options) {
@@ -11,9 +11,13 @@ class Heat extends Layer {
 
     createLayers() {
         const id = this.getId()
+        const { weight, intensity, color, radius, opacity } = this.options
         const isInteractive = false
 
-        this.addLayer(heatLayer({ id }), { isInteractive })
+        this.addLayer(
+            heatLayer({ id, weight, intensity, color, radius, opacity }),
+            { isInteractive }
+        )
     }
 }
 
