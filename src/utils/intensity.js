@@ -3,9 +3,6 @@ export const setLayersIntensity = (mapgl, id, intensity) => {
         .getStyle()
         .layers.filter(layer => layer.id.startsWith(id))
         .forEach(layer => {
-            const key = layer.id.split('-').pop()
-            properties[key]?.forEach(property => {
-                mapgl.setPaintProperty(layer.id, property, intensity)
-            })
+            mapgl.setPaintProperty(layer.id, 'heatmap-intensity', intensity)
         })
 }
