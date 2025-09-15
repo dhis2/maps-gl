@@ -1,13 +1,19 @@
+export const makeHeatmapIntensity = i => i * 2
+
 export const setLayersIntensity = (mapgl, id, intensity) => {
     mapgl
         .getStyle()
         .layers.filter(layer => layer.id.startsWith(id))
         .forEach(layer => {
-            mapgl.setPaintProperty(layer.id, 'heatmap-intensity', intensity)
+            mapgl.setPaintProperty(
+                layer.id,
+                'heatmap-intensity',
+                makeHeatmapIntensity(intensity)
+            )
         })
 }
 
-const makeHeatmapRadius = r => [
+export const makeHeatmapRadius = r => [
     'interpolate',
     ['linear'],
     ['zoom'],
