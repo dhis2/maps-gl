@@ -13,7 +13,7 @@ export const setLayersIntensity = (mapgl, id, intensity) => {
         })
 }
 
-export const makeHeatmapRadius = r => [
+export const makeHeatmapRadius = r => 100 * r /*[
     'interpolate',
     ['linear'],
     ['zoom'],
@@ -21,7 +21,7 @@ export const makeHeatmapRadius = r => [
     50 * r,
     20,
     1000 * r,
-]
+]*/
 
 export const setLayersRadius = (mapgl, id, radius) => {
     mapgl
