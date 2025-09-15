@@ -44,7 +44,7 @@ class Heat extends Layer {
             )
         }
 
-        this.options.intensity = makeHeatmapIntensity(intensity)
+        this.options.intensity = intensity
     }
 
     setRadius(radius) {
@@ -54,7 +54,7 @@ class Heat extends Layer {
             setLayersRadius(mapgl, this.getId(), makeHeatmapRadius(radius))
         }
 
-        this.options.radius = makeHeatmapRadius(radius)
+        this.options.radius = radius
     }
 }
 
