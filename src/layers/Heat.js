@@ -1,4 +1,5 @@
 import {
+    setLayersOpacity,
     makeHeatmapIntensity,
     setLayersIntensity,
     makeHeatmapRadius,
@@ -17,44 +18,55 @@ class Heat extends Layer {
 
     createLayers() {
         const id = this.getId()
-        const { weight, intensity, color, radius, opacity } = this.options
+        const { heatWeight, heatIntensity, heatColor, heatRadius, opacity } =
+            this.options
         const isInteractive = false
+        const transformedIntensity = makeHeatmapIntensity(heatIntensity)
+        const transformedRadius = makeHeatmapRadius(heatRadius)
 
         this.addLayer(
             heatLayer({
                 id,
-                weight,
-                intensity: makeHeatmapIntensity(intensity),
-                color,
-                radius: makeHeatmapRadius(radius),
+                heatWeight,
+                heatIntensity: transformedIntensity,
+                heatColor,
+                heatRadius: transformedRadius,
                 opacity,
             }),
             { isInteractive }
         )
     }
 
-    setIntensity(intensity) {
+    setOpacity(opacity) {
         const mapgl = this.getMapGL()
 
         if (mapgl) {
-            setLayersIntensity(
-                mapgl,
-                this.getId(),
-                makeHeatmapIntensity(intensity)
-            )
+            setLayersOpacity(mapgl, this.getId(), opacity)
         }
 
-        this.options.intensity = intensity
+        this.options.opacity = opacity
     }
 
-    setRadius(radius) {
+    setIntensity(heatIntensity) {
         const mapgl = this.getMapGL()
+        const transformedIntensity = makeHeatmapIntensity(heatIntensity)
 
         if (mapgl) {
-            setLayersRadius(mapgl, this.getId(), makeHeatmapRadius(radius))
+            setLayersIntensity(mapgl, this.getId(), transformedIntensity)
         }
 
-        this.options.radius = radius
+        this.options.heatIntensity = transformedIntensity
+    }
+
+    setRadius(heatRadius) {
+        const mapgl = this.getMapGL()
+        const transformedRadius = makeHeatmapRadius(heatRadius)
+
+        if (mapgl) {
+            setLayersRadius(mapgl, this.getId(), transformedRadius)
+        }
+
+        this.options.heatRadius = heatRadius
     }
 }
 
