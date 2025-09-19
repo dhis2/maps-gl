@@ -303,11 +303,16 @@ class EarthEngineWorker {
         // Used for "constrained" WorldPop layers
         // We need to unmask the image to get the correct population density
         if (unmaskAggregation || typeof unmaskAggregation === 'number') {
-            image = image.unmask(
+            const fillValue =
                 typeof unmaskAggregation === 'number'
                     ? unmaskAggregation
                     : DEFAULT_UNMASK_VALUE
-            )
+        
+            image = image.unmask(fillValue)
+        
+            if (this.eeImageBands) {
+                this.eeImageBands = this.eeImageBands.unmask(fillValue)
+            }
         }
 
         if (collection) {
