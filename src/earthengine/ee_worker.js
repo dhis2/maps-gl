@@ -307,9 +307,9 @@ class EarthEngineWorker {
                 typeof unmaskAggregation === 'number'
                     ? unmaskAggregation
                     : DEFAULT_UNMASK_VALUE
-        
+
             image = image.unmask(fillValue)
-        
+
             if (this.eeImageBands) {
                 this.eeImageBands = this.eeImageBands.unmask(fillValue)
             }
