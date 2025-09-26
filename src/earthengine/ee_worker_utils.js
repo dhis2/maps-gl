@@ -120,13 +120,14 @@ export const getClassifiedImage = (
         return { eeImage, params: style }
     }
 
+    const sortedLegend = legend.slice().sort((a, b) => a.from - b.from)
     const min = 0
-    const max = legend.length - 1
+    const max = sortedLegend.length - 1
     const { palette } = style
     let zones
 
     for (let i = min, item; i < max; i++) {
-        item = legend[i]
+        item = sortedLegend[i]
 
         if (!zones) {
             zones = eeImage.gt(item.to)
@@ -182,4 +183,45 @@ export const applyCloudMask = (collection, cloudScore) => {
     return collection
         .linkCollection(ee.ImageCollection(datasetId), [band])
         .map(img => img.updateMask(img.select(band).gte(clearThreshold)))
+}
+
+// Converts a daily ImageCollection into monthly composites.
+export const aggregateMonthly = (collection, reducer = ee.Reducer.mean()) => {
+    const dateRange = collection.reduceColumns(ee.Reducer.minMax(), [
+        'system:time_start',
+    ])
+    const minDate = ee.Date.fromYMD(
+        ee.Date(dateRange.get('min')).get('year'),
+        ee.Date(dateRange.get('min')).get('month'),
+        1
+    )
+    const maxDate = ee.Date(dateRange.get('max')) //.advance(1, 'month') // Include last month
+    const months = ee.List.sequence(0, maxDate.difference(minDate, 'month'))
+
+    // Get original band names to rename after reduction
+    const bandNames = ee.Image(collection.first()).bandNames()
+
+    const monthlyImages = ee.ImageCollection.fromImages(
+        months.map(m => {
+            const startDate = minDate.advance(ee.Number(m), 'month')
+            const endDate = startDate.advance(1, 'month')
+            let monthlyCollection = ee.ImageCollection(
+                collection.filterDate(startDate, endDate)
+            )
+            monthlyCollection = monthlyCollection.reduce(reducer)
+
+            // Rename bands to remove reducer suffix
+            monthlyCollection = monthlyCollection.rename(bandNames)
+
+            return monthlyCollection.set({
+                'system:time_start': startDate.millis(),
+                'system:time_end': endDate.millis(),
+                year: startDate.get('year'),
+                month: startDate.get('month'),
+                'system:index': startDate.format('YYYY_MM'),
+            })
+        })
+    )
+
+    return monthlyImages.sort('system:time_start', false)
 }
