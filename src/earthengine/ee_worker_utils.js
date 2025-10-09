@@ -10,6 +10,22 @@ const DEFAULT_MASK_VALUE = 0
 
 export const hasClasses = type => classAggregation.includes(type)
 
+export const getStartOfEpiYear = year => {
+    const jan1 = new Date(year, 0, 1) // Month is 0-indexed (0 = Jan)
+    const dayOfWeek = jan1.getDay() // Sunday=0, Monday=1, ..., Saturday=6
+
+    const dayOfWeekMondayStart = dayOfWeek === 0 ? 7 : dayOfWeek
+    let startDate
+    if (dayOfWeekMondayStart <= 4) {
+        const diff = dayOfWeekMondayStart - 1
+        startDate = new Date(year, 0, 1 - diff)
+    } else {
+        const diff = 8 - dayOfWeekMondayStart
+        startDate = new Date(year, 0, 1 + diff)
+    }
+    return startDate
+}
+
 // Makes evaluate a promise
 export const getInfo = instance =>
     new Promise((resolve, reject) =>
@@ -186,7 +202,21 @@ export const applyCloudMask = (collection, cloudScore) => {
 }
 
 // Converts a daily ImageCollection into monthly composites.
-export const aggregateMonthly = (collection, reducer = ee.Reducer.mean()) => {
+export const aggregateMonthly = ({
+    collection,
+    metadataOnly,
+    year,
+    reducer,
+}) => {
+    let temporalReducer
+    switch (reducer) {
+        case 'sum':
+            temporalReducer = ee.Reducer.sum()
+            break
+        default:
+            temporalReducer = ee.Reducer.mean()
+            break
+    }
     const dateRange = collection.reduceColumns(ee.Reducer.minMax(), [
         'system:time_start',
     ])
@@ -195,33 +225,327 @@ export const aggregateMonthly = (collection, reducer = ee.Reducer.mean()) => {
         ee.Date(dateRange.get('min')).get('month'),
         1
     )
-    const maxDate = ee.Date(dateRange.get('max')) //.advance(1, 'month') // Include last month
+    const maxDate = ee.Date(dateRange.get('max'))
     const months = ee.List.sequence(0, maxDate.difference(minDate, 'month'))
 
-    // Get original band names to rename after reduction
     const bandNames = ee.Image(collection.first()).bandNames()
 
     const monthlyImages = ee.ImageCollection.fromImages(
         months.map(m => {
             const startDate = minDate.advance(ee.Number(m), 'month')
-            const endDate = startDate.advance(1, 'month')
-            let monthlyCollection = ee.ImageCollection(
-                collection.filterDate(startDate, endDate)
-            )
-            monthlyCollection = monthlyCollection.reduce(reducer)
+            const endDate = startDate.advance(1, 'month').advance(-1, 'second')
+            const tempYear = year || startDate.get('year')
 
-            // Rename bands to remove reducer suffix
-            monthlyCollection = monthlyCollection.rename(bandNames)
+            let image
+            if (metadataOnly) {
+                image = ee.Image(0) // Use a dummy image
+            } else {
+                const monthlyCollection = ee.ImageCollection(
+                    collection.filterDate(startDate, endDate)
+                )
+                image = monthlyCollection
+                    .reduce(temporalReducer)
+                    .rename(bandNames)
+            }
 
-            return monthlyCollection.set({
+            return image.set({
                 'system:time_start': startDate.millis(),
                 'system:time_end': endDate.millis(),
-                year: startDate.get('year'),
+                year: tempYear,
                 month: startDate.get('month'),
-                'system:index': startDate.format('YYYY_MM'),
+                'system:index': ee
+                    .String(tempYear.toString())
+                    .cat(startDate.format('MM')),
             })
         })
     )
 
     return monthlyImages.sort('system:time_start', false)
+}
+
+// Aggregates a daily ImageCollection into weekly composites
+export const aggregateWeekly = ({
+    collection,
+    metadataOnly,
+    year,
+    reducer,
+}) => {
+    let temporalReducer
+    switch (reducer) {
+        case 'sum':
+            temporalReducer = ee.Reducer.sum()
+            break
+        default:
+            temporalReducer = ee.Reducer.mean()
+            break
+    }
+    const dateRange = collection.reduceColumns(ee.Reducer.minMax(), [
+        'system:time_start',
+    ])
+    const minDate = ee.Date(dateRange.get('min'))
+    const maxDate = ee.Date(dateRange.get('max'))
+    const weeks = ee.List.sequence(0, maxDate.difference(minDate, 'week'))
+
+    const bandNames = ee.Image(collection.first()).bandNames()
+
+    const weeklyImages = ee.ImageCollection.fromImages(
+        weeks.map(w => {
+            const startDate = minDate.advance(ee.Number(w), 'week')
+            const endDate = startDate.advance(1, 'week').advance(-1, 'second')
+            const tempYear = year || startDate.get('year')
+
+            let image
+            if (metadataOnly) {
+                image = ee.Image(0) // Use a dummy image
+            } else {
+                const weeklyCollection = ee.ImageCollection(
+                    collection.filterDate(startDate, endDate)
+                )
+                image = weeklyCollection
+                    .reduce(temporalReducer)
+                    .rename(bandNames)
+            }
+
+            return image.set({
+                'system:time_start': startDate.millis(),
+                'system:time_end': endDate.millis(),
+                year: tempYear,
+                week: startDate.format('w'),
+                'system:index': ee
+                    .String(tempYear.toString())
+                    .cat('W')
+                    .cat(startDate.format('w')),
+            })
+        })
+    )
+
+    return weeklyImages.sort('system:time_start', false)
+}
+
+// Aggregates an ImageCollection (with system:time_start and system:time_end)
+// into monthly composites, weighting each image by its overlap duration
+// within the month.
+export const aggregateMonthlyWeighted = ({ collection, year }) => {
+    const dateRange = collection.reduceColumns(ee.Reducer.minMax(), [
+        'system:time_start',
+    ])
+    const minDate = ee.Date.fromYMD(
+        ee.Date(dateRange.get('min')).get('year'),
+        ee.Date(dateRange.get('min')).get('month'),
+        1
+    )
+    const maxDate = ee.Date(dateRange.get('max'))
+    const months = ee.List.sequence(0, maxDate.difference(minDate, 'month'))
+
+    const bandNames = ee.Image(collection.first()).bandNames()
+
+    const monthlyImages = months.map(m => {
+        const monthStartDate = minDate.advance(ee.Number(m), 'month')
+        const monthEndDate = monthStartDate
+            .advance(1, 'month')
+            .advance(-1, 'second')
+
+        // Compute overlap duration for each image
+        const withOverlap = collection.map(img => {
+            const imgStartDate = ee.Date(img.get('system:time_start'))
+            const imgEndDate = ee.Date(img.get('system:time_end'))
+
+            const overlapStart = ee.Date(
+                ee.Algorithms.If(
+                    imgStartDate.millis().gt(monthStartDate.millis()),
+                    imgStartDate,
+                    monthStartDate
+                )
+            )
+            const overlapEnd = ee.Date(
+                ee.Algorithms.If(
+                    imgEndDate.millis().lt(monthEndDate.millis()),
+                    imgEndDate,
+                    monthEndDate
+                )
+            )
+            const overlapDuration = overlapEnd.difference(
+                overlapStart,
+                'second'
+            )
+
+            return img
+                .updateMask(overlapDuration.gt(0))
+                .set({ overlapDuration: overlapDuration })
+        })
+
+        // Filter out images with zero overlap
+        const overlapping = withOverlap.filter(
+            ee.Filter.gt('overlapDuration', 0)
+        )
+
+        // Skip months with no overlapping images
+        return ee.Algorithms.If(
+            overlapping.size().gt(0),
+            (() => {
+                // Sum weighted images
+                const weightedSum = ee.Image(
+                    overlapping
+                        .map(img => {
+                            const duration = ee.Number(
+                                img.get('overlapDuration')
+                            )
+                            return img
+                                .toFloat()
+                                .multiply(duration)
+                                .addBands(
+                                    ee.Image.constant(duration)
+                                        .float()
+                                        .rename('duration')
+                                )
+                        })
+                        .reduce(
+                            ee.Reducer.sum().forEach(bandNames.add('duration'))
+                        )
+                )
+
+                // Total duration as float
+                const totalDuration = ee.Image.constant(
+                    overlapping.aggregate_sum('overlapDuration')
+                ).float()
+
+                // Compute weighted mean and keep only original bands
+                const monthlyImage = weightedSum
+                    .divide(totalDuration)
+                    .rename(bandNames.add('duration'))
+                    .select(bandNames)
+
+                const tempYear = year || monthStartDate.get('year')
+
+                return monthlyImage.set({
+                    'system:time_start': monthStartDate.millis(),
+                    'system:time_end': monthEndDate.millis(),
+                    year: tempYear,
+                    ['month']: monthStartDate.get('month'),
+                    'system:index': ee
+                        .Number(tempYear)
+                        .format('%d')
+                        .cat(monthStartDate.format('MM')),
+                })
+            })(),
+            ee.Image([])
+        )
+    })
+
+    return ee.ImageCollection.fromImages(monthlyImages).sort(
+        'system:time_start',
+        false
+    )
+}
+
+// Aggregates an ImageCollection (with system:time_start and system:time_end)
+// into weekly composites, weighting each image by its overlap duration
+// within the week.
+export const aggregateWeeklyWeighted = ({ collection, year }) => {
+    const dateRange = collection.reduceColumns(ee.Reducer.minMax(), [
+        'system:time_start',
+    ])
+    const minDate = ee.Date(dateRange.get('min'))
+    const maxDate = ee.Date(dateRange.get('max'))
+    const weeks = ee.List.sequence(0, maxDate.difference(minDate, 'week'))
+
+    const bandNames = ee.Image(collection.first()).bandNames()
+
+    const weeklyImages = weeks.map(m => {
+        const weekStartDate = minDate.advance(ee.Number(m), 'week')
+        const weekEndDate = weekStartDate
+            .advance(1, 'week')
+            .advance(-1, 'second')
+
+        // Compute overlap duration for each image
+        const withOverlap = collection.map(img => {
+            const imgStartDate = ee.Date(img.get('system:time_start'))
+            const imgEndDate = ee.Date(img.get('system:time_end'))
+
+            const overlapStart = ee.Date(
+                ee.Algorithms.If(
+                    imgStartDate.millis().gt(weekStartDate.millis()),
+                    imgStartDate,
+                    weekStartDate
+                )
+            )
+            const overlapEnd = ee.Date(
+                ee.Algorithms.If(
+                    imgEndDate.millis().lt(weekEndDate.millis()),
+                    imgEndDate,
+                    weekEndDate
+                )
+            )
+            const overlapDuration = overlapEnd.difference(
+                overlapStart,
+                'second'
+            )
+
+            return img
+                .updateMask(overlapDuration.gt(0))
+                .set({ overlapDuration: overlapDuration })
+        })
+
+        // Filter out images with zero overlap
+        const overlapping = withOverlap.filter(
+            ee.Filter.gt('overlapDuration', 0)
+        )
+
+        // Skip weeks with no overlapping images
+        return ee.Algorithms.If(
+            overlapping.size().gt(0),
+            (() => {
+                // Sum weighted images
+                const weightedSum = ee.Image(
+                    overlapping
+                        .map(img => {
+                            const duration = ee.Number(
+                                img.get('overlapDuration')
+                            )
+                            return img
+                                .toFloat()
+                                .multiply(duration)
+                                .addBands(
+                                    ee.Image.constant(duration)
+                                        .float()
+                                        .rename('duration')
+                                )
+                        })
+                        .reduce(
+                            ee.Reducer.sum().forEach(bandNames.add('duration'))
+                        )
+                )
+
+                // Total duration as float
+                const totalDuration = ee.Image.constant(
+                    overlapping.aggregate_sum('overlapDuration')
+                ).float()
+
+                // Compute weighted mean and keep only original bands
+                const weeklyImage = weightedSum
+                    .divide(totalDuration)
+                    .rename(bandNames.add('duration'))
+                    .select(bandNames)
+
+                const tempYear = year || weekStartDate.get('year')
+
+                return weeklyImage.set({
+                    'system:time_start': weekStartDate.millis(),
+                    'system:time_end': weekEndDate.millis(),
+                    year: tempYear,
+                    ['week']: weekStartDate.format('w'),
+                    'system:index': ee
+                        .String(tempYear.toString())
+                        .cat('W')
+                        .cat(weekStartDate.format('w')),
+                })
+            })(),
+            ee.Image([])
+        )
+    })
+
+    return ee.ImageCollection.fromImages(weeklyImages).sort(
+        'system:time_start',
+        false
+    )
 }

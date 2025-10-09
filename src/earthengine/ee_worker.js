@@ -14,6 +14,10 @@ import {
     applyMethods,
     applyCloudMask,
     aggregateMonthly,
+    aggregateMonthlyWeighted,
+    aggregateWeekly,
+    aggregateWeeklyWeighted,
+    getStartOfEpiYear,
 } from './ee_worker_utils.js'
 
 const IMAGE = 'Image'
@@ -126,6 +130,7 @@ class EarthEngineWorker {
             format,
             filter,
             periodReducer,
+            periodReducerType,
             mosaic,
             band,
             bandReducer,
@@ -147,8 +152,57 @@ class EarthEngineWorker {
             this.eeScale = getScale(collection.first())
 
             // Apply period reducer (e.g. going from daily to monthly)
-            if (periodReducer === 'EE_MONTHLY') {
-                collection = aggregateMonthly(collection)
+            if (['EE_MONTHLY'].includes(periodReducer)) {
+                const year = parseInt(filter[0].arguments[1].slice(0, 4))
+                const startDate = ee.Date.fromYMD(year, 1, 1)
+                const endDate = ee.Date.fromYMD(year, 12, 31)
+                collection = collection.filterDate(startDate, endDate)
+                collection = aggregateMonthly({
+                    collection,
+                    metadataOnly: false,
+                    year,
+                    reducer: periodReducerType,
+                })
+            }
+            if (['EE_MONTHLY_WEIGHTED'].includes(periodReducer)) {
+                const year = parseInt(filter[0].arguments[1].slice(0, 4))
+                const startDate = ee.Date.fromYMD(year, 1, 1)
+                const endDate = ee.Date.fromYMD(year, 12, 31)
+                collection = collection.filterDate(startDate, endDate)
+                collection = aggregateMonthlyWeighted({
+                    collection,
+                    metadataOnly: false,
+                    year,
+                })
+            }
+            if (['EE_WEEKLY'].includes(periodReducer)) {
+                const year = parseInt(filter[0].arguments[1].slice(0, 4))
+                const startDate = getStartOfEpiYear(year)
+                const startOfNextEpiYear = getStartOfEpiYear(year + 1)
+                const endDate = new Date(
+                    startOfNextEpiYear.getTime() - 1 * 24 * 60 * 60 * 1000
+                )
+                collection = collection.filterDate(startDate, endDate)
+                collection = aggregateWeekly({
+                    collection,
+                    metadataOnly: false,
+                    year,
+                    reducer: periodReducerType,
+                })
+            }
+            if (['EE_WEEKLY_WEIGHTED'].includes(periodReducer)) {
+                const year = parseInt(filter[0].arguments[1].slice(0, 4))
+                const startDate = getStartOfEpiYear(year)
+                const startOfNextEpiYear = getStartOfEpiYear(year + 1)
+                const endDate = new Date(
+                    startOfNextEpiYear.getTime() - 1 * 24 * 60 * 60 * 1000
+                )
+                collection = collection.filterDate(startDate, endDate)
+                collection = aggregateWeeklyWeighted({
+                    collection,
+                    metadataOnly: false,
+                    year,
+                })
             }
 
             // Apply array of filters (e.g. period)
@@ -253,30 +307,64 @@ class EarthEngineWorker {
 
     // Returns available periods for an image collection
     getPeriods(datasetId, year, periodReducer) {
-        let imageCollection = ee
-            .ImageCollection(datasetId)
-            .distinct('system:time_start')
-            .sort('system:time_start', false)
+        let imageCollection = ee.ImageCollection(datasetId)
 
         if (year) {
-            const startDate = ee.Date.fromYMD(year, 1, 1)
-            const endDate = ee.Date.fromYMD(year, 12, 31)
-            imageCollection = imageCollection.filterDate(startDate, endDate)
+            if (periodReducer && ['EE_WEEKLY'].includes(periodReducer)) {
+                const startDate = getStartOfEpiYear(year)
+                const startOfNextEpiYear = getStartOfEpiYear(year + 1)
+                const endDate = new Date(
+                    startOfNextEpiYear.getTime() - 1 * 24 * 60 * 60 * 1000
+                )
+                imageCollection = imageCollection.filterDate(startDate, endDate)
+            } else {
+                const startDate = ee.Date.fromYMD(year, 1, 1)
+                const endDate = ee.Date.fromYMD(year, 12, 31)
+                imageCollection = imageCollection.filterDate(startDate, endDate)
+            }
         }
 
-        if (periodReducer && periodReducer === 'EE_MONTHLY') {
-            imageCollection = aggregateMonthly(imageCollection)
+        if (
+            periodReducer &&
+            ['EE_MONTHLY', 'EE_MONTHLY_WEIGHTED'].includes(periodReducer)
+        ) {
+            imageCollection = aggregateMonthly({
+                collection: imageCollection,
+                metadataOnly: true,
+                year,
+            })
+        }
+
+        if (
+            periodReducer &&
+            ['EE_WEEKLY', 'EE_WEEKLY_WEIGHTED'].includes(periodReducer)
+        ) {
+            imageCollection = aggregateWeekly({
+                collection: imageCollection,
+                metadataOnly: true,
+                year,
+            })
         }
 
         const featureCollection = ee
             .FeatureCollection(imageCollection)
             .select(
-                ['system:time_start', 'system:time_end', 'year'],
+                [
+                    'system:time_start',
+                    'system:time_end',
+                    'year',
+                    'month',
+                    'week',
+                ],
                 null,
                 false
             )
 
-        return getInfo(featureCollection)
+        return getInfo(
+            featureCollection
+                .distinct('system:time_start')
+                .sort('system:time_start', false)
+        )
     }
 
     // Returns min and max timestamp for an image collection
@@ -294,8 +382,17 @@ class EarthEngineWorker {
     getCollectionSpan(datasetId, periodReducer) {
         let collection = ee.ImageCollection(datasetId)
 
-        if (periodReducer && periodReducer === 'EE_MONTHLY') {
-            collection = aggregateMonthly(collection)
+        if (
+            periodReducer &&
+            ['EE_MONTHLY', 'EE_MONTHLY_WEIGHTED'].includes(periodReducer)
+        ) {
+            collection = aggregateMonthly({ collection, metadataOnly: true })
+        }
+        if (
+            periodReducer &&
+            ['EE_WEEKLY', 'EE_WEEKLY_WEIGHTED'].includes(periodReducer)
+        ) {
+            collection = aggregateWeekly({ collection, metadataOnly: true })
         }
 
         const first = collection.sort('system:time_start', true).first()
