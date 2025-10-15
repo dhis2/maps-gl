@@ -184,13 +184,21 @@ class EarthEngineWorker {
                 } else {
                     aggregatorFn = aggregateTemporal
                 }
-                collection = collection.filterDate(startDate, endDate)
+                collection = collection.filter(
+                    ee.Filter.or(
+                        ee.Filter.date(ee.Date(startDate), ee.Date(endDate)),
+                        ee.Filter.and(
+                            ee.Filter.lt('system:time_start', ee.Date(endDate).millis()),
+                            ee.Filter.gt('system:time_end', ee.Date(startDate).millis())
+                        )
+                    ))
                 collection = aggregatorFn({
                     collection,
                     metadataOnly: false,
                     year,
                     reducer: periodReducerType,
                     periodReducer,
+                    overrideDate: ee.Date(startDate),
                 })
             }
 
@@ -297,23 +305,31 @@ class EarthEngineWorker {
     // Returns available periods for an image collection
     getPeriods(datasetId, year, periodReducer) {
         let collection = ee.ImageCollection(datasetId)
+        let startDate, endDate
 
         if (year) {
             if (
                 periodReducer &&
                 [EE_WEEKLY, EE_WEEKLY_WEIGHTED].includes(periodReducer)
             ) {
-                const startDate = getStartOfEpiYear(year)
+                startDate = getStartOfEpiYear(year)
                 const startOfNextEpiYear = getStartOfEpiYear(year + 1)
-                const endDate = new Date(
+                endDate = new Date(
                     startOfNextEpiYear.getTime() - 1 * 24 * 60 * 60 * 1000
                 )
-                collection = collection.filterDate(startDate, endDate)
             } else {
-                const startDate = ee.Date.fromYMD(year, 1, 1)
-                const endDate = ee.Date.fromYMD(year, 12, 31)
-                collection = collection.filterDate(startDate, endDate)
+                startDate = ee.Date.fromYMD(year, 1, 1)
+                endDate = ee.Date.fromYMD(year, 12, 31)
             }
+            collection = collection.filter(
+                ee.Filter.or(
+                    ee.Filter.date(ee.Date(startDate), ee.Date(endDate)),
+                    ee.Filter.and(
+                        ee.Filter.lt('system:time_start', ee.Date(endDate).millis()),
+                        ee.Filter.gt('system:time_end', ee.Date(startDate).millis())
+                    )
+                )
+            )
         }
 
         if (periodReducer) {
@@ -322,6 +338,7 @@ class EarthEngineWorker {
                 metadataOnly: true,
                 year,
                 periodReducer,
+                overrideDate: ee.Date(startDate)
             })
         }
 
