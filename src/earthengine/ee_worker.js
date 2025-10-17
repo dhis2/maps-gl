@@ -3,10 +3,6 @@ import circle from '@turf/circle'
 import { expose } from 'comlink'
 import ee from './ee_api_js_worker.js' // https://github.com/google/earthengine-api/pull/173
 import {
-    EE_WEEKLY,
-    EE_WEEKLY_WEIGHTED,
-    EE_MONTHLY,
-    EE_MONTHLY_WEIGHTED,
     getInfo,
     getScale,
     hasClasses,
@@ -15,11 +11,12 @@ import {
     getHistogramStatistics,
     getFeatureCollectionProperties,
     applyFilter,
+    filterCollectionByDateRange,
     applyMethods,
     applyCloudMask,
     aggregateTemporal,
-    aggregateTemporalWeighted,
-    getStartOfEpiYear,
+    getPeriodDates,
+    getAggregatorFn,
 } from './ee_worker_utils.js'
 
 const IMAGE = 'Image'
@@ -156,50 +153,17 @@ class EarthEngineWorker {
 
             // Apply period reducer (e.g. going from daily to monthly)
             if (periodReducer) {
-                const year = parseInt(filter[0].arguments[1].slice(0, 4))
-                let startDate, endDate, aggregatorFn
-                switch (periodReducer) {
-                    case EE_WEEKLY:
-                    case EE_WEEKLY_WEIGHTED: {
-                        startDate = getStartOfEpiYear(year)
-                        const startOfNextEpiYear = getStartOfEpiYear(year + 1)
-                        endDate = new Date(
-                            startOfNextEpiYear.getTime() - 24 * 60 * 60 * 1000
-                        )
-                        break
-                    }
-                    case EE_MONTHLY:
-                    case EE_MONTHLY_WEIGHTED:
-                    default: {
-                        startDate = ee.Date.fromYMD(year, 1, 1)
-                        endDate = ee.Date.fromYMD(year, 12, 31)
-                        break
-                    }
-                }
-                if (
-                    [EE_WEEKLY_WEIGHTED, EE_MONTHLY_WEIGHTED].includes(
-                        periodReducer
-                    )
-                ) {
-                    aggregatorFn = aggregateTemporalWeighted
-                } else {
-                    aggregatorFn = aggregateTemporal
-                }
-                collection = collection.filter(
-                    ee.Filter.or(
-                        ee.Filter.date(ee.Date(startDate), ee.Date(endDate)),
-                        ee.Filter.and(
-                            ee.Filter.lt(
-                                'system:time_start',
-                                ee.Date(endDate).millis()
-                            ),
-                            ee.Filter.gt(
-                                'system:time_end',
-                                ee.Date(startDate).millis()
-                            )
-                        )
-                    )
+                const year = Number.parseInt(filter[0].arguments[1].slice(0, 4))
+                const { startDate, endDate } = getPeriodDates(
+                    periodReducer,
+                    year
                 )
+                collection = filterCollectionByDateRange(
+                    collection,
+                    startDate,
+                    endDate
+                )
+                const aggregatorFn = getAggregatorFn(periodReducer)
                 collection = aggregatorFn({
                     collection,
                     metadataOnly: false,
@@ -316,33 +280,11 @@ class EarthEngineWorker {
         let startDate, endDate
 
         if (year) {
-            if (
-                periodReducer &&
-                [EE_WEEKLY, EE_WEEKLY_WEIGHTED].includes(periodReducer)
-            ) {
-                startDate = getStartOfEpiYear(year)
-                const startOfNextEpiYear = getStartOfEpiYear(year + 1)
-                endDate = new Date(
-                    startOfNextEpiYear.getTime() - 1 * 24 * 60 * 60 * 1000
-                )
-            } else {
-                startDate = ee.Date.fromYMD(year, 1, 1)
-                endDate = ee.Date.fromYMD(year, 12, 31)
-            }
-            collection = collection.filter(
-                ee.Filter.or(
-                    ee.Filter.date(ee.Date(startDate), ee.Date(endDate)),
-                    ee.Filter.and(
-                        ee.Filter.lt(
-                            'system:time_start',
-                            ee.Date(endDate).millis()
-                        ),
-                        ee.Filter.gt(
-                            'system:time_end',
-                            ee.Date(startDate).millis()
-                        )
-                    )
-                )
+            ;({ startDate, endDate } = getPeriodDates(periodReducer, year))
+            collection = filterCollectionByDateRange(
+                collection,
+                startDate,
+                endDate
             )
         }
 

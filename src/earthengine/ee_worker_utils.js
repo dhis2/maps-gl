@@ -7,10 +7,10 @@ const squareMetersToAcres = value => value / 4046.8564224
 const classAggregation = ['percentage', 'hectares', 'acres']
 
 const DEFAULT_MASK_VALUE = 0
-export const EE_WEEKLY = 'EE_WEEKLY'
-export const EE_WEEKLY_WEIGHTED = 'EE_WEEKLY_WEIGHTED'
-export const EE_MONTHLY = 'EE_MONTHLY'
-export const EE_MONTHLY_WEIGHTED = 'EE_MONTHLY_WEIGHTED'
+const EE_WEEKLY = 'EE_WEEKLY'
+const EE_WEEKLY_WEIGHTED = 'EE_WEEKLY_WEIGHTED'
+const EE_MONTHLY = 'EE_MONTHLY'
+const EE_MONTHLY_WEIGHTED = 'EE_MONTHLY_WEIGHTED'
 
 export const hasClasses = type => classAggregation.includes(type)
 
@@ -28,6 +28,45 @@ export const getStartOfEpiYear = year => {
         startDate = new Date(Date.UTC(year, 0, 1 + diff))
     }
     return startDate
+}
+
+export const getPeriodDates = (periodReducer, year) => {
+    switch (periodReducer) {
+        case EE_WEEKLY:
+        case EE_WEEKLY_WEIGHTED: {
+            const start = getStartOfEpiYear(year)
+            const end = new Date(
+                getStartOfEpiYear(year + 1).getTime() - 24 * 60 * 60 * 1000
+            )
+            return { startDate: start, endDate: end }
+        }
+        case EE_MONTHLY:
+        case EE_MONTHLY_WEIGHTED:
+        default: {
+            return {
+                startDate: ee.Date.fromYMD(year, 1, 1),
+                endDate: ee.Date.fromYMD(year, 12, 31),
+            }
+        }
+    }
+}
+
+export const filterCollectionByDateRange = (collection, startDate, endDate) => {
+    return collection.filter(
+        ee.Filter.or(
+            ee.Filter.date(ee.Date(startDate), ee.Date(endDate)),
+            ee.Filter.and(
+                ee.Filter.lt('system:time_start', ee.Date(endDate).millis()),
+                ee.Filter.gt('system:time_end', ee.Date(startDate).millis())
+            )
+        )
+    )
+}
+
+export const getAggregatorFn = periodReducer => {
+    return [EE_WEEKLY_WEIGHTED, EE_MONTHLY_WEIGHTED].includes(periodReducer)
+        ? aggregateTemporalWeighted
+        : aggregateTemporal
 }
 
 // Makes evaluate a promise
@@ -382,9 +421,7 @@ export const aggregateTemporalWeighted = ({
                                         .rename('duration')
                                 )
                         })
-                        .reduce(
-                            ee.Reducer.sum().forEach(bandNames.add('duration'))
-                        )
+                        .reduce(ee.Reducer.sum())
                 )
 
                 // Total duration
