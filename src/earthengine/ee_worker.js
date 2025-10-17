@@ -40,6 +40,7 @@ const DEFAULT_FEATURE_STYLE = {
     pointRadius: 5,
 }
 const DEFAULT_TILE_SCALE = 1
+const DEFAULT_SCALE = 1000
 
 const DEFAULT_UNMASK_VALUE = 0
 
@@ -188,10 +189,17 @@ class EarthEngineWorker {
                     ee.Filter.or(
                         ee.Filter.date(ee.Date(startDate), ee.Date(endDate)),
                         ee.Filter.and(
-                            ee.Filter.lt('system:time_start', ee.Date(endDate).millis()),
-                            ee.Filter.gt('system:time_end', ee.Date(startDate).millis())
+                            ee.Filter.lt(
+                                'system:time_start',
+                                ee.Date(endDate).millis()
+                            ),
+                            ee.Filter.gt(
+                                'system:time_end',
+                                ee.Date(startDate).millis()
+                            )
                         )
-                    ))
+                    )
+                )
                 collection = aggregatorFn({
                     collection,
                     metadataOnly: false,
@@ -325,8 +333,14 @@ class EarthEngineWorker {
                 ee.Filter.or(
                     ee.Filter.date(ee.Date(startDate), ee.Date(endDate)),
                     ee.Filter.and(
-                        ee.Filter.lt('system:time_start', ee.Date(endDate).millis()),
-                        ee.Filter.gt('system:time_end', ee.Date(startDate).millis())
+                        ee.Filter.lt(
+                            'system:time_start',
+                            ee.Date(endDate).millis()
+                        ),
+                        ee.Filter.gt(
+                            'system:time_end',
+                            ee.Date(startDate).millis()
+                        )
                     )
                 )
             )
@@ -338,7 +352,7 @@ class EarthEngineWorker {
                 metadataOnly: true,
                 year,
                 periodReducer,
-                overrideDate: ee.Date(startDate)
+                overrideDate: ee.Date(startDate),
             })
         }
 
@@ -411,7 +425,7 @@ class EarthEngineWorker {
             singleAggregation &&
             hasClasses(aggregationType) &&
             Array.isArray(style)
-        const scale = this.eeScale
+        const scale = this.eeScale.min(DEFAULT_SCALE)
         const collection = this.getFeatureCollection()
         let image = await this.getImage()
 
