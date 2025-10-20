@@ -135,7 +135,7 @@ ee.Number = jest.fn(n => n)
 ee.String = jest.fn(str => {
     const s = { _str: String(str) }
     s.cat = jest.fn(other => {
-        const otherStr = other && other._str ? other._str : String(other)
+        const otherStr = other?._str ?? String(other)
         s._str = s._str + otherStr
         return s
     })

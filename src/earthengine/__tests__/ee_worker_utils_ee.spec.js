@@ -119,12 +119,12 @@ describe('EE-dependent functions (mocked)', () => {
         const callArg = ee.ImageCollection.fromImages.mock.calls[0][0]
         // callArg is expected to be an array-like mapping (mock uses native array)
         if (Array.isArray(callArg)) {
-            callArg.forEach(img => {
+            for (const img of callArg) {
                 expect(img._meta).toBeDefined()
                 expect(img._meta).toHaveProperty('system:time_start')
                 expect(img._meta).toHaveProperty('system:time_end')
                 expect(img._meta).toHaveProperty('year')
-            })
+            }
         }
     })
 
@@ -145,14 +145,14 @@ describe('EE-dependent functions (mocked)', () => {
         // Inspect the images passed to fromImages: ensure they have metadata set
         const callArg = ee.ImageCollection.fromImages.mock.calls[0][0]
         if (Array.isArray(callArg)) {
-            callArg.forEach(img => {
+            for (const img of callArg) {
                 expect(img._meta).toBeDefined()
                 expect(img._meta).toHaveProperty('system:time_start')
                 expect(img._meta).toHaveProperty('system:time_end')
                 expect(img._meta).toHaveProperty('year')
                 // For monthly weighted, month should be present
                 expect(img._meta).toHaveProperty('month')
-            })
+            }
         }
     })
 
@@ -173,14 +173,14 @@ describe('EE-dependent functions (mocked)', () => {
         // Inspect the images passed to fromImages: ensure they have metadata set and include week
         const callArg = ee.ImageCollection.fromImages.mock.calls[0][0]
         if (Array.isArray(callArg)) {
-            callArg.forEach(img => {
+            for (const img of callArg) {
                 expect(img._meta).toBeDefined()
                 expect(img._meta).toHaveProperty('system:time_start')
                 expect(img._meta).toHaveProperty('system:time_end')
                 expect(img._meta).toHaveProperty('year')
                 // Weekly aggregation should include a week property
                 expect(img._meta).toHaveProperty('week')
-            })
+            }
         }
     })
 
