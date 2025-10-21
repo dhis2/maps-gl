@@ -280,7 +280,7 @@ class EarthEngineWorker {
         let startDate, endDate
 
         if (year) {
-            ; ({ startDate, endDate } = getPeriodDates(periodReducer, year))
+            ;({ startDate, endDate } = getPeriodDates(periodReducer, year))
             collection = filterCollectionByDateRange(
                 collection,
                 startDate,
