@@ -170,7 +170,7 @@ class EarthEngineWorker {
                     year,
                     reducer: periodReducerType,
                     periodReducer,
-                    overrideDate: ee.Date(startDate),
+                    overrideDate: startDate,
                 })
             }
 
@@ -275,7 +275,7 @@ class EarthEngineWorker {
     }
 
     // Returns available periods for an image collection
-    getPeriods(datasetId, year, periodReducer) {
+    getPeriods({ datasetId, year, datesRange, periodReducer }) {
         let collection = ee.ImageCollection(datasetId)
         let startDate, endDate
 
@@ -294,9 +294,15 @@ class EarthEngineWorker {
                 metadataOnly: true,
                 year,
                 periodReducer,
-                overrideDate: ee.Date(startDate),
+                overrideDate: startDate,
             })
         }
+
+        collection = filterCollectionByDateRange(
+            collection,
+            datesRange.startDate,
+            datesRange.endDate
+        )
 
         const featureCollection = ee
             .FeatureCollection(collection)
@@ -331,20 +337,10 @@ class EarthEngineWorker {
     }
 
     // Returns info for first and last images in collection
-    getCollectionSpan(datasetId, periodReducer) {
-        let collection = ee.ImageCollection(datasetId)
-
-        if (periodReducer) {
-            collection = aggregateTemporal({
-                collection,
-                metadataOnly: true,
-                periodReducer,
-            })
-        }
-
+    getCollectionSpan(datasetId) {
+        const collection = ee.ImageCollection(datasetId)
         const first = collection.sort('system:time_start', true).first()
-        const last = collection.sort('system:time_start', false).first()
-
+        const last = collection.sort('system:time_end', false).first()
         return getInfo(ee.Dictionary({ first, last }))
     }
 
