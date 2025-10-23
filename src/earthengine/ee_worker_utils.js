@@ -58,9 +58,15 @@ export const getPeriodDates = (periodReducer, year) => {
 // Filter an ImageCollection to images overlapping a JS Date range
 export const filterCollectionByDateRange = (collection, startDate, endDate) => {
     return collection.filter(
-        ee.Filter.and(
-            ee.Filter.lt('system:time_start', endDate.getTime()),
-            ee.Filter.gt('system:time_end', startDate.getTime())
+        ee.Filter.or(
+            ee.Filter.date(
+                ee.Date(startDate.getTime()),
+                ee.Date(endDate.getTime())
+            ),
+            ee.Filter.and(
+                ee.Filter.lt('system:time_start', endDate.getTime()),
+                ee.Filter.gt('system:time_end', startDate.getTime())
+            )
         )
     )
 }

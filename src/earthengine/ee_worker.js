@@ -340,7 +340,7 @@ class EarthEngineWorker {
     getCollectionSpan(datasetId) {
         const collection = ee.ImageCollection(datasetId)
         const first = collection.sort('system:time_start', true).first()
-        const last = collection.sort('system:time_end', false).first()
+        const last = collection.sort('system:time_start', false).first()
         return getInfo(ee.Dictionary({ first, last }))
     }
 
