@@ -107,6 +107,7 @@ describe('EE-dependent functions (mocked)', () => {
             metadataOnly: true,
             year: 2020,
             reducer: 'mean',
+            overrideDate: undefined,
         })
 
         // fromImages should have been called to build the aggregated collection
