@@ -221,7 +221,19 @@ export const applyMethods = (eeImage, methods = []) => {
 
     if (Array.isArray(methods)) {
         methods.forEach(m => {
-            if (image[m.name]) {
+            if (
+                m.name === 'expression' &&
+                m.arguments &&
+                typeof m.arguments[1] === 'object'
+            ) {
+                // Resolve variable names to image bands dynamically
+                const vars = {}
+                Object.keys(m.arguments[1]).forEach(key => {
+                    const bandName = m.arguments[1][key]
+                    vars[key] = image.select(bandName)
+                })
+                image = image.expression(m.arguments[0], vars)
+            } else if (image[m.name]) {
                 image = image[m.name].apply(image, m.arguments)
             }
         })
