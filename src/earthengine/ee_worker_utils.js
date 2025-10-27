@@ -235,9 +235,8 @@ export const applyFilter = (collection, filter = []) => {
 // Apply methods to image cells
 export const applyMethods = (eeImage, methods = []) => {
     let image = eeImage
-
     if (Array.isArray(methods)) {
-        methods.forEach(m => {
+        for (const m of methods) {
             if (
                 m.name === 'expression' &&
                 m.arguments &&
@@ -245,24 +244,32 @@ export const applyMethods = (eeImage, methods = []) => {
             ) {
                 // Resolve variable names to image bands dynamically
                 const vars = {}
-                Object.keys(m.arguments[1]).forEach(key => {
-                    const bandName = m.arguments[1][key]
-                    vars[key] = image.select(bandName)
-                })
+                for (const key in m.arguments[1]) {
+                    if (
+                        Object.prototype.hasOwnProperty.call(
+                            m.arguments[1],
+                            key
+                        )
+                    ) {
+                        const bandName = m.arguments[1][key]
+                        vars[key] = image.select(bandName)
+                    }
+                }
                 image = image.expression(m.arguments[0], vars)
             } else if (image[m.name]) {
                 image = image[m.name].apply(image, m.arguments)
             }
-        })
+        }
     } else {
         // Backward compatibility for format used before 2.40
-        Object.keys(methods).forEach(m => {
-            if (image[m]) {
-                image = image[m].apply(image, methods[m])
+        for (const m in methods) {
+            if (Object.prototype.hasOwnProperty.call(methods, m)) {
+                if (image[m]) {
+                    image = image[m].apply(image, methods[m])
+                }
             }
-        })
+        }
     }
-
     return image
 }
 
