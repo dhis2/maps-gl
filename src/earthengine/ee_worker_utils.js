@@ -232,6 +232,18 @@ export const applyFilter = (collection, filter = []) => {
     return filtered
 }
 
+// Resolve variable names to image bands dynamically
+const getExpressionArgumentBands = method => {
+    const vars = {}
+    for (const key in method.arguments[1]) {
+        if (Object.hasOwn(method.arguments[1], key)) {
+            const bandName = method.arguments[1][key]
+            vars[key] = image.select(bandName)
+        }
+    }
+    return vars
+}
+
 // Apply methods to image cells
 export const applyMethods = (eeImage, methods = []) => {
     let image = eeImage
@@ -242,20 +254,10 @@ export const applyMethods = (eeImage, methods = []) => {
                 m.arguments &&
                 typeof m.arguments[1] === 'object'
             ) {
-                // Resolve variable names to image bands dynamically
-                const vars = {}
-                for (const key in m.arguments[1]) {
-                    if (
-                        Object.prototype.hasOwnProperty.call(
-                            m.arguments[1],
-                            key
-                        )
-                    ) {
-                        const bandName = m.arguments[1][key]
-                        vars[key] = image.select(bandName)
-                    }
-                }
-                image = image.expression(m.arguments[0], vars)
+                image = image.expression(
+                    m.arguments[0],
+                    getExpressionArgumentBands(m)
+                )
             } else if (image[m.name]) {
                 image = image[m.name].apply(image, m.arguments)
             }
@@ -263,7 +265,7 @@ export const applyMethods = (eeImage, methods = []) => {
     } else {
         // Backward compatibility for format used before 2.40
         for (const m in methods) {
-            if (Object.prototype.hasOwnProperty.call(methods, m)) {
+            if (Object.hasOwn(methods, m)) {
                 if (image[m]) {
                     image = image[m].apply(image, methods[m])
                 }
