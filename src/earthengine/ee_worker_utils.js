@@ -101,6 +101,23 @@ export const combineReducers = (types, unweighted) =>
         ee.Reducer
     )
 
+export const selectBand = ({ eeImage, band, bandReducer }) => {
+    if (!band) {
+        return { eeImage }
+    }
+
+    let eeImageBands
+    eeImage = eeImage.select(band)
+    if (Array.isArray(band) && bandReducer) {
+        // Keep image bands for aggregations
+        eeImageBands = eeImage
+
+        // Combine multiple bands (e.g. age groups)
+        eeImage = eeImage.reduce(ee.Reducer[bandReducer]())
+    }
+    return { eeImage, eeImageBands }
+}
+
 // Returns the linear scale in meters of the units of this projection
 export const getScale = image => image.select(0).projection().nominalScale()
 
