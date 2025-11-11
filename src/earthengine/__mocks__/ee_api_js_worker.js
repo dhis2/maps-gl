@@ -77,6 +77,7 @@ ee.Reducer = {
     mean: jest.fn(() => createReducerInstance()),
     sum: jest.fn(() => createReducerInstance()),
     minMax: jest.fn(() => createReducerInstance()),
+    min: jest.fn(() => createReducerInstance()),
     combine: jest.fn(() => createReducerInstance()),
 }
 
@@ -130,7 +131,71 @@ ee.Algorithms = { If: jest.fn((cond, a, b) => (cond ? a : b)) }
 
 ee.List = { sequence: jest.fn(() => [0, 1, 2]) }
 
-ee.Number = jest.fn(n => n)
+ee.Number = jest.fn(n => {
+    // If n is an ee.Number-like object from the mock, unwrap its value
+    const value = n && typeof n === 'object' && '_value' in n ? n._value : n
+    const num = {}
+    num._value = Number(value)
+    num.pow = jest.fn(x => ee.Number(Math.pow(num._value, x)))
+    num.sqrt = jest.fn(() => ee.Number(Math.sqrt(num._value)))
+    num.divide = jest.fn(x =>
+        ee.Number(num._value / (x && x._value !== undefined ? x._value : x))
+    )
+    num.lt = jest.fn(other => {
+        const otherVal =
+            other && typeof other === 'object' && '_value' in other
+                ? other._value
+                : other
+        return num._value < otherVal
+    })
+    num.min = jest.fn(other => {
+        const otherVal =
+            other && typeof other === 'object' && '_value' in other
+                ? other._value
+                : other
+        return ee.Number(Math.min(num._value, otherVal))
+    })
+    return num
+})
+
+const makeFeature = areaValue => ({
+    geometry: () => ({ area: jest.fn(() => areaValue) }),
+    set: jest.fn(function (k, v) {
+        this[k] = v
+        return this
+    }),
+})
+
+const makeFeatureCollection = features => {
+    const fc = { _features: features }
+    fc.map = jest.fn(fn => {
+        const mapped = fc._features.map(fn)
+        mapped.reduceColumns = jest.fn(() => ({
+            get: jest.fn(() =>
+                Math.min(...features.map(f => f.geometry().area()))
+            ),
+        }))
+        return mapped
+    })
+    return fc
+}
+
+const fcSmall = makeFeatureCollection([makeFeature(4), makeFeature(1000)])
+const fcLarge = makeFeatureCollection([makeFeature(10000), makeFeature(20000)])
+const fcDefault = makeFeatureCollection([makeFeature(2000000)])
+
+ee.FeatureCollection = jest.fn(type => {
+    switch (type) {
+        case 'small':
+            return fcSmall
+        case 'large':
+            return fcLarge
+        case 'default':
+            return fcDefault
+        default:
+            return fcSmall
+    }
+})
 
 ee.String = jest.fn(str => {
     const s = { _str: String(str) }

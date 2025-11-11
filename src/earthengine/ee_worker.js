@@ -18,6 +18,7 @@ import {
     aggregateTemporal,
     getPeriodDates,
     getAggregatorFn,
+    getAdjustedScale,
 } from './ee_worker_utils.js'
 
 const IMAGE = 'Image'
@@ -39,7 +40,6 @@ const DEFAULT_FEATURE_STYLE = {
     pointRadius: 5,
 }
 const DEFAULT_TILE_SCALE = 1
-const DEFAULT_SCALE = 1000
 
 const DEFAULT_UNMASK_VALUE = 0
 
@@ -373,8 +373,9 @@ class EarthEngineWorker {
             singleAggregation &&
             hasClasses(aggregationType) &&
             Array.isArray(style)
-        const scale = this.eeScale?.min?.(DEFAULT_SCALE) ?? DEFAULT_SCALE
+
         const collection = this.getFeatureCollection()
+        const scale = getAdjustedScale(collection, this.eeScale)
         let image = await this.getImage()
 
         // Used for "constrained" WorldPop layers

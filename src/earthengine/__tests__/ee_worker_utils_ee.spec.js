@@ -1,7 +1,9 @@
 jest.mock('../ee_api_js_worker.js')
 import ee from '../ee_api_js_worker.js'
 import {
+    DEFAULT_SCALE,
     filterCollectionByDateRange,
+    getAdjustedScale,
     combineReducers,
     getScale,
     getClassifiedImage,
@@ -28,6 +30,23 @@ describe('EE-dependent functions (mocked)', () => {
         expect(ee.Filter.date).toHaveBeenCalled()
         expect(mockCollection.filter).toHaveBeenCalled()
         expect(ee.Filter.or).toHaveBeenCalled()
+    })
+
+    test('getAdjustedScale returns correct scale for all scenarios', () => {
+        //  minArea < scale^2 → adjusted scale
+        const fcSmall = ee.FeatureCollection('small')
+        const resultSmall = getAdjustedScale(fcSmall, 10)
+        expect(resultSmall._value).toBeCloseTo(1)
+
+        // minArea > scale^2 → original scale
+        const fcLarge = ee.FeatureCollection('large')
+        const resultLarge = getAdjustedScale(fcLarge, 10)
+        expect(resultLarge._value).toBeCloseTo(10)
+
+        // eeScale > DEFAULT_SCALE → capped at DEFAULT_SCALE
+        const fcDefault = ee.FeatureCollection('default')
+        const resultDefault = getAdjustedScale(fcDefault, DEFAULT_SCALE * 10)
+        expect(resultDefault._value).toBeCloseTo(DEFAULT_SCALE)
     })
 
     test('combineReducers calls ee.Reducer.combine correctly', () => {
