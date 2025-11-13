@@ -138,9 +138,7 @@ ee.Number = jest.fn(n => {
     num._value = Number(value)
     num.pow = jest.fn(x => ee.Number(Math.pow(num._value, x)))
     num.sqrt = jest.fn(() => ee.Number(Math.sqrt(num._value)))
-    num.divide = jest.fn(x =>
-        ee.Number(num._value / (x && x._value !== undefined ? x._value : x))
-    )
+    num.divide = jest.fn(x => ee.Number(num._value / (x?._value ?? x)))
     num.lt = jest.fn(other => {
         const otherVal =
             other && typeof other === 'object' && '_value' in other
