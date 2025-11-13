@@ -164,17 +164,24 @@ const makeFeature = areaValue => ({
     }),
 })
 
-const makeFeatureCollection = features => {
-    const fc = { _features: features }
-    fc.map = jest.fn(fn => {
+const createReduceColumns = features => {
+    const get = jest.fn(() =>
+        Math.min(...features.map(f => f.geometry().area()))
+    )
+    return jest.fn(() => ({ get }))
+}
+
+const createMapFunction = (fc, features) => {
+    return jest.fn(fn => {
         const mapped = fc._features.map(fn)
-        mapped.reduceColumns = jest.fn(() => ({
-            get: jest.fn(() =>
-                Math.min(...features.map(f => f.geometry().area()))
-            ),
-        }))
+        mapped.reduceColumns = createReduceColumns(features)
         return mapped
     })
+}
+
+const makeFeatureCollection = features => {
+    const fc = { _features: features }
+    fc.map = createMapFunction(fc, features)
     return fc
 }
 
