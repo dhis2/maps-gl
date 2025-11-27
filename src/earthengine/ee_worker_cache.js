@@ -76,16 +76,27 @@ export class WorkerCache {
             const db = await openDB()
             const tx = db.transaction(STORE_NAME, 'readwrite')
             const store = tx.objectStore(STORE_NAME)
-
-            let cursor = await store.openCursor()
-
-            while (cursor) {
-                const { timestamp } = cursor.value
-                if (Date.now() - timestamp > ttl) {
-                    await store.delete(cursor.key)
+            const cursorRequest = store.openCursor()
+            cursorRequest.onsuccess = event => {
+                const cursor = event.target.result
+                if (cursor) {
+                    const { timestamp } = cursor.value
+                    if (Date.now() - timestamp > ttl) {
+                        cursor.delete()
+                    }
+                    cursor.continue()
                 }
-                cursor = await cursor.continue()
             }
+            cursorRequest.onerror = event => {
+                console.error(
+                    'Failed to flush ee_worker cache entry:',
+                    event.target.error
+                )
+            }
+            return new Promise((resolve, reject) => {
+                tx.oncomplete = () => resolve()
+                tx.onerror = () => reject(tx.error)
+            })
         })()
     }
 }
