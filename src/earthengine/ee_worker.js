@@ -372,69 +372,67 @@ class EarthEngineWorker {
         if (config) {
             this.setOptions(config)
         }
-        return this._cache.wrap('getAggregations', this.options, async () => {
-            const {
-                format,
+        const {
+            format,
+            aggregationType,
+            band,
+            useCentroid,
+            style,
+            tileScale = DEFAULT_TILE_SCALE,
+            unmaskAggregation,
+        } = this.options
+        const singleAggregation = !Array.isArray(aggregationType)
+        const useHistogram =
+            singleAggregation &&
+            hasClasses(aggregationType) &&
+            Array.isArray(style)
+
+        const collection = this.getFeatureCollection()
+        if (!collection) {
+            throw new Error('Missing org unit features')
+        }
+
+        const scale = getAdjustedScale(collection, this.eeScale)
+        let image = await this.getImage()
+
+        // Used for "constrained" WorldPop layers
+        // We need to unmask the image to get the correct population density
+        if (unmaskAggregation || typeof unmaskAggregation === 'number') {
+            const fillValue =
+                typeof unmaskAggregation === 'number'
+                    ? unmaskAggregation
+                    : DEFAULT_UNMASK_VALUE
+
+            image = image.unmask(fillValue)
+
+            if (this.eeImageBands) {
+                this.eeImageBands = this.eeImageBands.unmask(fillValue)
+            }
+        }
+
+        if (format === FEATURE_COLLECTION) {
+            return this._aggregateFeatureCollection({ collection })
+        } else if (useHistogram) {
+            return this._aggregateImageCollectionHistogram({
+                collection,
+                image,
+                scale,
                 aggregationType,
-                band,
-                useCentroid,
                 style,
-                tileScale = DEFAULT_TILE_SCALE,
-                unmaskAggregation,
-            } = this.options
-            const singleAggregation = !Array.isArray(aggregationType)
-            const useHistogram =
-                singleAggregation &&
-                hasClasses(aggregationType) &&
-                Array.isArray(style)
-
-            const collection = this.getFeatureCollection()
-            if (!collection) {
-                throw new Error('Missing org unit features')
-            }
-
-            const scale = getAdjustedScale(collection, this.eeScale)
-            let image = await this.getImage()
-
-            // Used for "constrained" WorldPop layers
-            // We need to unmask the image to get the correct population density
-            if (unmaskAggregation || typeof unmaskAggregation === 'number') {
-                const fillValue =
-                    typeof unmaskAggregation === 'number'
-                        ? unmaskAggregation
-                        : DEFAULT_UNMASK_VALUE
-
-                image = image.unmask(fillValue)
-
-                if (this.eeImageBands) {
-                    this.eeImageBands = this.eeImageBands.unmask(fillValue)
-                }
-            }
-
-            if (format === FEATURE_COLLECTION) {
-                return this._aggregateFeatureCollection({ collection })
-            } else if (useHistogram) {
-                return this._aggregateImageCollectionHistogram({
-                    collection,
-                    image,
-                    scale,
-                    aggregationType,
-                    style,
-                }) // Used for landcover
-            } else if (!singleAggregation && aggregationType.length) {
-                return this._aggregateImageCollection({
-                    collection,
-                    image,
-                    scale,
-                    tileScale,
-                    aggregationType,
-                    useCentroid,
-                    band,
-                })
-            } else {
-                throw new Error('Aggregation type is not valid')
-            }
-        })
+            }) // Used for landcover
+        } else if (!singleAggregation && aggregationType.length) {
+            return this._aggregateImageCollection({
+                collection,
+                image,
+                scale,
+                tileScale,
+                aggregationType,
+                useCentroid,
+                band,
+            })
+        } else {
+            throw new Error('Aggregation type is not valid')
+        }
     }
 
     async _aggregateFeatureCollection({ collection }) {
