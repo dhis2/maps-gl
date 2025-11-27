@@ -34,14 +34,6 @@ export class WorkerCache {
         this._ttl = ttl
     }
 
-    async init() {
-        try {
-            await this.flushExpired()
-        } catch (err) {
-            console.warn('Error flushing expired cache:', err)
-        }
-    }
-
     _generateKey = (methodName, params) =>
         `${methodName}:${JSON.stringify(params)}`
 
@@ -79,7 +71,7 @@ export class WorkerCache {
         return result
     }
 
-    flushExpired = async () => {
+    static flushExpired = async (ttl = DEFAULT_TTL_MS) => {
         const db = await openDB()
         const tx = db.transaction(STORE_NAME, 'readwrite')
         const store = tx.objectStore(STORE_NAME)
@@ -90,7 +82,7 @@ export class WorkerCache {
                 const cursor = event.target.result
                 if (cursor) {
                     const { timestamp } = cursor.value
-                    if (Date.now() - timestamp > this._ttl) {
+                    if (Date.now() - timestamp > ttl) {
                         store.delete(cursor.key)
                     }
                     cursor.continue()

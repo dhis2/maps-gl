@@ -52,7 +52,7 @@ class EarthEngineWorker {
 
     // Set EE API auth token if needed and run ee.initialize
     static setAuthToken = getAuthToken => {
-        this._cache.init()
+        WorkerCache.flushExpired()
         new Promise((resolve, reject) => {
             if (ee.data.getAuthToken()) {
                 // Already authenticated
