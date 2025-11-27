@@ -48,9 +48,7 @@ class EarthEngineWorker {
     constructor(options = {}) {
         this.options = options
         this._cache = new WorkerCache()
-        this._cache.flushExpired().catch(err => {
-            console.warn('Error flushing expired cache:', err)
-        })
+        this._cache.init()
     }
 
     // Set EE API auth token if needed and run ee.initialize
@@ -390,6 +388,10 @@ class EarthEngineWorker {
                 Array.isArray(style)
 
             const collection = this.getFeatureCollection()
+            if (!collection) {
+                throw new Error('Missing org unit features')
+            }
+
             const scale = getAdjustedScale(collection, this.eeScale)
             let image = await this.getImage()
 
@@ -408,94 +410,111 @@ class EarthEngineWorker {
                 }
             }
 
-            if (collection) {
-                if (format === FEATURE_COLLECTION) {
-                    const { datasetId, filter } = this.options
-                    let dataset = ee.FeatureCollection(datasetId)
-
-                    dataset = applyFilter(dataset, filter)
-
-                    const aggFeatures = collection
-                        .map(feature => {
-                            feature = ee.Feature(feature)
-                            const count = dataset
-                                .filterBounds(feature.geometry())
-                                .size()
-
-                            return feature.set('count', count)
-                        })
-                        .select(['count'], null, false)
-
-                    return getInfo(aggFeatures).then(
-                        getFeatureCollectionProperties
-                    )
-                } else if (useHistogram) {
-                    // Used for landcover
-                    const reducer = ee.Reducer.frequencyHistogram()
-                    const scaleValue = await getInfo(scale)
-
-                    return getInfo(
-                        image
-                            .reduceRegions({
-                                collection,
-                                reducer,
-                                scale,
-                                tileScale,
-                            })
-                            .select(['histogram'], null, false)
-                    ).then(data =>
-                        getHistogramStatistics({
-                            data,
-                            scale: scaleValue,
-                            aggregationType,
-                            style,
-                        })
-                    )
-                } else if (!singleAggregation && aggregationType.length) {
-                    const reducer = combineReducers(
-                        aggregationType,
-                        useCentroid
-                    )
-                    const props = [...aggregationType]
-
-                    let aggFeatures = image.reduceRegions({
-                        collection,
-                        reducer,
-                        scale,
-                        tileScale,
-                    })
-
-                    if (this.eeImageBands) {
-                        aggFeatures = this.eeImageBands.reduceRegions({
-                            collection: aggFeatures,
-                            reducer,
-                            scale,
-                            tileScale,
-                        })
-
-                        band.forEach(band =>
-                            aggregationType.forEach(type =>
-                                props.push(
-                                    aggregationType.length === 1
-                                        ? band
-                                        : `${band}_${type}`
-                                )
-                            )
-                        )
-                    }
-
-                    aggFeatures = aggFeatures.select(props, null, false)
-
-                    return getInfo(aggFeatures).then(
-                        getFeatureCollectionProperties
-                    )
-                } else {
-                    throw new Error('Aggregation type is not valid')
-                }
+            if (format === FEATURE_COLLECTION) {
+                return this._aggregateFeatureCollection({ collection })
+            } else if (useHistogram) {
+                return this._aggregateImageCollectionHistogram({
+                    collection,
+                    image,
+                    scale,
+                    aggregationType,
+                    style,
+                }) // Used for landcover
+            } else if (!singleAggregation && aggregationType.length) {
+                return this._aggregateImageCollection({
+                    collection,
+                    image,
+                    scale,
+                    tileScale,
+                    aggregationType,
+                    useCentroid,
+                    band,
+                })
             } else {
-                throw new Error('Missing org unit features')
+                throw new Error('Aggregation type is not valid')
             }
         })
+    }
+
+    async _aggregateFeatureCollection({ collection }) {
+        const { datasetId, filter } = this.options
+        let dataset = ee.FeatureCollection(datasetId)
+        dataset = applyFilter(dataset, filter)
+        const aggFeatures = collection
+            .map(feature => {
+                feature = ee.Feature(feature)
+                const count = dataset.filterBounds(feature.geometry()).size()
+                return feature.set('count', count)
+            })
+            .select(['count'], null, false)
+
+        return getInfo(aggFeatures).then(getFeatureCollectionProperties)
+    }
+
+    async _aggregateImageCollectionHistogram({
+        collection,
+        image,
+        scale,
+        tileScale,
+        aggregationType,
+        style,
+    }) {
+        const reducer = ee.Reducer.frequencyHistogram()
+        const scaleValue = await getInfo(scale)
+        return getInfo(
+            image
+                .reduceRegions({
+                    collection,
+                    reducer,
+                    scale,
+                    tileScale,
+                })
+                .select(['histogram'], null, false)
+        ).then(data =>
+            getHistogramStatistics({
+                data,
+                scale: scaleValue,
+                aggregationType,
+                style,
+            })
+        )
+    }
+
+    async _aggregateImageCollection({
+        collection,
+        image,
+        scale,
+        tileScale,
+        aggregationType,
+        useCentroid,
+        band,
+    }) {
+        const reducer = combineReducers(aggregationType, useCentroid)
+        const props = [...aggregationType]
+        let aggFeatures = image.reduceRegions({
+            collection,
+            reducer,
+            scale,
+            tileScale,
+        })
+        if (this.eeImageBands) {
+            aggFeatures = this.eeImageBands.reduceRegions({
+                collection: aggFeatures,
+                reducer,
+                scale,
+                tileScale,
+            })
+            band.forEach(band =>
+                aggregationType.forEach(type =>
+                    props.push(
+                        aggregationType.length === 1 ? band : `${band}_${type}`
+                    )
+                )
+            )
+        }
+
+        aggFeatures = aggFeatures.select(props, null, false)
+        return getInfo(aggFeatures).then(getFeatureCollectionProperties)
     }
 }
 

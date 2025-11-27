@@ -34,6 +34,14 @@ export class WorkerCache {
         this._ttl = ttl
     }
 
+    async init() {
+        try {
+            await this.flushExpired()
+        } catch (err) {
+            console.warn('Error flushing expired cache:', err)
+        }
+    }
+
     _generateKey = (methodName, params) =>
         `${methodName}:${JSON.stringify(params)}`
 
