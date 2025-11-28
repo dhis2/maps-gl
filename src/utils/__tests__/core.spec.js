@@ -1,4 +1,4 @@
-import { setTemplate } from '../core'
+import { setTemplate } from '../core.js'
 
 describe('core utils', () => {
     it('Should add values to template string', () => {

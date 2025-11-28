@@ -1,4 +1,4 @@
-import { isPoint } from '../geometry'
+import { isPoint } from '../geometry.js'
 
 const point = {
     type: 'Feature',
