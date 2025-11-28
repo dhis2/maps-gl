@@ -228,53 +228,57 @@ class EarthEngineWorker {
 
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { datasetId, format, data, filter, style } = this.options
+        return this._cache.wrap('getTileUrl', this.options, async () => {
+            const { datasetId, format, data, filter, style } = this.options
 
-        return new Promise((resolve, reject) => {
-            switch (format) {
-                case FEATURE_COLLECTION: {
-                    let dataset = ee.FeatureCollection(datasetId)
+            return new Promise((resolve, reject) => {
+                switch (format) {
+                    case FEATURE_COLLECTION: {
+                        let dataset = ee.FeatureCollection(datasetId)
 
-                    dataset = applyFilter(dataset, filter).draw({
-                        ...DEFAULT_FEATURE_STYLE,
-                        ...style,
-                    })
+                        dataset = applyFilter(dataset, filter).draw({
+                            ...DEFAULT_FEATURE_STYLE,
+                            ...style,
+                        })
 
-                    if (data) {
-                        dataset = dataset.clipToCollection(
-                            this.getFeatureCollection()
+                        if (data) {
+                            dataset = dataset.clipToCollection(
+                                this.getFeatureCollection()
+                            )
+                        }
+
+                        dataset.getMap(null, response =>
+                            resolve(response.urlFormat)
                         )
+
+                        break
                     }
-
-                    dataset.getMap(null, response =>
-                        resolve(response.urlFormat)
-                    )
-
-                    break
-                }
-                case IMAGE:
-                case IMAGE_COLLECTION: {
-                    // eslint-disable-next-line prefer-const
-                    let { eeImage, params } = getClassifiedImage(
-                        this.getImage(),
-                        this.options
-                    )
-
-                    if (data) {
-                        eeImage = eeImage.clipToCollection(
-                            this.getFeatureCollection()
+                    case IMAGE:
+                    case IMAGE_COLLECTION: {
+                        // eslint-disable-next-line prefer-const
+                        let { eeImage, params } = getClassifiedImage(
+                            this.getImage(),
+                            this.options
                         )
+
+                        if (data) {
+                            eeImage = eeImage.clipToCollection(
+                                this.getFeatureCollection()
+                            )
+                        }
+
+                        eeImage
+                            .visualize(params)
+                            .getMap(null, response =>
+                                resolve(response.urlFormat)
+                            )
+
+                        break
                     }
-
-                    eeImage
-                        .visualize(params)
-                        .getMap(null, response => resolve(response.urlFormat))
-
-                    break
+                    default:
+                        reject(new Error('Unknown format'))
                 }
-                default:
-                    reject(new Error('Unknown format'))
-            }
+            })
         })
     }
 
@@ -372,67 +376,69 @@ class EarthEngineWorker {
         if (config) {
             this.setOptions(config)
         }
-        const {
-            format,
-            aggregationType,
-            band,
-            useCentroid,
-            style,
-            tileScale = DEFAULT_TILE_SCALE,
-            unmaskAggregation,
-        } = this.options
-        const singleAggregation = !Array.isArray(aggregationType)
-        const useHistogram =
-            singleAggregation &&
-            hasClasses(aggregationType) &&
-            Array.isArray(style)
-
-        const collection = this.getFeatureCollection()
-        if (!collection) {
-            throw new Error('Missing org unit features')
-        }
-
-        const scale = getAdjustedScale(collection, this.eeScale)
-        let image = await this.getImage()
-
-        // Used for "constrained" WorldPop layers
-        // We need to unmask the image to get the correct population density
-        if (unmaskAggregation || typeof unmaskAggregation === 'number') {
-            const fillValue =
-                typeof unmaskAggregation === 'number'
-                    ? unmaskAggregation
-                    : DEFAULT_UNMASK_VALUE
-
-            image = image.unmask(fillValue)
-
-            if (this.eeImageBands) {
-                this.eeImageBands = this.eeImageBands.unmask(fillValue)
-            }
-        }
-
-        if (format === FEATURE_COLLECTION) {
-            return this._aggregateFeatureCollection({ collection })
-        } else if (useHistogram) {
-            return this._aggregateImageCollectionHistogram({
-                collection,
-                image,
-                scale,
+        return this._cache.wrap('getAggregations', this.options, async () => {
+            const {
+                format,
                 aggregationType,
-                style,
-            }) // Used for landcover
-        } else if (!singleAggregation && aggregationType.length) {
-            return this._aggregateImageCollection({
-                collection,
-                image,
-                scale,
-                tileScale,
-                aggregationType,
-                useCentroid,
                 band,
-            })
-        } else {
-            throw new Error('Aggregation type is not valid')
-        }
+                useCentroid,
+                style,
+                tileScale = DEFAULT_TILE_SCALE,
+                unmaskAggregation,
+            } = this.options
+            const singleAggregation = !Array.isArray(aggregationType)
+            const useHistogram =
+                singleAggregation &&
+                hasClasses(aggregationType) &&
+                Array.isArray(style)
+
+            const collection = this.getFeatureCollection()
+            if (!collection) {
+                throw new Error('Missing org unit features')
+            }
+
+            const scale = getAdjustedScale(collection, this.eeScale)
+            let image = await this.getImage()
+
+            // Used for "constrained" WorldPop layers
+            // We need to unmask the image to get the correct population density
+            if (unmaskAggregation || typeof unmaskAggregation === 'number') {
+                const fillValue =
+                    typeof unmaskAggregation === 'number'
+                        ? unmaskAggregation
+                        : DEFAULT_UNMASK_VALUE
+
+                image = image.unmask(fillValue)
+
+                if (this.eeImageBands) {
+                    this.eeImageBands = this.eeImageBands.unmask(fillValue)
+                }
+            }
+
+            if (format === FEATURE_COLLECTION) {
+                return this._aggregateFeatureCollection({ collection })
+            } else if (useHistogram) {
+                return this._aggregateImageCollectionHistogram({
+                    collection,
+                    image,
+                    scale,
+                    aggregationType,
+                    style,
+                }) // Used for landcover
+            } else if (!singleAggregation && aggregationType.length) {
+                return this._aggregateImageCollection({
+                    collection,
+                    image,
+                    scale,
+                    tileScale,
+                    aggregationType,
+                    useCentroid,
+                    band,
+                })
+            } else {
+                throw new Error('Aggregation type is not valid')
+            }
+        })
     }
 
     async _aggregateFeatureCollection({ collection }) {
