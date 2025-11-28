@@ -317,10 +317,9 @@ export const aggregateTemporal = ({
     periodReducer = EE_MONTHLY,
     overrideDate,
 }) => {
-    const temporalReducer =
-        reducer === ee.Reducer[reducer]
-            ? ee.Reducer[reducer]()
-            : ee.Reducer.mean()
+    const temporalReducer = ee.Reducer[reducer]
+        ? ee.Reducer[reducer]()
+        : ee.Reducer.mean()
 
     const period = mapPeriodReducerToPeriod(periodReducer)
     const { minDate, maxDate } = computeMinMaxAndAlign({
