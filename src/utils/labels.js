@@ -1,7 +1,7 @@
 import area from '@turf/area'
 import polylabel from 'polylabel'
-import { featureCollection } from './geometry'
-import defaults from './style'
+import { featureCollection } from './geometry.js'
+import { textOpacity } from './style.js'
 
 // Default fonts
 const fonts = {
@@ -67,7 +67,7 @@ export const labelLayer = ({
         },
         paint: {
             'text-color': color ? color : ['get', 'color'],
-            'text-opacity': opacity ?? defaults.opacity,
+            'text-opacity': opacity ?? textOpacity,
         },
     }
 }

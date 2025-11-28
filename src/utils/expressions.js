@@ -1,5 +1,5 @@
-import { isHover } from './filters'
-import { strokeWidth, hoverStrokeMultiplier } from './style'
+import { isHover } from './filters.js'
+import { strokeWidth, hoverStrokeMultiplier } from './style.js'
 
 // Returns color from feature with fallback
 export const colorExpr = color => [

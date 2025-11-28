@@ -1,3 +1,31 @@
+## [4.1.2](https://github.com/dhis2/maps-gl/compare/v4.1.1...v4.1.2) (2025-07-31)
+
+
+### Bug Fixes
+
+* update ee worker files and attributions style ([#602](https://github.com/dhis2/maps-gl/issues/602)) ([4a469c0](https://github.com/dhis2/maps-gl/commit/4a469c064069a0176b18ac8bd250d98bbc84fc81))
+
+## [4.1.1](https://github.com/dhis2/maps-gl/compare/v4.1.0...v4.1.1) (2025-07-07)
+
+
+### Bug Fixes
+
+* setting opacity of azure layers ([#603](https://github.com/dhis2/maps-gl/issues/603)) ([9aeb678](https://github.com/dhis2/maps-gl/commit/9aeb67835ad587cb2e8813f0e8430d2ba79b74d4))
+
+# [4.1.0](https://github.com/dhis2/maps-gl/compare/v4.0.2...v4.1.0) (2025-06-17)
+
+
+### Features
+
+* azureLayer support [DHIS2-19152] ([#600](https://github.com/dhis2/maps-gl/issues/600)) ([6595ee3](https://github.com/dhis2/maps-gl/commit/6595ee3838177777e49c612b4017e9b987402f06))
+
+## [4.0.2](https://github.com/dhis2/maps-gl/compare/v4.0.1...v4.0.2) (2025-06-13)
+
+
+### Bug Fixes
+
+* add method to disable mouse move functionality [DHIS2-6683] ([#599](https://github.com/dhis2/maps-gl/issues/599)) ([c2673a5](https://github.com/dhis2/maps-gl/commit/c2673a531efd2029fba15864a04b7d33f2413aba))
+
 ## [4.0.1](https://github.com/dhis2/maps-gl/compare/v4.0.0...v4.0.1) (2024-11-29)
 
 

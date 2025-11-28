@@ -1,30 +1,32 @@
-import VectorStyle from './VectorStyle'
-import TileLayer from './TileLayer'
-import Choropleth from './Choropleth'
-import Boundary from './Boundary'
-import Markers from './Markers'
-import Events from './Events'
-import ClientCluster from './ClientCluster'
-import DonutCluster from './DonutCluster'
-import ServerCluster from './ServerCluster'
-import EarthEngine from './EarthEngine'
-import BingLayer from './BingLayer'
-import GeoJson from './GeoJson'
-import LayerGroup from './LayerGroup'
+import AzureLayer from './AzureLayer.js'
+import BingLayer from './BingLayer.js'
+import Boundary from './Boundary.js'
+import Choropleth from './Choropleth.js'
+import ClientCluster from './ClientCluster.js'
+import DonutCluster from './DonutCluster.js'
+import EarthEngine from './EarthEngine.js'
+import Events from './Events.js'
+import GeoJson from './GeoJson.js'
+import LayerGroup from './LayerGroup.js'
+import Markers from './Markers.js'
+import ServerCluster from './ServerCluster.js'
+import TileLayer from './TileLayer.js'
+import VectorStyle from './VectorStyle.js'
 
 export default {
-    vectorStyle: VectorStyle, //basemap /externalLayer
-    tileLayer: TileLayer, // basemap / external layer
-    wmsLayer: TileLayer, // external layer
-    choropleth: Choropleth, // thematic layer
+    azureLayer: AzureLayer, // azure layer basemap
+    bingLayer: BingLayer, // bing layer basemap
     boundary: Boundary, // boundary layer
-    markers: Markers, // facility layer
-    events: Events, // event layer
+    choropleth: Choropleth, // thematic layer
     clientCluster: ClientCluster, // event layer
     donutCluster: DonutCluster, // event layer
-    serverCluster: ServerCluster, // event layer
     earthEngine: EarthEngine, // google earth engine layer
-    bingLayer: BingLayer, // bing layer basemap
+    events: Events, // event layer
     geoJson: GeoJson, // tracked entity layer
     group: LayerGroup, // tracked entity layer
+    markers: Markers, // facility layer
+    serverCluster: ServerCluster, // event layer
+    tileLayer: TileLayer, // basemap / external layer
+    vectorStyle: VectorStyle, // basemap / externalLayer
+    wmsLayer: TileLayer, // external layer
 }
