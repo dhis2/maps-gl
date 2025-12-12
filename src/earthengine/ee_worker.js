@@ -2,6 +2,7 @@ import polygonBuffer from '@turf/buffer'
 import circle from '@turf/circle'
 import { expose } from 'comlink'
 import ee from './ee_api_js_worker.js' // https://github.com/google/earthengine-api/pull/173
+import { WorkerCache } from './ee_worker_cache.js'
 import {
     getInfo,
     getScale,
@@ -47,6 +48,8 @@ const DEFAULT_UNMASK_VALUE = 0
 class EarthEngineWorker {
     constructor(options = {}) {
         this.options = options
+        this._cache = new WorkerCache()
+        WorkerCache.flushExpired()
     }
 
     // Set EE API auth token if needed and run ee.initialize
@@ -225,53 +228,57 @@ class EarthEngineWorker {
 
     // Returns raster tile url for a classified image
     getTileUrl() {
-        const { datasetId, format, data, filter, style } = this.options
+        return this._cache.wrap('getTileUrl', this.options, async () => {
+            const { datasetId, format, data, filter, style } = this.options
 
-        return new Promise((resolve, reject) => {
-            switch (format) {
-                case FEATURE_COLLECTION: {
-                    let dataset = ee.FeatureCollection(datasetId)
+            return new Promise((resolve, reject) => {
+                switch (format) {
+                    case FEATURE_COLLECTION: {
+                        let dataset = ee.FeatureCollection(datasetId)
 
-                    dataset = applyFilter(dataset, filter).draw({
-                        ...DEFAULT_FEATURE_STYLE,
-                        ...style,
-                    })
+                        dataset = applyFilter(dataset, filter).draw({
+                            ...DEFAULT_FEATURE_STYLE,
+                            ...style,
+                        })
 
-                    if (data) {
-                        dataset = dataset.clipToCollection(
-                            this.getFeatureCollection()
+                        if (data) {
+                            dataset = dataset.clipToCollection(
+                                this.getFeatureCollection()
+                            )
+                        }
+
+                        dataset.getMap(null, response =>
+                            resolve(response.urlFormat)
                         )
+
+                        break
                     }
-
-                    dataset.getMap(null, response =>
-                        resolve(response.urlFormat)
-                    )
-
-                    break
-                }
-                case IMAGE:
-                case IMAGE_COLLECTION: {
-                    // eslint-disable-next-line prefer-const
-                    let { eeImage, params } = getClassifiedImage(
-                        this.getImage(),
-                        this.options
-                    )
-
-                    if (data) {
-                        eeImage = eeImage.clipToCollection(
-                            this.getFeatureCollection()
+                    case IMAGE:
+                    case IMAGE_COLLECTION: {
+                        // eslint-disable-next-line prefer-const
+                        let { eeImage, params } = getClassifiedImage(
+                            this.getImage(),
+                            this.options
                         )
+
+                        if (data) {
+                            eeImage = eeImage.clipToCollection(
+                                this.getFeatureCollection()
+                            )
+                        }
+
+                        eeImage
+                            .visualize(params)
+                            .getMap(null, response =>
+                                resolve(response.urlFormat)
+                            )
+
+                        break
                     }
-
-                    eeImage
-                        .visualize(params)
-                        .getMap(null, response => resolve(response.urlFormat))
-
-                    break
+                    default:
+                        reject(new Error('Unknown format'))
                 }
-                default:
-                    reject(new Error('Unknown format'))
-            }
+            })
         })
     }
 
@@ -286,54 +293,57 @@ class EarthEngineWorker {
     }
 
     // Returns available periods for an image collection
-    getPeriods({ datasetId, year, datesRange, periodReducer }) {
-        let collection = ee.ImageCollection(datasetId)
-        let startDate, endDate
+    getPeriods(params) {
+        return this._cache.wrap('getPeriods', params, async () => {
+            const { datasetId, year, datesRange, periodReducer } = params
+            let collection = ee.ImageCollection(datasetId)
+            let startDate, endDate
 
-        if (year) {
-            ;({ startDate, endDate } = getPeriodDates(periodReducer, year))
+            if (year) {
+                ;({ startDate, endDate } = getPeriodDates(periodReducer, year))
+                collection = filterCollectionByDateRange(
+                    collection,
+                    startDate,
+                    endDate
+                )
+            }
+
+            if (periodReducer) {
+                collection = aggregateTemporal({
+                    collection,
+                    metadataOnly: true,
+                    year,
+                    periodReducer,
+                    overrideDate: startDate,
+                })
+            }
+
             collection = filterCollectionByDateRange(
                 collection,
-                startDate,
-                endDate
-            )
-        }
-
-        if (periodReducer) {
-            collection = aggregateTemporal({
-                collection,
-                metadataOnly: true,
-                year,
-                periodReducer,
-                overrideDate: startDate,
-            })
-        }
-
-        collection = filterCollectionByDateRange(
-            collection,
-            datesRange.startDate,
-            datesRange.endDate
-        )
-
-        const featureCollection = ee
-            .FeatureCollection(collection)
-            .select(
-                [
-                    'system:time_start',
-                    'system:time_end',
-                    'year',
-                    'month',
-                    'week',
-                ],
-                null,
-                false
+                datesRange.startDate,
+                datesRange.endDate
             )
 
-        return getInfo(
-            featureCollection
-                .distinct('system:time_start')
-                .sort('system:time_start', false)
-        )
+            const featureCollection = ee
+                .FeatureCollection(collection)
+                .select(
+                    [
+                        'system:time_start',
+                        'system:time_end',
+                        'year',
+                        'month',
+                        'week',
+                    ],
+                    null,
+                    false
+                )
+
+            return getInfo(
+                featureCollection
+                    .distinct('system:time_start')
+                    .sort('system:time_start', false)
+            )
+        })
     }
 
     // Returns min and max timestamp for an image collection
@@ -349,10 +359,16 @@ class EarthEngineWorker {
 
     // Returns info for first and last images in collection
     getCollectionSpan(datasetId) {
-        const collection = ee.ImageCollection(datasetId)
-        const first = collection.sort('system:time_start', true).first()
-        const last = collection.sort('system:time_start', false).first()
-        return getInfo(ee.Dictionary({ first, last }))
+        return this._cache.wrap(
+            'getCollectionSpan',
+            { datasetId },
+            async () => {
+                const collection = ee.ImageCollection(datasetId)
+                const first = collection.sort('system:time_start', true).first()
+                const last = collection.sort('system:time_start', false).first()
+                return getInfo(ee.Dictionary({ first, last }))
+            }
+        )
     }
 
     // Returns aggregated values for org unit features
@@ -360,120 +376,150 @@ class EarthEngineWorker {
         if (config) {
             this.setOptions(config)
         }
-        const {
-            format,
-            aggregationType,
-            band,
-            useCentroid,
-            style,
-            tileScale = DEFAULT_TILE_SCALE,
-            unmaskAggregation,
-        } = this.options
-        const singleAggregation = !Array.isArray(aggregationType)
-        const useHistogram =
-            singleAggregation &&
-            hasClasses(aggregationType) &&
-            Array.isArray(style)
+        return this._cache.wrap('getAggregations', this.options, async () => {
+            const {
+                format,
+                aggregationType,
+                band,
+                useCentroid,
+                style,
+                tileScale = DEFAULT_TILE_SCALE,
+                unmaskAggregation,
+            } = this.options
+            const singleAggregation = !Array.isArray(aggregationType)
+            const useHistogram =
+                singleAggregation &&
+                hasClasses(aggregationType) &&
+                Array.isArray(style)
 
-        const collection = this.getFeatureCollection()
-        const scale = getAdjustedScale(collection, this.eeScale)
-        let image = await this.getImage()
-
-        // Used for "constrained" WorldPop layers
-        // We need to unmask the image to get the correct population density
-        if (unmaskAggregation || typeof unmaskAggregation === 'number') {
-            const fillValue =
-                typeof unmaskAggregation === 'number'
-                    ? unmaskAggregation
-                    : DEFAULT_UNMASK_VALUE
-
-            image = image.unmask(fillValue)
-
-            if (this.eeImageBands) {
-                this.eeImageBands = this.eeImageBands.unmask(fillValue)
+            const collection = this.getFeatureCollection()
+            if (!collection) {
+                throw new Error('Missing org unit features')
             }
-        }
 
-        if (collection) {
+            const scale = getAdjustedScale(collection, this.eeScale)
+            let image = await this.getImage()
+
+            // Used for "constrained" WorldPop layers
+            // We need to unmask the image to get the correct population density
+            if (unmaskAggregation || typeof unmaskAggregation === 'number') {
+                const fillValue =
+                    typeof unmaskAggregation === 'number'
+                        ? unmaskAggregation
+                        : DEFAULT_UNMASK_VALUE
+
+                image = image.unmask(fillValue)
+
+                if (this.eeImageBands) {
+                    this.eeImageBands = this.eeImageBands.unmask(fillValue)
+                }
+            }
+
             if (format === FEATURE_COLLECTION) {
-                const { datasetId, filter } = this.options
-                let dataset = ee.FeatureCollection(datasetId)
-
-                dataset = applyFilter(dataset, filter)
-
-                const aggFeatures = collection
-                    .map(feature => {
-                        feature = ee.Feature(feature)
-                        const count = dataset
-                            .filterBounds(feature.geometry())
-                            .size()
-
-                        return feature.set('count', count)
-                    })
-                    .select(['count'], null, false)
-
-                return getInfo(aggFeatures).then(getFeatureCollectionProperties)
+                return this._aggregateFeatureCollection({ collection })
             } else if (useHistogram) {
-                // Used for landcover
-                const reducer = ee.Reducer.frequencyHistogram()
-                const scaleValue = await getInfo(scale)
-
-                return getInfo(
-                    image
-                        .reduceRegions({
-                            collection,
-                            reducer,
-                            scale,
-                            tileScale,
-                        })
-                        .select(['histogram'], null, false)
-                ).then(data =>
-                    getHistogramStatistics({
-                        data,
-                        scale: scaleValue,
-                        aggregationType,
-                        style,
-                    })
-                )
+                return this._aggregateImageCollectionHistogram({
+                    collection,
+                    image,
+                    scale,
+                    aggregationType,
+                    style,
+                }) // Used for landcover
             } else if (!singleAggregation && aggregationType.length) {
-                const reducer = combineReducers(aggregationType, useCentroid)
-                const props = [...aggregationType]
+                return this._aggregateImageCollection({
+                    collection,
+                    image,
+                    scale,
+                    tileScale,
+                    aggregationType,
+                    useCentroid,
+                    band,
+                })
+            } else {
+                throw new Error('Aggregation type is not valid')
+            }
+        })
+    }
 
-                let aggFeatures = image.reduceRegions({
+    async _aggregateFeatureCollection({ collection }) {
+        const { datasetId, filter } = this.options
+        let dataset = ee.FeatureCollection(datasetId)
+        dataset = applyFilter(dataset, filter)
+        const aggFeatures = collection
+            .map(feature => {
+                feature = ee.Feature(feature)
+                const count = dataset.filterBounds(feature.geometry()).size()
+                return feature.set('count', count)
+            })
+            .select(['count'], null, false)
+
+        return getInfo(aggFeatures).then(getFeatureCollectionProperties)
+    }
+
+    async _aggregateImageCollectionHistogram({
+        collection,
+        image,
+        scale,
+        tileScale,
+        aggregationType,
+        style,
+    }) {
+        const reducer = ee.Reducer.frequencyHistogram()
+        const scaleValue = await getInfo(scale)
+        return getInfo(
+            image
+                .reduceRegions({
                     collection,
                     reducer,
                     scale,
                     tileScale,
                 })
+                .select(['histogram'], null, false)
+        ).then(data =>
+            getHistogramStatistics({
+                data,
+                scale: scaleValue,
+                aggregationType,
+                style,
+            })
+        )
+    }
 
-                if (this.eeImageBands) {
-                    aggFeatures = this.eeImageBands.reduceRegions({
-                        collection: aggFeatures,
-                        reducer,
-                        scale,
-                        tileScale,
-                    })
-
-                    band.forEach(band =>
-                        aggregationType.forEach(type =>
-                            props.push(
-                                aggregationType.length === 1
-                                    ? band
-                                    : `${band}_${type}`
-                            )
-                        )
+    async _aggregateImageCollection({
+        collection,
+        image,
+        scale,
+        tileScale,
+        aggregationType,
+        useCentroid,
+        band,
+    }) {
+        const reducer = combineReducers(aggregationType, useCentroid)
+        const props = [...aggregationType]
+        let aggFeatures = image.reduceRegions({
+            collection,
+            reducer,
+            scale,
+            tileScale,
+        })
+        if (this.eeImageBands) {
+            aggFeatures = this.eeImageBands.reduceRegions({
+                collection: aggFeatures,
+                reducer,
+                scale,
+                tileScale,
+            })
+            band.forEach(band =>
+                aggregationType.forEach(type =>
+                    props.push(
+                        aggregationType.length === 1 ? band : `${band}_${type}`
                     )
-                }
-
-                aggFeatures = aggFeatures.select(props, null, false)
-
-                return getInfo(aggFeatures).then(getFeatureCollectionProperties)
-            } else {
-                throw new Error('Aggregation type is not valid')
-            }
-        } else {
-            throw new Error('Missing org unit features')
+                )
+            )
         }
+
+        aggFeatures = aggFeatures.select(props, null, false)
+        return getInfo(aggFeatures).then(getFeatureCollectionProperties)
     }
 }
 
