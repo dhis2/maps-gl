@@ -12,9 +12,11 @@ const EE_WEEKLY_WEIGHTED = 'EE_WEEKLY_WEIGHTED'
 const EE_MONTHLY = 'EE_MONTHLY'
 const EE_MONTHLY_WEIGHTED = 'EE_MONTHLY_WEIGHTED'
 
+export const DEFAULT_SCALE = 1000
+
 export const hasClasses = type => classAggregation.includes(type)
 
-// Get the start date (UTC) of the epidemiological year for a given year
+// Get the start date (UTC) of the epidemiological year (Monday start) for a given year
 export const getStartOfEpiYear = year => {
     const jan1 = new Date(Date.UTC(year, 0, 1)) // Month is 0-indexed (0 = Jan)
     const dayOfWeek = jan1.getDay() // Sunday=0, Monday=1, ..., Saturday=6
@@ -83,6 +85,30 @@ export const getInfo = instance =>
         })
     )
 
+// Increase sampling density for more accurate and stable statistics,
+// especially for coarse-resolution datasets with reduceRegion(s).
+// Further adjusts the scale if necessary to avoid failures on small polygons.
+export const getAdjustedScale = (features, eeScale) => {
+    const scale = ee.Number(eeScale ?? DEFAULT_SCALE)
+    const cappedScale = ee.Number(scale).min(DEFAULT_SCALE)
+    const featuresWithArea = features.map(f =>
+        f.set('area', f.geometry().area())
+    )
+    const minArea = ee.Number(
+        featuresWithArea
+            .reduceColumns({
+                reducer: ee.Reducer.min(),
+                selectors: ['area'],
+            })
+            .get('min')
+    )
+    return ee.Algorithms.If(
+        minArea.lt(cappedScale.pow(2)),
+        minArea.sqrt().divide(2),
+        cappedScale
+    )
+}
+
 // Unweighted means that centroids are used for each grid cell
 // https://developers.google.com/earth-engine/guides/reducers_reduce_region#pixels-in-the-region
 const createReducer = (eeReducer, type, unweighted) => {
@@ -100,6 +126,23 @@ export const combineReducers = (types, unweighted) =>
                 : r.combine(createReducer(ee.Reducer, t, unweighted), '', true),
         ee.Reducer
     )
+
+export const selectBand = ({ eeImage, band, bandReducer }) => {
+    if (!band) {
+        return { eeImage }
+    }
+
+    let eeImageBands
+    eeImage = eeImage.select(band)
+    if (Array.isArray(band) && bandReducer) {
+        // Keep image bands for aggregations
+        eeImageBands = eeImage
+
+        // Combine multiple bands (e.g. age groups)
+        eeImage = eeImage.reduce(ee.Reducer[bandReducer]())
+    }
+    return { eeImage, eeImageBands }
+}
 
 // Returns the linear scale in meters of the units of this projection
 export const getScale = image => image.select(0).projection().nominalScale()
@@ -215,25 +258,42 @@ export const applyFilter = (collection, filter = []) => {
     return filtered
 }
 
+// Resolve variable names to image bands dynamically
+const getExpressionArgumentBands = (image, method) => {
+    const vars = {}
+    for (const key in method.arguments[1]) {
+        const bandName = method.arguments[1][key]
+        vars[key] = image.select(bandName)
+    }
+    return vars
+}
+
 // Apply methods to image cells
 export const applyMethods = (eeImage, methods = []) => {
     let image = eeImage
-
     if (Array.isArray(methods)) {
-        methods.forEach(m => {
-            if (image[m.name]) {
+        for (const m of methods) {
+            if (
+                m.name === 'expression' &&
+                m.arguments &&
+                typeof m.arguments[1] === 'object'
+            ) {
+                image = image.expression(
+                    m.arguments[0],
+                    getExpressionArgumentBands(image, m)
+                )
+            } else if (image[m.name]) {
                 image = image[m.name].apply(image, m.arguments)
             }
-        })
+        }
     } else {
         // Backward compatibility for format used before 2.40
-        Object.keys(methods).forEach(m => {
+        for (const m in methods) {
             if (image[m]) {
                 image = image[m].apply(image, methods[m])
             }
-        })
+        }
     }
-
     return image
 }
 
@@ -308,6 +368,8 @@ const buildPeriodMetadata = ({ startDate, endDate, period, tempYear }) => {
 }
 
 // Generic temporal aggregation function for daily ImageCollections.
+// In use when source periods are granular enough to be fully contained
+// in target periods, eg. daily.
 // Supported periods: 'month' and 'week'
 export const aggregateTemporal = ({
     collection,
@@ -364,6 +426,8 @@ export const aggregateTemporal = ({
 
 // Aggregates an ImageCollection (with system:time_start and system:time_end)
 // into weighted composites, either monthly or weekly, based on overlap duration.
+// In use when source periods are not granular enough to be fully contained
+// in target periods, eg. 16-day.
 export const aggregateTemporalWeighted = ({
     collection,
     year,

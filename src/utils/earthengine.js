@@ -8,6 +8,7 @@ export const defaultOptions = {
 const workerOptions = [
     'aggregationType',
     'band',
+    'bandSource',
     'bandReducer',
     'buffer',
     'cloudScore',

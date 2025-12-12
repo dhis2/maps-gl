@@ -7,6 +7,7 @@ import {
     getScale,
     hasClasses,
     combineReducers,
+    selectBand,
     getClassifiedImage,
     getHistogramStatistics,
     getFeatureCollectionProperties,
@@ -17,11 +18,13 @@ import {
     aggregateTemporal,
     getPeriodDates,
     getAggregatorFn,
+    getAdjustedScale,
 } from './ee_worker_utils.js'
 
 const IMAGE = 'Image'
 const IMAGE_COLLECTION = 'ImageCollection'
 const FEATURE_COLLECTION = 'FeatureCollection'
+const BANDSOURCE_METHODSOUTPUT = 'methodsOutput'
 
 const getBufferGeometry = ({ geometry }, buffer) =>
     (geometry.type === 'Point'
@@ -133,12 +136,14 @@ class EarthEngineWorker {
             periodReducerType,
             mosaic,
             band,
+            bandSource,
             bandReducer,
             methods,
             cloudScore,
         } = this.options
 
         let eeImage
+        let eeImageBands
 
         if (format === IMAGE) {
             // Single image
@@ -191,23 +196,29 @@ class EarthEngineWorker {
             }
         }
 
-        // Select band (e.g. age group)
-        if (band) {
-            eeImage = eeImage.select(band)
-
-            if (Array.isArray(band) && bandReducer) {
-                // Keep image bands for aggregations
-                this.eeImageBands = eeImage
-
-                // Combine multiple bands (e.g. age groups)
-                eeImage = eeImage.reduce(ee.Reducer[bandReducer]())
-            }
+        // If readily available, select band now (e.g. age group)
+        if (!bandSource) {
+            ;({ eeImage, eeImageBands } = selectBand({
+                eeImage,
+                band,
+                bandReducer,
+            }))
         }
 
         // Run methods on image
         eeImage = applyMethods(eeImage, methods)
 
+        // If an output of methods, select band now (e.g. relative humidity)
+        if (bandSource === BANDSOURCE_METHODSOUTPUT) {
+            ;({ eeImage, eeImageBands } = selectBand({
+                eeImage,
+                band,
+                bandReducer,
+            }))
+        }
+
         this.eeImage = eeImage
+        this.eeImageBands = eeImageBands
 
         return eeImage
     }
@@ -363,8 +374,9 @@ class EarthEngineWorker {
             singleAggregation &&
             hasClasses(aggregationType) &&
             Array.isArray(style)
-        const scale = this.eeScale?.min?.(DEFAULT_SCALE) ?? DEFAULT_SCALE
+
         const collection = this.getFeatureCollection()
+        const scale = getAdjustedScale(collection, this.eeScale)
         let image = await this.getImage()
 
         // Used for "constrained" WorldPop layers
