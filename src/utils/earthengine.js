@@ -20,6 +20,7 @@ const workerOptions = [
     'methods',
     'mosaic',
     'periodReducer',
+    'periodReducerType',
     'style',
     'tileScale',
     'unmaskAggregation',

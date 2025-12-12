@@ -11,8 +11,12 @@ import {
     getHistogramStatistics,
     getFeatureCollectionProperties,
     applyFilter,
+    filterCollectionByDateRange,
     applyMethods,
     applyCloudMask,
+    aggregateTemporal,
+    getPeriodDates,
+    getAggregatorFn,
 } from './ee_worker_utils.js'
 
 const IMAGE = 'Image'
@@ -33,6 +37,7 @@ const DEFAULT_FEATURE_STYLE = {
     pointRadius: 5,
 }
 const DEFAULT_TILE_SCALE = 1
+const DEFAULT_SCALE = 1000
 
 const DEFAULT_UNMASK_VALUE = 0
 
@@ -125,6 +130,7 @@ class EarthEngineWorker {
             format,
             filter,
             periodReducer,
+            periodReducerType,
             mosaic,
             band,
             bandReducer,
@@ -145,6 +151,29 @@ class EarthEngineWorker {
             // Scale is lost when creating a mosaic below
             this.eeScale = getScale(collection.first())
 
+            // Apply period reducer (e.g. going from daily to monthly)
+            if (periodReducer) {
+                const year = Number.parseInt(filter[0].arguments[1].slice(0, 4))
+                const { startDate, endDate } = getPeriodDates(
+                    periodReducer,
+                    year
+                )
+                collection = filterCollectionByDateRange(
+                    collection,
+                    startDate,
+                    endDate
+                )
+                const aggregatorFn = getAggregatorFn(periodReducer)
+                collection = aggregatorFn({
+                    collection,
+                    metadataOnly: false,
+                    year,
+                    reducer: periodReducerType,
+                    periodReducer,
+                    overrideDate: startDate,
+                })
+            }
+
             // Apply array of filters (e.g. period)
             collection = applyFilter(collection, filter)
 
@@ -153,10 +182,7 @@ class EarthEngineWorker {
                 collection = applyCloudMask(collection, cloudScore)
             }
 
-            if (periodReducer) {
-                // Apply period reducer (e.g. going from daily to monthly)
-                eeImage = collection[periodReducer]()
-            } else if (mosaic) {
+            if (mosaic) {
                 // Composite all images inn a collection (e.g. per country)
                 eeImage = collection.mosaic()
             } else {
@@ -249,32 +275,73 @@ class EarthEngineWorker {
     }
 
     // Returns available periods for an image collection
-    getPeriods(eeId) {
-        const imageCollection = ee
-            .ImageCollection(eeId)
-            .distinct('system:time_start')
-            .sort('system:time_start', false)
+    getPeriods({ datasetId, year, datesRange, periodReducer }) {
+        let collection = ee.ImageCollection(datasetId)
+        let startDate, endDate
+
+        if (year) {
+            ;({ startDate, endDate } = getPeriodDates(periodReducer, year))
+            collection = filterCollectionByDateRange(
+                collection,
+                startDate,
+                endDate
+            )
+        }
+
+        if (periodReducer) {
+            collection = aggregateTemporal({
+                collection,
+                metadataOnly: true,
+                year,
+                periodReducer,
+                overrideDate: startDate,
+            })
+        }
+
+        collection = filterCollectionByDateRange(
+            collection,
+            datesRange.startDate,
+            datesRange.endDate
+        )
 
         const featureCollection = ee
-            .FeatureCollection(imageCollection)
+            .FeatureCollection(collection)
             .select(
-                ['system:time_start', 'system:time_end', 'year'],
+                [
+                    'system:time_start',
+                    'system:time_end',
+                    'year',
+                    'month',
+                    'week',
+                ],
                 null,
                 false
             )
 
-        return getInfo(featureCollection)
+        return getInfo(
+            featureCollection
+                .distinct('system:time_start')
+                .sort('system:time_start', false)
+        )
     }
 
     // Returns min and max timestamp for an image collection
-    getTimeRange(eeId) {
-        const collection = ee.ImageCollection(eeId)
+    getTimeRange(datasetId) {
+        const collection = ee.ImageCollection(datasetId)
 
         const range = collection.reduceColumns(ee.Reducer.minMax(), [
             'system:time_start',
         ])
 
         return getInfo(range)
+    }
+
+    // Returns info for first and last images in collection
+    getCollectionSpan(datasetId) {
+        const collection = ee.ImageCollection(datasetId)
+        const first = collection.sort('system:time_start', true).first()
+        const last = collection.sort('system:time_start', false).first()
+        return getInfo(ee.Dictionary({ first, last }))
     }
 
     // Returns aggregated values for org unit features
@@ -296,7 +363,7 @@ class EarthEngineWorker {
             singleAggregation &&
             hasClasses(aggregationType) &&
             Array.isArray(style)
-        const scale = this.eeScale
+        const scale = this.eeScale?.min?.(DEFAULT_SCALE) ?? DEFAULT_SCALE
         const collection = this.getFeatureCollection()
         let image = await this.getImage()
 
