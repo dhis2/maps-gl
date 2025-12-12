@@ -52,8 +52,8 @@ class EarthEngineWorker {
     }
 
     // Set EE API auth token if needed and run ee.initialize
-    static setAuthToken = getAuthToken => {
-        return new Promise((resolve, reject) => {
+    static setAuthToken = getAuthToken =>
+        new Promise((resolve, reject) => {
             if (ee.data.getAuthToken()) {
                 // Already authenticated
                 ee.initialize(null, null, resolve, reject)
@@ -91,7 +91,6 @@ class EarthEngineWorker {
                     .catch(reject)
             }
         })
-    }
 
     //Reset all the class data so that a different
     //set of options can be used
