@@ -79,36 +79,52 @@ export class WorkerCache {
 
     static flushExpired = (ttl = DEFAULT_TTL_MS) => {
         ;(async () => {
-            const db = await openDB()
-            const tx = db.transaction(STORE_NAME, 'readwrite')
-            const store = tx.objectStore(STORE_NAME)
-            const cursorRequest = store.openCursor()
-            cursorRequest.onsuccess = event => {
-                const cursor = event.target.result
-                if (cursor) {
-                    const { timestamp } = cursor.value
-                    if (Date.now() - timestamp > ttl) {
-                        const deleteRequest = cursor.delete()
-                        deleteRequest.onerror = e =>
-                            console.error(
-                                'Failed to flush ee_worker cache entry',
-                                e.target.error
-                            )
+            try {
+                const db = await openDB()
+                const tx = db.transaction(STORE_NAME, 'readwrite')
+                const store = tx.objectStore(STORE_NAME)
+                const cursorRequest = store.openCursor()
+                cursorRequest.onsuccess = event => {
+                    const cursor = event.target.result
+                    if (cursor) {
+                        const { timestamp } = cursor.value
+                        if (!timestamp || Date.now() - timestamp > ttl) {
+                            const deleteRequest = cursor.delete()
+                            deleteRequest.onerror = e =>
+                                console.error(
+                                    'Failed to flush ee_worker cache entry',
+                                    e.target.error
+                                )
+                        }
+                        cursor.continue()
                     }
-                    cursor.continue()
                 }
+                cursorRequest.onerror = event => {
+                    console.error(
+                        'Failed to iterate over entries while flushing ee_worker cache',
+                        event.target.error
+                    )
+                }
+                await new Promise(resolve => {
+                    tx.oncomplete = () => resolve()
+                    tx.onerror = () => {
+                        console.error(
+                            'Transaction error while flushing ee_worker cache',
+                            tx.error
+                        )
+                        resolve()
+                    }
+                    tx.onabort = () => {
+                        console.error(
+                            'Transaction aborted while flushing ee_worker cache',
+                            tx.error
+                        )
+                        resolve()
+                    }
+                })
+            } catch (error) {
+                console.error('Failed to flush ee_worker cache', error)
             }
-            cursorRequest.onerror = event => {
-                console.error(
-                    'Failed to flush ee_worker cache',
-                    event.target.error
-                )
-            }
-            return new Promise((resolve, reject) => {
-                tx.oncomplete = () => resolve()
-                tx.onerror = () => reject(tx.error)
-                tx.onabort = () => reject(tx.error)
-            })
         })()
     }
 }
