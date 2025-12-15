@@ -8,6 +8,7 @@ export const defaultOptions = {
 const workerOptions = [
     'aggregationType',
     'band',
+    'bandSource',
     'bandReducer',
     'buffer',
     'cloudScore',
@@ -20,6 +21,7 @@ const workerOptions = [
     'methods',
     'mosaic',
     'periodReducer',
+    'periodReducerType',
     'style',
     'tileScale',
     'unmaskAggregation',
