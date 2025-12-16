@@ -31,7 +31,7 @@
         "maplibre-gl": "^5.14.0",
         "polylabel": "^1.1.0",
         "suggestions": "^1.7.1",
-        "uuid": "^9.0.0"
+        "uuid": "^13.0.0"
     },
     "devDependencies": {
         "@babel/cli": "^7.28.3",
@@ -67,7 +67,8 @@
             "./jest.stub.js"
         ],
         "moduleNameMapper": {
-            "\\.(css|less)$": "identity-obj-proxy"
+            "\\.(css|less)$": "identity-obj-proxy",
+            "^uuid$": "<rootDir>/src/__mocks__/uuid.js"
         },
         "testEnvironment": "jsdom"
     },
