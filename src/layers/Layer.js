@@ -1,6 +1,7 @@
 import bbox from '@turf/bbox'
 import { Evented } from 'maplibre-gl'
-import { v4 as uuid } from 'uuid'
+// eslint-disable-next-line import/no-unresolved
+import { v4 as uuidv4 } from 'uuid'
 import { bufferSource } from '../utils/buffers.js'
 import { featureCollection } from '../utils/geometry.js'
 import { addImages } from '../utils/images.js'
@@ -10,7 +11,7 @@ import { setLayersOpacity } from '../utils/opacity.js'
 class Layer extends Evented {
     constructor(options = {}) {
         super()
-        this._id = uuid()
+        this._id = uuidv4()
 
         this._source = {}
         this._layers = []
