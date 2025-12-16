@@ -20,7 +20,7 @@ globalThis.mockMap = {
 }
 
 // https://stackoverflow.com/questions/57943736/how-to-fix-window-url-createobjecturl-is-not-a-function-when-testing-mapbox-gl
-window.URL.createObjectURL ??= () => {}
+globalThis.URL.createObjectURL ??= () => {}
 
 // Provide TextEncoder/TextDecoder for maplibre and related libs
 const { TextEncoder, TextDecoder } = require('node:util')
