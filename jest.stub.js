@@ -1,4 +1,4 @@
-global.mockMapGL = {
+globalThis.mockMapGL = {
     on: jest.fn(),
     addLayer: jest.fn(),
     addSource: jest.fn(),
@@ -10,8 +10,8 @@ global.mockMapGL = {
     _getUIString: jest.fn(),
 }
 
-global.mockMap = {
-    getMapGL: () => global.mockMapGL,
+globalThis.mockMap = {
+    getMapGL: () => globalThis.mockMapGL,
     setHoverState: jest.fn(),
     getBeforeLayerId: jest.fn(),
     styleIsLoaded: () => true,
@@ -23,10 +23,10 @@ if (typeof window.URL.createObjectURL === 'undefined') {
 }
 
 // Provide TextEncoder/TextDecoder for maplibre and related libs
-const { TextEncoder, TextDecoder } = require('util')
-if (typeof global.TextEncoder === 'undefined') {
-    global.TextEncoder = TextEncoder
+const { TextEncoder, TextDecoder } = require('node:util')
+if (globalThis.TextEncoder === undefined) {
+    globalThis.TextEncoder = TextEncoder
 }
-if (typeof global.TextDecoder === 'undefined') {
-    global.TextDecoder = TextDecoder
+if (globalThis.TextDecoder === undefined) {
+    globalThis.TextDecoder = TextDecoder
 }
