@@ -21,3 +21,12 @@ global.mockMap = {
 if (typeof window.URL.createObjectURL === 'undefined') {
     window.URL.createObjectURL = () => {}
 }
+
+// Provide TextEncoder/TextDecoder for maplibre and related libs
+const { TextEncoder, TextDecoder } = require('util')
+if (typeof global.TextEncoder === 'undefined') {
+    global.TextEncoder = TextEncoder
+}
+if (typeof global.TextDecoder === 'undefined') {
+    global.TextDecoder = TextDecoder
+}
