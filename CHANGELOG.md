@@ -1,3 +1,10 @@
+## [4.2.1](https://github.com/dhis2/maps-gl/compare/v4.2.0...v4.2.1) (2025-12-15)
+
+
+### Bug Fixes
+
+* computeMinMaxAndAlign to use system:time_end if available ([#612](https://github.com/dhis2/maps-gl/issues/612)) ([75491ca](https://github.com/dhis2/maps-gl/commit/75491cad8f0f18b072c5460ed98d363b22101931))
+
 # [4.2.0](https://github.com/dhis2/maps-gl/compare/v4.1.2...v4.2.0) (2025-12-15)
 
 

@@ -78,6 +78,7 @@ ee.Reducer = {
     sum: jest.fn(() => createReducerInstance()),
     minMax: jest.fn(() => createReducerInstance()),
     min: jest.fn(() => createReducerInstance()),
+    max: jest.fn(() => createReducerInstance()),
     combine: jest.fn(() => createReducerInstance()),
 }
 
