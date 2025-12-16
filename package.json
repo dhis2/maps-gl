@@ -21,7 +21,7 @@
         "@mapbox/sphericalmercator": "^1.2.0",
         "@turf/area": "^6.5.0",
         "@turf/bbox": "^6.5.0",
-        "@turf/buffer": "^6.5.0",
+        "@turf/buffer": "^7.3.1",
         "@turf/center-of-mass": "^6.5.0",
         "@turf/circle": "^6.5.0",
         "@turf/length": "^6.5.0",
