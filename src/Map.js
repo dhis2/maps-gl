@@ -38,11 +38,12 @@ export class MapGL extends Evented {
             container: el,
             style: mapStyle({ glyphs }),
             maxZoom: 18,
-            preserveDrawingBuffer: true, // TODO: requred for map download, but reduced performance
+            canvasContextAttributes: {
+                preserveDrawingBuffer: true, // TODO: required for map download, but reduced performance
+            },
             attributionControl: false,
             locale: controlsLocale,
             transformRequest,
-            ...opts,
         })
 
         this._mapgl = mapgl
