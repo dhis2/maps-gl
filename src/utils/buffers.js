@@ -1,5 +1,5 @@
 import polygonBuffer from '@turf/buffer'
-import circle from '@turf/circle'
+import { circle } from '@turf/circle'
 import { colorExpr } from './expressions.js'
 import { featureCollection } from './geometry.js'
 
