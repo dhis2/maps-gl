@@ -321,13 +321,21 @@ const mapPeriodReducerToPeriod = periodReducer => {
 
 // Compute min/max dates for a collection and align the minDate for monthly periods
 const computeMinMaxAndAlign = ({ collection, period, overrideDate }) => {
-    const dateRange = collection.reduceColumns(ee.Reducer.minMax(), [
-        'system:time_start',
-    ])
+    const minStartRaw = collection
+        .reduceColumns(ee.Reducer.min(), ['system:time_start'])
+        .get('min')
+    const maxStartRaw = collection
+        .reduceColumns(ee.Reducer.max(), ['system:time_start'])
+        .get('max')
+    const maxEndRaw = collection
+        .reduceColumns(ee.Reducer.max(), ['system:time_end'])
+        .get('max')
+
     let minDate = overrideDate
         ? ee.Date(overrideDate.getTime())
-        : ee.Date(dateRange.get('min'))
-    const maxDate = ee.Date(dateRange.get('max'))
+        : ee.Date(minStartRaw)
+
+    const maxDate = ee.Date(ee.Algorithms.If(maxEndRaw, maxEndRaw, maxStartRaw))
 
     if (period === 'month') {
         minDate = ee.Date.fromYMD(minDate.get('year'), minDate.get('month'), 1)
