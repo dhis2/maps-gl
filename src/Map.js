@@ -32,7 +32,7 @@ export class MapGL extends Evented {
     constructor(el, options = {}) {
         super()
 
-        const { locale, glyphs, ...opts } = options
+        const { locale, glyphs } = options
 
         const mapgl = new Map({
             container: el,
