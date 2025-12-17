@@ -31,7 +31,7 @@
         "maplibre-gl": "^5.14.0",
         "polylabel": "^1.1.0",
         "suggestions": "^1.7.1",
-        "uuid": "^13.0.0"
+        "uuid": "^9.0.0"
     },
     "devDependencies": {
         "@babel/cli": "^7.28.3",
@@ -49,9 +49,6 @@
         "identity-obj-proxy": "^3.0.0",
         "jest": "^27.5.1",
         "rimraf": "^5.0.7"
-    },
-    "resolutions": {
-        "uuid": "^13.0.0"
     },
     "scripts": {
         "lint": "yarn d2-style check",
