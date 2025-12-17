@@ -50,6 +50,9 @@
         "jest": "^27.5.1",
         "rimraf": "^5.0.7"
     },
+    "resolutions": {
+        "uuid": "^13.0.0"
+    },
     "scripts": {
         "lint": "yarn d2-style check",
         "lint:staged": "yarn lint --staged",
