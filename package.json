@@ -31,7 +31,7 @@
         "maplibre-gl": "^5.14.0",
         "polylabel": "^1.1.0",
         "suggestions": "^1.7.1",
-        "uuid": "^13.0.0"
+        "uuid": "^9.0.0"
     },
     "devDependencies": {
         "@babel/cli": "^7.28.3",
