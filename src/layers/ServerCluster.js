@@ -255,7 +255,7 @@ class ServerCluster extends Cluster {
                 tiles.push(`${zoom}/${x}/${y}`)
             }
         }
-        return tiles.sort()
+        return tiles.sort((a, b) => a.localeCompare(b))
     }
 
     // Returns sorted array of cluster ids
