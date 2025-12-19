@@ -1,3 +1,10 @@
+## [4.2.2](https://github.com/dhis2/maps-gl/compare/v4.2.1...v4.2.2) (2025-12-17)
+
+
+### Bug Fixes
+
+* maplibre-gl update [DHIS2-19379] ([#613](https://github.com/dhis2/maps-gl/issues/613)) ([590bf93](https://github.com/dhis2/maps-gl/commit/590bf93077bdb04d2af630da5f66e35a294a1e75))
+
 ## [4.2.1](https://github.com/dhis2/maps-gl/compare/v4.2.0...v4.2.1) (2025-12-15)
 
 
