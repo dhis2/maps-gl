@@ -102,19 +102,18 @@ class Cluster extends Layer {
         }
     }
 
-    zoomToCluster = (clusterId, center) => {
+    zoomToCluster = async (clusterId, center) => {
         if (this.isMaxZoom()) {
             this.spiderfy(clusterId, center)
         } else {
             const mapgl = this.getMapGL()
             const source = mapgl.getSource(this.getId())
-
-            source.getClusterExpansionZoom(clusterId, (error, zoom) => {
-                if (error) {
-                    return
-                }
-                mapgl.easeTo({ center, zoom: zoom + 1 })
-            })
+            try {
+                const zoom = await source.getClusterExpansionZoom(clusterId)
+                mapgl.flyTo({ center, zoom: zoom + 1 })
+            } catch (err) {
+                console.warn('Cluster zoom failed', err)
+            }
         }
     }
 
@@ -162,17 +161,22 @@ class Cluster extends Layer {
     }
 
     // Returns all features in a cluster
-    getClusterFeatures = clusterId =>
-        new Promise((resolve, reject) => {
-            const mapgl = this.getMapGL()
-            const source = mapgl.getSource(this.getId())
+    getClusterFeatures = async clusterId => {
+        const mapgl = this.getMapGL()
+        const source = mapgl.getSource(this.getId())
 
-            source.getClusterLeaves(clusterId, null, null, (error, features) =>
-                error
-                    ? reject(error)
-                    : resolve(this.sortClusterFeatures(features))
-            )
-        })
+        if (!source) {
+            return []
+        }
+
+        try {
+            const features = await source.getClusterLeaves(clusterId)
+            return this.sortClusterFeatures(features)
+        } catch (err) {
+            console.error('Error fetching cluster leaves:', err)
+            return []
+        }
+    }
 
     // Overrided in DonutCluster
     sortClusterFeatures = features => features

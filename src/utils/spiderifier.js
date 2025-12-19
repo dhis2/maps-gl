@@ -102,7 +102,9 @@ const spiderifier = (map, userOptions) => {
         const spiderLegs = util.map(features, (feature, index) => {
             const param = spiderLegParams[index]
             const elements = createMarkerElements(param, feature)
-            const marker = new Marker(elements.container).setLngLat(latLng)
+            const marker = new Marker({
+                element: elements.container,
+            }).setLngLat(latLng)
             const spiderLeg = { feature, elements, marker, param }
 
             options.initializeLeg(spiderLeg)
