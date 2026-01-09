@@ -51,7 +51,7 @@ export const getPeriodDates = (periodReducer, year) => {
             // can work consistently with native dates (UTC midnight)
             return {
                 startDate: new Date(Date.UTC(year, 0, 1)),
-                endDate: new Date(Date.UTC(year, 11, 31)),
+                endDate: new Date(Date.UTC(year, 11, 31, 23, 59, 59)),
             }
         }
     }
