@@ -1631,7 +1631,7 @@
   resolved "https://registry.yarnpkg.com/@mapbox/whoots-js/-/whoots-js-3.1.0.tgz#497c67a1cef50d1a2459ba60f315e448d2ad87fe"
   integrity sha512-Es6WcD0nO5l+2BOQS4uLfNPYQaNDfbot3X1XUoloz+x0mPDS3eeORZJl06HXjwBG1fOGwCRnzK88LMdxKRrd6Q==
 
-"@maplibre/maplibre-gl-style-spec@^24.3.1":
+"@maplibre/maplibre-gl-style-spec@^24.4.1":
   version "24.4.1"
   resolved "https://registry.yarnpkg.com/@maplibre/maplibre-gl-style-spec/-/maplibre-gl-style-spec-24.4.1.tgz#600a1dbb2912831564cc6ba6e96c22cf34ffdc0c"
   integrity sha512-UKhA4qv1h30XT768ccSv5NjNCX+dgfoq2qlLVmKejspPcSQTYD4SrVucgqegmYcKcmwf06wcNAa/kRd0NHWbUg==
@@ -1651,7 +1651,7 @@
   dependencies:
     "@mapbox/point-geometry" "^1.1.0"
 
-"@maplibre/vt-pbf@^4.1.0":
+"@maplibre/vt-pbf@^4.2.0":
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/@maplibre/vt-pbf/-/vt-pbf-4.2.0.tgz#403c6f8cfbc1e3730cbd3ff3d829bfb484403cd4"
   integrity sha512-bxrk/kQUwWXZgmqYgwOCnZCMONCRi3MJMqJdza4T3E4AeR5i+VyMnaJ8iDWtWxdfEAJRtrzIOeJtxZSy5mFrFA==
@@ -6050,10 +6050,10 @@ map-obj@^4.0.0:
   resolved "https://registry.yarnpkg.com/map-obj/-/map-obj-4.3.0.tgz#9304f906e93faae70880da102a9f1df0ea8bb05a"
   integrity sha512-hdN1wVrZbb29eBGiGjJbeP8JbKjq1urkHJ/LIP/NY48MZ1QVXUsQBV1G1zvYFHn1XE06cwjBsOI2K3Ulnj1YXQ==
 
-maplibre-gl@^5.14.0:
-  version "5.14.0"
-  resolved "https://registry.yarnpkg.com/maplibre-gl/-/maplibre-gl-5.14.0.tgz#4354d460e3bc5c11fbc5c5ae358dbe4561271720"
-  integrity sha512-O2ok6N/bQ9NA9nJ22r/PRQQYkUe9JwfDMjBPkQ+8OwsVH4TpA5skIAM2wc0k+rni5lVbAVONVyBvgi1rF2vEPA==
+maplibre-gl@^5.16.0:
+  version "5.16.0"
+  resolved "https://registry.yarnpkg.com/maplibre-gl/-/maplibre-gl-5.16.0.tgz#fbf386810ceec66fbe30404e4baf493b33f31423"
+  integrity sha512-/VDY89nr4jgLJyzmhy325cG6VUI02WkZ/UfVuDbG/piXzo6ODnM+omDFIwWY8tsEsBG26DNDmNMn3Y2ikHsBiA==
   dependencies:
     "@mapbox/geojson-rewind" "^0.5.2"
     "@mapbox/jsonlint-lines-primitives" "^2.0.2"
@@ -6062,9 +6062,9 @@ maplibre-gl@^5.14.0:
     "@mapbox/unitbezier" "^0.0.1"
     "@mapbox/vector-tile" "^2.0.4"
     "@mapbox/whoots-js" "^3.1.0"
-    "@maplibre/maplibre-gl-style-spec" "^24.3.1"
+    "@maplibre/maplibre-gl-style-spec" "^24.4.1"
     "@maplibre/mlt" "^1.1.2"
-    "@maplibre/vt-pbf" "^4.1.0"
+    "@maplibre/vt-pbf" "^4.2.0"
     "@types/geojson" "^7946.0.16"
     "@types/geojson-vt" "3.2.5"
     "@types/supercluster" "^7.1.3"
