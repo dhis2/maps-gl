@@ -119,7 +119,7 @@ const makeDate = () => {
     const d = {}
     d.millis = jest.fn(() => 0)
     d.advance = jest.fn(() => d)
-    d.difference = jest.fn(() => 0)
+    d.difference = jest.fn(() => ee.Number(0))
     d.get = jest.fn(k => (k === 'year' ? 2025 : 1))
     d.format = jest.fn(() => '01')
     return d
