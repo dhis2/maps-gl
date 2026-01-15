@@ -346,7 +346,13 @@ const computeMinMaxAndAlign = ({ collection, period, overrideDate }) => {
 
 // Build steps sequence and band names for a collection given the period and min/max dates
 const buildStepsAndBandNames = ({ minDate, maxDate, period, collection }) => {
-    const steps = ee.List.sequence(0, maxDate.difference(minDate, period))
+    let nSteps = maxDate.difference(minDate, period)
+    nSteps = ee.Algorithms.If(
+        period === 'month',
+        nSteps.min(ee.Number(11)),
+        nSteps
+    )
+    const steps = ee.List.sequence(0, ee.Number(nSteps))
     const bandNames = ee.Image(collection.first()).bandNames()
     return { steps, bandNames }
 }
