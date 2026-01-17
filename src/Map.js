@@ -47,6 +47,13 @@ export class MapGL extends Evented {
             scrollZoom,
         })
 
+        if (window.Cypress) {
+            mapgl.scrollZoom.disable()
+            mapgl.dragPan.disable()
+            mapgl.dragRotate.disable()
+            mapgl.doubleClickZoom.disable()
+        }
+
         this._mapgl = mapgl
         this._glyphs = glyphs
         this._renderTimeout = null
