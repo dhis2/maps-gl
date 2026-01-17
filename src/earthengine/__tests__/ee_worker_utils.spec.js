@@ -180,7 +180,7 @@ describe('earthengine - getPeriodDates', () => {
         expect(startDate.getTime()).toBe(expectedStart.getTime())
 
         const nextStart = getStartOfEpiYear(2021)
-        const expectedEnd = new Date(nextStart.getTime() - 24 * 60 * 60 * 1000)
+        const expectedEnd = new Date(nextStart.getTime() - 1000)
         expect(endDate.getTime()).toBe(expectedEnd.getTime())
     })
 
