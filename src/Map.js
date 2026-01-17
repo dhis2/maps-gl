@@ -32,7 +32,10 @@ export class MapGL extends Evented {
     constructor(el, options = {}) {
         super()
 
-        const { locale, glyphs, scrollZoom } = options
+        const { locale, glyphs } = options
+
+        const isCypress = !!globalThis.Cypress
+        const scrollZoom = isCypress ? false : options.scrollZoom ?? true
 
         const mapgl = new Map({
             container: el,
