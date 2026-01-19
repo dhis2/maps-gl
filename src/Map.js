@@ -32,10 +32,7 @@ export class MapGL extends Evented {
     constructor(el, options = {}) {
         super()
 
-        const { locale, glyphs } = options
-
-        const isCypress = !!globalThis.Cypress
-        const scrollZoom = isCypress ? false : options.scrollZoom ?? true
+        const { locale, glyphs, scrollZoom } = options
 
         const mapgl = new Map({
             container: el,
@@ -49,13 +46,6 @@ export class MapGL extends Evented {
             transformRequest,
             scrollZoom,
         })
-
-        if (isCypress) {
-            mapgl.scrollZoom.disable()
-            mapgl.dragPan.disable()
-            mapgl.dragRotate.disable()
-            mapgl.doubleClickZoom.disable()
-        }
 
         this._mapgl = mapgl
         this._glyphs = glyphs
