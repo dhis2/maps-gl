@@ -32,7 +32,7 @@ export class MapGL extends Evented {
     constructor(el, options = {}) {
         super()
 
-        const { locale, glyphs } = options
+        const { locale, glyphs, scrollZoom } = options
 
         const mapgl = new Map({
             container: el,
@@ -44,6 +44,7 @@ export class MapGL extends Evented {
             attributionControl: false,
             locale: controlsLocale,
             transformRequest,
+            scrollZoom,
         })
 
         this._mapgl = mapgl

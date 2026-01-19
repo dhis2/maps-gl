@@ -1,3 +1,17 @@
+## [4.2.6](https://github.com/dhis2/maps-gl/compare/v4.2.5...v4.2.6) (2026-01-19)
+
+
+### Bug Fixes
+
+* maplibre-gl update follow-up [DHIS2-19379] ([#622](https://github.com/dhis2/maps-gl/issues/622)) ([280f49d](https://github.com/dhis2/maps-gl/commit/280f49dde6aae0abf162ae92388b957c1a031912))
+
+## [4.2.5](https://github.com/dhis2/maps-gl/compare/v4.2.4...v4.2.5) (2026-01-19)
+
+
+### Bug Fixes
+
+* error with dates in ee layers [DHIS2-20684] ([#621](https://github.com/dhis2/maps-gl/issues/621)) ([b2b063b](https://github.com/dhis2/maps-gl/commit/b2b063bf3dc8e2505377db3e2c8dbdb8b792bde6))
+
 ## [4.2.4](https://github.com/dhis2/maps-gl/compare/v4.2.3...v4.2.4) (2026-01-09)
 
 
