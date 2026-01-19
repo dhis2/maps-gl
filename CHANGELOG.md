@@ -1,3 +1,10 @@
+## [4.2.7](https://github.com/dhis2/maps-gl/compare/v4.2.6...v4.2.7) (2026-01-19)
+
+
+### Bug Fixes
+
+* error with dates in ee layers [DHIS2-20684] ([#623](https://github.com/dhis2/maps-gl/issues/623)) ([fbdd410](https://github.com/dhis2/maps-gl/commit/fbdd4109f01da65989b81499e980c9ce07af8171))
+
 ## [4.2.6](https://github.com/dhis2/maps-gl/compare/v4.2.5...v4.2.6) (2026-01-19)
 
 
