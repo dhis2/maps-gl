@@ -119,7 +119,7 @@ const makeDate = () => {
     const d = {}
     d.millis = jest.fn(() => 0)
     d.advance = jest.fn(() => d)
-    d.difference = jest.fn(() => 0)
+    d.difference = jest.fn(() => ee.Number(0))
     d.get = jest.fn(k => (k === 'year' ? 2025 : 1))
     d.format = jest.fn(() => '01')
     return d
@@ -154,6 +154,19 @@ ee.Number = jest.fn(n => {
                 : other
         return ee.Number(Math.min(num._value, otherVal))
     })
+    num.eq = jest.fn(other => {
+        const otherVal =
+            other && typeof other === 'object' && '_value' in other
+                ? other._value
+                : other
+        return num._value === otherVal
+    })
+    return num
+})
+
+ee.Number.parse = jest.fn(str => {
+    const value = str?._str ?? String(str)
+    const num = ee.Number(Number(value))
     return num
 })
 

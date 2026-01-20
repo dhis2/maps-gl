@@ -171,8 +171,8 @@ class ServerCluster extends Cluster {
         }
     }
 
-    onMoveEnd = async () => {
-        const tiles = await this.getVisibleTiles()
+    onMoveEnd = () => {
+        const tiles = this.getVisibleTiles()
 
         if (tiles.join('-') !== this.currentTiles.join('-')) {
             this.currentTiles = tiles
@@ -192,7 +192,7 @@ class ServerCluster extends Cluster {
         this.tileClusters[tileId] = clusters
 
         // Check if tile is still visible after loading
-        const visibleTiles = await this.getVisibleTiles()
+        const visibleTiles = this.getVisibleTiles()
 
         if (visibleTiles.includes(tileId)) {
             this.updateClusters([tileId])
@@ -202,23 +202,6 @@ class ServerCluster extends Cluster {
     }
 
     getBounds = () => this.options.bounds
-
-    // Returns true if all tiles aligns with the zoom level
-    areTilesUpdated = () => {
-        const mapgl = this._map.getMapGL()
-        const zoom = Math.floor(mapgl.getZoom())
-
-        return this.getSourceCacheTiles().every(
-            ({ tileID }) => tileID.canonical.z === zoom
-        )
-    }
-
-    getSourceCacheTiles = () => {
-        const mapgl = this._map.getMapGL()
-        const sourceCache = mapgl.style.sourceCaches[this.getId()]
-
-        return sourceCache ? Object.values(sourceCache._tiles) : []
-    }
 
     // Called by parent class
     getClusterFeatures = clusterId => {
@@ -257,12 +240,22 @@ class ServerCluster extends Cluster {
             )
         }
 
-    getVisibleTiles = async () => {
-        while (!this.areTilesUpdated()) {
-            await new Promise(r => setTimeout(r, 100))
-        }
+    getVisibleTiles = () => {
+        const map = this._map.getMapGL()
+        const bbox = map.getBounds().toArray().flat()
+        const zoom = Math.floor(map.getZoom())
+        const merc = new SphericalMercator({
+            size: this.options.tileSize,
+        })
+        const min = merc.xyz(bbox, zoom)
 
-        return this.getSourceCacheTiles().map(this.getTileId).sort()
+        const tiles = []
+        for (let x = min.minX; x <= min.maxX; x++) {
+            for (let y = min.minY; y <= min.maxY; y++) {
+                tiles.push(`${zoom}/${x}/${y}`)
+            }
+        }
+        return tiles.sort((a, b) => a.localeCompare(b))
     }
 
     // Returns sorted array of cluster ids

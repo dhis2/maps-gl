@@ -39,9 +39,7 @@ export const getPeriodDates = (periodReducer, year) => {
         case EE_WEEKLY:
         case EE_WEEKLY_WEIGHTED: {
             const start = getStartOfEpiYear(year)
-            const end = new Date(
-                getStartOfEpiYear(year + 1).getTime() - 24 * 60 * 60 * 1000
-            )
+            const end = new Date(getStartOfEpiYear(year + 1).getTime() - 1000)
             return { startDate: start, endDate: end }
         }
         case EE_MONTHLY:
@@ -51,7 +49,7 @@ export const getPeriodDates = (periodReducer, year) => {
             // can work consistently with native dates (UTC midnight)
             return {
                 startDate: new Date(Date.UTC(year, 0, 1)),
-                endDate: new Date(Date.UTC(year, 11, 31)),
+                endDate: new Date(Date.UTC(year, 11, 31, 23, 59, 59)),
             }
         }
     }
@@ -345,8 +343,27 @@ const computeMinMaxAndAlign = ({ collection, period, overrideDate }) => {
 }
 
 // Build steps sequence and band names for a collection given the period and min/max dates
-const buildStepsAndBandNames = ({ minDate, maxDate, period, collection }) => {
-    const steps = ee.List.sequence(0, maxDate.difference(minDate, period))
+const buildStepsAndBandNames = ({
+    minDate,
+    maxDate,
+    period,
+    year,
+    collection,
+}) => {
+    const isJan1Thursday = ee.Number.parse(
+        ee.Date.fromYMD(Number.parseInt(year), 1, 1).format('e')
+    ).eq(4)
+    const maxSteps = ee.Algorithms.If(
+        period === 'month',
+        ee.Number(11), // 12 months (0-indexed)
+        ee.Algorithms.If(
+            period === 'week',
+            ee.Algorithms.If(isJan1Thursday, ee.Number(52), ee.Number(51)), // 53 or 52 weeks (0-indexed)
+            maxDate.difference(minDate, period) // other periods
+        )
+    )
+    const nSteps = ee.Number(maxDate.difference(minDate, period)).min(maxSteps)
+    const steps = ee.List.sequence(0, nSteps)
     const bandNames = ee.Image(collection.first()).bandNames()
     return { steps, bandNames }
 }
@@ -362,12 +379,12 @@ const buildPeriodMetadata = ({ startDate, endDate, period, tempYear }) => {
     if (period === 'month') {
         metadata.month = startDate.get('month')
         metadata['system:index'] = ee
-            .String(tempYear.toString())
+            .String(tempYear)
             .cat(startDate.format('MM'))
     } else {
         metadata.week = startDate.format('w')
         metadata['system:index'] = ee
-            .String(tempYear.toString())
+            .String(tempYear)
             .cat(ee.String('W'))
             .cat(startDate.format('w'))
     }
@@ -401,6 +418,7 @@ export const aggregateTemporal = ({
         minDate,
         maxDate,
         period,
+        year,
         collection,
     })
 
@@ -408,7 +426,7 @@ export const aggregateTemporal = ({
         stepList.map(i => {
             const startDate = minDate.advance(ee.Number(i), period)
             const endDate = startDate.advance(1, period).advance(-1, 'second')
-            const tempYear = year || startDate.get('year')
+            const tempYear = year.toString() || startDate.get('year')
 
             let image
             if (metadataOnly) {
@@ -452,6 +470,7 @@ export const aggregateTemporalWeighted = ({
         minDate,
         maxDate,
         period,
+        year,
         collection,
     })
 
@@ -527,7 +546,7 @@ export const aggregateTemporalWeighted = ({
                     .rename(bandNames.add('duration'))
                     .select(bandNames)
 
-                const tempYear = year || startDate.get('year')
+                const tempYear = year.toString() || startDate.get('year')
                 const metadata = buildPeriodMetadata({
                     startDate,
                     endDate,
