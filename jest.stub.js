@@ -1,4 +1,6 @@
-global.mockMapGL = {
+/* global globalThis */
+
+globalThis.mockMapGL = {
     on: jest.fn(),
     addLayer: jest.fn(),
     addSource: jest.fn(),
@@ -10,14 +12,21 @@ global.mockMapGL = {
     _getUIString: jest.fn(),
 }
 
-global.mockMap = {
-    getMapGL: () => global.mockMapGL,
+globalThis.mockMap = {
+    getMapGL: () => globalThis.mockMapGL,
     setHoverState: jest.fn(),
     getBeforeLayerId: jest.fn(),
     styleIsLoaded: () => true,
 }
 
 // https://stackoverflow.com/questions/57943736/how-to-fix-window-url-createobjecturl-is-not-a-function-when-testing-mapbox-gl
-if (typeof window.URL.createObjectURL === 'undefined') {
-    window.URL.createObjectURL = () => {}
+globalThis.URL.createObjectURL ??= () => {}
+
+// Provide TextEncoder/TextDecoder for maplibre and related libs
+const { TextEncoder, TextDecoder } = require('node:util')
+if (globalThis.TextEncoder === undefined) {
+    globalThis.TextEncoder = TextEncoder
+}
+if (globalThis.TextDecoder === undefined) {
+    globalThis.TextDecoder = TextDecoder
 }

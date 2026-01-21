@@ -1,3 +1,67 @@
+## [4.2.7](https://github.com/dhis2/maps-gl/compare/v4.2.6...v4.2.7) (2026-01-19)
+
+
+### Bug Fixes
+
+* error with dates in ee layers [DHIS2-20684] ([#623](https://github.com/dhis2/maps-gl/issues/623)) ([fbdd410](https://github.com/dhis2/maps-gl/commit/fbdd4109f01da65989b81499e980c9ce07af8171))
+
+## [4.2.6](https://github.com/dhis2/maps-gl/compare/v4.2.5...v4.2.6) (2026-01-19)
+
+
+### Bug Fixes
+
+* maplibre-gl update follow-up [DHIS2-19379] ([#622](https://github.com/dhis2/maps-gl/issues/622)) ([280f49d](https://github.com/dhis2/maps-gl/commit/280f49dde6aae0abf162ae92388b957c1a031912))
+
+## [4.2.5](https://github.com/dhis2/maps-gl/compare/v4.2.4...v4.2.5) (2026-01-19)
+
+
+### Bug Fixes
+
+* error with dates in ee layers [DHIS2-20684] ([#621](https://github.com/dhis2/maps-gl/issues/621)) ([b2b063b](https://github.com/dhis2/maps-gl/commit/b2b063bf3dc8e2505377db3e2c8dbdb8b792bde6))
+
+## [4.2.4](https://github.com/dhis2/maps-gl/compare/v4.2.3...v4.2.4) (2026-01-09)
+
+
+### Bug Fixes
+
+* error with dates in ee layers [DHIS2-20684] ([#620](https://github.com/dhis2/maps-gl/issues/620)) ([4394fd0](https://github.com/dhis2/maps-gl/commit/4394fd08a95613957cb219adfeeae9d48aaa4b2d))
+
+## [4.2.3](https://github.com/dhis2/maps-gl/compare/v4.2.2...v4.2.3) (2026-01-09)
+
+
+### Bug Fixes
+
+* maplibre-gl update follow-up [DHIS2-19379] ([#614](https://github.com/dhis2/maps-gl/issues/614)) ([bc63107](https://github.com/dhis2/maps-gl/commit/bc63107b8189f8e529e1a3bf37ba9e240785b7b0))
+
+## [4.2.2](https://github.com/dhis2/maps-gl/compare/v4.2.1...v4.2.2) (2025-12-17)
+
+
+### Bug Fixes
+
+* maplibre-gl update [DHIS2-19379] ([#613](https://github.com/dhis2/maps-gl/issues/613)) ([590bf93](https://github.com/dhis2/maps-gl/commit/590bf93077bdb04d2af630da5f66e35a294a1e75))
+
+## [4.2.1](https://github.com/dhis2/maps-gl/compare/v4.2.0...v4.2.1) (2025-12-15)
+
+
+### Bug Fixes
+
+* computeMinMaxAndAlign to use system:time_end if available ([#612](https://github.com/dhis2/maps-gl/issues/612)) ([75491ca](https://github.com/dhis2/maps-gl/commit/75491cad8f0f18b072c5460ed98d363b22101931))
+
+# [4.2.0](https://github.com/dhis2/maps-gl/compare/v4.1.2...v4.2.0) (2025-12-15)
+
+
+### Bug Fixes
+
+* unmask eeImageBands [DHIS2-20276] ([#606](https://github.com/dhis2/maps-gl/issues/606)) ([a6f7ce4](https://github.com/dhis2/maps-gl/commit/a6f7ce4a2929194541b5bceaf0519d5434839997))
+* use node 20 ([#611](https://github.com/dhis2/maps-gl/issues/611)) ([c1927a9](https://github.com/dhis2/maps-gl/commit/c1927a99836121c5285ec6cb4bbdbe590b8b2176))
+
+
+### Features
+
+* cache data retrieved by ee_worker ([#609](https://github.com/dhis2/maps-gl/issues/609)) ([c56d4ab](https://github.com/dhis2/maps-gl/commit/c56d4abb64943da934a2408c10c0fa2468f75a05))
+* support method operations across bands and handle scale for small areas  [DHIS2-20355] ([#608](https://github.com/dhis2/maps-gl/issues/608)) ([1457ae4](https://github.com/dhis2/maps-gl/commit/1457ae4c6a3b42a551d4d94557e6c8e72eb984ea))
+* support temporal aggregation in Earth Engine worker [DHIS2-17856] [DHIS2-20149] ([#607](https://github.com/dhis2/maps-gl/issues/607)) ([36d0051](https://github.com/dhis2/maps-gl/commit/36d00519285d88632e76520d652dfb35e868508c))
+
 ## [4.1.2](https://github.com/dhis2/maps-gl/compare/v4.1.1...v4.1.2) (2025-07-31)
 
 

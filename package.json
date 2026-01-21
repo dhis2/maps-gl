@@ -1,6 +1,6 @@
 {
     "name": "@dhis2/maps-gl",
-    "version": "4.1.2",
+    "version": "4.2.7",
     "description": "A WebGL rendering engine for DHIS2 maps based on Mapbox GL JS.",
     "publishConfig": {
         "access": "public"
@@ -21,34 +21,35 @@
         "@mapbox/sphericalmercator": "^1.2.0",
         "@turf/area": "^6.5.0",
         "@turf/bbox": "^6.5.0",
-        "@turf/buffer": "^6.5.0",
+        "@turf/buffer": "^7.3.2",
         "@turf/center-of-mass": "^6.5.0",
-        "@turf/circle": "^6.5.0",
+        "@turf/circle": "^7.3.2",
         "@turf/length": "^6.5.0",
-        "comlink": "^4.4.1",
+        "comlink": "^4.4.2",
         "fetch-jsonp": "^1.3.0",
         "lodash.throttle": "^4.1.1",
-        "maplibre-gl": "^2.4.0",
+        "maplibre-gl": "^5.16.0",
         "polylabel": "^1.1.0",
         "suggestions": "^1.7.1",
         "uuid": "^9.0.0"
     },
     "devDependencies": {
-        "@babel/cli": "^7.24.7",
-        "@babel/core": "^7.24.7",
+        "@babel/cli": "^7.28.6",
+        "@babel/core": "^7.28.6",
         "@babel/plugin-proposal-class-properties": "^7.18.6",
         "@babel/plugin-proposal-object-rest-spread": "^7.20.7",
-        "@babel/plugin-transform-runtime": "^7.24.7",
-        "@babel/preset-env": "^7.24.7",
-        "@babel/runtime": "^7.24.7",
-        "@dhis2/cli-style": "^10.7.3",
-        "@types/jest": "^29.4.0",
-        "babel-jest": "^29.7.0",
-        "babel-plugin-transform-import-meta": "^2.2.1",
-        "concurrently": "^7.6.0",
+        "@babel/plugin-transform-runtime": "^7.28.5",
+        "@babel/preset-env": "^7.28.6",
+        "@babel/runtime": "^7.28.6",
+        "@dhis2/cli-style": "^10.7.9",
+        "@types/jest": "^30.0.0",
+        "babel-jest": "^30.2.0",
+        "babel-plugin-transform-import-meta": "^2.3.3",
+        "concurrently": "^9.2.1",
         "identity-obj-proxy": "^3.0.0",
-        "jest": "^27.5.1",
-        "rimraf": "^5.0.7"
+        "jest": "^30.2.0",
+        "jest-environment-jsdom": "^30.2.0",
+        "rimraf": "^6.1.2"
     },
     "scripts": {
         "lint": "yarn d2-style check",
@@ -67,7 +68,8 @@
             "./jest.stub.js"
         ],
         "moduleNameMapper": {
-            "\\.(css|less)$": "identity-obj-proxy"
+            "\\.(css|less)$": "identity-obj-proxy",
+            "^uuid$": "<rootDir>/src/__mocks__/uuid.js"
         },
         "testEnvironment": "jsdom"
     },

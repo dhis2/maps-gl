@@ -1,6 +1,6 @@
 import bbox from '@turf/bbox'
 import { Evented } from 'maplibre-gl'
-import { v4 as uuid } from 'uuid'
+import { v4 as uuidv4 } from 'uuid'
 import { bufferSource } from '../utils/buffers.js'
 import { featureCollection } from '../utils/geometry.js'
 import { addImages } from '../utils/images.js'
@@ -10,7 +10,7 @@ import { setLayersOpacity } from '../utils/opacity.js'
 class Layer extends Evented {
     constructor(options = {}) {
         super()
-        this._id = uuid()
+        this._id = uuidv4()
 
         this._source = {}
         this._layers = []
@@ -240,7 +240,34 @@ class Layer extends Evented {
 
     // Adds integer id for each feature (required by Feature State)
     setFeatures(data = []) {
-        this._features = data.map((f, i) => ({ ...f, id: i + 1 }))
+        // MapLibre properties must be primitives; objects/arrays are not supported
+        const sanitizeProps = (props = {}) =>
+            Object.fromEntries(
+                Object.entries(props)
+                    .filter(
+                        ([, v]) => v !== undefined && typeof v !== 'function'
+                    )
+                    .map(([k, v]) => {
+                        if (
+                            v === null ||
+                            typeof v === 'string' ||
+                            typeof v === 'number' ||
+                            typeof v === 'boolean'
+                        ) {
+                            return [k, v]
+                        }
+                        try {
+                            return [k, JSON.stringify(v)]
+                        } catch {
+                            return [k, String(v)]
+                        }
+                    })
+            )
+        this._features = data.map((f, i) => ({
+            ...f,
+            id: i + 1,
+            properties: sanitizeProps(f.properties),
+        }))
     }
 
     getImages() {
