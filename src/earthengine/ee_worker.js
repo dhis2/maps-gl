@@ -307,13 +307,16 @@ class EarthEngineWorker {
             }
 
             if (periodReducer) {
-                collection = aggregateTemporal({
-                    collection,
-                    metadataOnly: true,
-                    year,
-                    periodReducer,
-                    overrideDate: startDate,
-                })
+                const collectionSize = await collection.size().getInfo()
+                if (collectionSize > 0) {
+                    collection = aggregateTemporal({
+                        collection,
+                        metadataOnly: true,
+                        year,
+                        periodReducer,
+                        overrideDate: startDate,
+                    })
+                }
             }
 
             collection = filterCollectionByDateRange(
