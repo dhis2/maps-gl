@@ -41,7 +41,7 @@ export class MapGL extends Evented {
             canvasContextAttributes: {
                 contextType: 'webgl',
                 preserveDrawingBuffer: true, // TODO: required for map download, but reduced performance
-                powerPreference: 'low‑power',
+                powerPreference: 'low-power',
             },
             attributionControl: false,
             locale: controlsLocale,
