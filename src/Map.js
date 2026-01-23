@@ -39,7 +39,9 @@ export class MapGL extends Evented {
             style: mapStyle({ glyphs }),
             maxZoom: 18,
             canvasContextAttributes: {
+                contextType: 'webgl',
                 preserveDrawingBuffer: true, // TODO: required for map download, but reduced performance
+                powerPreference: 'low-power',
             },
             attributionControl: false,
             locale: controlsLocale,
