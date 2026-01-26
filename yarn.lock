@@ -1868,13 +1868,15 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@turf/area@^6.5.0":
-  version "6.5.0"
-  resolved "https://registry.yarnpkg.com/@turf/area/-/area-6.5.0.tgz#1d0d7aee01d8a4a3d4c91663ed35cc615f36ad56"
-  integrity sha512-xCZdiuojokLbQ+29qR6qoMD89hv+JAgWjLrwSEWL+3JV8IXKeNFl6XkEJz9HGkVpnXvQKJoRz4/liT+8ZZ5Jyg==
+"@turf/area@^7.3.2":
+  version "7.3.2"
+  resolved "https://registry.yarnpkg.com/@turf/area/-/area-7.3.2.tgz#7e6e736cfa527114dbb3682e4d1086139757dd65"
+  integrity sha512-d7IuEjAO3TSX5aVeL5WXrtCZCwxUAUOD4+LZ+VjoEe2THmYKdUknCPbH6rdhMBzLyZNuSVRmpRD/QfpCnLqoZg==
   dependencies:
-    "@turf/helpers" "^6.5.0"
-    "@turf/meta" "^6.5.0"
+    "@turf/helpers" "7.3.2"
+    "@turf/meta" "7.3.2"
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
 
 "@turf/bbox@7.3.2":
   version "7.3.2"
