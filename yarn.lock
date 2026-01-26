@@ -6646,12 +6646,12 @@ point-in-polygon@^1.1.0:
   resolved "https://registry.yarnpkg.com/point-in-polygon/-/point-in-polygon-1.1.0.tgz#b0af2616c01bdee341cbf2894df643387ca03357"
   integrity sha512-3ojrFwjnnw8Q9242TzgXuTD+eKiutbzyslcq1ydfu82Db2y+Ogbmyrkpv0Hgj31qwT3lbS9+QAAO/pIQM35XRw==
 
-polylabel@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/polylabel/-/polylabel-1.1.0.tgz#9483e64fc7a12a49f43e07e7a06752214ed2a8e7"
-  integrity sha512-bxaGcA40sL3d6M4hH72Z4NdLqxpXRsCFk8AITYg6x1rn1Ei3izf00UMLklerBZTO49aPA3CYrIwVulx2Bce2pA==
+polylabel@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/polylabel/-/polylabel-2.0.1.tgz#7c2f02b96bd50331a81990dcb9e134c05f996419"
+  integrity sha512-B6Yu+Bdl/8SGtjVhyUfZzD3DwciCS9SPVtHiNdt8idHHatvTHp5Ss8XGDRmQFtfF1ZQnfK+Cj5dXdpkUXBbXgA==
   dependencies:
-    tinyqueue "^2.0.3"
+    tinyqueue "^3.0.0"
 
 possible-typed-array-names@^1.0.0:
   version "1.0.0"
