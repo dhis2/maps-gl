@@ -157,3 +157,33 @@ export const clusterCountLayer = ({ id, color, opacity }) => ({
         'text-opacity': opacity ?? textOpacity,
     },
 })
+
+// Layer with heat surface
+export const heatLayer = ({
+    id,
+    heatWeight = 1,
+    heatIntensity = 0.5,
+    heatColor,
+    heatRadius,
+    opacity = 1,
+    source,
+}) => ({
+    id: `${id}-heat`,
+    type: 'heatmap',
+    source: source || id,
+    paint: {
+        // Increase the heatmap weight based on frequency and property magnitude
+        'heatmap-weight': heatWeight,
+        // Increase the heatmap color weight weight by zoom level
+        // heatmap-intensity is a multiplier on top of heatmap-weight
+        'heatmap-intensity': heatIntensity,
+        // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
+        // Begin color ramp at 0-stop with a 0-transparency color
+        // to create a blur-like effect.
+        'heatmap-color': heatColor,
+        // Adjust the heatmap radius by zoom level
+        'heatmap-radius': heatRadius,
+        // Transition from heatmap to circle layer by zoom level
+        'heatmap-opacity': opacity,
+    },
+})
