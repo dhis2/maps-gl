@@ -29,7 +29,7 @@
         "fetch-jsonp": "^1.3.0",
         "lodash.throttle": "^4.1.1",
         "maplibre-gl": "^5.16.0",
-        "polylabel": "^1.1.0",
+        "polylabel": "^2.0.1",
         "suggestions": "^1.7.1",
         "uuid": "^9.0.0"
     },
