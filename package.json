@@ -19,10 +19,10 @@
     "license": "BSD-3-Clause",
     "dependencies": {
         "@mapbox/sphericalmercator": "^1.2.0",
-        "@turf/area": "^6.5.0",
-        "@turf/bbox": "^6.5.0",
+        "@turf/area": "^7.3.3",
+        "@turf/bbox": "^7.3.2",
         "@turf/buffer": "^7.3.2",
-        "@turf/center-of-mass": "^6.5.0",
+        "@turf/center-of-mass": "^7.3.3",
         "@turf/circle": "^7.3.2",
         "@turf/length": "^6.5.0",
         "comlink": "^4.4.2",
