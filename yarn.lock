@@ -1902,16 +1902,18 @@
     "@types/geojson" "^7946.0.10"
     d3-geo "1.7.1"
 
-"@turf/center-of-mass@^6.5.0":
-  version "6.5.0"
-  resolved "https://registry.yarnpkg.com/@turf/center-of-mass/-/center-of-mass-6.5.0.tgz#f9e6988bc296b7f763a0137ad6095f54843cf06a"
-  integrity sha512-EWrriU6LraOfPN7m1jZi+1NLTKNkuIsGLZc2+Y8zbGruvUW+QV7K0nhf7iZWutlxHXTBqEXHbKue/o79IumAsQ==
+"@turf/center-of-mass@^7.3.3":
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/@turf/center-of-mass/-/center-of-mass-7.3.3.tgz#bf6a61bb13f0130c2395529277b6a51cb823bc84"
+  integrity sha512-UDymsi00QlHBRVgukC9ObCQp/FjwPJ5M8ozH9EnJfnmpzbZpIZUI9vFgCbVR62A5hhMN5TkLwp65KJQQRhs2bA==
   dependencies:
-    "@turf/centroid" "^6.5.0"
-    "@turf/convex" "^6.5.0"
-    "@turf/helpers" "^6.5.0"
-    "@turf/invariant" "^6.5.0"
-    "@turf/meta" "^6.5.0"
+    "@turf/centroid" "7.3.3"
+    "@turf/convex" "7.3.3"
+    "@turf/helpers" "7.3.3"
+    "@turf/invariant" "7.3.3"
+    "@turf/meta" "7.3.3"
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
 
 "@turf/center@7.3.2":
   version "7.3.2"
@@ -1923,13 +1925,15 @@
     "@types/geojson" "^7946.0.10"
     tslib "^2.8.1"
 
-"@turf/centroid@^6.5.0":
-  version "6.5.0"
-  resolved "https://registry.yarnpkg.com/@turf/centroid/-/centroid-6.5.0.tgz#ecaa365412e5a4d595bb448e7dcdacfb49eb0009"
-  integrity sha512-MwE1oq5E3isewPprEClbfU5pXljIK/GUOMbn22UM3IFPDJX0KeoyLNwghszkdmFp/qMGL/M13MMWvU+GNLXP/A==
+"@turf/centroid@7.3.3":
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/@turf/centroid/-/centroid-7.3.3.tgz#8c32af4313fb791705add92665230a551f6398c1"
+  integrity sha512-3vWLnF1CksLk7xTUH11IzOQJ6fOoj7zhuL8M3GTxcKruVkGat/vIm3Ye5b68sDVcE5nFDA2pYjjbL7Rfmn3/GQ==
   dependencies:
-    "@turf/helpers" "^6.5.0"
-    "@turf/meta" "^6.5.0"
+    "@turf/helpers" "7.3.3"
+    "@turf/meta" "7.3.3"
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
 
 "@turf/circle@^7.3.2":
   version "7.3.2"
@@ -1950,14 +1954,16 @@
     "@types/geojson" "^7946.0.10"
     tslib "^2.8.1"
 
-"@turf/convex@^6.5.0":
-  version "6.5.0"
-  resolved "https://registry.yarnpkg.com/@turf/convex/-/convex-6.5.0.tgz#a7613e0d3795e2f5b9ce79a39271e86f54a3d354"
-  integrity sha512-x7ZwC5z7PJB0SBwNh7JCeCNx7Iu+QSrH7fYgK0RhhNop13TqUlvHMirMLRgf2db1DqUetrAO2qHJeIuasquUWg==
+"@turf/convex@7.3.3":
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/@turf/convex/-/convex-7.3.3.tgz#ef882da8ab05163d6388e6d4f48446d015187d2f"
+  integrity sha512-GnE6rj+WMqaC5PTLnOUqgbGotHOBu4KNelcZKyHoIPZPhcHxHg1pIApInZflb2Kc1TeW6bYYcFSxmAtxvJUZjw==
   dependencies:
-    "@turf/helpers" "^6.5.0"
-    "@turf/meta" "^6.5.0"
-    concaveman "*"
+    "@turf/helpers" "7.3.3"
+    "@turf/meta" "7.3.3"
+    "@types/geojson" "^7946.0.10"
+    concaveman "^1.2.1"
+    tslib "^2.8.1"
 
 "@turf/destination@7.3.2":
   version "7.3.2"
@@ -2004,6 +2010,15 @@
   integrity sha512-brGmL1EFhZH/YNXhq6S+8sPWBEnmvEyxMWJO8bUNOFZyWHYiRTwxQHZM+An1blkbQ77PiEzsdNAspZqE1j7YKA==
   dependencies:
     "@turf/helpers" "7.3.2"
+    "@types/geojson" "^7946.0.10"
+    tslib "^2.8.1"
+
+"@turf/invariant@7.3.3":
+  version "7.3.3"
+  resolved "https://registry.yarnpkg.com/@turf/invariant/-/invariant-7.3.3.tgz#e8c96e200de92df26ef0619290916583c4fcdf66"
+  integrity sha512-q6UDgWmtIlU+AIxt5Awnh18ZMSuNti6drCXbIBdGdgQaQ1qEiyGZDE3P9RKk6otoLXOBYecOuI0HIwf2IxurhQ==
+  dependencies:
+    "@turf/helpers" "7.3.3"
     "@types/geojson" "^7946.0.10"
     tslib "^2.8.1"
 
@@ -3160,7 +3175,7 @@ concat-map@0.0.1:
   resolved "https://registry.yarnpkg.com/concat-map/-/concat-map-0.0.1.tgz#d8a96bd77fd68df7793a73036a3ba0d5405d477b"
   integrity sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==
 
-concaveman@*:
+concaveman@^1.2.1:
   version "1.2.1"
   resolved "https://registry.yarnpkg.com/concaveman/-/concaveman-1.2.1.tgz#47d20b4521125c15fabf453653c2696d9ee41e0b"
   integrity sha512-PwZYKaM/ckQSa8peP5JpVr7IMJ4Nn/MHIaWUjP4be+KoZ7Botgs8seAZGpmaOM+UZXawcdYRao/px9ycrCihHw==
