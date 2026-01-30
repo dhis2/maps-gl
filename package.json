@@ -18,7 +18,7 @@
     ],
     "license": "BSD-3-Clause",
     "dependencies": {
-        "@mapbox/sphericalmercator": "^1.2.0",
+        "@mapbox/sphericalmercator": "^2.0.2",
         "@turf/area": "^7.3.3",
         "@turf/bbox": "^7.3.2",
         "@turf/buffer": "^7.3.2",
