@@ -19,12 +19,12 @@
     "license": "BSD-3-Clause",
     "dependencies": {
         "@mapbox/sphericalmercator": "^1.2.0",
-        "@turf/area": "^7.3.3",
-        "@turf/bbox": "^7.3.3",
-        "@turf/buffer": "^7.3.3",
-        "@turf/center-of-mass": "^7.3.3",
-        "@turf/circle": "^7.3.3",
-        "@turf/length": "^7.3.3",
+        "@turf/area": "^6.5.0",
+        "@turf/bbox": "^6.5.0",
+        "@turf/buffer": "^6.5.0",
+        "@turf/center-of-mass": "^6.5.0",
+        "@turf/circle": "^6.5.0",
+        "@turf/length": "^6.5.0",
         "comlink": "^4.4.2",
         "fetch-jsonp": "^1.3.0",
         "lodash.throttle": "^4.1.1",
@@ -71,7 +71,10 @@
             "\\.(css|less)$": "identity-obj-proxy",
             "^uuid$": "<rootDir>/src/__mocks__/uuid.js"
         },
-        "testEnvironment": "jsdom"
+        "testEnvironment": "jsdom",
+        "transformIgnorePatterns": [
+            "/node_modules/(?!(quickselect|rbush|concaveman|tinyqueue|robust-predicates|@turf/.*)/)"
+        ]
     },
     "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
