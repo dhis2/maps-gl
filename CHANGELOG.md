@@ -1,3 +1,10 @@
+## [4.2.8](https://github.com/dhis2/maps-gl/compare/v4.2.7...v4.2.8) (2026-02-05)
+
+
+### Bug Fixes
+
+* skip temporal aggregation if collection is empty [DHIS2-20684] ([#625](https://github.com/dhis2/maps-gl/issues/625)) ([a53162a](https://github.com/dhis2/maps-gl/commit/a53162a2e5e120e260a714835e28675ad2cc911b))
+
 ## [4.2.7](https://github.com/dhis2/maps-gl/compare/v4.2.6...v4.2.7) (2026-01-19)
 
 

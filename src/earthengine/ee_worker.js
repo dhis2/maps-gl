@@ -1,5 +1,5 @@
 import polygonBuffer from '@turf/buffer'
-import { circle } from '@turf/circle'
+import circle from '@turf/circle'
 import { expose } from 'comlink'
 import ee from './ee_api_js_worker.js' // https://github.com/google/earthengine-api/pull/173
 import { WorkerCache } from './ee_worker_cache.js'
@@ -307,13 +307,16 @@ class EarthEngineWorker {
             }
 
             if (periodReducer) {
-                collection = aggregateTemporal({
-                    collection,
-                    metadataOnly: true,
-                    year,
-                    periodReducer,
-                    overrideDate: startDate,
-                })
+                const collectionSize = await collection.size().getInfo()
+                if (collectionSize > 0) {
+                    collection = aggregateTemporal({
+                        collection,
+                        metadataOnly: true,
+                        year,
+                        periodReducer,
+                        overrideDate: startDate,
+                    })
+                }
             }
 
             collection = filterCollectionByDateRange(
