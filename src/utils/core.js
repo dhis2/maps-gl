@@ -1,6 +1,6 @@
 // Replaces {key} with data in a string template
 export const setTemplate = (text, data) =>
-    text.replace(/\{ *([\w_-]+) *\}/g, (str, key) => data[key])
+    text.replace(/\{ *([\w_-]+) *\}/g, (_, key) => data[key] ?? '')
 
 // Returns a string representation of an array of features
 export const getFeaturesString = features =>

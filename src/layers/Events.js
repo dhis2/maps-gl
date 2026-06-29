@@ -1,4 +1,5 @@
 import { bufferLayer, bufferOutlineLayer } from '../utils/buffers.js'
+import { labelLayer } from '../utils/labels.js'
 import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers.js'
 import { eventStrokeColor } from '../utils/style.js'
 import Layer from './Layer.js'
@@ -19,6 +20,8 @@ class Events extends Layer {
             radius,
             buffer,
             bufferStyle,
+            label,
+            labelStyle,
         } = this.options
         const isInteractive = true
 
@@ -32,6 +35,10 @@ class Events extends Layer {
         })
         this.addLayer(polygonLayer({ id, color }), { isInteractive })
         this.addLayer(outlineLayer({ id, color: strokeColor }))
+
+        if (label) {
+            this.addLayer(labelLayer({ id, ...labelStyle }))
+        }
     }
 }
 

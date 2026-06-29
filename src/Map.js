@@ -10,13 +10,14 @@ import Popup from './ui/Popup.js'
 import { getFeaturesString } from './utils/core.js'
 import { getBoundsFromLayers } from './utils/geometry.js'
 import { transformRequest } from './utils/images.js'
-import { OVERLAY_START_POSITION } from './utils/layers.js'
+import { OVERLAY_START_POSITION, MAP_MAX_ZOOM } from './utils/layers.js'
 import { mapStyle } from './utils/style.js'
 import syncMaps from './utils/sync.js'
 import './Map.css'
 
 const renderedClass = 'dhis2-map-rendered'
 const RENDER_TIMEOUT_DURATION = 500
+const OVERLAY_SELECTORS = ['.spider-leg-container', '.dhis2-donut-marker']
 
 export class MapGL extends Evented {
     // Returns true if the layer type is supported
@@ -37,7 +38,7 @@ export class MapGL extends Evented {
         const mapgl = new Map({
             container: el,
             style: mapStyle({ glyphs }),
-            maxZoom: 18,
+            maxZoom: MAP_MAX_ZOOM,
             canvasContextAttributes: {
                 preserveDrawingBuffer: true, // TODO: required for map download, but reduced performance
             },
@@ -77,6 +78,7 @@ export class MapGL extends Evented {
 
         this._layers = []
         this._controls = {}
+        this._interactiveLayerIds = null
 
         if (options.attributionControl !== false) {
             this.addControl({ type: 'attribution' })
@@ -117,6 +119,7 @@ export class MapGL extends Evented {
 
     async addLayer(layer) {
         this._layers.push(layer)
+        this._interactiveLayerIds = null
 
         if (!layer.isOnMap()) {
             await layer.addTo(this)
@@ -134,6 +137,7 @@ export class MapGL extends Evented {
 
     async removeLayer(layer) {
         this._layers = this._layers.filter(l => l !== layer)
+        this._interactiveLayerIds = null
 
         await layer.removeFrom(this)
 
@@ -271,7 +275,14 @@ export class MapGL extends Evented {
                 layer.onMouseMove(evt, feature)
             }
         } else {
-            this.hideLabel()
+            const target = evt && evt.originalEvent && evt.originalEvent.target
+            if (
+                !target ||
+                !target.closest ||
+                !OVERLAY_SELECTORS.some(sel => target.closest(sel))
+            ) {
+                this.hideLabel()
+            }
         }
 
         this.setHoverState(
@@ -332,7 +343,18 @@ export class MapGL extends Evented {
         }
     }
 
-    onMouseOut = () => this.hideLabel()
+    onMouseOut = evt => {
+        const related =
+            evt && evt.originalEvent && evt.originalEvent.relatedTarget
+        if (
+            related &&
+            related.closest &&
+            OVERLAY_SELECTORS.some(sel => related.closest(sel))
+        ) {
+            return
+        }
+        this.hideLabel()
+    }
 
     onError = evt => {
         // TODO: Use optional chaining when DHIS2 Maps 2.35 is not supported
@@ -351,21 +373,18 @@ export class MapGL extends Evented {
         return this.getMapGL().getZoom()
     }
 
-    // TODO: throttle?
     getEventFeature(evt) {
-        const layers = this.getLayers()
-            .filter(l => l.isInteractive())
-            .map(l => l.getInteractiveIds())
-            .reduce((out, ids) => [...out, ...ids], [])
-        let feature
-
-        if (layers.length) {
-            feature = this._mapgl.queryRenderedFeatures(evt.point, {
-                layers: layers,
-            })[0] // [0] returns topmost
+        if (!this._interactiveLayerIds) {
+            this._interactiveLayerIds = this.getLayers()
+                .filter(l => l.isInteractive())
+                .flatMap(l => l.getInteractiveIds())
         }
 
-        return feature
+        return this._interactiveLayerIds.length
+            ? this._mapgl.queryRenderedFeatures(evt.point, {
+                  layers: this._interactiveLayerIds,
+              })[0]
+            : undefined
     }
 
     getLayerFromId(id) {
@@ -394,7 +413,7 @@ export class MapGL extends Evented {
             return control._controlContainer || control._container
         }
 
-        return document.createElement('div') // TODO
+        return document.createElement('div') // TODO: silent failure — should return null and let caller handle missing control
     }
 
     // Set before layer id for vector style basemap for labels on top
@@ -436,12 +455,16 @@ export class MapGL extends Evented {
         }
     }
 
-    showLabel(content, lnglat) {
+    showLabel(content, lnglat, { isHTML = false } = {}) {
         if (!this._label) {
             this._label = new Label()
         }
 
-        this._label.setText(content).setLngLat(lnglat)
+        const label = isHTML
+            ? this._label.setHTML(content)
+            : this._label.setText(content)
+
+        label.setLngLat(lnglat)
 
         if (!this._label.isOpen()) {
             this._label.addTo(this._mapgl)

@@ -19,15 +19,37 @@ const opacityFactor = {
 
 const getOpacity = (key, opacity) => opacity * (opacityFactor[key] || 1)
 
+// WeakMap so mapgl instances are not prevented from being GC'd
+const _subLayerCache = new WeakMap()
+
+const getSubLayerIds = (mapgl, id) => {
+    let instanceCache = _subLayerCache.get(mapgl)
+    if (!instanceCache) {
+        instanceCache = new Map()
+        _subLayerCache.set(mapgl, instanceCache)
+    }
+    if (!instanceCache.has(id)) {
+        instanceCache.set(
+            id,
+            mapgl
+                .getStyle()
+                .layers.filter(layer => layer.id.startsWith(id))
+                .map(layer => layer.id)
+        )
+    }
+    return instanceCache.get(id)
+}
+
+export const clearLayerOpacityCache = (mapgl, id) => {
+    _subLayerCache.get(mapgl)?.delete(id)
+}
+
 export const setLayersOpacity = (mapgl, id, opacity) => {
-    mapgl
-        .getStyle()
-        .layers.filter(layer => layer.id.startsWith(id))
-        .forEach(layer => {
-            const key = layer.id.split('-').pop()
-            const value = getOpacity(key, opacity)
-            properties[key]?.forEach(property => {
-                mapgl.setPaintProperty(layer.id, property, value)
-            })
+    getSubLayerIds(mapgl, id).forEach(layerId => {
+        const key = layerId.split('-').pop()
+        const value = getOpacity(key, opacity)
+        properties[key]?.forEach(property => {
+            mapgl.setPaintProperty(layerId, property, value)
         })
+    })
 }

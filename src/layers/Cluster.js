@@ -1,7 +1,12 @@
 import centerOfMass from '@turf/center-of-mass'
 import { isClusterPoint } from '../utils/filters.js'
 import { featureCollection } from '../utils/geometry.js'
-import { pointLayer, polygonLayer, outlineLayer } from '../utils/layers.js'
+import {
+    pointLayer,
+    polygonLayer,
+    outlineLayer,
+    MAP_MAX_ZOOM,
+} from '../utils/layers.js'
 import { eventStrokeColor } from '../utils/style.js'
 import Layer from './Layer.js'
 import Spider from './Spider.js'
@@ -48,7 +53,8 @@ class Cluster extends Layer {
 
         this.setSource(id, {
             type: 'geojson',
-            clusterMaxZoom: 19,
+            // One above MAP_MAX_ZOOM so clusters still exist at map ceiling and can be spiderfied
+            clusterMaxZoom: MAP_MAX_ZOOM + 1,
             clusterRadius: 50,
             ...props,
         })
@@ -110,7 +116,11 @@ class Cluster extends Layer {
             const source = mapgl.getSource(this.getId())
             try {
                 const zoom = await source.getClusterExpansionZoom(clusterId)
-                mapgl.flyTo({ center, zoom: zoom + 1 })
+                if (zoom > mapgl.getZoom()) {
+                    mapgl.flyTo({ center, zoom: zoom + 1 })
+                } else {
+                    this.spiderfy(clusterId, center)
+                }
             } catch (err) {
                 console.warn('Cluster zoom failed', err)
             }
@@ -170,7 +180,11 @@ class Cluster extends Layer {
         }
 
         try {
-            const features = await source.getClusterLeaves(clusterId)
+            const features = await source.getClusterLeaves(
+                clusterId,
+                Infinity,
+                0
+            )
             return this.sortClusterFeatures(features)
         } catch (err) {
             console.error('Error fetching cluster leaves:', err)
@@ -220,12 +234,20 @@ class Cluster extends Layer {
         const mapgl = this.getMapGL()
         const { radius, fillColor, opacity } = this.options
 
+        const { hoverLabel, label, labelStyle } = this.options
         this.spider = new Spider(mapgl, {
             onClick: this.onClick,
             radius,
             fillColor,
             opacity,
             onClose: this.onSpiderClose,
+            hoverLabel,
+            showLabel: hoverLabel
+                ? (content, lngLat) => this._map.showLabel(content, lngLat)
+                : undefined,
+            hideLabel: hoverLabel ? () => this._map.hideLabel() : undefined,
+            label,
+            labelStyle,
         })
 
         this.setOpacity(this.options.opacity)
