@@ -5,7 +5,7 @@ import { bufferSource } from '../utils/buffers.js'
 import { featureCollection } from '../utils/geometry.js'
 import { addImages } from '../utils/images.js'
 import { labelSource } from '../utils/labels.js'
-import { setLayersOpacity } from '../utils/opacity.js'
+import { setLayersOpacity, clearLayerOpacityCache } from '../utils/opacity.js'
 
 class Layer extends Evented {
     constructor(options = {}) {
@@ -86,6 +86,8 @@ class Layer extends Evented {
         this.onRemove()
 
         if (mapgl) {
+            clearLayerOpacityCache(mapgl, this.getId())
+
             layers.forEach(layer => {
                 if (mapgl.getLayer(layer.id)) {
                     mapgl.removeLayer(layer.id)
@@ -330,7 +332,7 @@ class Layer extends Evented {
 
     isMaxZoom() {
         const mapgl = this.getMapGL()
-        return mapgl.getZoom() === mapgl.getMaxZoom()
+        return mapgl.getZoom() >= mapgl.getMaxZoom()
     }
 
     // Highlight a layer feature
@@ -370,6 +372,12 @@ class Layer extends Evented {
 
         if (hoverLabel || label) {
             const { properties } = feature
+
+            if (properties.cluster) {
+                this._map.hideLabel()
+                return
+            }
+
             const content = (hoverLabel || label).replace(
                 /\{ *([\w_-]+) *\}/g,
                 (str, key) =>
