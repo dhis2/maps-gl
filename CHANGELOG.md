@@ -1,3 +1,10 @@
+# [4.3.0](https://github.com/dhis2/maps-gl/compare/v4.2.8...v4.3.0) (2026-06-29)
+
+
+### Features
+
+* add event tooltips and labels to cluster and spiderified events ([9ad2f27](https://github.com/dhis2/maps-gl/commit/9ad2f27ca9d12ee8540c72e86e4b52d92d1df6a8))
+
 ## [4.2.8](https://github.com/dhis2/maps-gl/compare/v4.2.7...v4.2.8) (2026-02-05)
 
 
