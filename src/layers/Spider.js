@@ -3,16 +3,16 @@ import { setTemplate } from '../utils/core.js'
 import spiderifier from '../utils/spiderifier.js'
 import { eventStrokeColor as strokeColor, strokeWidth } from '../utils/style.js'
 
-const labelTextStyle = ({ color, size, weight, style } = {}) => ({
+const labelTextStyle = ({ color, fontSize, fontWeight, fontStyle } = {}) => ({
     position: 'absolute',
     top: '100%',
     left: '50%',
     transform: 'translateX(-50%)',
     paddingTop: '2px',
     color: color || '#333333',
-    fontSize: size ? `${size}px` : '12px',
-    fontWeight: weight || 'normal',
-    fontStyle: style || 'normal',
+    fontSize: fontSize ? `${fontSize}px` : '12px',
+    fontWeight: fontWeight || 'normal',
+    fontStyle: fontStyle || 'normal',
     whiteSpace: 'nowrap',
     pointerEvents: 'none',
     textShadow: '0 1px 2px rgba(255,255,255,0.8)',
