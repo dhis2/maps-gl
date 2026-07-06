@@ -10,7 +10,7 @@ const labelTextStyle = ({ color, fontSize, fontWeight, fontStyle } = {}) => ({
     transform: 'translateX(-50%)',
     paddingTop: '2px',
     color: color || '#333333',
-    fontSize: fontSize ? `${fontSize}px` : '12px',
+    fontSize: fontSize || '12px',
     fontWeight: fontWeight || 'normal',
     fontStyle: fontStyle || 'normal',
     whiteSpace: 'nowrap',
