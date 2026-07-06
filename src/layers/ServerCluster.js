@@ -65,6 +65,8 @@ class ServerCluster extends Cluster {
             { isInteractive }
         )
 
+        this.addLabelLayer()
+
         // Non-clustered polygons
         this.addLayer(polygonLayer({ id, color }), { isInteractive })
         this.addLayer(outlineLayer({ id, color: strokeColor }))

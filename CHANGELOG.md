@@ -1,3 +1,10 @@
+## [4.3.1](https://github.com/dhis2/maps-gl/compare/v4.3.0...v4.3.1) (2026-07-06)
+
+
+### Bug Fixes
+
+* show labels for isolated points in cluster layers ([#654](https://github.com/dhis2/maps-gl/issues/654)) ([c74f073](https://github.com/dhis2/maps-gl/commit/c74f073ec7e7810193b7d5a100bd845b3bc57f90))
+
 # [4.3.0](https://github.com/dhis2/maps-gl/compare/v4.2.8...v4.3.0) (2026-06-29)
 
 

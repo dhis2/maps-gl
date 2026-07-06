@@ -3,6 +3,11 @@ export const textSize = 16
 export const textColor = '#FFFFFF'
 export const textOpacity = 1
 
+export const labelFontSize = 12
+export const labelColor = '#333333'
+export const labelFontWeight = 'normal'
+export const labelFontStyle = 'normal'
+
 export const circleRadius = 6
 export const circleStrokeColor = '#333333'
 export const circleOpacity = 1
