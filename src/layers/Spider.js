@@ -10,7 +10,12 @@ import {
     strokeWidth,
 } from '../utils/style.js'
 
-const labelTextStyle = ({ color, fontSize, fontWeight, fontStyle } = {}) => ({
+export const labelTextStyle = ({
+    color,
+    fontSize,
+    fontWeight,
+    fontStyle,
+} = {}) => ({
     position: 'absolute',
     top: '100%',
     left: '50%',
