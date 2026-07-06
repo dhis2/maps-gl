@@ -1,5 +1,11 @@
-import { labelSource, labelLayer } from '../labels.js'
-import { textOpacity } from '../style.js'
+import { isClusterPoint } from '../filters.js'
+import { labelSource, labelLayer, labelClusterLayer } from '../labels.js'
+import {
+    circleRadius,
+    labelColor,
+    labelFontSize,
+    textOpacity,
+} from '../style.js'
 
 const id = 'abc'
 const opacity = 0.5
@@ -75,7 +81,7 @@ const generateLabelSourceItem = ({
             name,
             anchor,
             offset,
-            color: '#333',
+            color: labelColor,
             value,
         },
     }
@@ -140,5 +146,92 @@ describe('labels', () => {
 
     it('Should set default opacity for label layer', () => {
         expect(labelLayer({ id }).paint['text-opacity']).toBe(textOpacity)
+    })
+
+    it('Should read from the point source with the cluster filter', () => {
+        const layer = labelClusterLayer({ id })
+
+        expect(layer.source).toBe(id)
+        expect(layer.filter).toEqual(isClusterPoint)
+    })
+
+    it('Should use a custom filter instead of the cluster default', () => {
+        const filter = ['==', ['get', 'foo'], 'bar']
+
+        expect(labelClusterLayer({ id, filter }).filter).toEqual(filter)
+    })
+
+    it('Should default text-field to a {name} expression', () => {
+        const layer = labelClusterLayer({ id })
+
+        expect(layer.layout['text-field']).toEqual([
+            'case',
+            ['has', 'name'],
+            ['get', 'name'],
+            '',
+        ])
+    })
+
+    it('Should fall back to labelNoData for a missing {value} token', () => {
+        const layer = labelClusterLayer({
+            id,
+            label: '{name}: {value}',
+            labelNoData,
+        })
+
+        expect(layer.layout['text-field']).toEqual([
+            'concat',
+            ['case', ['has', 'name'], ['get', 'name'], ''],
+            ': ',
+            ['case', ['has', 'value'], ['get', 'value'], labelNoData],
+        ])
+    })
+
+    it('Should default text-offset from circleRadius and labelFontSize', () => {
+        const layer = labelClusterLayer({ id })
+
+        expect(layer.layout['text-offset']).toEqual([
+            0,
+            circleRadius / labelFontSize + 0.4,
+        ])
+    })
+
+    it('Should compute text-offset from a custom radius and fontSize', () => {
+        const layer = labelClusterLayer({ id, radius: 10, fontSize: 20 })
+
+        expect(layer.layout['text-offset']).toEqual([0, 10 / 20 + 0.4])
+    })
+
+    it('Should always anchor text to top', () => {
+        expect(labelClusterLayer({ id }).layout['text-anchor']).toBe('top')
+    })
+
+    it('Should default text-color to a labelColor expression', () => {
+        const layer = labelClusterLayer({ id })
+
+        expect(layer.paint['text-color']).toEqual([
+            'case',
+            ['has', 'color'],
+            ['get', 'color'],
+            labelColor,
+        ])
+    })
+
+    it('Should use a custom color instead of the default expression', () => {
+        const color = '#ff0000'
+
+        expect(labelClusterLayer({ id, color }).paint['text-color']).toBe(color)
+    })
+
+    it('Should set opacity for label cluster layer', () => {
+        expect(labelClusterLayer({ id, opacity }).paint['text-opacity']).toBe(
+            opacity
+        )
+    })
+
+    it('Should set default opacity for label cluster layer', () => {
+        expect(labelClusterLayer({ id }).paint['text-opacity']).toBe(
+            textOpacity
+        )
     })
 })

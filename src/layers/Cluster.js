@@ -1,6 +1,7 @@
 import centerOfMass from '@turf/center-of-mass'
 import { isClusterPoint } from '../utils/filters.js'
 import { featureCollection } from '../utils/geometry.js'
+import { labelClusterLayer } from '../utils/labels.js'
 import {
     pointLayer,
     polygonLayer,
@@ -86,6 +87,8 @@ class Cluster extends Layer {
             { isInteractive }
         )
 
+        this.addLabelLayer()
+
         // Non-clustered polygons
         this.addLayer(polygonLayer({ id, color, source: `${id}-polygons` }), {
             isInteractive,
@@ -97,6 +100,22 @@ class Cluster extends Layer {
                 source: `${id}-polygons`,
             })
         )
+    }
+
+    addLabelLayer() {
+        const id = this.getId()
+        const { label, labelStyle, radius } = this.options
+
+        if (label) {
+            this.addLayer(
+                labelClusterLayer({
+                    ...labelStyle,
+                    id,
+                    label,
+                    radius,
+                })
+            )
+        }
     }
 
     setOpacity(opacity) {
