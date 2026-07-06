@@ -1,5 +1,5 @@
 import { labelSource, labelLayer } from '../labels.js'
-import { textOpacity } from '../style.js'
+import { labelColor, textOpacity } from '../style.js'
 
 const id = 'abc'
 const opacity = 0.5
@@ -75,7 +75,7 @@ const generateLabelSourceItem = ({
             name,
             anchor,
             offset,
-            color: '#333',
+            color: labelColor,
             value,
         },
     }

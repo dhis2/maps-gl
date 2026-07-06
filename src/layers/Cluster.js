@@ -1,7 +1,7 @@
 import centerOfMass from '@turf/center-of-mass'
 import { isClusterPoint } from '../utils/filters.js'
 import { featureCollection } from '../utils/geometry.js'
-import { pointLabelLayer } from '../utils/labels.js'
+import { labelClusterLayer } from '../utils/labels.js'
 import {
     pointLayer,
     polygonLayer,
@@ -102,15 +102,13 @@ class Cluster extends Layer {
         )
     }
 
-    // Shared by Cluster and ServerCluster (label layer reads from `id`,
-    // whichever way that source's cluster/leaf split is produced)
     addLabelLayer() {
         const id = this.getId()
         const { label, labelStyle, radius } = this.options
 
         if (label) {
             this.addLayer(
-                pointLabelLayer({
+                labelClusterLayer({
                     ...labelStyle,
                     id,
                     label,

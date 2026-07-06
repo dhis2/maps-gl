@@ -1,7 +1,14 @@
 import { Point } from 'maplibre-gl'
 import { setTemplate } from '../utils/core.js'
 import spiderifier from '../utils/spiderifier.js'
-import { eventStrokeColor as strokeColor, strokeWidth } from '../utils/style.js'
+import {
+    eventStrokeColor as strokeColor,
+    labelColor,
+    labelFontSize,
+    labelFontStyle,
+    labelFontWeight,
+    strokeWidth,
+} from '../utils/style.js'
 
 const labelTextStyle = ({ color, fontSize, fontWeight, fontStyle } = {}) => ({
     position: 'absolute',
@@ -9,10 +16,10 @@ const labelTextStyle = ({ color, fontSize, fontWeight, fontStyle } = {}) => ({
     left: '50%',
     transform: 'translateX(-50%)',
     paddingTop: '2px',
-    color: color || '#333333',
-    fontSize: fontSize || '12px',
-    fontWeight: fontWeight || 'normal',
-    fontStyle: fontStyle || 'normal',
+    color: color || labelColor,
+    fontSize: fontSize || `${labelFontSize}px`,
+    fontWeight: fontWeight || labelFontWeight,
+    fontStyle: fontStyle || labelFontStyle,
     whiteSpace: 'nowrap',
     pointerEvents: 'none',
     textShadow: '0 1px 2px rgba(255,255,255,0.8)',
