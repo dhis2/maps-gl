@@ -16,7 +16,7 @@ const fonts = {
 // Returns font and size for a label layer
 const getFontConfig = (fontStyle, fontWeight, fontSize) => ({
     font: fonts[`${fontStyle || 'normal'}-${fontWeight || 'normal'}`],
-    size: fontSize ? parseInt(fontSize, 10) : 12,
+    size: fontSize ? Number.parseInt(fontSize, 10) : 12,
 })
 
 // Returns offset in ems
@@ -27,7 +27,7 @@ const getOffsetEms = (type, radius = 5, fontSize = 11) =>
 // expression, substituting labelNoData for a missing {value} token —
 // mirrors the token syntax/semantics of Layer#onMouseMove's hover label
 const templateExpr = (template, labelNoData = '') => {
-    const regex = /\{ *([\w_-]+) *\}/g
+    const regex = /\{ *([\w-]+) *\}/g
     const parts = []
     let lastIndex = 0
     let match
@@ -142,7 +142,7 @@ export const pointLabelLayer = ({
             'text-offset': [0, offset],
         },
         paint: {
-            'text-color': color ? color : colorExpr('#333'),
+            'text-color': color || colorExpr('#333'),
             'text-opacity': opacity ?? textOpacity,
         },
     }
