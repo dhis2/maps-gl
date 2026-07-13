@@ -2,18 +2,21 @@
 
 globalThis.mockMapGL = {
     on: jest.fn(),
+    once: jest.fn(),
+    off: jest.fn(),
     addLayer: jest.fn(),
     addSource: jest.fn(),
     addControl: jest.fn(),
-    getLayer: jest.fn(),
-    getSource: jest.fn(),
-    getStyle: jest.fn(),
     removeLayer: jest.fn(),
     removeSource: jest.fn(),
+    getLayer: jest.fn(),
+    getSource: jest.fn(),
+    getStyle: jest.fn(() => ({ layers: [] })),
+    setFeatureState: jest.fn(),
+    setFilter: jest.fn(),
     setPaintProperty: jest.fn(),
     setLayoutProperty: jest.fn(),
     moveLayer: jest.fn(),
-    setFeatureState: jest.fn(),
     getCanvas: jest.fn(() => ({ style: {} })),
     _getUIString: jest.fn(),
 }
@@ -21,7 +24,9 @@ globalThis.mockMapGL = {
 globalThis.mockMap = {
     getMapGL: () => globalThis.mockMapGL,
     setHoverState: jest.fn(),
+    setSelectedState: jest.fn(),
     getBeforeLayerId: jest.fn(),
+    invalidateInteractiveLayerIds: jest.fn(),
     styleIsLoaded: jest.fn(() => true),
 }
 

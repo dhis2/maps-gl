@@ -1,4 +1,5 @@
 import centerOfMass from '@turf/center-of-mass'
+import { dropHiddenIds } from '../utils/core.js'
 import { isClusterPoint } from '../utils/filters.js'
 import { featureCollection } from '../utils/geometry.js'
 import { labelClusterLayer } from '../utils/labels.js'
@@ -30,6 +31,7 @@ class Cluster extends Layer {
             this._polygonsOnMap = []
 
             // Translate from polygon to point before clustering
+            // This means highlight()/select() on a polygon feature here has no visible effect
             this._features = this._features.map(f => {
                 if (f.geometry.type === 'Polygon') {
                     this._polygons[f.id] = f
@@ -245,6 +247,36 @@ class Cluster extends Layer {
         return this.getMapGL().querySourceFeatures(this.getId())
     }
 
+    // Cluster circles have no per-feature id to filter on, so we re-send the
+    // filtered features as source data instead, letting clustering recompute
+    setVisibleIds(ids) {
+        const mapgl = this.getMapGL()
+        const source = mapgl?.getSource(this.getId())
+
+        if (!source) {
+            return
+        }
+
+        const features = ids
+            ? this.getFeatures().filter(f => ids.includes(f.properties.id))
+            : this.getFeatures()
+
+        source.setData(featureCollection(features))
+
+        if (this._hasPolygons) {
+            mapgl.off('idle', this.updatePolygons)
+            mapgl.once('idle', this.updatePolygons)
+        }
+
+        const dropped = dropHiddenIds(this._hoverIds, this._selectedIds, ids)
+
+        if (dropped) {
+            this._hoverIds = dropped.hoverIds
+            this._selectedIds = dropped.selectedIds
+            this._syncOverlay()
+        }
+    }
+
     onSpiderClose = clusterId => {
         this.setClusterOpacity(clusterId)
     }
@@ -275,6 +307,7 @@ class Cluster extends Layer {
     onRemove() {
         this.unspiderfy()
         this.spider = null
+        this.getMapGL()?.off('idle', this.updatePolygons)
     }
 }
 

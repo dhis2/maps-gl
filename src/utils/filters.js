@@ -19,3 +19,4 @@ export const isClusterPoint = [
 export const isClusterPolygon = ['all', noCluster, ['==', getIsPolygon, true]]
 
 export const isHover = ['boolean', ['feature-state', 'hover'], false]
+export const isSelected = ['boolean', ['feature-state', 'selected'], false]
