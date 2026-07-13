@@ -301,10 +301,9 @@ export class MapGL extends Evented {
     }
 
     _hideLabelUnlessOverOverlay(evt) {
-        const target = evt && evt.originalEvent && evt.originalEvent.target
+        const target = evt?.originalEvent?.target
         const isOverOverlay =
-            target &&
-            target.closest &&
+            target?.closest &&
             OVERLAY_SELECTORS.some(sel => target.closest(sel))
 
         if (!isOverOverlay) {
