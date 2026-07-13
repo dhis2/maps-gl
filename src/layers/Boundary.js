@@ -1,3 +1,5 @@
+import { highlightColorExpr } from '../utils/expressions.js'
+import { isHover, isSelected } from '../utils/filters.js'
 import { labelLayer } from '../utils/labels.js'
 import Layer from './Layer.js'
 
@@ -37,10 +39,10 @@ class Boundary extends Layer {
                 type: 'line',
                 source: id,
                 paint: {
-                    'line-color': ['get', 'color'],
+                    'line-color': highlightColorExpr(['get', 'color']),
                     'line-width': [
                         'case',
-                        ['boolean', ['feature-state', 'hover'], false],
+                        ['any', isHover, isSelected],
                         ['+', ['get', 'width'], 2],
                         ['get', 'width'],
                     ],
@@ -59,10 +61,10 @@ class Boundary extends Layer {
                 paint: {
                     'circle-color': 'transparent',
                     'circle-radius': ['get', 'radius'],
-                    'circle-stroke-color': ['get', 'color'],
+                    'circle-stroke-color': highlightColorExpr(['get', 'color']),
                     'circle-stroke-width': [
                         'case',
-                        ['boolean', ['feature-state', 'hover'], false],
+                        ['any', isHover, isSelected],
                         ['+', ['get', 'width'], 2],
                         ['get', 'width'],
                     ],
