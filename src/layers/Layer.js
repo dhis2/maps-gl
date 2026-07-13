@@ -13,6 +13,16 @@ import { addImages } from '../utils/images.js'
 import { labelSource } from '../utils/labels.js'
 import { setLayersOpacity, clearLayerOpacityCache } from '../utils/opacity.js'
 
+const buildVisibleIdsFilter = (ids, baseFilter) => {
+    if (!ids) {
+        return baseFilter ?? null
+    }
+
+    const idsFilter = ['in', ['get', 'id'], ['literal', ids]]
+
+    return baseFilter ? ['all', baseFilter, idsFilter] : idsFilter
+}
+
 class Layer extends Evented {
     constructor(options = {}) {
         super()
@@ -429,17 +439,7 @@ class Layer extends Evented {
         }
 
         this.getLayers().forEach(({ id, filter: baseFilter }) => {
-            const filter = ids
-                ? baseFilter
-                    ? [
-                          'all',
-                          baseFilter,
-                          ['in', ['get', 'id'], ['literal', ids]],
-                      ]
-                    : ['in', ['get', 'id'], ['literal', ids]]
-                : baseFilter ?? null
-
-            mapgl.setFilter(id, filter)
+            mapgl.setFilter(id, buildVisibleIdsFilter(ids, baseFilter))
         })
 
         const dropped = dropHiddenIds(this._hoverIds, this._selectedIds, ids)

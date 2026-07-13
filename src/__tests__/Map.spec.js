@@ -333,8 +333,8 @@ describe('DHIS2 Maps-gl Map', () => {
             map.onMouseOut({})
 
             expect(mockLayer.fire).toHaveBeenCalledWith('mouseleave')
-            expect(map._hoveredLayer).toBe(null)
-            expect(map._hoveredFeatureId).toBe(null)
+            expect(map._hoveredLayer).toBeNull()
+            expect(map._hoveredFeatureId).toBeNull()
         })
     })
 })
