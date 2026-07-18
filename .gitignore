@@ -4,3 +4,6 @@ build
 
 # IDE
 .vscode
+
+# Claude Code (personal/runtime, not shared config)
+.claude/settings.local.json

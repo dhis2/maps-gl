@@ -60,6 +60,18 @@ To test changes in a development branch, change the maps-gl dependency of packag
 }
 ```
 
+## Claude Code Setup (optional)
+
+This repo has a [`CLAUDE.md`](./CLAUDE.md) plus a set of `.claude/skills/` — Claude Code reads `CLAUDE.md` automatically every session, and pulls in a skill on demand when its topic is relevant, so you don't need to do anything for those to work.
+
+One-time setup for a smoother experience:
+
+1. Install [`jq`](https://jqlang.org/) — the auto-format/lint hook that runs after every file edit depends on it.
+2. Create a [fine-grained GitHub personal access token](https://github.com/settings/personal-access-tokens/new) scoped to **read-only** (Pull requests, Contents, Actions), and export it as `GH_TOKEN` in your shell profile. This lets Claude use the `gh` CLI for reading PRs/CI status without ever being able to write, merge, or admin anything — deliberately narrower than a normal `gh auth login`.
+3. In Claude Code, run `/plugin install context7@claude-plugins-official` then `/reload-plugins`.
+
+What this gets you: before a PR is marked ready for review, the agent runs a self-review pass (lint, test, diff review) rather than leaving that entirely to your human reviewer. PR/CI reads go through a deliberately read-only-scoped `gh` token, never a write-capable session. This library's exports (`src/index.js`) are a semver contract shared with `@dhis2/maps-app` and other consumers — breaking changes there need coordinating, not just a code review.
+
 ## Report an issue
 
 The issue tracker can be found in [DHIS2 JIRA](https://jira.dhis2.org)
