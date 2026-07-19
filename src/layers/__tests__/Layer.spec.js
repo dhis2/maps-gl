@@ -106,6 +106,16 @@ describe('Layer', () => {
         )
         expect(layer.getFeaturesById(3)).toStrictEqual([])
     })
+    it('Should rebuild the id index after setFeatures() replaces the features', () => {
+        const layer = new Layer({ data })
+
+        expect(layer.getFeaturesById('fdc6uOvgoji')).not.toStrictEqual([])
+
+        layer.setFeatures([data[0]])
+
+        expect(layer.getFeaturesById('fdc6uOvgoji')).toStrictEqual([])
+        expect(layer.getFeaturesById('O6uvpzGd5pu')).not.toStrictEqual([])
+    })
     it('Should update the highlight overlay on highlight(), not the base source', () => {
         const layer = new Layer({ data })
         const source = layer.getId()
