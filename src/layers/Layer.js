@@ -2,10 +2,26 @@ import bbox from '@turf/bbox'
 import { Evented } from 'maplibre-gl'
 import { v4 as uuidv4 } from 'uuid'
 import { bufferSource } from '../utils/buffers.js'
+import { dropHiddenIds, normalizeIds } from '../utils/core.js'
 import { featureCollection } from '../utils/geometry.js'
+import {
+    createHighlightOverlay,
+    updateHighlightOverlay,
+    removeHighlightOverlay,
+} from '../utils/highlightOverlay.js'
 import { addImages } from '../utils/images.js'
 import { labelSource } from '../utils/labels.js'
 import { setLayersOpacity, clearLayerOpacityCache } from '../utils/opacity.js'
+
+const buildVisibleIdsFilter = (ids, baseFilter) => {
+    if (!ids) {
+        return baseFilter ?? null
+    }
+
+    const idsFilter = ['in', ['get', 'id'], ['literal', ids]]
+
+    return baseFilter ? ['all', baseFilter, idsFilter] : idsFilter
+}
 
 class Layer extends Evented {
     constructor(options = {}) {
@@ -17,6 +33,10 @@ class Layer extends Evented {
         this._features = []
         this._isVisible = true
         this._interactiveIds = []
+        this._overlayLayerIds = []
+        this._hoverIds = []
+        this._selectedIds = []
+        this._highlightColor = undefined
 
         this.options = options
 
@@ -26,7 +46,8 @@ class Layer extends Evented {
     }
 
     async addTo(map) {
-        const { opacity, onClick, onRightClick } = this.options
+        const { opacity, onClick, onRightClick, onMouseEnter, onMouseLeave } =
+            this.options
 
         this._map = map
 
@@ -58,6 +79,19 @@ class Layer extends Evented {
             }
         })
 
+        if (map.styleIsLoaded()) {
+            this._overlayLayerIds = createHighlightOverlay(map, {
+                id: this.getId(),
+                glLayers: layers,
+                beforeId,
+            })
+
+            // Replays a highlight/selection recorded before the overlay existed
+            if (this._hoverIds.length || this._selectedIds.length) {
+                this._syncOverlay()
+            }
+        }
+
         if (!this.isVisible()) {
             this.setVisibility(false)
         }
@@ -74,6 +108,14 @@ class Layer extends Evented {
             this.on('contextmenu', onRightClick)
         }
 
+        if (onMouseEnter) {
+            this.on('mouseenter', onMouseEnter)
+        }
+
+        if (onMouseLeave) {
+            this.on('mouseleave', onMouseLeave)
+        }
+
         this.onAdd()
     }
 
@@ -81,7 +123,8 @@ class Layer extends Evented {
         const mapgl = map.getMapGL()
         const source = this.getSource()
         const layers = this.getLayers()
-        const { onClick, onRightClick } = this.options
+        const { onClick, onRightClick, onMouseEnter, onMouseLeave } =
+            this.options
 
         this.onRemove()
 
@@ -99,6 +142,9 @@ class Layer extends Evented {
                     mapgl.removeSource(id)
                 }
             })
+
+            removeHighlightOverlay(map, this.getId(), this._overlayLayerIds)
+            this._overlayLayerIds = []
         }
 
         if (onClick) {
@@ -107,6 +153,14 @@ class Layer extends Evented {
 
         if (onRightClick) {
             this.off('contextmenu', onRightClick)
+        }
+
+        if (onMouseEnter) {
+            this.off('mouseenter', onMouseEnter)
+        }
+
+        if (onMouseLeave) {
+            this.off('mouseleave', onMouseLeave)
         }
 
         this._map = null
@@ -144,7 +198,16 @@ class Layer extends Evented {
                 layers.forEach(layer =>
                     mapgl.setLayoutProperty(layer.id, 'visibility', value)
                 )
+
+                // Hide the overlay's cloned layers too
+                this._overlayLayerIds.forEach(layerId =>
+                    mapgl.setLayoutProperty(layerId, 'visibility', value)
+                )
             }
+
+            // isInteractive() depends on isVisible(), so a visibility change
+            // outside addLayer/removeLayer must invalidate the cache too
+            this.getMap()?.invalidateInteractiveLayerIds?.()
         }
 
         this._isVisible = isVisible
@@ -223,6 +286,12 @@ class Layer extends Evented {
 
         this.getLayers().forEach(layer => {
             mapgl.moveLayer(layer.id, beforeId)
+        })
+
+        // The highlight overlay must stay drawn above these base layers
+        // Having just moved the base layers, move the overlay too
+        this._overlayLayerIds.forEach(layerId => {
+            mapgl.moveLayer(layerId, beforeId)
         })
     }
 
@@ -335,13 +404,69 @@ class Layer extends Evented {
         return mapgl.getZoom() >= mapgl.getMaxZoom()
     }
 
-    // Highlight a layer feature
-    highlight(id) {
+    // Hover and selection share one highlight color (last caller wins)
+
+    highlight(ids, color) {
         const map = this.getMap()
 
-        if (map) {
-            map.setHoverState(id ? this.getFeaturesById(id) : null)
+        if (!map) {
+            return
         }
+
+        this._hoverIds = normalizeIds(ids)
+        this._highlightColor = color
+        this._syncOverlay()
+    }
+
+    select(ids, color) {
+        const map = this.getMap()
+
+        if (!map) {
+            return
+        }
+
+        this._selectedIds = normalizeIds(ids)
+        this._highlightColor = color
+        this._syncOverlay()
+    }
+
+    // `ids` of null/undefined restores each layer's own filter unchanged
+    setVisibleIds(ids) {
+        const mapgl = this.getMapGL()
+
+        if (!mapgl) {
+            return
+        }
+
+        this.getLayers().forEach(({ id, filter: baseFilter }) => {
+            mapgl.setFilter(id, buildVisibleIdsFilter(ids, baseFilter))
+        })
+
+        const dropped = dropHiddenIds(this._hoverIds, this._selectedIds, ids)
+
+        if (dropped) {
+            this._hoverIds = dropped.hoverIds
+            this._selectedIds = dropped.selectedIds
+            this._syncOverlay()
+        }
+    }
+
+    // Syncs the highlight overlay with the union of hovered/selected ids
+    _syncOverlay() {
+        const map = this.getMap()
+
+        if (!map) {
+            return
+        }
+
+        const ids = [...new Set([...this._hoverIds, ...this._selectedIds])]
+        const features = ids.flatMap(id => this.getFeaturesById(id))
+
+        updateHighlightOverlay(map, {
+            id: this.getId(),
+            features,
+            color: this._highlightColor,
+        })
     }
 
     // Override if needed in subclass

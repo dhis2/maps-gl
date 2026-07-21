@@ -1,8 +1,25 @@
+/* global mockMap, mockMapGL */
 import { isClusterPoint } from '../../utils/filters.js'
+import { updateHighlightOverlay } from '../../utils/highlightOverlay.js'
 import Cluster from '../Cluster.js'
+
+jest.mock('../../utils/highlightOverlay.js')
 
 const findLabelLayer = cluster =>
     cluster.getLayers().find(layer => layer.id === `${cluster.getId()}-label`)
+
+const data = [
+    {
+        type: 'Feature',
+        properties: { id: 'a' },
+        geometry: { type: 'Point', coordinates: [0, 0] },
+    },
+    {
+        type: 'Feature',
+        properties: { id: 'b' },
+        geometry: { type: 'Point', coordinates: [1, 1] },
+    },
+]
 
 describe('Cluster', () => {
     it('Should not add a label layer when label is not set', () => {
@@ -48,5 +65,181 @@ describe('Cluster', () => {
         // offset = radius / fontSize + 0.4, using the explicit radius (5),
         // not the one smuggled in via labelStyle (999)
         expect(layer.layout['text-offset'][1]).toBeCloseTo(5 / 12 + 0.4)
+    })
+
+    describe('setVisibleIds', () => {
+        beforeEach(() => {
+            jest.resetAllMocks()
+            // addTo() below triggers onAdd(), which always calls setOpacity();
+            // that reads the map style, so it must be stubbed even though this
+            // test isn't about opacity.
+            mockMapGL.getStyle.mockReturnValue({ layers: [] })
+        })
+
+        it('Should re-send only the matching features as the source data, so clustering recomputes from just the visible subset', () => {
+            const cluster = new Cluster({ data })
+            const source = { setData: jest.fn() }
+            mockMapGL.getSource.mockReturnValue(source)
+
+            cluster.addTo(mockMap)
+            cluster.setVisibleIds(['b'])
+
+            expect(source.setData).toHaveBeenCalledWith({
+                type: 'FeatureCollection',
+                features: [
+                    expect.objectContaining({ properties: { id: 'b' } }),
+                ],
+            })
+        })
+
+        it('Should restore the full feature set when ids is cleared', () => {
+            const cluster = new Cluster({ data })
+            const source = { setData: jest.fn() }
+            mockMapGL.getSource.mockReturnValue(source)
+
+            cluster.addTo(mockMap)
+            cluster.setVisibleIds(null)
+
+            expect(source.setData).toHaveBeenCalledWith({
+                type: 'FeatureCollection',
+                features: cluster.getFeatures(),
+            })
+        })
+
+        it('Should no-op when the source is not available', () => {
+            const cluster = new Cluster({ data })
+            mockMapGL.getSource.mockReturnValue(undefined)
+
+            cluster.addTo(mockMap)
+            expect(() => cluster.setVisibleIds(['b'])).not.toThrow()
+        })
+
+        it('Should refresh the separate polygon source once the map settles, when the cluster has polygon features', () => {
+            const polygonData = [
+                {
+                    type: 'Feature',
+                    properties: { id: 'p' },
+                    geometry: {
+                        type: 'Polygon',
+                        coordinates: [
+                            [
+                                [0, 0],
+                                [0, 1],
+                                [1, 1],
+                                [0, 0],
+                            ],
+                        ],
+                    },
+                },
+            ]
+            const cluster = new Cluster({ data: polygonData })
+            const source = { setData: jest.fn() }
+            mockMapGL.getSource.mockReturnValue(source)
+            cluster.updatePolygons = jest.fn()
+
+            cluster.addTo(mockMap)
+            cluster.setVisibleIds(['p'])
+
+            expect(mockMapGL.once).toHaveBeenCalledWith(
+                'idle',
+                cluster.updatePolygons
+            )
+        })
+
+        it('Should not register an idle listener when the cluster has no polygon features', () => {
+            const cluster = new Cluster({ data })
+            const source = { setData: jest.fn() }
+            mockMapGL.getSource.mockReturnValue(source)
+
+            cluster.addTo(mockMap)
+            cluster.setVisibleIds(['b'])
+
+            expect(mockMapGL.once).not.toHaveBeenCalled()
+        })
+
+        it('Should replace, not stack, the pending idle listener on repeated calls', () => {
+            const polygonData = [
+                {
+                    type: 'Feature',
+                    properties: { id: 'p' },
+                    geometry: {
+                        type: 'Polygon',
+                        coordinates: [
+                            [
+                                [0, 0],
+                                [0, 1],
+                                [1, 1],
+                                [0, 0],
+                            ],
+                        ],
+                    },
+                },
+            ]
+            const cluster = new Cluster({ data: polygonData })
+            mockMapGL.getSource.mockReturnValue({ setData: jest.fn() })
+
+            cluster.addTo(mockMap)
+            cluster.setVisibleIds(['p'])
+            cluster.setVisibleIds(['p'])
+
+            expect(mockMapGL.off).toHaveBeenCalledWith(
+                'idle',
+                cluster.updatePolygons
+            )
+            expect(mockMapGL.once).toHaveBeenCalledTimes(2)
+        })
+
+        it('Should drop a hovered/selected id from the overlay once setVisibleIds() filters it out', () => {
+            const cluster = new Cluster({ data })
+            mockMapGL.getSource.mockReturnValue({ setData: jest.fn() })
+
+            cluster.addTo(mockMap)
+            cluster.highlight(['a', 'b'])
+            updateHighlightOverlay.mockClear()
+
+            cluster.setVisibleIds(['b'])
+
+            expect(updateHighlightOverlay).toHaveBeenCalledTimes(1)
+            expect(
+                updateHighlightOverlay.mock.lastCall[1].features
+            ).toMatchObject([{ properties: { id: 'b' } }])
+        })
+    })
+
+    describe('onRemove', () => {
+        it('Should drop the pending idle listener, so it cannot fire after removal', () => {
+            const cluster = new Cluster({
+                data: [
+                    {
+                        type: 'Feature',
+                        properties: { id: 'p' },
+                        geometry: {
+                            type: 'Polygon',
+                            coordinates: [
+                                [
+                                    [0, 0],
+                                    [0, 1],
+                                    [1, 1],
+                                    [0, 0],
+                                ],
+                            ],
+                        },
+                    },
+                ],
+            })
+            mockMapGL.getStyle.mockReturnValue({ layers: [] })
+            mockMapGL.getSource.mockReturnValue({ setData: jest.fn() })
+
+            cluster.addTo(mockMap)
+            cluster.setVisibleIds(['p'])
+            mockMapGL.off.mockClear()
+
+            cluster.removeFrom(mockMap)
+
+            expect(mockMapGL.off).toHaveBeenCalledWith(
+                'idle',
+                cluster.updatePolygons
+            )
+        })
     })
 })

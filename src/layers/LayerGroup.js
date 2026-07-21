@@ -1,14 +1,21 @@
 import { Evented } from 'maplibre-gl'
+import { v4 as uuidv4 } from 'uuid'
+import { dropHiddenIds, normalizeIds } from '../utils/core.js'
 import { getBoundsFromLayers } from '../utils/geometry.js'
+import { updateHighlightOverlay } from '../utils/highlightOverlay.js'
 
 class LayerGroup extends Evented {
     constructor(options) {
         super()
 
+        this._id = uuidv4()
         this.options = options || {}
         this._layers = []
         this._layerConfigs = []
         this._isVisible = true
+        this._hoverIds = []
+        this._selectedIds = []
+        this._highlightColor = undefined
     }
 
     createLayer() {
@@ -21,21 +28,30 @@ class LayerGroup extends Evented {
         }
     }
 
-    addTo(map) {
+    async addTo(map) {
         this._map = map
 
         if (!this._layers.length) {
             this.createLayer()
         }
 
-        this._layers.forEach(layer => layer.addTo(map))
-
         this.on('contextmenu', this.onContextMenu)
+
+        // Each sub-layer's overlay only exists once its own addTo() resolves
+        await Promise.all(this._layers.map(layer => layer.addTo(map)))
+
+        if (this._hoverIds.length || this._selectedIds.length) {
+            this._syncOverlay()
+        }
     }
 
     removeFrom(map) {
         this._layers.forEach(layer => layer.removeFrom(map))
         this.off('contextmenu', this.onContextMenu)
+    }
+
+    getId() {
+        return this._id
     }
 
     addLayer(config) {
@@ -73,6 +89,70 @@ class LayerGroup extends Evented {
         return this._layers.map(layer => layer.getFeaturesById(id)).flat()
     }
 
+    getMap() {
+        return this._map
+    }
+
+    getSubLayerFromId(id) {
+        return this._layers.find(layer => layer.hasLayerId(id))
+    }
+
+    highlight(ids, color) {
+        const map = this.getMap()
+
+        if (!map) {
+            return
+        }
+
+        this._hoverIds = normalizeIds(ids)
+        this._highlightColor = color
+        this._syncOverlay()
+    }
+
+    select(ids, color) {
+        const map = this.getMap()
+
+        if (!map) {
+            return
+        }
+
+        this._selectedIds = normalizeIds(ids)
+        this._highlightColor = color
+        this._syncOverlay()
+    }
+
+    setVisibleIds(ids) {
+        this._layers.forEach(layer => layer.setVisibleIds(ids))
+
+        const dropped = dropHiddenIds(this._hoverIds, this._selectedIds, ids)
+
+        if (dropped) {
+            this._hoverIds = dropped.hoverIds
+            this._selectedIds = dropped.selectedIds
+            this._syncOverlay()
+        }
+    }
+
+    // Drives each sub-layer's own overlay directly
+    _syncOverlay() {
+        const map = this.getMap()
+
+        if (!map) {
+            return
+        }
+
+        const ids = [...new Set([...this._hoverIds, ...this._selectedIds])]
+
+        this._layers.forEach(layer => {
+            const features = ids.flatMap(id => layer.getFeaturesById(id))
+            updateHighlightOverlay(map, {
+                id: layer.getId(),
+                features,
+                color: this._highlightColor,
+            })
+        })
+    }
+
     setOpacity(opacity) {
         this._layers.forEach(layer => layer.setOpacity(opacity))
     }
@@ -100,8 +180,7 @@ class LayerGroup extends Evented {
         const { feature } = evt
 
         if (feature) {
-            const { id } = feature.layer
-            const layer = this._layers.find(l => l.hasLayerId(id))
+            const layer = this.getSubLayerFromId(feature.layer.id)
 
             if (layer) {
                 layer.fire('click', evt)
@@ -113,8 +192,7 @@ class LayerGroup extends Evented {
         const { feature } = evt
 
         if (feature) {
-            const { id } = feature.layer
-            const layer = this._layers.find(l => l.hasLayerId(id))
+            const layer = this.getSubLayerFromId(feature.layer.id)
 
             if (layer) {
                 layer.fire('contextmenu', evt)
@@ -124,8 +202,7 @@ class LayerGroup extends Evented {
 
     onMouseMove = (evt, feature) => {
         if (feature) {
-            const { id } = feature.layer
-            const layer = this._layers.find(l => l.hasLayerId(id))
+            const layer = this.getSubLayerFromId(feature.layer.id)
 
             if (layer) {
                 layer.onMouseMove(evt, feature)

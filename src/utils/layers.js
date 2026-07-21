@@ -3,6 +3,7 @@ import {
     widthExpr,
     radiusExpr,
     clusterRadiusExpr,
+    highlightColorExpr,
 } from './expressions.js'
 import {
     isPointNoSymbol,
@@ -50,7 +51,9 @@ export const pointLayer = ({
         'circle-radius': radiusExpr(radius || circleRadius),
         'circle-opacity': opacity ?? circleOpacity,
         'circle-stroke-width': widthExpr(width),
-        'circle-stroke-color': strokeColor || circleStrokeColor,
+        'circle-stroke-color': highlightColorExpr(
+            strokeColor || circleStrokeColor
+        ),
         'circle-stroke-opacity': opacity ?? circleOpacity,
     },
     filter: filter || isPointNoSymbol,
@@ -62,7 +65,7 @@ export const lineLayer = ({ id, color, width, opacity, source, filter }) => ({
     type: 'line',
     source: source || id,
     paint: {
-        'line-color': color || lineStrokeColor,
+        'line-color': highlightColorExpr(color || lineStrokeColor),
         'line-width': widthExpr(width),
         'line-opacity': opacity ?? lineOpacity,
     },
@@ -99,7 +102,7 @@ export const outlineLayer = ({
     type: 'line',
     source: source || id,
     paint: {
-        'line-color': color || lineStrokeColor,
+        'line-color': highlightColorExpr(color || lineStrokeColor),
         'line-width': widthExpr(width),
         'line-opacity': opacity ?? lineOpacity,
     },
@@ -135,7 +138,7 @@ export const clusterLayer = ({ id, color, strokeColor, opacity }) => ({
         'circle-color': color,
         'circle-radius': clusterRadiusExpr,
         'circle-opacity': opacity ?? circleOpacity,
-        'circle-stroke-color': strokeColor,
+        'circle-stroke-color': highlightColorExpr(strokeColor),
         'circle-stroke-width': strokeWidth,
         'circle-stroke-opacity': opacity ?? circleOpacity,
     },
