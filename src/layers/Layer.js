@@ -37,6 +37,8 @@ class Layer extends Evented {
         this._hoverIds = []
         this._selectedIds = []
         this._highlightColor = undefined
+        this._featuresIndexSource = null
+        this._featuresById = null
 
         this.options = options
 
@@ -301,12 +303,18 @@ class Layer extends Evented {
 
     // Returns all features having a string or numeric id
     getFeaturesById(id) {
-        const features =
-            typeof id === 'string'
-                ? this._features.filter(f => f.properties.id === id)
-                : this._features.filter(f => f.id === id)
+        if (this._featuresIndexSource !== this._features) {
+            this._featuresIndexSource = this._features
+            this._featuresById = new Map()
+            this._features.forEach(f => {
+                this._featuresById.set(f.properties.id, f) // string uid
+                this._featuresById.set(f.id, f) // numeric id (unique, required by Feature State)
+            })
+        }
 
-        return features.map(f => ({ ...f, source: this.getId() }))
+        const feature = this._featuresById.get(id)
+
+        return feature ? [{ ...feature, source: this.getId() }] : []
     }
 
     // Adds integer id for each feature (required by Feature State)
