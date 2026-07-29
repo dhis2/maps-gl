@@ -5,6 +5,7 @@ import { defaultOptions, getWorkerOptions } from '../utils/earthengine.js'
 import { isPoint, featureCollection } from '../utils/geometry.js'
 import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers.js'
 import { setPrecision } from '../utils/numbers.js'
+import { noDataColor } from '../utils/style.js'
 import Layer from './Layer.js'
 
 class EarthEngine extends Layer {
@@ -97,6 +98,11 @@ class EarthEngine extends Layer {
                 type: 'geojson',
                 data: featureCollection(this.getFilteredFeatures()),
             })
+
+            this.setSource(`${id}-mask`, {
+                type: 'geojson',
+                data: featureCollection([]),
+            })
         }
     }
 
@@ -113,6 +119,15 @@ class EarthEngine extends Layer {
         })
 
         if (this.options.data) {
+            this.addLayer({
+                id: `${id}-mask`,
+                type: 'fill',
+                source: `${id}-mask`,
+                paint: {
+                    'fill-color': noDataColor,
+                    'fill-opacity': 0.6,
+                },
+            })
             this.addLayer(polygonLayer({ id, source, opacity: 0.9 }), {
                 isInteractive,
             })
@@ -227,6 +242,38 @@ class EarthEngine extends Layer {
         if (source) {
             source.setData(featureCollection(this.getFilteredFeatures()))
         }
+
+        this._updateMask()
+    }
+
+    setVisibleIds(ids) {
+        super.setVisibleIds(ids)
+        this._visibleIds = ids
+        this._updateMask()
+    }
+
+    _updateMask() {
+        const mapgl = this.getMapGL()
+        const maskSource = mapgl && mapgl.getSource(`${this.getId()}-mask`)
+
+        if (!maskSource) {
+            return
+        }
+
+        const { _filteredFeatureIds: filteredIds, _visibleIds: visibleIds } =
+            this
+
+        const hidden = this.getFeatures().filter(feature => {
+            const id = feature.properties.id
+            const passesFilter =
+                !Array.isArray(filteredIds) || filteredIds.includes(id)
+            const passesVisible =
+                !Array.isArray(visibleIds) || visibleIds.includes(id)
+
+            return !(passesFilter && passesVisible)
+        })
+
+        maskSource.setData(featureCollection(hidden))
     }
 }
 
