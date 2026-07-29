@@ -230,94 +230,62 @@ describe('EarthEngine', () => {
         const featureIds = f =>
             f.features.map(({ properties }) => properties.id)
 
+        const addLayerWithMaskSource = async (layerOptions = options) => {
+            const layer = new EarthEngine(layerOptions)
+            const maskSource = { setData: jest.fn() }
+            mockMapGL.getSource.mockImplementation(id =>
+                id === `${layer.getId()}-mask`
+                    ? maskSource
+                    : { setData: jest.fn() }
+            )
+            await layer.addTo(mockMap)
+            return { layer, maskSource }
+        }
+
         beforeEach(() => {
             mockMapGL.getSource.mockReset()
             mockMapGL.getStyle.mockReturnValue({ layers: [] })
         })
 
         it('filter() masks the features it excludes', async () => {
-            const layer = new EarthEngine(options)
-            const maskSource = { setData: jest.fn() }
-            mockMapGL.getSource.mockImplementation(id =>
-                id === `${layer.getId()}-mask`
-                    ? maskSource
-                    : { setData: jest.fn() }
-            )
-            await layer.addTo(mockMap)
+            const { layer, maskSource } = await addLayerWithMaskSource()
 
             layer.filter(['O6uvpzGd5pu'])
 
-            const lastCall =
-                maskSource.setData.mock.calls[
-                maskSource.setData.mock.calls.length - 1
-                ][0]
-            expect(featureIds(lastCall).sort()).toEqual(
-                ['DiszpKrYNg8', 'fdc6uOvgoji'].sort()
-            )
+            expect(
+                featureIds(maskSource.setData.mock.lastCall[0]).sort()
+            ).toEqual(['DiszpKrYNg8', 'fdc6uOvgoji'].sort())
         })
 
         it('setVisibleIds() masks the features it excludes', async () => {
-            const layer = new EarthEngine(options)
-            const maskSource = { setData: jest.fn() }
-            mockMapGL.getSource.mockImplementation(id =>
-                id === `${layer.getId()}-mask`
-                    ? maskSource
-                    : { setData: jest.fn() }
-            )
-            await layer.addTo(mockMap)
+            const { layer, maskSource } = await addLayerWithMaskSource()
 
             layer.setVisibleIds(['O6uvpzGd5pu'])
 
-            const lastCall =
-                maskSource.setData.mock.calls[
-                maskSource.setData.mock.calls.length - 1
-                ][0]
-            expect(featureIds(lastCall).sort()).toEqual(
-                ['DiszpKrYNg8', 'fdc6uOvgoji'].sort()
-            )
+            expect(
+                featureIds(maskSource.setData.mock.lastCall[0]).sort()
+            ).toEqual(['DiszpKrYNg8', 'fdc6uOvgoji'].sort())
         })
 
         it('masks the union of both exclusions when filter() and setVisibleIds() are both active', async () => {
-            const layer = new EarthEngine(options)
-            const maskSource = { setData: jest.fn() }
-            mockMapGL.getSource.mockImplementation(id =>
-                id === `${layer.getId()}-mask`
-                    ? maskSource
-                    : { setData: jest.fn() }
-            )
-            await layer.addTo(mockMap)
+            const { layer, maskSource } = await addLayerWithMaskSource()
 
             layer.filter(['fdc6uOvgoji', 'DiszpKrYNg8'])
             layer.setVisibleIds(['O6uvpzGd5pu', 'fdc6uOvgoji'])
 
-            const lastCall =
-                maskSource.setData.mock.calls[
-                maskSource.setData.mock.calls.length - 1
-                ][0]
-            expect(featureIds(lastCall).sort()).toEqual(
-                ['DiszpKrYNg8', 'O6uvpzGd5pu'].sort()
-            )
+            expect(
+                featureIds(maskSource.setData.mock.lastCall[0]).sort()
+            ).toEqual(['DiszpKrYNg8', 'O6uvpzGd5pu'].sort())
         })
 
         it('clears the mask when both filters are reset', async () => {
-            const layer = new EarthEngine(options)
-            const maskSource = { setData: jest.fn() }
-            mockMapGL.getSource.mockImplementation(id =>
-                id === `${layer.getId()}-mask`
-                    ? maskSource
-                    : { setData: jest.fn() }
-            )
-            await layer.addTo(mockMap)
+            const { layer, maskSource } = await addLayerWithMaskSource()
 
             layer.filter(['O6uvpzGd5pu'])
             layer.filter(null)
             layer.setVisibleIds(null)
 
-            const lastCall =
-                maskSource.setData.mock.calls[
-                maskSource.setData.mock.calls.length - 1
-                ][0]
-            expect(featureIds(lastCall)).toEqual([])
+            expect(featureIds(maskSource.setData.mock.lastCall[0])).toEqual([])
         })
 
         it('does not throw when the mask source is not available', async () => {
