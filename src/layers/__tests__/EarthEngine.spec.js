@@ -162,7 +162,7 @@ describe('EarthEngine', () => {
         const layers = layer.getLayers()
         const [layer1, layer2, layer3, layer4, layer5] = layers
 
-        expect(layers.length).toBe(5)
+        expect(layers).toHaveLength(5)
         expect(layer1.type).toBe('raster')
         expect(layer1.id).toBe(`${id}-raster`)
         expect(layer1.source).toBe(`${id}-raster`)
