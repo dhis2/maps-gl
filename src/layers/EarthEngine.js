@@ -119,15 +119,18 @@ class EarthEngine extends Layer {
         })
 
         if (this.options.data) {
-            this.addLayer({
-                id: `${id}-mask`,
-                type: 'fill',
-                source: `${id}-mask`,
-                paint: {
-                    'fill-color': noDataColor,
-                    'fill-opacity': 0.6,
+            this.addLayer(
+                {
+                    id: `${id}-mask`,
+                    type: 'fill',
+                    source: `${id}-mask`,
+                    paint: {
+                        'fill-color': noDataColor,
+                        'fill-opacity': 0.6,
+                    },
                 },
-            })
+                { excludeFromVisibleIdsFilter: true }
+            )
             this.addLayer(polygonLayer({ id, source, opacity: 0.9 }), {
                 isInteractive,
             })
