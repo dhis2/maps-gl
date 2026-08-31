@@ -65,12 +65,15 @@ describe('createFontTransformRequest', () => {
         ).toBeNull()
     })
 
-    it('does not re-redirect a request already going to our own server', () => {
+    it('adds credentials, without rewriting the url, when already going to our own server', () => {
         const transformRequest = createFontTransformRequest(ownGlyphsUrl)
 
         expect(
             transformRequest(ownGlyphUrl('Open Sans Regular'), 'Glyphs')
-        ).toBeNull()
+        ).toEqual({
+            url: ownGlyphUrl('Open Sans Regular'),
+            credentials: 'include',
+        })
     })
 
     it('does not touch other resource types', () => {
