@@ -1,0 +1,201 @@
+import {
+    setVectorStyleOpacity,
+    clearVectorStyleOpacityCache,
+} from '../opacityVectorStyle.js'
+
+const createMapGL = (paint = {}) => ({
+    getPaintProperty: jest.fn((id, property) => paint[id]?.[property]),
+    setPaintProperty: jest.fn(),
+})
+
+describe('opacityVectorStyle', () => {
+    it('scales plain numeric opacity values by the given factor', () => {
+        const mapgl = createMapGL({ water: { 'fill-opacity': 0.8 } })
+        const layers = [{ id: 'water', type: 'fill' }]
+
+        setVectorStyleOpacity(mapgl, 0.5, layers)
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'water',
+            'fill-opacity',
+            0.4
+        )
+    })
+
+    it('defaults to a base value of 1 when the style has no explicit value', () => {
+        const mapgl = createMapGL()
+        const layers = [{ id: 'roads', type: 'line' }]
+
+        setVectorStyleOpacity(mapgl, 0.5, layers)
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'roads',
+            'line-opacity',
+            0.5
+        )
+    })
+
+    it('wraps expression-based opacity values instead of overwriting them', () => {
+        const expression = ['interpolate', ['linear'], ['zoom'], 5, 0, 10, 1]
+        const mapgl = createMapGL({ roads: { 'line-opacity': expression } })
+        const layers = [{ id: 'roads', type: 'line' }]
+
+        setVectorStyleOpacity(mapgl, 0.5, layers)
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'roads',
+            'line-opacity',
+            ['*', expression, 0.5]
+        )
+    })
+
+    it('leaves legacy stops/function opacity values untouched', () => {
+        const legacyFunction = {
+            stops: [
+                [0, 0],
+                [10, 1],
+            ],
+        }
+        const mapgl = createMapGL({ roads: { 'line-opacity': legacyFunction } })
+        const layers = [{ id: 'roads', type: 'line' }]
+
+        setVectorStyleOpacity(mapgl, 0.5, layers)
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'roads',
+            'line-opacity',
+            legacyFunction
+        )
+    })
+
+    it('applies opacity across every supported layer type', () => {
+        const mapgl = createMapGL()
+        const layers = [
+            { id: 'bg', type: 'background' },
+            { id: 'water', type: 'fill' },
+            { id: 'roads', type: 'line' },
+            { id: 'poi', type: 'circle' },
+            { id: 'labels', type: 'symbol' },
+            { id: 'imagery', type: 'raster' },
+            { id: 'buildings', type: 'fill-extrusion' },
+            { id: 'density', type: 'heatmap' },
+        ]
+
+        setVectorStyleOpacity(mapgl, 0.5, layers)
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'bg',
+            'background-opacity',
+            0.5
+        )
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'water',
+            'fill-opacity',
+            0.5
+        )
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'roads',
+            'line-opacity',
+            0.5
+        )
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'poi',
+            'circle-opacity',
+            0.5
+        )
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'poi',
+            'circle-stroke-opacity',
+            0.5
+        )
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'labels',
+            'icon-opacity',
+            0.5
+        )
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'labels',
+            'text-opacity',
+            0.5
+        )
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'imagery',
+            'raster-opacity',
+            0.5
+        )
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'buildings',
+            'fill-extrusion-opacity',
+            0.5
+        )
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'density',
+            'heatmap-opacity',
+            0.5
+        )
+    })
+
+    it('skips layer types with no opacity paint property', () => {
+        const mapgl = createMapGL()
+        const layers = [{ id: 'hills', type: 'hillshade' }]
+
+        setVectorStyleOpacity(mapgl, 0.5, layers)
+
+        expect(mapgl.setPaintProperty).not.toHaveBeenCalled()
+    })
+
+    it('only applies opacity to the layers it is given', () => {
+        const mapgl = createMapGL()
+        const layers = [{ id: 'water', type: 'fill' }]
+
+        setVectorStyleOpacity(mapgl, 0.5, layers)
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledTimes(1)
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'water',
+            'fill-opacity',
+            0.5
+        )
+    })
+
+    it('reuses the cached base value instead of re-reading it every call', () => {
+        const mapgl = createMapGL({ water: { 'fill-opacity': 0.8 } })
+        const layers = [{ id: 'water', type: 'fill' }]
+
+        setVectorStyleOpacity(mapgl, 0.5, layers)
+        setVectorStyleOpacity(mapgl, 1, layers)
+
+        expect(mapgl.getPaintProperty).toHaveBeenCalledTimes(1)
+        expect(mapgl.setPaintProperty).toHaveBeenLastCalledWith(
+            'water',
+            'fill-opacity',
+            0.8
+        )
+    })
+
+    it('re-reads base values again after the cache is cleared', () => {
+        const mapgl = createMapGL({ water: { 'fill-opacity': 0.8 } })
+        const layers = [{ id: 'water', type: 'fill' }]
+
+        setVectorStyleOpacity(mapgl, 0.5, layers)
+        clearVectorStyleOpacityCache(mapgl)
+        setVectorStyleOpacity(mapgl, 0.5, layers)
+
+        expect(mapgl.getPaintProperty).toHaveBeenCalledTimes(2)
+    })
+
+    it('logs, rather than throwing, when setPaintProperty rejects a value', () => {
+        const mapgl = createMapGL({ water: { 'fill-opacity': 0.8 } })
+        const layers = [{ id: 'water', type: 'fill' }]
+        const error = new Error('Unsupported value')
+        mapgl.setPaintProperty.mockImplementation(() => {
+            throw error
+        })
+        jest.spyOn(console, 'error').mockImplementation(() => {})
+
+        expect(() => setVectorStyleOpacity(mapgl, 0.5, layers)).not.toThrow()
+        expect(console.error).toHaveBeenCalledWith(error)
+
+        console.error.mockRestore()
+    })
+})
