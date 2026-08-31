@@ -23,3 +23,17 @@ export const addImages = async (map, images) => {
 // Include cookies for cross-origin image requests
 export const transformRequest = (url, resourceType) =>
     resourceType === 'Image' ? { url, credentials } : null
+
+// Tries each function in turn, so several transformRequests (e.g. image
+// credentials, a font redirect) can be layered without replacing each other
+export const composeTransformRequest =
+    (...transformRequestFns) =>
+    (url, resourceType) => {
+        for (const fn of transformRequestFns) {
+            const result = fn?.(url, resourceType)
+            if (result) {
+                return result
+            }
+        }
+        return null
+    }
