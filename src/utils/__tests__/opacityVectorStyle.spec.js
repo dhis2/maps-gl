@@ -13,7 +13,7 @@ describe('opacityVectorStyle', () => {
         const mapgl = createMapGL({ water: { 'fill-opacity': 0.8 } })
         const layers = [{ id: 'water', type: 'fill' }]
 
-        setVectorStyleOpacity(mapgl, 0.5, layers)
+        setVectorStyleOpacity(mapgl, layers, { opacity: 0.5 })
 
         expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
             'water',
@@ -26,7 +26,7 @@ describe('opacityVectorStyle', () => {
         const mapgl = createMapGL()
         const layers = [{ id: 'roads', type: 'line' }]
 
-        setVectorStyleOpacity(mapgl, 0.5, layers)
+        setVectorStyleOpacity(mapgl, layers, { opacity: 0.5 })
 
         expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
             'roads',
@@ -40,7 +40,7 @@ describe('opacityVectorStyle', () => {
         const mapgl = createMapGL({ roads: { 'line-opacity': expression } })
         const layers = [{ id: 'roads', type: 'line' }]
 
-        setVectorStyleOpacity(mapgl, 0.5, layers)
+        setVectorStyleOpacity(mapgl, layers, { opacity: 0.5 })
 
         expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
             'roads',
@@ -54,7 +54,7 @@ describe('opacityVectorStyle', () => {
         const mapgl = createMapGL({ roads: { 'line-opacity': expression } })
         const layers = [{ id: 'roads', type: 'line' }]
 
-        setVectorStyleOpacity(mapgl, 0.5, layers)
+        setVectorStyleOpacity(mapgl, layers, { opacity: 0.5 })
 
         expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
             'roads',
@@ -68,7 +68,7 @@ describe('opacityVectorStyle', () => {
         const mapgl = createMapGL({ roads: { 'line-opacity': expression } })
         const layers = [{ id: 'roads', type: 'line' }]
 
-        setVectorStyleOpacity(mapgl, 0.5, layers)
+        setVectorStyleOpacity(mapgl, layers, { opacity: 0.5 })
 
         expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
             'roads',
@@ -87,7 +87,7 @@ describe('opacityVectorStyle', () => {
         const mapgl = createMapGL({ roads: { 'line-opacity': legacyFunction } })
         const layers = [{ id: 'roads', type: 'line' }]
 
-        setVectorStyleOpacity(mapgl, 0.5, layers)
+        setVectorStyleOpacity(mapgl, layers, { opacity: 0.5 })
 
         expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
             'roads',
@@ -109,7 +109,7 @@ describe('opacityVectorStyle', () => {
             { id: 'density', type: 'heatmap' },
         ]
 
-        setVectorStyleOpacity(mapgl, 0.5, layers)
+        setVectorStyleOpacity(mapgl, layers, { opacity: 0.5 })
 
         expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
             'bg',
@@ -167,7 +167,7 @@ describe('opacityVectorStyle', () => {
         const mapgl = createMapGL()
         const layers = [{ id: 'hills', type: 'hillshade' }]
 
-        setVectorStyleOpacity(mapgl, 0.5, layers)
+        setVectorStyleOpacity(mapgl, layers, { opacity: 0.5 })
 
         expect(mapgl.setPaintProperty).not.toHaveBeenCalled()
     })
@@ -176,7 +176,7 @@ describe('opacityVectorStyle', () => {
         const mapgl = createMapGL()
         const layers = [{ id: 'water', type: 'fill' }]
 
-        setVectorStyleOpacity(mapgl, 0.5, layers)
+        setVectorStyleOpacity(mapgl, layers, { opacity: 0.5 })
 
         expect(mapgl.setPaintProperty).toHaveBeenCalledTimes(1)
         expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
@@ -190,8 +190,8 @@ describe('opacityVectorStyle', () => {
         const mapgl = createMapGL({ water: { 'fill-opacity': 0.8 } })
         const layers = [{ id: 'water', type: 'fill' }]
 
-        setVectorStyleOpacity(mapgl, 0.5, layers)
-        setVectorStyleOpacity(mapgl, 1, layers)
+        setVectorStyleOpacity(mapgl, layers, { opacity: 0.5 })
+        setVectorStyleOpacity(mapgl, layers, { opacity: 1 })
 
         expect(mapgl.getPaintProperty).toHaveBeenCalledTimes(1)
         expect(mapgl.setPaintProperty).toHaveBeenLastCalledWith(
@@ -205,11 +205,78 @@ describe('opacityVectorStyle', () => {
         const mapgl = createMapGL({ water: { 'fill-opacity': 0.8 } })
         const layers = [{ id: 'water', type: 'fill' }]
 
-        setVectorStyleOpacity(mapgl, 0.5, layers)
+        setVectorStyleOpacity(mapgl, layers, { opacity: 0.5 })
         clearVectorStyleOpacityCache(mapgl)
-        setVectorStyleOpacity(mapgl, 0.5, layers)
+        setVectorStyleOpacity(mapgl, layers, { opacity: 0.5 })
 
         expect(mapgl.getPaintProperty).toHaveBeenCalledTimes(2)
+    })
+
+    it('dims a symbol layer by labelOpacity even at the default opacity', () => {
+        const mapgl = createMapGL({ labels: { 'text-opacity': 1 } })
+        const layers = [{ id: 'labels', type: 'symbol' }]
+
+        setVectorStyleOpacity(mapgl, layers, { opacity: 1, labelOpacity: 0.9 })
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'labels',
+            'text-opacity',
+            0.9
+        )
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'labels',
+            'icon-opacity',
+            0.9
+        )
+    })
+
+    it('composes labelOpacity with the basemap opacity, rather than one replacing the other', () => {
+        const mapgl = createMapGL({ labels: { 'text-opacity': 1 } })
+        const layers = [{ id: 'labels', type: 'symbol' }]
+
+        setVectorStyleOpacity(mapgl, layers, {
+            opacity: 0.5,
+            labelOpacity: 0.9,
+        })
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'labels',
+            'text-opacity',
+            0.45
+        )
+    })
+
+    it('does not apply labelOpacity to non-symbol layers', () => {
+        const mapgl = createMapGL({ water: { 'fill-opacity': 1 } })
+        const layers = [{ id: 'water', type: 'fill' }]
+
+        setVectorStyleOpacity(mapgl, layers, {
+            opacity: 0.5,
+            labelOpacity: 0.9,
+        })
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'water',
+            'fill-opacity',
+            0.5
+        )
+    })
+
+    it('composes labelOpacity with a zoom-based interpolate, staying a valid top-level expression', () => {
+        const expression = ['interpolate', ['linear'], ['zoom'], 5, 0, 10, 1]
+        const mapgl = createMapGL({ labels: { 'text-opacity': expression } })
+        const layers = [{ id: 'labels', type: 'symbol' }]
+
+        setVectorStyleOpacity(mapgl, layers, {
+            opacity: 0.5,
+            labelOpacity: 0.9,
+        })
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'labels',
+            'text-opacity',
+            ['interpolate', ['linear'], ['zoom'], 5, 0, 10, 0.45]
+        )
     })
 
     it('logs, rather than throwing, when setPaintProperty rejects a value', () => {
@@ -221,7 +288,9 @@ describe('opacityVectorStyle', () => {
         })
         jest.spyOn(console, 'error').mockImplementation(() => {})
 
-        expect(() => setVectorStyleOpacity(mapgl, 0.5, layers)).not.toThrow()
+        expect(() =>
+            setVectorStyleOpacity(mapgl, layers, { opacity: 0.5 })
+        ).not.toThrow()
         expect(console.error).toHaveBeenCalledWith(error)
 
         console.error.mockRestore()

@@ -74,6 +74,35 @@ describe('VectorStyle opacity', () => {
         expect(mapgl.setPaintProperty).not.toHaveBeenCalled()
     })
 
+    it('applies a configured labelOpacity at load time, even at the default basemap opacity', async () => {
+        const mapgl = createMapGL()
+        mapgl.getStyle.mockReturnValue({
+            layers: [
+                { id: 'water', type: 'fill' },
+                { id: 'labels', type: 'symbol' },
+            ],
+        })
+        mapgl.getPaintProperty.mockReturnValue(1)
+
+        const vectorStyle = new VectorStyle({
+            url: 'https://example.com/a.json',
+            labelOpacity: 0.9,
+        })
+        await vectorStyle.addTo(createMap(mapgl))
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'labels',
+            'text-opacity',
+            0.9
+        )
+        // Unaffected by labelOpacity - reset to its own unchanged base value
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'water',
+            'fill-opacity',
+            1
+        )
+    })
+
     it('applies an explicitly configured opacity once added to the map', async () => {
         const mapgl = createMapGL()
         mapgl.getStyle.mockReturnValue({
