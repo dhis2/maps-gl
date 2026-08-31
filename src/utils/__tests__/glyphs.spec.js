@@ -15,7 +15,10 @@ describe('createFontTransformRequest', () => {
 
         expect(
             transformRequest(otherGlyphUrl('Open Sans Regular'), 'Glyphs')
-        ).toEqual({ url: ownGlyphUrl('Open Sans Regular') })
+        ).toEqual({
+            url: ownGlyphUrl('Open Sans Regular'),
+            credentials: 'include',
+        })
     })
 
     it('redirects Open Sans Bold, preserving the requested range', () => {
@@ -26,7 +29,10 @@ describe('createFontTransformRequest', () => {
                 otherGlyphUrl('Open Sans Bold', '256-511'),
                 'Glyphs'
             )
-        ).toEqual({ url: ownGlyphUrl('Open Sans Bold', '256-511') })
+        ).toEqual({
+            url: ownGlyphUrl('Open Sans Bold', '256-511'),
+            credentials: 'include',
+        })
     })
 
     it('redirects Open Sans Italic', () => {
@@ -34,7 +40,10 @@ describe('createFontTransformRequest', () => {
 
         expect(
             transformRequest(otherGlyphUrl('Open Sans Italic'), 'Glyphs')
-        ).toEqual({ url: ownGlyphUrl('Open Sans Italic') })
+        ).toEqual({
+            url: ownGlyphUrl('Open Sans Italic'),
+            credentials: 'include',
+        })
     })
 
     it('redirects Open Sans Bold Italic without matching the shorter "Bold" name', () => {
@@ -42,7 +51,10 @@ describe('createFontTransformRequest', () => {
 
         expect(
             transformRequest(otherGlyphUrl('Open Sans Bold Italic'), 'Glyphs')
-        ).toEqual({ url: ownGlyphUrl('Open Sans Bold Italic') })
+        ).toEqual({
+            url: ownGlyphUrl('Open Sans Bold Italic'),
+            credentials: 'include',
+        })
     })
 
     it("leaves a request for a font we don't render with untouched", () => {
