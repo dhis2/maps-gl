@@ -35,8 +35,36 @@ describe('opacityVectorStyle', () => {
         )
     })
 
-    it('wraps expression-based opacity values instead of overwriting them', () => {
+    it('scales the output values of a zoom-based interpolate expression in place', () => {
         const expression = ['interpolate', ['linear'], ['zoom'], 5, 0, 10, 1]
+        const mapgl = createMapGL({ roads: { 'line-opacity': expression } })
+        const layers = [{ id: 'roads', type: 'line' }]
+
+        setVectorStyleOpacity(mapgl, 0.5, layers)
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'roads',
+            'line-opacity',
+            ['interpolate', ['linear'], ['zoom'], 5, 0, 10, 0.5]
+        )
+    })
+
+    it('scales the output values of a zoom-based step expression in place', () => {
+        const expression = ['step', ['zoom'], 0, 10, 1]
+        const mapgl = createMapGL({ roads: { 'line-opacity': expression } })
+        const layers = [{ id: 'roads', type: 'line' }]
+
+        setVectorStyleOpacity(mapgl, 0.5, layers)
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'roads',
+            'line-opacity',
+            ['step', ['zoom'], 0, 10, 0.5]
+        )
+    })
+
+    it('wraps a non-zoom-curve expression instead of overwriting it', () => {
+        const expression = ['case', ['has', 'opacity'], ['get', 'opacity'], 1]
         const mapgl = createMapGL({ roads: { 'line-opacity': expression } })
         const layers = [{ id: 'roads', type: 'line' }]
 

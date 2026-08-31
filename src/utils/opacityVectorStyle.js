@@ -10,15 +10,36 @@ const opacityProperties = {
     heatmap: ['heatmap-opacity'],
 }
 
-// Wraps expressions instead of evaluating them, to preserve any existing
-// data-driven behaviour (e.g. a zoom-based fade). Legacy stops/function
-// values can't be scaled this way and are left unchanged.
+// "zoom" is only valid as input to a top-level step/interpolate, so it
+// can't be wrapped like scaleValue does below - scale its outputs instead.
+const scaleZoomCurve = (expression, opacity) => {
+    const [type, ...args] = expression
+    const scaleOutputs = stops =>
+        stops.map((value, i) => (i % 2 === 1 ? value * opacity : value))
+
+    if (type === 'interpolate') {
+        const [interpolation, input, ...stops] = args
+        return ['interpolate', interpolation, input, ...scaleOutputs(stops)]
+    }
+
+    const [input, base, ...stops] = args
+    return ['step', input, base * opacity, ...scaleOutputs(stops)]
+}
+
+// Wraps other expressions rather than evaluating them, to preserve existing
+// data-driven behaviour. Legacy stops/function values are left unchanged.
 const scaleValue = (baseValue, opacity) => {
     if (opacity === 1) {
         return baseValue
     }
     if (typeof baseValue === 'number') {
         return baseValue * opacity
+    }
+    if (
+        Array.isArray(baseValue) &&
+        ['interpolate', 'step'].includes(baseValue[0])
+    ) {
+        return scaleZoomCurve(baseValue, opacity)
     }
     if (Array.isArray(baseValue)) {
         return ['*', baseValue, opacity]
