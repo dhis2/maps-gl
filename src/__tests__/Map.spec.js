@@ -80,4 +80,23 @@ describe('DHIS2 Maps-gl Map', () => {
 
         expect(setHoverStateSpy).not.toHaveBeenCalled()
     })
+
+    it('does not throw when checking the before layer id while the style is loading', () => {
+        const map = new Map('el')
+        map.setBeforeLayerId('label-layer')
+        map._styleIsLoading = true
+
+        expect(() => map.getBeforeLayerId()).not.toThrow()
+        expect(map.getBeforeLayerId()).toBeUndefined()
+    })
+
+    it('returns the before layer id once the style is loaded and the layer exists', () => {
+        const map = new Map('el')
+        map.setBeforeLayerId('label-layer')
+        map.getMapGL().getStyle.mockReturnValue({
+            layers: [{ id: 'label-layer' }],
+        })
+
+        expect(map.getBeforeLayerId()).toBe('label-layer')
+    })
 })

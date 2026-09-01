@@ -12,6 +12,7 @@ globalThis.mockMapGL = {
     removeSource: jest.fn(),
     setPaintProperty: jest.fn(),
     setLayoutProperty: jest.fn(),
+    moveLayer: jest.fn(),
     setFeatureState: jest.fn(),
     getCanvas: jest.fn(() => ({ style: {} })),
     _getUIString: jest.fn(),

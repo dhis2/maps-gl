@@ -184,4 +184,33 @@ describe('Layer', () => {
             expect.anything()
         )
     })
+    it('Should not move layers while the style is loading', () => {
+        const layer = new Layer()
+        layer.addLayer({ id: 'x-polygon' })
+        layer.addTo(mockMap)
+        mockMapGL.getLayer.mockReturnValue(true)
+        mockMap.styleIsLoaded.mockReturnValue(false)
+
+        expect(() => layer.move()).not.toThrow()
+        expect(mockMapGL.moveLayer).not.toHaveBeenCalled()
+    })
+    it('Should only move sub-layers that actually exist', () => {
+        const layer = new Layer()
+        layer.addLayer({ id: 'x-polygon' })
+        layer.addLayer({ id: 'x-point' })
+        layer.addTo(mockMap)
+        mockMap.getBeforeLayerId.mockReturnValue('before-id')
+        mockMapGL.getLayer.mockImplementation(id => id === 'x-polygon')
+
+        layer.move()
+
+        expect(mockMapGL.moveLayer).toHaveBeenCalledWith(
+            'x-polygon',
+            'before-id'
+        )
+        expect(mockMapGL.moveLayer).not.toHaveBeenCalledWith(
+            'x-point',
+            expect.anything()
+        )
+    })
 })

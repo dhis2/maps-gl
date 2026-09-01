@@ -19,6 +19,10 @@ class EarthEngine extends Layer {
         new Promise((resolve, reject) => {
             this._map = map
 
+            // Identifies this call, so a call superseded by a later
+            // addTo()/removeFrom() doesn't add the layer back after it
+            const addId = (this._addId = (this._addId || 0) + 1)
+
             if (map.styleIsLoaded()) {
                 this._isLoading = true
                 this.getWorkerInstance()
@@ -29,8 +33,7 @@ class EarthEngine extends Layer {
                             this._tileUrl = await worker.getTileUrl()
                         }
 
-                        // Don't continue if layer is terminated (deleted or edited)
-                        if (!this._terminated) {
+                        if (this._addId === addId) {
                             this.createSource()
                             this.createLayers()
                             super.addTo(map)
@@ -58,8 +61,8 @@ class EarthEngine extends Layer {
             }
         })
 
-    removeFrom(map, isStyleChange) {
-        this._terminated = !isStyleChange
+    removeFrom(map) {
+        this._addId = (this._addId || 0) + 1
         super.removeFrom(map)
     }
 
@@ -198,7 +201,11 @@ class EarthEngine extends Layer {
         const layerId = `${id}-polygon`
         const mapgl = this.getMapGL()
 
-        if (mapgl && mapgl.getLayer(layerId)) {
+        if (
+            mapgl &&
+            this.getMap()?.styleIsLoaded() &&
+            mapgl.getLayer(layerId)
+        ) {
             // Clickable polygon layer should always be transparent
             mapgl.setPaintProperty(layerId, 'fill-opacity', 0)
         }
