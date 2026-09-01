@@ -530,4 +530,48 @@ describe('VectorStyle opacity', () => {
         await expect(secondCall).resolves.toBeUndefined()
         expect(addOtherLayersSpy).toHaveBeenCalledTimes(1)
     })
+
+    it('ignores a second, redundant removeFrom() call on the same instance', async () => {
+        // Map.js's addLayer() can call removeFrom() a second time on the
+        // same instance as its own "layer removed while being created"
+        // cleanup - this must not contend with a different, genuinely
+        // in-progress basemap load as if it were a new request
+        const { mapgl, fireIdle } = createControllableMapGL()
+        const map = createMap(mapgl)
+
+        const oldBasemap = new VectorStyle({
+            url: 'https://example.com/old.json',
+        })
+        const newBasemap = new VectorStyle({
+            url: 'https://example.com/new.json',
+        })
+        oldBasemap._map = map
+        newBasemap._map = map
+
+        const firstRemove = oldBasemap.removeFrom()
+        await flushMicrotasks()
+
+        // The new basemap's own load is genuinely still in progress
+        map.getLayers = jest.fn(() => [newBasemap])
+        const addNew = newBasemap.toggleVectorStyle(
+            true,
+            'https://example.com/new.json'
+        )
+        await flushMicrotasks()
+
+        await expect(firstRemove).resolves.toBeUndefined()
+
+        // A second, redundant removeFrom() call on the already-removed
+        // old basemap instance
+        const secondRemove = oldBasemap.removeFrom()
+        await flushMicrotasks()
+
+        // The new basemap's genuinely in-progress load must not have been
+        // force-settled by the redundant cleanup call
+        expect(map._styleIsLoading).toBe(true)
+        await expect(secondRemove).resolves.toBeUndefined()
+
+        fireIdle()
+        await expect(addNew).resolves.toBeUndefined()
+    })
 })
