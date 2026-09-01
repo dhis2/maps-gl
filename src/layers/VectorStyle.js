@@ -18,6 +18,11 @@ class VectorStyle extends Evented {
     // Before we change the style we remove all overlays for a proper cleanup
     // After the style is changed and ready, we add the overlays back again
     async toggleVectorStyle(isOnMap, style, beforeId) {
+        // Identifies this call, so a stale result isn't applied/thrown below
+        // for a load since superseded by another toggleVectorStyle() call
+        const loadId = (this._loadId = (this._loadId || 0) + 1)
+        const isCurrent = () => this._loadId === loadId
+
         await this.removeOtherLayers()
         this._map.setBeforeLayerId(beforeId)
 
@@ -27,36 +32,54 @@ class VectorStyle extends Evented {
         this._isOnMap = isOnMap
 
         // (Re)set map style if user is not switching to a new one
+        let styleError
+
         if (isOnMap || !this.mapHasVectorStyle()) {
-            this._map._styleIsLoading = true
-            await this.setStyle(style)
-            this._map._styleIsLoading = false
+            try {
+                this._map._styleIsLoading = true
+                await this.setStyle(style)
 
-            const mapgl = this._map.getMapGL()
+                if (isCurrent()) {
+                    const mapgl = this._map.getMapGL()
 
-            // Style layers/ids are brand new after a style change, so any
-            // cached "original" opacity values from the previous style are
-            // stale and must not be reused
-            clearVectorStyleOpacityCache(mapgl)
+                    // Style layers/ids are brand new after a style change, so
+                    // any cached "original" opacity values from the previous
+                    // style are stale and must not be reused
+                    clearVectorStyleOpacityCache(mapgl)
 
-            // Overlay layers share this same mapgl style, so this snapshot
-            // is what scopes opacity to the vector style's own layers
-            this._styleLayers = mapgl.getStyle().layers
+                    // Overlay layers share this same mapgl style, so this
+                    // snapshot is what scopes opacity to the vector style's
+                    // own layers
+                    this._styleLayers = mapgl.getStyle().layers
 
-            // Store id of all style layers that are visible
-            this._visibleLayers = this._styleLayers
-                .filter(l => l.layout?.visibility !== 'none')
-                .map(l => l.id)
+                    // Store id of all style layers that are visible
+                    this._visibleLayers = this._styleLayers
+                        .filter(l => l.layout?.visibility !== 'none')
+                        .map(l => l.id)
 
-            const opacity = this.options.opacity ?? 1
-            const labelOpacity = this.options.labelOpacity ?? 1
+                    const opacity = this.options.opacity ?? 1
+                    const labelOpacity = this.options.labelOpacity ?? 1
 
-            if (opacity !== 1 || labelOpacity !== 1) {
-                this.setOpacity(opacity)
+                    if (opacity !== 1 || labelOpacity !== 1) {
+                        this.setOpacity(opacity)
+                    }
+                }
+            } catch (error) {
+                // Still restore overlays below even if the style failed to
+                // load, so a broken basemap doesn't take other layers with it
+                if (isCurrent()) {
+                    styleError = error
+                }
+            } finally {
+                this._map._styleIsLoading = false
             }
         }
 
         await this.addOtherLayers()
+
+        if (styleError) {
+            throw styleError
+        }
     }
 
     // Add vector style to map

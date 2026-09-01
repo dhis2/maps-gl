@@ -23,6 +23,55 @@ const createMap = mapgl => ({
     getLayers: jest.fn(() => []),
 })
 
+const createFailingMapGL = () => {
+    const mapgl = {
+        once: jest.fn((event, cb) => {
+            if (event === 'error') {
+                Promise.resolve().then(() =>
+                    cb({ error: { message: 'network error' } })
+                )
+            }
+            return mapgl
+        }),
+        setStyle: jest.fn(() => mapgl),
+        getStyle: jest.fn(),
+        getPaintProperty: jest.fn(),
+        setPaintProperty: jest.fn(),
+        setLayoutProperty: jest.fn(),
+    }
+    return mapgl
+}
+
+const createControllableMapGL = () => {
+    const registrations = []
+    const mapgl = {
+        once: jest.fn((event, cb) => {
+            if (event === 'idle') {
+                registrations.push({ idle: cb })
+            } else {
+                registrations[registrations.length - 1].error = cb
+            }
+            return mapgl
+        }),
+        setStyle: jest.fn(() => mapgl),
+        getStyle: jest.fn(() => ({ layers: [] })),
+        getPaintProperty: jest.fn(),
+        setPaintProperty: jest.fn(),
+        setLayoutProperty: jest.fn(),
+    }
+    return {
+        mapgl,
+        resolveCall: index => registrations[index].idle(),
+        rejectCall: (index, error) => registrations[index].error(error),
+    }
+}
+
+const flushMicrotasks = async (n = 3) => {
+    for (let i = 0; i < n; i++) {
+        await Promise.resolve()
+    }
+}
+
 describe('VectorStyle opacity', () => {
     it('does not throw when set before the layer is added to the map', () => {
         const vectorStyle = new VectorStyle({
@@ -230,6 +279,101 @@ describe('VectorStyle opacity', () => {
             'ocean',
             'fill-opacity',
             0.3
+        )
+    })
+
+    it('still restores other (overlay) layers when the style fails to load, and rethrows the error', async () => {
+        const mapgl = createFailingMapGL()
+        const map = createMap(mapgl)
+        const otherLayer = {
+            isOnMap: jest.fn(() => false),
+            addTo: jest.fn(async () => {}),
+            removeFrom: jest.fn(async () => {}),
+            setVisibility: jest.fn(),
+            isVisible: jest.fn(() => true),
+        }
+        map.getLayers = jest.fn(() => [otherLayer])
+
+        const vectorStyle = new VectorStyle({
+            url: 'https://example.com/a.json',
+        })
+
+        await expect(vectorStyle.addTo(map)).rejects.toBeDefined()
+
+        expect(otherLayer.addTo).toHaveBeenCalledWith(map)
+    })
+
+    it('suppresses an error from a load superseded by a newer basemap switch', async () => {
+        const { mapgl, rejectCall, resolveCall } = createControllableMapGL()
+        const map = createMap(mapgl)
+        const vectorStyle = new VectorStyle({
+            url: 'https://example.com/a.json',
+        })
+        vectorStyle._map = map
+
+        const firstCall = vectorStyle.toggleVectorStyle(
+            true,
+            'https://example.com/a.json'
+        )
+        await flushMicrotasks()
+
+        const secondCall = vectorStyle.toggleVectorStyle(
+            true,
+            'https://example.com/b.json'
+        )
+        await flushMicrotasks()
+
+        // The first (now-superseded) load fails - should not reject
+        rejectCall(0, { error: { message: 'network error' } })
+        await expect(firstCall).resolves.toBeUndefined()
+
+        // The second (current) load succeeds normally
+        resolveCall(1)
+        await expect(secondCall).resolves.toBeUndefined()
+    })
+
+    it('does not apply a superseded load, even when it resolves successfully', async () => {
+        const { mapgl, resolveCall } = createControllableMapGL()
+        const map = createMap(mapgl)
+        mapgl.getPaintProperty.mockReturnValue(1)
+
+        const vectorStyle = new VectorStyle({
+            url: 'https://example.com/a.json',
+            opacity: 0.5,
+        })
+        vectorStyle._map = map
+
+        const firstCall = vectorStyle.toggleVectorStyle(
+            true,
+            'https://example.com/a.json'
+        )
+        await flushMicrotasks()
+
+        const secondCall = vectorStyle.toggleVectorStyle(
+            true,
+            'https://example.com/b.json'
+        )
+        await flushMicrotasks()
+
+        mapgl.getStyle.mockReturnValue({
+            layers: [{ id: 'ocean', type: 'fill' }],
+        })
+
+        // The stale first load resolves (map-level 'idle', not scoped to a
+        // particular call) after the second one has already taken over -
+        // its own opacity re-application must not run
+        resolveCall(0)
+        await expect(firstCall).resolves.toBeUndefined()
+        expect(mapgl.setPaintProperty).not.toHaveBeenCalled()
+
+        resolveCall(1)
+        await expect(secondCall).resolves.toBeUndefined()
+
+        // Only the current (second) call's opacity should have been applied
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'ocean',
+            'fill-opacity',
+            0.5
         )
     })
 
