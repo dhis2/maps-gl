@@ -47,30 +47,7 @@ class VectorStyle extends Evented {
 
                 if (isCurrent()) {
                     this._isOnMap = isOnMap
-
-                    const mapgl = this._map.getMapGL()
-
-                    // Style layers/ids are brand new after a style change, so
-                    // any cached "original" opacity values from the previous
-                    // style are stale and must not be reused
-                    clearVectorStyleOpacityCache(mapgl)
-
-                    // Overlay layers share this same mapgl style, so this
-                    // snapshot is what scopes opacity to the vector style's
-                    // own layers
-                    this._styleLayers = mapgl.getStyle().layers
-
-                    // Store id of all style layers that are visible
-                    this._visibleLayers = this._styleLayers
-                        .filter(l => l.layout?.visibility !== 'none')
-                        .map(l => l.id)
-
-                    const opacity = this.options.opacity ?? 1
-                    const labelOpacity = this.options.labelOpacity ?? 1
-
-                    if (opacity !== 1 || labelOpacity !== 1) {
-                        this.setOpacity(opacity)
-                    }
+                    this._applyLoadedStyle()
                 }
             } catch (error) {
                 // Still restore overlays below even if the style failed to
@@ -96,10 +73,40 @@ class VectorStyle extends Evented {
             this._map._styleIsLoading = false
         }
 
-        await this.addOtherLayers()
+        // Only the current call re-adds overlays - otherwise every
+        // overlapping call would independently race to add the same ones
+        if (isCurrent()) {
+            await this.addOtherLayers()
+        }
 
         if (styleError) {
             throw styleError
+        }
+    }
+
+    // Snapshots the newly loaded style's layers and re-applies opacity to it
+    _applyLoadedStyle() {
+        const mapgl = this._map.getMapGL()
+
+        // Style layers/ids are brand new after a style change, so any cached
+        // "original" opacity values from the previous style are stale and
+        // must not be reused
+        clearVectorStyleOpacityCache(mapgl)
+
+        // Overlay layers share this same mapgl style, so this snapshot is
+        // what scopes opacity to the vector style's own layers
+        this._styleLayers = mapgl.getStyle().layers
+
+        // Store id of all style layers that are visible
+        this._visibleLayers = this._styleLayers
+            .filter(l => l.layout?.visibility !== 'none')
+            .map(l => l.id)
+
+        const opacity = this.options.opacity ?? 1
+        const labelOpacity = this.options.labelOpacity ?? 1
+
+        if (opacity !== 1 || labelOpacity !== 1) {
+            this.setOpacity(opacity)
         }
     }
 
