@@ -71,7 +71,9 @@ class VectorStyle extends Evented {
                     styleError = error
                 }
             } finally {
-                this._map._styleIsLoading = false
+                if (isCurrent()) {
+                    this._map._styleIsLoading = false
+                }
             }
         }
 
@@ -108,23 +110,42 @@ class VectorStyle extends Evented {
     // Set map style, resolves promise when map is ready for other layers
     setStyle(style) {
         return new Promise((resolve, reject) => {
-            this._map
-                .getMapGL()
-                .once('idle', resolve)
-                .setStyle(style, { diff: false })
-                .once('error', e => {
-                    let msg
-                    if (e.error.message.includes('missing required property')) {
-                        msg = 'The vector style is malformed or invalid.'
-                    } else if (
-                        e.error.message.includes('r.blob is not a function')
-                    ) {
-                        msg = 'The vector style was not found.'
-                    } else {
-                        msg = 'An error occured while loading the vector style.'
-                    }
-                    reject(msg)
-                })
+            const mapgl = this._map.getMapGL()
+
+            // 'idle'/'error' are shared, map-level events - if an earlier
+            // call is still waiting on them, it's about to be superseded,
+            // so detach its listeners and settle it now instead of leaving
+            // two calls listening for the same event
+            this._map._settlePendingStyleLoad?.()
+
+            const onIdle = () => {
+                this._map._settlePendingStyleLoad = null
+                resolve()
+            }
+            const onError = e => {
+                this._map._settlePendingStyleLoad = null
+                let msg
+                if (e.error.message.includes('missing required property')) {
+                    msg = 'The vector style is malformed or invalid.'
+                } else if (
+                    e.error.message.includes('r.blob is not a function')
+                ) {
+                    msg = 'The vector style was not found.'
+                } else {
+                    msg = 'An error occured while loading the vector style.'
+                }
+                reject(msg)
+            }
+
+            this._map._settlePendingStyleLoad = () => {
+                mapgl.off('idle', onIdle)
+                mapgl.off('error', onError)
+                resolve()
+            }
+
+            mapgl.once('idle', onIdle)
+            mapgl.setStyle(style, { diff: false })
+            mapgl.once('error', onError)
         })
     }
 
