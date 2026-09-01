@@ -46,17 +46,19 @@ class Layer extends Evented {
             }
         }
 
-        Object.keys(source).forEach(id => {
-            if (map.styleIsLoaded() && !mapgl.getSource(id)) {
-                mapgl.addSource(id, source[id])
-            }
-        })
+        if (map.styleIsLoaded()) {
+            Object.keys(source).forEach(id => {
+                if (!mapgl.getSource(id)) {
+                    mapgl.addSource(id, source[id])
+                }
+            })
 
-        layers.forEach(layer => {
-            if (map.styleIsLoaded() && !mapgl.getLayer(layer.id)) {
-                mapgl.addLayer(layer, beforeId)
-            }
-        })
+            layers.forEach(layer => {
+                if (!mapgl.getLayer(layer.id)) {
+                    mapgl.addLayer(layer, beforeId)
+                }
+            })
+        }
 
         if (!this.isVisible()) {
             this.setVisibility(false)
@@ -88,17 +90,19 @@ class Layer extends Evented {
         if (mapgl) {
             clearLayerOpacityCache(mapgl, this.getId())
 
-            layers.forEach(layer => {
-                if (mapgl.getLayer(layer.id)) {
-                    mapgl.removeLayer(layer.id)
-                }
-            })
+            if (map.styleIsLoaded()) {
+                layers.forEach(layer => {
+                    if (mapgl.getLayer(layer.id)) {
+                        mapgl.removeLayer(layer.id)
+                    }
+                })
 
-            Object.keys(source).forEach(id => {
-                if (mapgl.getSource(id)) {
-                    mapgl.removeSource(id)
-                }
-            })
+                Object.keys(source).forEach(id => {
+                    if (mapgl.getSource(id)) {
+                        mapgl.removeSource(id)
+                    }
+                })
+            }
         }
 
         if (onClick) {
@@ -141,9 +145,11 @@ class Layer extends Evented {
             const layers = this.getLayers()
 
             if (mapgl && layers) {
-                layers.forEach(layer =>
-                    mapgl.setLayoutProperty(layer.id, 'visibility', value)
-                )
+                layers.forEach(layer => {
+                    if (mapgl.getLayer(layer.id)) {
+                        mapgl.setLayoutProperty(layer.id, 'visibility', value)
+                    }
+                })
             }
         }
 
@@ -218,11 +224,19 @@ class Layer extends Evented {
     }
 
     move() {
+        const map = this.getMap()
+
+        if (!map?.styleIsLoaded()) {
+            return
+        }
+
         const mapgl = this.getMapGL()
-        const beforeId = this._map.getBeforeLayerId()
+        const beforeId = map.getBeforeLayerId()
 
         this.getLayers().forEach(layer => {
-            mapgl.moveLayer(layer.id, beforeId)
+            if (mapgl.getLayer(layer.id)) {
+                mapgl.moveLayer(layer.id, beforeId)
+            }
         })
     }
 
@@ -306,11 +320,12 @@ class Layer extends Evented {
 
     setOpacity(opacity) {
         const mapgl = this.getMapGL()
+        const map = this.getMap()
 
         const opacityFactor =
             this._opacityFactor !== undefined ? this._opacityFactor : 1
 
-        if (mapgl) {
+        if (mapgl && map?.styleIsLoaded()) {
             setLayersOpacity(mapgl, this.getId(), opacity * opacityFactor)
         }
 

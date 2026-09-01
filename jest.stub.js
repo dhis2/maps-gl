@@ -7,6 +7,12 @@ globalThis.mockMapGL = {
     addControl: jest.fn(),
     getLayer: jest.fn(),
     getSource: jest.fn(),
+    getStyle: jest.fn(),
+    removeLayer: jest.fn(),
+    removeSource: jest.fn(),
+    setPaintProperty: jest.fn(),
+    setLayoutProperty: jest.fn(),
+    moveLayer: jest.fn(),
     setFeatureState: jest.fn(),
     getCanvas: jest.fn(() => ({ style: {} })),
     _getUIString: jest.fn(),
@@ -16,7 +22,7 @@ globalThis.mockMap = {
     getMapGL: () => globalThis.mockMapGL,
     setHoverState: jest.fn(),
     getBeforeLayerId: jest.fn(),
-    styleIsLoaded: () => true,
+    styleIsLoaded: jest.fn(() => true),
 }
 
 // https://stackoverflow.com/questions/57943736/how-to-fix-window-url-createobjecturl-is-not-a-function-when-testing-mapbox-gl
