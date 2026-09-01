@@ -138,4 +138,50 @@ describe('Layer', () => {
         // The value is still kept, so it applies once re-added later
         expect(layer.options.opacity).toBe(0.5)
     })
+    it('Should not remove layers or sources while the style is loading', () => {
+        const layer = new Layer()
+        layer.addLayer({ id: 'x-polygon' })
+        layer.setSource('x', { type: 'geojson', data: {} })
+        mockMapGL.getLayer.mockReturnValue(true)
+        mockMapGL.getSource.mockReturnValue(true)
+        mockMap.styleIsLoaded.mockReturnValue(false)
+
+        expect(() => layer.removeFrom(mockMap)).not.toThrow()
+
+        expect(mockMapGL.removeLayer).not.toHaveBeenCalled()
+        expect(mockMapGL.removeSource).not.toHaveBeenCalled()
+    })
+    it('Should remove layers and sources once the style is loaded', () => {
+        const layer = new Layer()
+        layer.addLayer({ id: 'x-polygon' })
+        layer.setSource('x', { type: 'geojson', data: {} })
+        mockMapGL.getLayer.mockReturnValue(true)
+        mockMapGL.getSource.mockReturnValue(true)
+
+        layer.removeFrom(mockMap)
+
+        expect(mockMapGL.removeLayer).toHaveBeenCalledWith('x-polygon')
+        expect(mockMapGL.removeSource).toHaveBeenCalledWith('x')
+    })
+    it('Should only style sub-layers that actually exist', () => {
+        const layer = new Layer()
+        layer.addLayer({ id: 'x-polygon' })
+        layer.addLayer({ id: 'x-point' })
+        // Simulates a partially added/removed set of sub-layers
+        mockMapGL.getLayer.mockImplementation(id => id === 'x-polygon')
+
+        layer.addTo(mockMap)
+        layer.setVisibility(false)
+
+        expect(mockMapGL.setLayoutProperty).toHaveBeenCalledWith(
+            'x-polygon',
+            'visibility',
+            'none'
+        )
+        expect(mockMapGL.setLayoutProperty).not.toHaveBeenCalledWith(
+            'x-point',
+            'visibility',
+            expect.anything()
+        )
+    })
 })

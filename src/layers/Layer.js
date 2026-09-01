@@ -89,13 +89,13 @@ class Layer extends Evented {
             clearLayerOpacityCache(mapgl, this.getId())
 
             layers.forEach(layer => {
-                if (mapgl.getLayer(layer.id)) {
+                if (map.styleIsLoaded() && mapgl.getLayer(layer.id)) {
                     mapgl.removeLayer(layer.id)
                 }
             })
 
             Object.keys(source).forEach(id => {
-                if (mapgl.getSource(id)) {
+                if (map.styleIsLoaded() && mapgl.getSource(id)) {
                     mapgl.removeSource(id)
                 }
             })
@@ -141,9 +141,11 @@ class Layer extends Evented {
             const layers = this.getLayers()
 
             if (mapgl && layers) {
-                layers.forEach(layer =>
-                    mapgl.setLayoutProperty(layer.id, 'visibility', value)
-                )
+                layers.forEach(layer => {
+                    if (mapgl.getLayer(layer.id)) {
+                        mapgl.setLayoutProperty(layer.id, 'visibility', value)
+                    }
+                })
             }
         }
 
