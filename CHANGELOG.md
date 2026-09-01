@@ -1,3 +1,10 @@
+## [4.4.1](https://github.com/dhis2/maps-gl/compare/v4.4.0...v4.4.1) (2026-09-01)
+
+
+### Bug Fixes
+
+* eliminate crashes and stale state from rapid basemap switching ([#667](https://github.com/dhis2/maps-gl/issues/667)) ([33b4a10](https://github.com/dhis2/maps-gl/commit/33b4a102b729b15d6fa71abeea0596bfb58b3e0c))
+
 # [4.4.0](https://github.com/dhis2/maps-gl/compare/v4.3.1...v4.4.0) (2026-09-01)
 
 
