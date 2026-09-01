@@ -20,8 +20,8 @@ class VectorStyle extends Evented {
     async toggleVectorStyle(isOnMap, style, beforeId) {
         // Identifies this call, so a stale result isn't applied/thrown below
         // for a load since superseded by another toggleVectorStyle() call
-        const loadId = (this._loadId = (this._loadId || 0) + 1)
-        const isCurrent = () => this._loadId === loadId
+        const loadId = (this._map._loadId = (this._map._loadId || 0) + 1)
+        const isCurrent = () => this._map._loadId === loadId
 
         await this.removeOtherLayers()
         this._map.setBeforeLayerId(beforeId)

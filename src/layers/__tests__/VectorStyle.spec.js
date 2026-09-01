@@ -377,6 +377,44 @@ describe('VectorStyle opacity', () => {
         )
     })
 
+    it('suppresses a stale result across two different VectorStyle instances sharing a map', async () => {
+        // Switching basemaps creates a new VectorStyle instance rather than
+        // reusing the old one, but both still contend for the same
+        // underlying map style - staleness must be tracked map-wide
+        const { mapgl, rejectCall, resolveCall } = createControllableMapGL()
+        const map = createMap(mapgl)
+
+        const oldBasemap = new VectorStyle({
+            url: 'https://example.com/a.json',
+        })
+        const newBasemap = new VectorStyle({
+            url: 'https://example.com/b.json',
+        })
+        oldBasemap._map = map
+        newBasemap._map = map
+
+        const removeCall = oldBasemap.toggleVectorStyle(
+            false,
+            'https://example.com/default.json'
+        )
+        await flushMicrotasks()
+
+        const addCall = newBasemap.toggleVectorStyle(
+            true,
+            'https://example.com/b.json'
+        )
+        await flushMicrotasks()
+
+        // The old basemap's own load fails - interrupted by the new one -
+        // but this is no longer relevant, so it should not reject
+        rejectCall(0, { error: { message: 'network error' } })
+        await expect(removeCall).resolves.toBeUndefined()
+
+        // The new basemap's load succeeds normally
+        resolveCall(1)
+        await expect(addCall).resolves.toBeUndefined()
+    })
+
     it('does not apply opacity while the layer is being removed from the map', async () => {
         const mapgl = createMapGL()
         const map = createMap(mapgl)
