@@ -13,7 +13,7 @@ import {
 } from './style.js'
 
 // Default fonts
-const fonts = {
+export const fonts = {
     'normal-normal': 'Open Sans Regular',
     'normal-bold': 'Open Sans Bold',
     'italic-normal': 'Open Sans Italic',

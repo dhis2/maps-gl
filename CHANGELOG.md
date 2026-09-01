@@ -1,3 +1,10 @@
+# [4.4.0](https://github.com/dhis2/maps-gl/compare/v4.3.1...v4.4.0) (2026-09-01)
+
+
+### Features
+
+* support opacity and font glyphs for vector style layers ([#666](https://github.com/dhis2/maps-gl/issues/666)) ([2ef3003](https://github.com/dhis2/maps-gl/commit/2ef3003497627c670a525296a36a07d4b272f708))
+
 ## [4.3.1](https://github.com/dhis2/maps-gl/compare/v4.3.0...v4.3.1) (2026-07-06)
 
 
