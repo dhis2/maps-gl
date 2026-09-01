@@ -14,25 +14,18 @@ class VectorStyle extends Evented {
         this._isOnMap = false
     }
 
-    // Changing vector style will also delete all overlays on the map
-    // Before we change the style we remove all overlays for a proper cleanup
-    // After the style is changed and ready, we add the overlays back again
-    //
-    // _loadId, _styleIsLoading and _settlePendingStyleLoad below live on the
-    // shared Map instance, not this VectorStyle - they track which call is
-    // current across every basemap switch, since only one style load can be
-    // in flight on the underlying mapgl at a time
+    // Overlays are removed/re-added around a style change, since changing
+    // style wipes them. The load-tracking fields below live on the shared
+    // Map, not this instance, since only one style can load at a time
     async toggleVectorStyle(isOnMap, style, beforeId) {
-        // Identifies this call, so a stale result isn't applied/thrown below
-        // for a load since superseded by another toggleVectorStyle() call
+        // Identifies this call, so a superseded result below is ignored
         const loadId = (this._map._loadId = (this._map._loadId || 0) + 1)
         const isCurrent = () => this._map._loadId === loadId
 
         await this.removeOtherLayers()
         this._map.setBeforeLayerId(beforeId)
 
-        // Removal has no failure mode to worry about, so clear this eagerly.
-        // Being added is only true once the load actually succeeds, below
+        // Removal can't fail, so clear eagerly; added is only set on success
         if (!isOnMap) {
             this._isOnMap = false
         }
@@ -50,12 +43,10 @@ class VectorStyle extends Evented {
                     this._applyLoadedStyle()
                 }
             } catch (error) {
-                // Still restore overlays below even if the style failed to
-                // load, so a broken basemap doesn't take other layers with
-                // it. isCurrent() here only matters for a call invalidated
-                // before it reached setStyle() (the branch below) - setStyle()
-                // itself always resolves a superseded call instead of
-                // rejecting it
+                // Overlays are still restored below before this re-throws.
+                // isCurrent() only guards a call invalidated before reaching
+                // setStyle() - setStyle() itself always resolves (never
+                // rejects) a superseded call
                 if (isCurrent()) {
                     styleError = error
                 }
@@ -64,17 +55,14 @@ class VectorStyle extends Evented {
                     this._map._styleIsLoading = false
                 }
             }
-        } else {
-            // This call never touches setStyle(), so settle any earlier
-            // call still waiting on it (same as setStyle() does on its own
-            // start) and clear the loading flag on its behalf, since this
-            // call is now current and isn't loading anything itself
+        } else if (isCurrent()) {
+            // Skips setStyle(), so settle any earlier pending call and
+            // clear the loading flag on its behalf instead
             this._map._settlePendingStyleLoad?.()
             this._map._styleIsLoading = false
         }
 
-        // Only the current call re-adds overlays - otherwise every
-        // overlapping call would independently race to add the same ones
+        // Only the current call re-adds overlays, to avoid racing duplicates
         if (isCurrent()) {
             await this.addOtherLayers()
         }
@@ -88,16 +76,13 @@ class VectorStyle extends Evented {
     _applyLoadedStyle() {
         const mapgl = this._map.getMapGL()
 
-        // Style layers/ids are brand new after a style change, so any cached
-        // "original" opacity values from the previous style are stale and
-        // must not be reused
+        // Layer ids are new after a style change, so cached base-opacity
+        // values from the old style are stale
         clearVectorStyleOpacityCache(mapgl)
 
-        // Overlay layers share this same mapgl style, so this snapshot is
-        // what scopes opacity to the vector style's own layers
+        // Scopes opacity to just these layers, not overlays sharing this mapgl
         this._styleLayers = mapgl.getStyle().layers
 
-        // Store id of all style layers that are visible
         this._visibleLayers = this._styleLayers
             .filter(l => l.layout?.visibility !== 'none')
             .map(l => l.id)
@@ -110,13 +95,12 @@ class VectorStyle extends Evented {
         }
     }
 
-    // Add vector style to map
     async addTo(map) {
         this._map = map
+        this._removed = false
         const { url, beforeId, isVisible } = this.options
         await this.toggleVectorStyle(true, url, beforeId)
 
-        // Set vector style visibility after added to the map
         if (
             this.isVisible() === false ||
             (this.isVisible() === undefined && isVisible === false)
@@ -125,9 +109,9 @@ class VectorStyle extends Evented {
         }
     }
 
-    // Remove vector style from map, reset to default map style
+    // Resets to the default map style
     async removeFrom() {
-        // Map.addLayer() can call this a second, redundant time on the same instance
+        // addLayer() can call this a second, redundant time on this instance
         if (this._removed) {
             return
         }
@@ -139,15 +123,14 @@ class VectorStyle extends Evented {
         }
     }
 
-    // Set map style, resolves promise when map is ready for other layers
+    // Resolves once ready for other layers to be added back
     setStyle(style) {
         return new Promise((resolve, reject) => {
             const mapgl = this._map.getMapGL()
 
-            // 'idle'/'error' are shared, map-level events - if an earlier
-            // call is still waiting on them, it's about to be superseded,
-            // so detach its listeners and settle it now instead of leaving
-            // two calls listening for the same event
+            // 'idle'/'error' are shared map-level events - detach and settle
+            // any earlier call now, instead of leaving two calls listening
+            // for the same one
             this._map._settlePendingStyleLoad?.()
 
             const onIdle = () => {
@@ -170,6 +153,7 @@ class VectorStyle extends Evented {
             }
 
             this._map._settlePendingStyleLoad = () => {
+                this._map._settlePendingStyleLoad = null
                 mapgl.off('idle', onIdle)
                 mapgl.off('error', onError)
                 resolve()
@@ -181,14 +165,12 @@ class VectorStyle extends Evented {
         })
     }
 
-    // Returns all layers that are not vector style
     getOtherLayers() {
         return this._map
             .getLayers()
             .filter(layer => !(layer instanceof VectorStyle))
     }
 
-    // Add other layers to the map after style is changed
     async addOtherLayers() {
         this.getOtherLayers().forEach(async layer => {
             if (!layer.isOnMap()) {
@@ -198,11 +180,10 @@ class VectorStyle extends Evented {
         })
     }
 
-    // Remove other layers from the map before style is changed
     async removeOtherLayers() {
         this.getOtherLayers().forEach(async layer => {
             if (layer.isOnMap()) {
-                await layer.removeFrom(this._map, true)
+                await layer.removeFrom(this._map)
             }
         })
     }
@@ -259,7 +240,6 @@ class VectorStyle extends Evented {
         return false
     }
 
-    // Returns true if the vector style is fully added to the map
     isOnMap() {
         return this._isOnMap
     }

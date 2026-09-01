@@ -192,14 +192,11 @@ describe('EarthEngine', () => {
         const layer = new EarthEngine(options)
 
         const firstAdd = layer.addTo(mockMap)
-        // Superseded before the worker/tile URL resolution for the first
-        // call has settled
         const secondAdd = layer.addTo(mockMap)
 
         await Promise.all([firstAdd, secondAdd])
 
-        // The stale first call must not have run createLayers() too,
-        // duplicating entries in the local bookkeeping array
+        // 4, not 8 - a duplicate createLayers() call would double this
         expect(layer.getLayers().length).toBe(4)
     })
 
