@@ -29,6 +29,7 @@ const data = [
 describe('Layer', () => {
     beforeEach(() => {
         jest.resetAllMocks()
+        mockMap.styleIsLoaded.mockReturnValue(true)
     })
     it('Should initialize', () => {
         const layer = new Layer()
@@ -107,5 +108,34 @@ describe('Layer', () => {
         layer.highlight('abc')
         expect(mockFn).toHaveBeenCalledTimes(3)
         expect(mockFn).toHaveBeenLastCalledWith([])
+    })
+    it('Should apply opacity once the style is loaded', () => {
+        const layer = new Layer()
+        const layerId = `${layer.getId()}-polygon`
+        mockMapGL.getStyle.mockReturnValue({
+            layers: [{ id: layerId, type: 'polygon' }],
+        })
+
+        layer.addTo(mockMap)
+        layer.setOpacity(0.5)
+
+        expect(mockMapGL.setPaintProperty).toHaveBeenCalledWith(
+            layerId,
+            'fill-opacity',
+            0.5
+        )
+        expect(layer.options.opacity).toBe(0.5)
+    })
+    it('Should not touch paint properties while the style is loading', () => {
+        const layer = new Layer()
+        mockMap.styleIsLoaded.mockReturnValue(false)
+
+        layer.addTo(mockMap)
+
+        expect(() => layer.setOpacity(0.5)).not.toThrow()
+        expect(mockMapGL.getStyle).not.toHaveBeenCalled()
+        expect(mockMapGL.setPaintProperty).not.toHaveBeenCalled()
+        // The value is still kept, so it applies once re-added later
+        expect(layer.options.opacity).toBe(0.5)
     })
 })

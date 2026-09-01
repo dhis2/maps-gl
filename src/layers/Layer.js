@@ -306,11 +306,12 @@ class Layer extends Evented {
 
     setOpacity(opacity) {
         const mapgl = this.getMapGL()
+        const map = this.getMap()
 
         const opacityFactor =
             this._opacityFactor !== undefined ? this._opacityFactor : 1
 
-        if (mapgl) {
+        if (mapgl && map?.styleIsLoaded()) {
             setLayersOpacity(mapgl, this.getId(), opacity * opacityFactor)
         }
 

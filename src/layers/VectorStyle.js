@@ -17,6 +17,11 @@ class VectorStyle extends Evented {
     // Changing vector style will also delete all overlays on the map
     // Before we change the style we remove all overlays for a proper cleanup
     // After the style is changed and ready, we add the overlays back again
+    //
+    // _loadId, _styleIsLoading and _settlePendingStyleLoad below live on the
+    // shared Map instance, not this VectorStyle - they track which call is
+    // current across every basemap switch, since only one style load can be
+    // in flight on the underlying mapgl at a time
     async toggleVectorStyle(isOnMap, style, beforeId) {
         // Identifies this call, so a stale result isn't applied/thrown below
         // for a load since superseded by another toggleVectorStyle() call
@@ -26,10 +31,11 @@ class VectorStyle extends Evented {
         await this.removeOtherLayers()
         this._map.setBeforeLayerId(beforeId)
 
-        // Set eagerly (rather than after the style loads below) so that
-        // setOpacity(), called once the new style is ready, treats this
-        // layer as on the map and actually applies the opacity
-        this._isOnMap = isOnMap
+        // Removal has no failure mode to worry about, so clear this eagerly.
+        // Being added is only true once the load actually succeeds, below
+        if (!isOnMap) {
+            this._isOnMap = false
+        }
 
         // (Re)set map style if user is not switching to a new one
         let styleError
@@ -40,6 +46,8 @@ class VectorStyle extends Evented {
                 await this.setStyle(style)
 
                 if (isCurrent()) {
+                    this._isOnMap = isOnMap
+
                     const mapgl = this._map.getMapGL()
 
                     // Style layers/ids are brand new after a style change, so
@@ -66,7 +74,11 @@ class VectorStyle extends Evented {
                 }
             } catch (error) {
                 // Still restore overlays below even if the style failed to
-                // load, so a broken basemap doesn't take other layers with it
+                // load, so a broken basemap doesn't take other layers with
+                // it. isCurrent() here only matters for a call invalidated
+                // before it reached setStyle() (the branch below) - setStyle()
+                // itself always resolves a superseded call instead of
+                // rejecting it
                 if (isCurrent()) {
                     styleError = error
                 }
@@ -75,6 +87,13 @@ class VectorStyle extends Evented {
                     this._map._styleIsLoading = false
                 }
             }
+        } else {
+            // This call never touches setStyle(), so settle any earlier
+            // call still waiting on it (same as setStyle() does on its own
+            // start) and clear the loading flag on its behalf, since this
+            // call is now current and isn't loading anything itself
+            this._map._settlePendingStyleLoad?.()
+            this._map._styleIsLoading = false
         }
 
         await this.addOtherLayers()
