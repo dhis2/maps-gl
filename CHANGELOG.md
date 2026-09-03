@@ -1,3 +1,12 @@
+## [4.4.2](https://github.com/dhis2/maps-gl/compare/v4.4.1...v4.4.2) (2026-09-03)
+
+
+### Bug Fixes
+
+* reconcile overlay stacking order after restoring them ([5cf1ba5](https://github.com/dhis2/maps-gl/commit/5cf1ba5ed8ff83d4c558d20cbb4270067a1eea8c))
+* refresh the interactive-layer cache after restoring overlays ([2bf893d](https://github.com/dhis2/maps-gl/commit/2bf893d3264afbc06fa476033d66186778b2b266))
+* wait for every overlay to actually finish being added or removed ([f7b2c2f](https://github.com/dhis2/maps-gl/commit/f7b2c2f7dd44b9db44e7278fddcceab940adbaed))
+
 ## [4.4.1](https://github.com/dhis2/maps-gl/compare/v4.4.0...v4.4.1) (2026-09-01)
 
 
