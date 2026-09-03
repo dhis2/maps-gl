@@ -1,3 +1,10 @@
+## [4.4.3](https://github.com/dhis2/maps-gl/compare/v4.4.2...v4.4.3) (2026-09-03)
+
+
+### Bug Fixes
+
+* don't let orderOverlays() mask a style error or skip the cache reset ([#670](https://github.com/dhis2/maps-gl/issues/670)) ([8a05ef5](https://github.com/dhis2/maps-gl/commit/8a05ef539a0c33f39e5063ad398395a380906f67))
+
 ## [4.4.2](https://github.com/dhis2/maps-gl/compare/v4.4.1...v4.4.2) (2026-09-03)
 
 
