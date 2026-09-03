@@ -65,6 +65,11 @@ class VectorStyle extends Evented {
         // Only the current call re-adds overlays, to avoid racing duplicates
         if (isCurrent()) {
             await this.addOtherLayers()
+
+            // A mouse event during the removal above can cache this as an
+            // empty (but truthy) array forever - refresh it now that
+            // overlays are back, so hover/click keep working
+            this._map._interactiveLayerIds = null
         }
 
         if (styleError) {

@@ -551,4 +551,28 @@ describe('VectorStyle opacity', () => {
         fireIdle()
         await expect(addNew).resolves.toBeUndefined()
     })
+
+    it('refreshes a stuck-empty interactive layer cache after restoring overlays', async () => {
+        const mapgl = createMapGL()
+        const map = createMap(mapgl)
+
+        mapgl.getStyle.mockReturnValue({
+            layers: [{ id: 'water', type: 'fill' }],
+        })
+        mapgl.getPaintProperty.mockReturnValue(1)
+
+        const vectorStyle = new VectorStyle({
+            url: 'https://example.com/a.json',
+        })
+        await vectorStyle.addTo(map)
+
+        // Simulates a mouse event caching this as empty while overlays were
+        // briefly off the map - `![]` is falsy, so nothing would otherwise
+        // trigger a recompute again
+        map._interactiveLayerIds = []
+
+        await vectorStyle.toggleVectorStyle(true, 'https://example.com/a.json')
+
+        expect(map._interactiveLayerIds).toBeNull()
+    })
 })
