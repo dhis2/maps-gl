@@ -195,7 +195,11 @@ class VectorStyle extends Evented {
         // Each overlay inserts itself independently above, so their
         // relative stacking order isn't guaranteed - reconcile it now,
         // same as Map.addLayer() does for a single layer
-        this._map.orderOverlays()
+        try {
+            this._map.orderOverlays()
+        } catch (error) {
+            console.error(error)
+        }
     }
 
     async removeOtherLayers() {
