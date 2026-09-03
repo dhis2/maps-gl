@@ -697,4 +697,26 @@ describe('VectorStyle opacity', () => {
 
         expect(map.orderOverlays).toHaveBeenCalledTimes(1)
     })
+
+    it('does not let a failing orderOverlays() reject addOtherLayers()', async () => {
+        jest.spyOn(console, 'error').mockImplementation(() => {})
+
+        const mapgl = createMapGL()
+        const map = createMap(mapgl)
+        map.orderOverlays = jest.fn(() => {
+            throw new Error('Style is not done loading.')
+        })
+        map.getLayers = jest.fn(() => [])
+
+        const vectorStyle = new VectorStyle({
+            url: 'https://example.com/a.json',
+        })
+        vectorStyle._map = map
+
+        await expect(vectorStyle.addOtherLayers()).resolves.toBeUndefined()
+
+        expect(console.error).toHaveBeenCalled()
+
+        console.error.mockRestore()
+    })
 })
