@@ -575,4 +575,104 @@ describe('VectorStyle opacity', () => {
 
         expect(map._interactiveLayerIds).toBeNull()
     })
+
+    it('waits for every overlay to finish being added before resolving', async () => {
+        const mapgl = createMapGL()
+        const map = createMap(mapgl)
+        let resolveAdd
+        const overlay = {
+            isOnMap: jest.fn(() => false),
+            addTo: jest.fn(
+                () => new Promise(resolve => (resolveAdd = resolve))
+            ),
+            removeFrom: jest.fn(async () => {}),
+            setVisibility: jest.fn(),
+            isVisible: jest.fn(() => true),
+        }
+        map.getLayers = jest.fn(() => [overlay])
+
+        const vectorStyle = new VectorStyle({
+            url: 'https://example.com/a.json',
+        })
+        vectorStyle._map = map
+
+        let resolved = false
+        const addPromise = vectorStyle
+            .addOtherLayers()
+            .then(() => (resolved = true))
+        await flushMicrotasks()
+
+        expect(resolved).toBe(false)
+
+        resolveAdd()
+        await addPromise
+
+        expect(resolved).toBe(true)
+        expect(overlay.setVisibility).toHaveBeenCalledWith(true)
+    })
+
+    it('waits for every overlay to finish being removed before resolving', async () => {
+        const mapgl = createMapGL()
+        const map = createMap(mapgl)
+        let resolveRemove
+        const overlay = {
+            isOnMap: jest.fn(() => true),
+            removeFrom: jest.fn(
+                () => new Promise(resolve => (resolveRemove = resolve))
+            ),
+        }
+        map.getLayers = jest.fn(() => [overlay])
+
+        const vectorStyle = new VectorStyle({
+            url: 'https://example.com/a.json',
+        })
+        vectorStyle._map = map
+
+        let resolved = false
+        const removePromise = vectorStyle
+            .removeOtherLayers()
+            .then(() => (resolved = true))
+        await flushMicrotasks()
+
+        expect(resolved).toBe(false)
+
+        resolveRemove()
+        await removePromise
+
+        expect(resolved).toBe(true)
+    })
+
+    it('does not let one overlay failing to add affect the others', async () => {
+        jest.spyOn(console, 'error').mockImplementation(() => {})
+
+        const mapgl = createMapGL()
+        const map = createMap(mapgl)
+        const failingOverlay = {
+            isOnMap: jest.fn(() => false),
+            addTo: jest.fn(async () => {
+                throw new Error('boom')
+            }),
+            setVisibility: jest.fn(),
+            isVisible: jest.fn(() => true),
+        }
+        const okOverlay = {
+            isOnMap: jest.fn(() => false),
+            addTo: jest.fn(async () => {}),
+            setVisibility: jest.fn(),
+            isVisible: jest.fn(() => true),
+        }
+        map.getLayers = jest.fn(() => [failingOverlay, okOverlay])
+
+        const vectorStyle = new VectorStyle({
+            url: 'https://example.com/a.json',
+        })
+        vectorStyle._map = map
+
+        await expect(vectorStyle.addOtherLayers()).resolves.toBeUndefined()
+
+        expect(okOverlay.setVisibility).toHaveBeenCalledWith(true)
+        expect(console.error).toHaveBeenCalled()
+
+        console.error.mockRestore()
+    })
 })

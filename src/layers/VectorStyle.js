@@ -177,20 +177,34 @@ class VectorStyle extends Evented {
     }
 
     async addOtherLayers() {
-        this.getOtherLayers().forEach(async layer => {
-            if (!layer.isOnMap()) {
-                await layer.addTo(this._map)
-                layer.setVisibility(layer.isVisible())
-            }
-        })
+        await Promise.all(
+            this.getOtherLayers().map(async layer => {
+                if (!layer.isOnMap()) {
+                    try {
+                        await layer.addTo(this._map)
+                        layer.setVisibility(layer.isVisible())
+                    } catch (error) {
+                        // Isolated per layer, so one overlay's own failure
+                        // doesn't surface as the basemap itself failing
+                        console.error(error)
+                    }
+                }
+            })
+        )
     }
 
     async removeOtherLayers() {
-        this.getOtherLayers().forEach(async layer => {
-            if (layer.isOnMap()) {
-                await layer.removeFrom(this._map)
-            }
-        })
+        await Promise.all(
+            this.getOtherLayers().map(async layer => {
+                if (layer.isOnMap()) {
+                    try {
+                        await layer.removeFrom(this._map)
+                    } catch (error) {
+                        console.error(error)
+                    }
+                }
+            })
+        )
     }
 
     mapHasVectorStyle() {
