@@ -21,6 +21,7 @@ const createMap = mapgl => ({
     getMapGL: () => mapgl,
     setBeforeLayerId: jest.fn(),
     getLayers: jest.fn(() => []),
+    orderOverlays: jest.fn(),
 })
 
 const createFailingMapGL = () => {
@@ -674,5 +675,26 @@ describe('VectorStyle opacity', () => {
         expect(console.error).toHaveBeenCalled()
 
         console.error.mockRestore()
+    })
+
+    it('reconciles overlay stacking order once they are all back on the map', async () => {
+        const mapgl = createMapGL()
+        const map = createMap(mapgl)
+        const overlay = {
+            isOnMap: jest.fn(() => false),
+            addTo: jest.fn(async () => {}),
+            setVisibility: jest.fn(),
+            isVisible: jest.fn(() => true),
+        }
+        map.getLayers = jest.fn(() => [overlay])
+
+        const vectorStyle = new VectorStyle({
+            url: 'https://example.com/a.json',
+        })
+        vectorStyle._map = map
+
+        await vectorStyle.addOtherLayers()
+
+        expect(map.orderOverlays).toHaveBeenCalledTimes(1)
     })
 })
