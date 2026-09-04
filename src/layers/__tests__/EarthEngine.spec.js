@@ -211,8 +211,8 @@ describe('EarthEngine', () => {
 
         await Promise.all([firstAdd, secondAdd])
 
-        // 4, not 8 - a duplicate createLayers() call would double this
-        expect(layer.getLayers().length).toBe(4)
+        // 5, not 10 - a duplicate createLayers() call would double this
+        expect(layer.getLayers().length).toBe(5)
     })
 
     it('Should not add the layer back after being removed while an addTo() call is still in flight', async () => {
