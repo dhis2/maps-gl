@@ -55,6 +55,7 @@ describe('Layer', () => {
         layer.addTo(mockMap)
         layer._overlayLayerIds = ['layer-1-highlight']
         mockMap.getBeforeLayerId.mockReturnValue('before-id')
+        mockMapGL.getLayer.mockReturnValue(true)
         mockMapGL.moveLayer.mockClear()
 
         layer.move()
@@ -421,6 +422,8 @@ describe('Layer', () => {
         mockMapGL.getLayer.mockImplementation(id => id === 'x-polygon')
 
         layer.addTo(mockMap)
+        // createHighlightOverlay is mocked here and returns undefined by default
+        layer._overlayLayerIds = []
         layer.setVisibility(false)
 
         expect(mockMapGL.setLayoutProperty).toHaveBeenCalledWith(
@@ -449,6 +452,8 @@ describe('Layer', () => {
         layer.addLayer({ id: 'x-polygon' })
         layer.addLayer({ id: 'x-point' })
         layer.addTo(mockMap)
+        // createHighlightOverlay is mocked here and returns undefined by default
+        layer._overlayLayerIds = []
         mockMap.getBeforeLayerId.mockReturnValue('before-id')
         mockMapGL.getLayer.mockImplementation(id => id === 'x-polygon')
 
