@@ -144,33 +144,48 @@ describe('EarthEngine', () => {
         expect(source.type).toBe('geojson')
     })
 
-    it('Should create a raster and geojson layers', async () => {
+    it('Should create an empty mask source', async () => {
+        const layer = new EarthEngine(options)
+        await layer.addTo(mockMap)
+        const id = layer.getId()
+        const source = layer.getSource()[`${id}-mask`]
+
+        expect(source).not.toBeUndefined()
+        expect(source.type).toBe('geojson')
+        expect(source.data).toEqual({ type: 'FeatureCollection', features: [] })
+    })
+
+    it('Should create a raster, mask and geojson layers', async () => {
         const layer = new EarthEngine(options)
         await layer.addTo(mockMap)
         const id = layer.getId()
         const layers = layer.getLayers()
-        const [layer1, layer2, layer3, layer4] = layers
+        const [layer1, layer2, layer3, layer4, layer5] = layers
 
-        expect(layers.length).toBe(4)
+        expect(layers).toHaveLength(5)
         expect(layer1.type).toBe('raster')
         expect(layer1.id).toBe(`${id}-raster`)
         expect(layer1.source).toBe(`${id}-raster`)
         expect(layer2.type).toBe('fill')
-        expect(layer2.id).toBe(`${id}-polygon`)
-        expect(layer2.source).toBe(id)
-        expect(layer3.type).toBe('line')
-        expect(layer3.id).toBe(`${id}-outline`)
+        expect(layer2.id).toBe(`${id}-mask`)
+        expect(layer2.source).toBe(`${id}-mask`)
+        expect(layer3.type).toBe('fill')
+        expect(layer3.id).toBe(`${id}-polygon`)
         expect(layer3.source).toBe(id)
-        expect(layer4.type).toBe('circle')
-        expect(layer4.id).toBe(`${id}-point`)
-        expect(layer4.source).toBe(`${id}-points`)
+        expect(layer4.type).toBe('line')
+        expect(layer4.id).toBe(`${id}-outline`)
+        expect(layer4.source).toBe(id)
+        expect(layer5.type).toBe('circle')
+        expect(layer5.id).toBe(`${id}-point`)
+        expect(layer5.source).toBe(`${id}-points`)
     })
 
-    it('Should not create geojson layers if feature data is missing', async () => {
+    it('Should not create geojson or mask layers if feature data is missing', async () => {
         const layer = new EarthEngine({ ...options, data: null })
         await layer.addTo(mockMap)
 
         expect(layer.getLayers().length).toBe(1)
+        expect(layer.getSource()[`${layer.getId()}-mask`]).toBeUndefined()
     })
 
     it('Should call onLoad option when loaded', async () => {
@@ -196,8 +211,8 @@ describe('EarthEngine', () => {
 
         await Promise.all([firstAdd, secondAdd])
 
-        // 4, not 8 - a duplicate createLayers() call would double this
-        expect(layer.getLayers().length).toBe(4)
+        // 5, not 10 - a duplicate createLayers() call would double this
+        expect(layer.getLayers().length).toBe(5)
     })
 
     it('Should not add the layer back after being removed while an addTo() call is still in flight', async () => {
@@ -209,5 +224,89 @@ describe('EarthEngine', () => {
         await firstAdd
 
         expect(layer.getLayers().length).toBe(0)
+    })
+
+    describe('raster mask (filter/setVisibleIds)', () => {
+        const featureIds = f =>
+            f.features.map(({ properties }) => properties.id)
+
+        const addLayerWithMaskSource = async (layerOptions = options) => {
+            const layer = new EarthEngine(layerOptions)
+            const maskSource = { setData: jest.fn() }
+            mockMapGL.getSource.mockImplementation(id =>
+                id === `${layer.getId()}-mask`
+                    ? maskSource
+                    : { setData: jest.fn() }
+            )
+            await layer.addTo(mockMap)
+            return { layer, maskSource }
+        }
+
+        beforeEach(() => {
+            mockMapGL.getSource.mockReset()
+            mockMapGL.setFilter.mockClear()
+            mockMapGL.getStyle.mockReturnValue({ layers: [] })
+        })
+
+        it('filter() masks the features it excludes', async () => {
+            const { layer, maskSource } = await addLayerWithMaskSource()
+
+            layer.filter(['O6uvpzGd5pu'])
+
+            expect(
+                featureIds(maskSource.setData.mock.lastCall[0]).sort()
+            ).toEqual(['DiszpKrYNg8', 'fdc6uOvgoji'].sort())
+        })
+
+        it('setVisibleIds() masks the features it excludes', async () => {
+            const { layer, maskSource } = await addLayerWithMaskSource()
+
+            layer.setVisibleIds(['O6uvpzGd5pu'])
+
+            expect(
+                featureIds(maskSource.setData.mock.lastCall[0]).sort()
+            ).toEqual(['DiszpKrYNg8', 'fdc6uOvgoji'].sort())
+        })
+
+        it('masks the union of both exclusions when filter() and setVisibleIds() are both active', async () => {
+            const { layer, maskSource } = await addLayerWithMaskSource()
+
+            layer.filter(['fdc6uOvgoji', 'DiszpKrYNg8'])
+            layer.setVisibleIds(['O6uvpzGd5pu', 'fdc6uOvgoji'])
+
+            expect(
+                featureIds(maskSource.setData.mock.lastCall[0]).sort()
+            ).toEqual(['DiszpKrYNg8', 'O6uvpzGd5pu'].sort())
+        })
+
+        it('clears the mask when both filters are reset', async () => {
+            const { layer, maskSource } = await addLayerWithMaskSource()
+
+            layer.filter(['O6uvpzGd5pu'])
+            layer.filter(null)
+            layer.setVisibleIds(null)
+
+            expect(featureIds(maskSource.setData.mock.lastCall[0])).toEqual([])
+        })
+
+        it('does not throw when the mask source is not available', async () => {
+            const layer = new EarthEngine({ ...options, data: null })
+            mockMapGL.getSource.mockReturnValue(undefined)
+            await layer.addTo(mockMap)
+
+            expect(() => layer.filter(['O6uvpzGd5pu'])).not.toThrow()
+            expect(() => layer.setVisibleIds(['O6uvpzGd5pu'])).not.toThrow()
+        })
+
+        it('does not narrow the mask layer itself via setVisibleIds, since its data is already the complement', async () => {
+            const { layer } = await addLayerWithMaskSource()
+
+            layer.setVisibleIds(['O6uvpzGd5pu'])
+
+            const maskFilterCalls = mockMapGL.setFilter.mock.calls.filter(
+                ([layerId]) => layerId === `${layer.getId()}-mask`
+            )
+            expect(maskFilterCalls).toHaveLength(0)
+        })
     })
 })

@@ -33,6 +33,7 @@ class Layer extends Evented {
         this._features = []
         this._isVisible = true
         this._interactiveIds = []
+        this._visibleIdsFilterExemptIds = new Set()
         this._overlayLayerIds = []
         this._hoverIds = []
         this._selectedIds = []
@@ -269,7 +270,8 @@ class Layer extends Evented {
     }
 
     addLayer(layer, layerOptions = {}) {
-        const { isInteractive, opacityFactor } = layerOptions
+        const { isInteractive, opacityFactor, excludeFromVisibleIdsFilter } =
+            layerOptions
 
         this._layers.push(layer)
 
@@ -279,6 +281,14 @@ class Layer extends Evented {
 
         if (opacityFactor) {
             this._opacityFactor = opacityFactor
+        }
+
+        // e.g. EarthEngine's own mask layer, whose data is deliberately the
+        // complement of setVisibleIds' own notion of "visible" - applying
+        // that filter on top would zero it out, since none of its features
+        // would ever match an allow-list of the *visible* ids.
+        if (excludeFromVisibleIdsFilter) {
+            this._visibleIdsFilterExemptIds.add(layer.id)
         }
     }
 
@@ -464,6 +474,9 @@ class Layer extends Evented {
         }
 
         this.getLayers().forEach(({ id, filter: baseFilter }) => {
+            if (this._visibleIdsFilterExemptIds.has(id)) {
+                return
+            }
             mapgl.setFilter(id, buildVisibleIdsFilter(ids, baseFilter))
         })
 
