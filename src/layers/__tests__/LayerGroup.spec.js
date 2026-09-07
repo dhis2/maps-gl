@@ -182,6 +182,25 @@ describe('LayerGroup', () => {
         })
     })
 
+    it("should restore a hovered/selected id to each sub-layer's overlay once setVisibleIds() clears the restriction that had hidden it", () => {
+        const group = new LayerGroup()
+        const layerA = createMockSubLayer('layer-a', 1)
+        group._layers = [layerA]
+        group._map = mockMap
+
+        group.highlight([1])
+        group.setVisibleIds(['some-other-id'])
+        updateHighlightOverlay.mockClear()
+
+        group.setVisibleIds(null)
+
+        expect(updateHighlightOverlay).toHaveBeenLastCalledWith(mockMap, {
+            id: 'layer-a',
+            features: [{ id: 1, source: 'layer-a' }],
+            color: undefined,
+        })
+    })
+
     it('should restrict rendered features to the given ids across all sub-layers', () => {
         const group = new LayerGroup()
         const layerA = createMockSubLayer('layer-a', 1)

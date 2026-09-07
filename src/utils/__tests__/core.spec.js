@@ -1,4 +1,4 @@
-import { dropHiddenIds, setTemplate } from '../core.js'
+import { filterVisibleIds, setTemplate } from '../core.js'
 
 describe('core utils', () => {
     it('Should add values to template string', () => {
@@ -18,17 +18,24 @@ describe('core utils', () => {
         ).toBe('Population: no value')
     })
 
-    describe('dropHiddenIds', () => {
-        it('Should drop hover/selected ids that are no longer visible', () => {
-            expect(dropHiddenIds(['a', 'b'], ['b', 'c'], ['b'])).toEqual({
-                hoverIds: ['b'],
-                selectedIds: ['b'],
-            })
+    describe('filterVisibleIds', () => {
+        it('Should restrict ids to those also present in visibleIds', () => {
+            expect(filterVisibleIds(['a', 'b', 'c'], ['b'])).toEqual(['b'])
         })
 
-        it('Should return null when visibleIds is null/undefined, so nothing is dropped', () => {
-            expect(dropHiddenIds(['a'], ['b'], null)).toBeNull()
-            expect(dropHiddenIds(['a'], ['b'], undefined)).toBeNull()
+        it('Should return ids unchanged when visibleIds is null/undefined, meaning no restriction', () => {
+            expect(filterVisibleIds(['a', 'b'], null)).toEqual(['a', 'b'])
+            expect(filterVisibleIds(['a', 'b'], undefined)).toEqual(['a', 'b'])
+        })
+
+        it('Should not mutate either input array', () => {
+            const ids = ['a', 'b']
+            const visibleIds = ['b']
+
+            filterVisibleIds(ids, visibleIds)
+
+            expect(ids).toEqual(['a', 'b'])
+            expect(visibleIds).toEqual(['b'])
         })
     })
 })

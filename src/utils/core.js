@@ -20,15 +20,13 @@ export const normalizeIds = ids => {
     return ids ? [ids] : []
 }
 
-export const dropHiddenIds = (hoverIds, selectedIds, visibleIds) => {
+// null/undefined visibleIds means no restriction
+export const filterVisibleIds = (ids, visibleIds) => {
     if (!visibleIds) {
-        return null
+        return ids
     }
 
     const visible = new Set(visibleIds)
 
-    return {
-        hoverIds: hoverIds.filter(id => visible.has(id)),
-        selectedIds: selectedIds.filter(id => visible.has(id)),
-    }
+    return ids.filter(id => visible.has(id))
 }

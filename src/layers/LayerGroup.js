@@ -1,6 +1,6 @@
 import { Evented } from 'maplibre-gl'
 import { v4 as uuidv4 } from 'uuid'
-import { dropHiddenIds, normalizeIds } from '../utils/core.js'
+import { filterVisibleIds, normalizeIds } from '../utils/core.js'
 import { getBoundsFromLayers } from '../utils/geometry.js'
 import { updateHighlightOverlay } from '../utils/highlightOverlay.js'
 
@@ -15,6 +15,7 @@ class LayerGroup extends Evented {
         this._isVisible = true
         this._hoverIds = []
         this._selectedIds = []
+        this._visibleIds = null
         this._highlightColor = undefined
     }
 
@@ -124,13 +125,8 @@ class LayerGroup extends Evented {
     setVisibleIds(ids) {
         this._layers.forEach(layer => layer.setVisibleIds(ids))
 
-        const dropped = dropHiddenIds(this._hoverIds, this._selectedIds, ids)
-
-        if (dropped) {
-            this._hoverIds = dropped.hoverIds
-            this._selectedIds = dropped.selectedIds
-            this._syncOverlay()
-        }
+        this._visibleIds = ids
+        this._syncOverlay()
     }
 
     // Drives each sub-layer's own overlay directly
@@ -141,7 +137,10 @@ class LayerGroup extends Evented {
             return
         }
 
-        const ids = [...new Set([...this._hoverIds, ...this._selectedIds])]
+        const ids = filterVisibleIds(
+            [...new Set([...this._hoverIds, ...this._selectedIds])],
+            this._visibleIds
+        )
 
         this._layers.forEach(layer => {
             const features = ids.flatMap(id => layer.getFeaturesById(id))
