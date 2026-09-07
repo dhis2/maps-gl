@@ -2,7 +2,7 @@ import bbox from '@turf/bbox'
 import { Evented } from 'maplibre-gl'
 import { v4 as uuidv4 } from 'uuid'
 import { bufferSource } from '../utils/buffers.js'
-import { dropHiddenIds, normalizeIds } from '../utils/core.js'
+import { filterVisibleIds, normalizeIds } from '../utils/core.js'
 import { featureCollection } from '../utils/geometry.js'
 import {
     createHighlightOverlay,
@@ -37,6 +37,7 @@ class Layer extends Evented {
         this._overlayLayerIds = []
         this._hoverIds = []
         this._selectedIds = []
+        this._visibleIds = null
         this._highlightColor = undefined
         this._featuresIndexSource = null
         this._featuresById = null
@@ -480,16 +481,11 @@ class Layer extends Evented {
             mapgl.setFilter(id, buildVisibleIdsFilter(ids, baseFilter))
         })
 
-        const dropped = dropHiddenIds(this._hoverIds, this._selectedIds, ids)
-
-        if (dropped) {
-            this._hoverIds = dropped.hoverIds
-            this._selectedIds = dropped.selectedIds
-            this._syncOverlay()
-        }
+        this._visibleIds = ids
+        this._syncOverlay()
     }
 
-    // Syncs the highlight overlay with the union of hovered/selected ids
+    // Syncs the highlight overlay with the currently visible hovered/selected ids
     _syncOverlay() {
         const map = this.getMap()
 
@@ -497,7 +493,10 @@ class Layer extends Evented {
             return
         }
 
-        const ids = [...new Set([...this._hoverIds, ...this._selectedIds])]
+        const ids = filterVisibleIds(
+            [...new Set([...this._hoverIds, ...this._selectedIds])],
+            this._visibleIds
+        )
         const features = ids.flatMap(id => this.getFeaturesById(id))
 
         updateHighlightOverlay(map, {

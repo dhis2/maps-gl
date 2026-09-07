@@ -1,5 +1,4 @@
 import centerOfMass from '@turf/center-of-mass'
-import { dropHiddenIds } from '../utils/core.js'
 import { isClusterPoint } from '../utils/filters.js'
 import { featureCollection } from '../utils/geometry.js'
 import { labelClusterLayer } from '../utils/labels.js'
@@ -268,13 +267,8 @@ class Cluster extends Layer {
             mapgl.once('idle', this.updatePolygons)
         }
 
-        const dropped = dropHiddenIds(this._hoverIds, this._selectedIds, ids)
-
-        if (dropped) {
-            this._hoverIds = dropped.hoverIds
-            this._selectedIds = dropped.selectedIds
-            this._syncOverlay()
-        }
+        this._visibleIds = ids
+        this._syncOverlay()
     }
 
     onSpiderClose = clusterId => {

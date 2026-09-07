@@ -204,6 +204,26 @@ describe('Cluster', () => {
                 updateHighlightOverlay.mock.lastCall[1].features
             ).toMatchObject([{ properties: { id: 'b' } }])
         })
+
+        it('Should restore a hovered/selected id to the overlay once setVisibleIds() clears the restriction that had hidden it', () => {
+            const cluster = new Cluster({ data })
+            mockMapGL.getSource.mockReturnValue({ setData: jest.fn() })
+
+            cluster.addTo(mockMap)
+            cluster.highlight(['a', 'b'])
+            cluster.setVisibleIds(['b'])
+            updateHighlightOverlay.mockClear()
+
+            cluster.setVisibleIds(null)
+
+            expect(updateHighlightOverlay).toHaveBeenCalledTimes(1)
+            expect(
+                updateHighlightOverlay.mock.lastCall[1].features
+            ).toMatchObject([
+                { properties: { id: 'a' } },
+                { properties: { id: 'b' } },
+            ])
+        })
     })
 
     describe('onRemove', () => {

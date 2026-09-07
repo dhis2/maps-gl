@@ -251,7 +251,6 @@ class EarthEngine extends Layer {
 
     setVisibleIds(ids) {
         super.setVisibleIds(ids)
-        this._visibleIds = ids
         this._updateMask()
     }
 

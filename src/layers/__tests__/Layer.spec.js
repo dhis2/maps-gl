@@ -263,16 +263,21 @@ describe('Layer', () => {
             { id: 2, source },
         ])
     })
-    it('Should leave the overlay untouched when setVisibleIds() clears the filter (nothing to drop)', () => {
+    it('Should restore a hovered/selected id to the overlay once setVisibleIds() clears the restriction that had hidden it', () => {
         const layer = new Layer({ data })
+        const source = layer.getId()
 
         layer.addTo(mockMap)
         layer.highlight(['O6uvpzGd5pu'])
+        layer.setVisibleIds(['fdc6uOvgoji'])
         updateHighlightOverlay.mockClear()
 
         layer.setVisibleIds(null)
 
-        expect(updateHighlightOverlay).not.toHaveBeenCalled()
+        expect(updateHighlightOverlay).toHaveBeenCalledTimes(1)
+        expect(updateHighlightOverlay.mock.lastCall[1].features).toMatchObject([
+            { id: 1, source },
+        ])
     })
     it('Should restrict rendered features to the given ids, ANDed with any existing static filter', () => {
         const layer = new Layer({ data })
