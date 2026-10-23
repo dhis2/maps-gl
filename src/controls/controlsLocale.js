@@ -18,6 +18,18 @@ const controlsLocale = {
     'MeasureControl.Miles': 'mi',
     'MeasureControl.Hectares': 'ha',
     'MeasureControl.Acres': 'acres',
+    'DrawControl.DrawLine': 'Draw line',
+    'DrawControl.DrawPoint': 'Place point',
+    'DrawControl.ClickToAddPoints':
+        'Click to add points, double-click or press Enter to finish',
+    'DrawControl.ClickToPlacePoint': 'Click where you want to place the point',
+    'DrawControl.EditLine': 'Edit line',
+    'DrawControl.MovePoint': 'Move point',
+    'DrawControl.EditLineHelp':
+        'Drag points to move them, drag the small points to add one, click a point to remove it',
+    'DrawControl.MovePointHelp': 'Drag the point, or click where it should be',
+    'DrawControl.Cancel': 'Cancel',
+    'DrawControl.Finish': 'Finish',
 }
 
 export default controlsLocale

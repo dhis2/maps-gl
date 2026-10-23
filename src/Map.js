@@ -2,6 +2,7 @@ import { Evented, Map } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import controlsLocale from './controls/controlsLocale.js'
 import controlTypes from './controls/controlTypes.js'
+import Draw from './controls/Draw.js'
 import MultiTouch from './controls/MultiTouch.js'
 import Layer from './layers/Layer.js'
 import layerTypes from './layers/layerTypes.js'
@@ -135,7 +136,7 @@ export class MapGL extends Evented {
 
             // Layer is removed while being created
             if (!this.hasLayer(layer)) {
-                this.removeLayer(layer)
+                await this.removeLayer(layer)
             }
         }
 
@@ -169,6 +170,8 @@ export class MapGL extends Evented {
 
     remove() {
         const mapgl = this._mapgl
+
+        this.stopDrawing()
 
         mapgl.off('render', this.onRender)
         mapgl.off('idle', this.onIdle)
@@ -210,6 +213,34 @@ export class MapGL extends Evented {
         this._mapgl.removeControl(control)
     }
 
+    // Draw a point or a line, see controls/Draw.js for options
+    startDrawing(options) {
+        this.stopDrawing()
+        this._draw = new Draw(this, {
+            ...options,
+            onFinish: geometry => {
+                this._draw = null
+                options.onFinish?.(geometry)
+            },
+            onCancel: () => {
+                this._draw = null
+                options.onCancel?.()
+            },
+        })
+        this._draw.start()
+    }
+
+    stopDrawing() {
+        if (this._draw) {
+            this._draw.remove()
+            this._draw = null
+        }
+    }
+
+    isDrawing() {
+        return !!this._draw
+    }
+
     createLayer(config) {
         if (layerTypes[config.type]) {
             return new layerTypes[config.type](config)
@@ -238,6 +269,10 @@ export class MapGL extends Evented {
     }
 
     onClick = evt => {
+        if (this._draw) {
+            return
+        }
+
         const eventObj = this._createClickEvent(evt)
         const { feature } = eventObj
 
@@ -253,6 +288,10 @@ export class MapGL extends Evented {
     }
 
     onContextMenu = evt => {
+        if (this._draw) {
+            return
+        }
+
         const eventObj = this._createClickEvent(evt)
 
         if (eventObj.feature) {
@@ -268,7 +307,7 @@ export class MapGL extends Evented {
     }
 
     onMouseMove = evt => {
-        if (!this._mouseMoveEnabled) {
+        if (!this._mouseMoveEnabled || this._draw) {
             return
         }
 
