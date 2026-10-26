@@ -38,9 +38,9 @@ export class MapGL extends Evented {
     constructor(el, options = {}) {
         super()
 
-        const { locale, glyphs, scrollZoom, rtlTextPluginUrl } = options
+        const { locale, glyphs, scrollZoom } = options
 
-        loadRTLTextPlugin(rtlTextPluginUrl)
+        loadRTLTextPlugin()
 
         const mapgl = new Map({
             container: el,

@@ -17,6 +17,8 @@ module.exports = function (api) {
     }
 
     return {
+        // Copied as-is to the build by --copy-files
+        ignore: ['./src/vendor/mapbox-gl-rtl-text.js'],
         presets,
         plugins: [
             '@babel/plugin-proposal-object-rest-spread',

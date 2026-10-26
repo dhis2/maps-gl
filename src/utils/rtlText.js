@@ -1,12 +1,15 @@
 import { setRTLTextPlugin } from 'maplibre-gl'
 
-// Official Mapbox/MapLibre plugin for Arabic shaping and right-to-left reordering.
-const DEFAULT_RTL_TEXT_PLUGIN_URL =
-    'https://unpkg.com/@mapbox/mapbox-gl-rtl-text@0.3.0/dist/mapbox-gl-rtl-text.js'
+// Plugin for Arabic shaping and right-to-left reordering, copied on install
+// from @mapbox/mapbox-gl-rtl-text (see scripts/prepare-vendor-files.js)
+const RTL_TEXT_PLUGIN_URL = new URL(
+    '../vendor/mapbox-gl-rtl-text.js',
+    import.meta.url
+).href
 
 let requested = false
 
-export const loadRTLTextPlugin = (url = DEFAULT_RTL_TEXT_PLUGIN_URL) => {
+export const loadRTLTextPlugin = async () => {
     if (requested) {
         return
     }
@@ -14,7 +17,7 @@ export const loadRTLTextPlugin = (url = DEFAULT_RTL_TEXT_PLUGIN_URL) => {
     requested = true
 
     try {
-        setRTLTextPlugin(url, true)
+        await setRTLTextPlugin(RTL_TEXT_PLUGIN_URL, true)
     } catch (error) {
         console.error('Failed to set RTL text plugin', error)
     }
