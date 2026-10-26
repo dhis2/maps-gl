@@ -1,3 +1,11 @@
+## [4.4.4](https://github.com/dhis2/maps-gl/compare/v4.4.3...v4.4.4) (2026-10-26)
+
+
+### Bug Fixes
+
+* bundle the EE API from the npm package ([#675](https://github.com/dhis2/maps-gl/issues/675)) ([7c69278](https://github.com/dhis2/maps-gl/commit/7c6927886805d507e9f341a1bbb58f89bea9973e))
+* render right-to-left labels correctly ([#673](https://github.com/dhis2/maps-gl/issues/673)) ([e9f5b9c](https://github.com/dhis2/maps-gl/commit/e9f5b9c58d3ed5b755ea04c6770858a6bc31eb56))
+
 ## [4.4.3](https://github.com/dhis2/maps-gl/compare/v4.4.2...v4.4.3) (2026-09-03)
 
 
