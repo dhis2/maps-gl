@@ -29,6 +29,9 @@ jobs:
             - name: Build package
               run: yarn build
 
+            - name: Remove the prepare script, so that Yarn installs the copy without building it
+              run: npm pkg delete scripts.prepare
+
             - name: Pack and unpack the build to a directory named 'package'
               run: yarn pack --filename output.tgz && tar -xzf output.tgz
 
