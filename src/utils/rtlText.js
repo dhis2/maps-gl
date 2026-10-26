@@ -16,6 +16,7 @@ export const loadRTLTextPlugin = async () => {
 
     requested = true
 
+    // Only catches setup errors: MapLibre loads the plugin when first needed
     try {
         await setRTLTextPlugin(RTL_TEXT_PLUGIN_URL, true)
     } catch (error) {

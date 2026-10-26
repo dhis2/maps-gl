@@ -61,7 +61,7 @@
         "clean": "rimraf ./build/*",
         "build:commonjs": "BABEL_ENV=commonjs babel src --out-dir ./build/cjs --copy-files --verbose",
         "build:modules": "BABEL_ENV=modules babel src --out-dir ./build/es --copy-files --verbose",
-        "build": "NODE_ENV=production yarn clean && yarn build:commonjs && yarn build:modules",
+        "build": "NODE_ENV=production yarn clean && yarn prepare && yarn build:commonjs && yarn build:modules",
         "watch": "NODE_ENV=development yarn clean && concurrently -n watch-cjs,watch-es \"yarn build:commonjs --watch\" \"yarn build:modules --watch\"",
         "test": "jest src/*"
     },

@@ -8,6 +8,11 @@ const vendorDir = path.join(root, 'src/vendor')
 
 fs.mkdirSync(vendorDir, { recursive: true })
 
+fs.copyFileSync(
+    path.join(root, 'node_modules/@mapbox/mapbox-gl-rtl-text/LICENSE.md'),
+    path.join(vendorDir, 'mapbox-gl-rtl-text.LICENSE.md')
+)
+
 // Loaded by MapLibre's workers from a URL, so Babel copies it as-is (see babel.config.js)
 fs.copyFileSync(
     path.join(
