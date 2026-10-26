@@ -15,6 +15,8 @@ const loadModules = () => {
     return modules
 }
 
+const flushPromises = () => new Promise(resolve => setTimeout(resolve))
+
 describe('loadRTLTextPlugin', () => {
     it('lazily sets the vendored plugin', () => {
         const { setRTLTextPlugin, loadRTLTextPlugin } = loadModules()
@@ -44,7 +46,8 @@ describe('loadRTLTextPlugin', () => {
             .mockImplementation(() => {})
         setRTLTextPlugin.mockRejectedValueOnce(error)
 
-        await loadRTLTextPlugin()
+        loadRTLTextPlugin()
+        await flushPromises()
 
         expect(consoleError).toHaveBeenCalledWith(
             'Failed to set RTL text plugin',
@@ -53,7 +56,7 @@ describe('loadRTLTextPlugin', () => {
         consoleError.mockRestore()
     })
 
-    it('logs an error if MapLibre throws before returning a promise', async () => {
+    it('logs an error if MapLibre throws before returning a promise', () => {
         const { setRTLTextPlugin, loadRTLTextPlugin } = loadModules()
         const error = new ReferenceError('Worker is not defined')
         const consoleError = jest
@@ -63,7 +66,7 @@ describe('loadRTLTextPlugin', () => {
             throw error
         })
 
-        await loadRTLTextPlugin()
+        loadRTLTextPlugin()
 
         expect(consoleError).toHaveBeenCalledWith(
             'Failed to set RTL text plugin',

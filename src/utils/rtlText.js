@@ -9,7 +9,9 @@ const RTL_TEXT_PLUGIN_URL = new URL(
 
 let requested = false
 
-export const loadRTLTextPlugin = async () => {
+const logError = error => console.error('Failed to set RTL text plugin', error)
+
+export const loadRTLTextPlugin = () => {
     if (requested) {
         return
     }
@@ -18,8 +20,8 @@ export const loadRTLTextPlugin = async () => {
 
     // Only catches setup errors: MapLibre loads the plugin when first needed
     try {
-        await setRTLTextPlugin(RTL_TEXT_PLUGIN_URL, true)
+        setRTLTextPlugin(RTL_TEXT_PLUGIN_URL, true).catch(logError)
     } catch (error) {
-        console.error('Failed to set RTL text plugin', error)
+        logError(error)
     }
 }

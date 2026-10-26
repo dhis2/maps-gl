@@ -1,7 +1,7 @@
 // Writes third-party files into src/vendor, which is gitignored and skipped by
 // d2-style. Runs after every install through the "prepare" script.
-const fs = require('fs')
-const path = require('path')
+const fs = require('node:fs')
+const path = require('node:path')
 
 const root = path.join(__dirname, '..')
 const vendorDir = path.join(root, 'src/vendor')
