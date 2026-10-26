@@ -18,10 +18,16 @@ export const loadRTLTextPlugin = () => {
 
     requested = true
 
-    // Only catches setup errors: MapLibre loads the plugin when first needed
-    try {
-        setRTLTextPlugin(RTL_TEXT_PLUGIN_URL, true).catch(logError)
-    } catch (error) {
-        logError(error)
-    }
+    // MapLibre hides RTL labels if the plugin can't load, so check the file first
+    fetch(RTL_TEXT_PLUGIN_URL, { method: 'HEAD' })
+        .then(response => {
+            const type = response.headers.get('content-type')
+
+            if (!response.ok || !/javascript/.test(type)) {
+                throw new Error(`Got ${response.status} ${type}`)
+            }
+
+            return setRTLTextPlugin(RTL_TEXT_PLUGIN_URL, true)
+        })
+        .catch(logError)
 }

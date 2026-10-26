@@ -17,33 +17,73 @@ const loadModules = () => {
 
 const flushPromises = () => new Promise(resolve => setTimeout(resolve))
 
+const response = (status, type) => ({
+    ok: status === 200,
+    status,
+    headers: { get: () => type },
+})
+
+const pluginUrl = expect.stringMatching(
+    /\/src\/vendor\/mapbox-gl-rtl-text\.js$/
+)
+
 describe('loadRTLTextPlugin', () => {
-    it('lazily sets the vendored plugin', () => {
-        const { setRTLTextPlugin, loadRTLTextPlugin } = loadModules()
+    let consoleError
 
-        loadRTLTextPlugin()
-
-        expect(setRTLTextPlugin).toHaveBeenCalledWith(
-            expect.stringMatching(/\/src\/vendor\/mapbox-gl-rtl-text\.js$/),
-            true
+    beforeEach(() => {
+        global.fetch = jest.fn(() =>
+            Promise.resolve(response(200, 'text/javascript'))
         )
+        consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
     })
 
-    it('sets the plugin only once for several maps', () => {
+    afterEach(() => {
+        consoleError.mockRestore()
+        delete global.fetch
+    })
+
+    it('lazily sets the vendored plugin once it is found', async () => {
+        const { setRTLTextPlugin, loadRTLTextPlugin } = loadModules()
+
+        loadRTLTextPlugin()
+        await flushPromises()
+
+        expect(fetch).toHaveBeenCalledWith(pluginUrl, { method: 'HEAD' })
+        expect(setRTLTextPlugin).toHaveBeenCalledWith(pluginUrl, true)
+        expect(consoleError).not.toHaveBeenCalled()
+    })
+
+    it('sets the plugin only once for several maps', async () => {
         const { setRTLTextPlugin, loadRTLTextPlugin } = loadModules()
 
         loadRTLTextPlugin()
         loadRTLTextPlugin()
+        await flushPromises()
 
+        expect(fetch).toHaveBeenCalledTimes(1)
         expect(setRTLTextPlugin).toHaveBeenCalledTimes(1)
+    })
+
+    it.each([
+        ['missing', 404, 'text/html'],
+        ['replaced by an HTML fallback page', 200, 'text/html'],
+    ])('leaves the plugin unset if the file is %s', async (_, status, type) => {
+        const { setRTLTextPlugin, loadRTLTextPlugin } = loadModules()
+        fetch.mockResolvedValueOnce(response(status, type))
+
+        loadRTLTextPlugin()
+        await flushPromises()
+
+        expect(setRTLTextPlugin).not.toHaveBeenCalled()
+        expect(consoleError).toHaveBeenCalledWith(
+            'Failed to set RTL text plugin',
+            expect.any(Error)
+        )
     })
 
     it('logs an error if the plugin cannot be set', async () => {
         const { setRTLTextPlugin, loadRTLTextPlugin } = loadModules()
         const error = new Error('setRTLTextPlugin cannot be called twice')
-        const consoleError = jest
-            .spyOn(console, 'error')
-            .mockImplementation(() => {})
         setRTLTextPlugin.mockRejectedValueOnce(error)
 
         loadRTLTextPlugin()
@@ -53,25 +93,21 @@ describe('loadRTLTextPlugin', () => {
             'Failed to set RTL text plugin',
             error
         )
-        consoleError.mockRestore()
     })
 
-    it('logs an error if MapLibre throws before returning a promise', () => {
+    it('logs an error if MapLibre throws before returning a promise', async () => {
         const { setRTLTextPlugin, loadRTLTextPlugin } = loadModules()
         const error = new ReferenceError('Worker is not defined')
-        const consoleError = jest
-            .spyOn(console, 'error')
-            .mockImplementation(() => {})
         setRTLTextPlugin.mockImplementationOnce(() => {
             throw error
         })
 
         loadRTLTextPlugin()
+        await flushPromises()
 
         expect(consoleError).toHaveBeenCalledWith(
             'Failed to set RTL text plugin',
             error
         )
-        consoleError.mockRestore()
     })
 })
