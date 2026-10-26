@@ -36,3 +36,7 @@ goog.global.ee = ee;
 export default ee;
 `
 )
+fs.copyFileSync(
+    fromPackage('@google/earthengine/LICENSE'),
+    toVendor('ee_api_js_worker.LICENSE')
+)

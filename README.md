@@ -11,7 +11,7 @@ maps-app folder: `yarn link @dhis2/maps-gl`
 
 ## Vendored files
 
-`yarn install` writes two third-party files into `src/vendor` (gitignored) through `scripts/prepare-vendor-files.js`:
+`yarn install` writes two third-party files, each with its license, into `src/vendor` (gitignored) through `scripts/prepare-vendor-files.js`:
 
 -   `mapbox-gl-rtl-text.js`, from `@mapbox/mapbox-gl-rtl-text`: the plugin MapLibre's workers load to render right-to-left text. Version 1.0.0 dropped the single-file script MapLibre loads, so stay on 0.x.
 -   `ee_api_js_worker.js`, from `@google/earthengine`: the Earth Engine API, adapted to run in the Earth Engine web worker, which we use for performance reasons.
