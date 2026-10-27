@@ -18,6 +18,7 @@ export const lineOpacity = 1
 export const fillOpacity = 1
 
 export const iconOpacity = 1
+export const iconHaloOpacity = 0.6
 
 export const noDataColor = '#CCCCCC'
 
