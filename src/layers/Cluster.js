@@ -256,8 +256,9 @@ class Cluster extends Layer {
             return
         }
 
-        const features = ids
-            ? this.getFeatures().filter(f => ids.includes(f.properties.id))
+        const visibleIds = ids ? new Set(ids) : null
+        const features = visibleIds
+            ? this.getFeatures().filter(f => visibleIds.has(f.properties.id))
             : this.getFeatures()
 
         source.setData(featureCollection(features))

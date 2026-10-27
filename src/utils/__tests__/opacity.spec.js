@@ -155,6 +155,65 @@ describe('opacity', () => {
         )
     })
 
+    it('gives a highlight clone the opacity of the layer it was cloned from', () => {
+        const mapgl = createMapGL(['layer1-point-highlight'])
+
+        setLayersOpacity(mapgl, 'layer1', 0.5)
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'layer1-point-highlight',
+            'circle-opacity',
+            0.5
+        )
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'layer1-point-highlight',
+            'circle-stroke-opacity',
+            0.5
+        )
+    })
+
+    it('gives an icon highlight clone the opacity of its symbol layer', () => {
+        const mapgl = createMapGL(['layer1-symbol-highlight-icon'])
+
+        setLayersOpacity(mapgl, 'layer1', 0.5)
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'layer1-symbol-highlight-icon',
+            'icon-opacity',
+            0.5
+        )
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'layer1-symbol-highlight-icon',
+            'text-opacity',
+            0.5
+        )
+    })
+
+    it('dampens an icon highlight halo to 60% of the requested opacity', () => {
+        const mapgl = createMapGL(['layer1-symbol-highlight-halo'])
+
+        setLayersOpacity(mapgl, 'layer1', 1)
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledTimes(1)
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'layer1-symbol-highlight-halo',
+            'circle-opacity',
+            0.6
+        )
+    })
+
+    it('dampens a mask sub-layer to 60% of the requested opacity', () => {
+        const mapgl = createMapGL(['layer1-mask'])
+
+        setLayersOpacity(mapgl, 'layer1', 1)
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'layer1-mask',
+            'fill-opacity',
+            0.6
+        )
+    })
+
     it('only touches layers whose id has the given prefix', () => {
         const mapgl = createMapGL(['layer1-line', 'layer2-line'])
 

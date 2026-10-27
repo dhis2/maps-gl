@@ -18,8 +18,10 @@ export const lineOpacity = 1
 export const fillOpacity = 1
 
 export const iconOpacity = 1
+export const iconHaloOpacity = 0.6
 
 export const noDataColor = '#CCCCCC'
+export const maskOpacity = 0.6
 
 export const strokeWidth = 1
 export const hoverStrokeMultiplier = 3
