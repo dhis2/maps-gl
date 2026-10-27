@@ -19,8 +19,11 @@ export const loadRTLTextPlugin = () => {
     requested = true
 
     // MapLibre hides RTL labels if the plugin can't load, so check the file first
-    fetch(RTL_TEXT_PLUGIN_URL, { method: 'HEAD' })
+    const controller = new AbortController()
+
+    fetch(RTL_TEXT_PLUGIN_URL, { signal: controller.signal })
         .then(response => {
+            controller.abort()
             const type = response.headers.get('content-type')
 
             if (!response.ok || !/javascript/.test(type)) {

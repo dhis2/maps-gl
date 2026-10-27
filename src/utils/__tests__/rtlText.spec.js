@@ -48,9 +48,22 @@ describe('loadRTLTextPlugin', () => {
         loadRTLTextPlugin()
         await flushPromises()
 
-        expect(fetch).toHaveBeenCalledWith(pluginUrl, { method: 'HEAD' })
+        expect(fetch).toHaveBeenCalledWith(pluginUrl, {
+            signal: expect.any(AbortSignal),
+        })
         expect(setRTLTextPlugin).toHaveBeenCalledWith(pluginUrl, true)
         expect(consoleError).not.toHaveBeenCalled()
+    })
+
+    it('checks the file with a GET aborted once the headers arrive', async () => {
+        const { loadRTLTextPlugin } = loadModules()
+
+        loadRTLTextPlugin()
+        await flushPromises()
+
+        const [, options] = fetch.mock.calls[0]
+        expect(options.method).toBeUndefined()
+        expect(options.signal.aborted).toBe(true)
     })
 
     it('sets the plugin only once for several maps', async () => {
@@ -78,6 +91,21 @@ describe('loadRTLTextPlugin', () => {
         expect(consoleError).toHaveBeenCalledWith(
             'Failed to set RTL text plugin',
             expect.any(Error)
+        )
+    })
+
+    it('leaves the plugin unset if the file cannot be fetched', async () => {
+        const { setRTLTextPlugin, loadRTLTextPlugin } = loadModules()
+        const error = new TypeError('Failed to fetch')
+        fetch.mockRejectedValueOnce(error)
+
+        loadRTLTextPlugin()
+        await flushPromises()
+
+        expect(setRTLTextPlugin).not.toHaveBeenCalled()
+        expect(consoleError).toHaveBeenCalledWith(
+            'Failed to set RTL text plugin',
+            error
         )
     })
 
