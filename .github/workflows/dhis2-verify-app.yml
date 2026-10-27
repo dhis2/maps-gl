@@ -28,3 +28,6 @@ jobs:
 
             - name: Build
               run: yarn build
+
+            - name: Check the package contents
+              run: node scripts/check-package-contents.js

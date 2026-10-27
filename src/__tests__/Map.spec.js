@@ -18,6 +18,10 @@ jest.mock('../earthengine/ee_worker_loader', () => ({
     default: jest.fn(),
 }))
 
+jest.mock('../utils/rtlText.js', () => ({
+    loadRTLTextPlugin: jest.fn(),
+}))
+
 describe('DHIS2 Maps-gl Map', () => {
     it('should initialize correctly', () => {
         const map = new Map('el')
