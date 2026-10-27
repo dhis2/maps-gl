@@ -1,4 +1,4 @@
-import { iconHaloOpacity } from './style.js'
+import { iconHaloOpacity, maskOpacity } from './style.js'
 
 const properties = {
     raster: ['raster-opacity'],
@@ -13,12 +13,14 @@ const properties = {
     cluster: ['circle-opacity', 'circle-stroke-opacity'],
     count: ['text-opacity'],
     halo: ['circle-opacity'],
+    mask: ['fill-opacity'],
 }
 
 const opacityFactor = {
     buffer: 0.2,
     'buffer-outline': 0.2,
     halo: iconHaloOpacity,
+    mask: maskOpacity,
 }
 
 const getOpacity = (key, opacity) => opacity * (opacityFactor[key] || 1)

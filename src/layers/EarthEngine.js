@@ -5,7 +5,7 @@ import { defaultOptions, getWorkerOptions } from '../utils/earthengine.js'
 import { isPoint, featureCollection } from '../utils/geometry.js'
 import { polygonLayer, outlineLayer, pointLayer } from '../utils/layers.js'
 import { setPrecision } from '../utils/numbers.js'
-import { noDataColor } from '../utils/style.js'
+import { maskOpacity, noDataColor } from '../utils/style.js'
 import Layer from './Layer.js'
 
 class EarthEngine extends Layer {
@@ -126,7 +126,7 @@ class EarthEngine extends Layer {
                     source: `${id}-mask`,
                     paint: {
                         'fill-color': noDataColor,
-                        'fill-opacity': 0.6,
+                        'fill-opacity': maskOpacity,
                     },
                 },
                 { excludeFromVisibleIdsFilter: true }
