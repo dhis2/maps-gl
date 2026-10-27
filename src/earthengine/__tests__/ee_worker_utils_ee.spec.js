@@ -1,5 +1,7 @@
-jest.mock('../ee_api_js_worker.js')
-import ee from '../ee_api_js_worker.js'
+jest.mock('../../vendor/ee_api_js_worker.js', () =>
+    jest.requireActual('../__mocks__/ee_api_js_worker.js')
+)
+import ee from '../../vendor/ee_api_js_worker.js'
 import {
     DEFAULT_SCALE,
     filterCollectionByDateRange,

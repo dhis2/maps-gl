@@ -9,20 +9,18 @@ WebGL mapping engine for DHIS2 Maps
 maps-gl folder: `yarn link`
 maps-app folder: `yarn link @dhis2/maps-gl`
 
-## How to upgrade earthengine-api
+## Vendored files
 
-We run earthengine-api in a web worker for performance reasons, and this requires a separate build:
+`yarn install` writes two third-party files, each with its license, into `src/vendor` (gitignored) through `scripts/prepare-vendor-files.js`:
 
-1. git clone https://github.com/MasterMaps/earthengine-api/tree/master (make sure the fork is synced)
-2. git chekout master
-3. git pull
-4. git checkout web-worker-build
-5. git merge master
-6. cd javascript
-7. yarn build
-8. copy the contents of javascript/build/worker.js to ee_api_js_worker in this repo
+-   `mapbox-gl-rtl-text.js`, from `@mapbox/mapbox-gl-rtl-text`: the plugin MapLibre's workers load to render right-to-left text. Version 1.0.0 dropped the single-file script MapLibre loads, so stay on 0.x.
+-   `ee_api_js_worker.js`, from `@google/earthengine`: the Earth Engine API, adapted to run in the Earth Engine web worker, which we use for performance reasons.
 
-PR to main earthengine-api repo: https://github.com/google/earthengine-api/pull/173
+To upgrade either one:
+
+1. Update its pinned version in `package.json`
+2. Run `yarn install`
+3. Test it in maps-app: Arabic labels for the plugin, Earth Engine layers for the API
 
 ## Build from source
 

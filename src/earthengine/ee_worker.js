@@ -1,7 +1,7 @@
 import polygonBuffer from '@turf/buffer'
 import circle from '@turf/circle'
 import { expose } from 'comlink'
-import ee from './ee_api_js_worker.js' // https://github.com/google/earthengine-api/pull/173
+import ee from '../vendor/ee_api_js_worker.js'
 import { WorkerCache } from './ee_worker_cache.js'
 import {
     getInfo,
