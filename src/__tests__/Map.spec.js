@@ -43,6 +43,8 @@ describe('DHIS2 Maps-gl Map', () => {
             getIndex: () => 0,
             onMouseMove: jest.fn(),
             fire: jest.fn(),
+            listens: jest.fn(() => false),
+            highlight: jest.fn(),
         }
         map._layers = [mockLayer]
         jest.spyOn(map, 'getLayers').mockReturnValue([mockLayer])
@@ -133,6 +135,8 @@ describe('DHIS2 Maps-gl Map', () => {
                 getIndex: () => 0,
                 onMouseMove: jest.fn(),
                 fire: jest.fn(),
+                listens: jest.fn(() => false),
+                highlight: jest.fn(),
             }
             map._layers = [mockLayer]
             jest.spyOn(map, 'getLayers').mockReturnValue([mockLayer])
@@ -258,6 +262,8 @@ describe('DHIS2 Maps-gl Map', () => {
             getIndex: () => 0,
             onMouseMove: jest.fn(),
             fire: jest.fn(),
+            listens: jest.fn(() => false),
+            highlight: jest.fn(),
         })
 
         const moveTo = (map, layerId, featureId) => {
@@ -269,6 +275,11 @@ describe('DHIS2 Maps-gl Map', () => {
                     properties: { id: featureId },
                 },
             ])
+            map.onMouseMove({ point: {} })
+        }
+
+        const moveOffFeatures = map => {
+            map.getMapGL().queryRenderedFeatures = jest.fn(() => [])
             map.onMouseMove({ point: {} })
         }
 
@@ -339,6 +350,113 @@ describe('DHIS2 Maps-gl Map', () => {
             expect(mockLayer.fire).toHaveBeenCalledWith('mouseleave')
             expect(map._hoveredLayer).toBeNull()
             expect(map._hoveredFeatureId).toBeNull()
+        })
+
+        describe('hover highlight', () => {
+            it('highlights the hovered feature when the layer does not handle mouseenter', () => {
+                const map = new Map('el')
+                const mockLayer = createMockLayer('layer-1', 1)
+                map._layers = [mockLayer]
+                jest.spyOn(map, 'getLayers').mockReturnValue([mockLayer])
+                map.setMouseMoveEnabled(true)
+
+                moveTo(map, 'layer-1', 1)
+
+                expect(mockLayer.highlight).toHaveBeenCalledWith(1)
+            })
+
+            it('leaves highlighting to the layer when it handles mouseenter', () => {
+                const map = new Map('el')
+                const mockLayer = createMockLayer('layer-1', 1)
+                mockLayer.listens.mockReturnValue(true)
+                map._layers = [mockLayer]
+                jest.spyOn(map, 'getLayers').mockReturnValue([mockLayer])
+                map.setMouseMoveEnabled(true)
+
+                moveTo(map, 'layer-1', 1)
+                moveOffFeatures(map)
+
+                expect(mockLayer.highlight).not.toHaveBeenCalled()
+            })
+
+            it('clears the highlight when the mouse moves off the feature', () => {
+                const map = new Map('el')
+                const mockLayer = createMockLayer('layer-1', 1)
+                map._layers = [mockLayer]
+                jest.spyOn(map, 'getLayers').mockReturnValue([mockLayer])
+                map.setMouseMoveEnabled(true)
+
+                moveTo(map, 'layer-1', 1)
+                moveOffFeatures(map)
+
+                expect(mockLayer.highlight).toHaveBeenLastCalledWith(null)
+            })
+
+            it('moves the highlight to the newly hovered layer', () => {
+                const map = new Map('el')
+                const layerA = createMockLayer('layer-a', 1)
+                const layerB = createMockLayer('layer-b', 2)
+                map._layers = [layerA, layerB]
+                jest.spyOn(map, 'getLayers').mockReturnValue([layerA, layerB])
+                map.setMouseMoveEnabled(true)
+
+                moveTo(map, 'layer-a', 1)
+                moveTo(map, 'layer-b', 2)
+
+                expect(layerA.highlight).toHaveBeenLastCalledWith(null)
+                expect(layerB.highlight).toHaveBeenCalledWith(2)
+            })
+
+            it('highlights the next feature of the same layer without clearing in between', () => {
+                const map = new Map('el')
+                const mockLayer = createMockLayer('layer-1', 1)
+                map._layers = [mockLayer]
+                jest.spyOn(map, 'getLayers').mockReturnValue([mockLayer])
+                map.setMouseMoveEnabled(true)
+
+                moveTo(map, 'layer-1', 1)
+                moveTo(map, 'layer-1', 2)
+
+                expect(mockLayer.highlight.mock.calls).toEqual([[1], [2]])
+            })
+
+            it('clears the highlight on mouseout', () => {
+                const map = new Map('el')
+                const mockLayer = createMockLayer('layer-1', 1)
+                map._layers = [mockLayer]
+                jest.spyOn(map, 'getLayers').mockReturnValue([mockLayer])
+                map.setMouseMoveEnabled(true)
+
+                moveTo(map, 'layer-1', 1)
+                map.onMouseOut({})
+
+                expect(mockLayer.highlight).toHaveBeenLastCalledWith(null)
+            })
+
+            it('highlights through a layer group so the id is highlighted in all its sub-layers', () => {
+                const map = new Map('el')
+                const subLayer = {
+                    fire: jest.fn(),
+                    listens: jest.fn(() => false),
+                    highlight: jest.fn(),
+                }
+                const group = {
+                    ...createMockLayer('sub-1', 1),
+                    getSubLayerFromId: () => subLayer,
+                }
+                map._layers = [group]
+                jest.spyOn(map, 'getLayers').mockReturnValue([group])
+                map.setMouseMoveEnabled(true)
+
+                moveTo(map, 'sub-1', 1)
+
+                expect(subLayer.fire).toHaveBeenCalledWith(
+                    'mouseenter',
+                    expect.objectContaining({ feature: expect.anything() })
+                )
+                expect(group.highlight).toHaveBeenCalledWith(1)
+                expect(subLayer.highlight).not.toHaveBeenCalled()
+            })
         })
     })
 
