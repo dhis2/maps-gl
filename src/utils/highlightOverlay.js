@@ -1,5 +1,6 @@
 import { highlightColorExpr } from './expressions.js'
 import { featureCollection } from './geometry.js'
+import { iconHaloOpacity } from './style.js'
 
 // Only circle/line paint reacts to hover/selected feature-state
 // Cloning a fill layer would double-render the same fill
@@ -9,7 +10,6 @@ const CLONEABLE_TYPES = new Set(['circle', 'line'])
 // Instead we add a colored halo behind a plain clone of the icon
 const ICON_HALO_RADIUS = 14
 const ICON_HALO_BLUR = 0.6
-const ICON_HALO_OPACITY = 0.6
 
 const iconHighlightHalo = layer => ({
     id: `${layer.id}-highlight-halo`,
@@ -20,7 +20,7 @@ const iconHighlightHalo = layer => ({
         'circle-color': highlightColorExpr('#333333'),
         'circle-radius': ICON_HALO_RADIUS,
         'circle-blur': ICON_HALO_BLUR,
-        'circle-opacity': ICON_HALO_OPACITY,
+        'circle-opacity': iconHaloOpacity,
     },
 })
 

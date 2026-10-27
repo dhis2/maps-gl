@@ -15,6 +15,7 @@ import {
     composeTransformRequest,
 } from './utils/images.js'
 import { OVERLAY_START_POSITION, MAP_MAX_ZOOM } from './utils/layers.js'
+import { loadRTLTextPlugin } from './utils/rtlText.js'
 import { mapStyle } from './utils/style.js'
 import syncMaps from './utils/sync.js'
 import './Map.css'
@@ -38,6 +39,8 @@ export class MapGL extends Evented {
         super()
 
         const { locale, glyphs, scrollZoom } = options
+
+        loadRTLTextPlugin()
 
         const mapgl = new Map({
             container: el,
@@ -140,7 +143,7 @@ export class MapGL extends Evented {
 
             // Layer is removed while being created
             if (!this.hasLayer(layer)) {
-                this.removeLayer(layer)
+                await this.removeLayer(layer)
             }
         }
 
