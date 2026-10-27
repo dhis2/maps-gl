@@ -1,3 +1,10 @@
+## [4.4.5](https://github.com/dhis2/maps-gl/compare/v4.4.4...v4.4.5) (2026-10-27)
+
+
+### Bug Fixes
+
+* shape right-to-left labels when the app is offline ([#685](https://github.com/dhis2/maps-gl/issues/685)) ([f38d36e](https://github.com/dhis2/maps-gl/commit/f38d36ea6fe8b0e766fe4d39935e81354d8da014))
+
 ## [4.4.4](https://github.com/dhis2/maps-gl/compare/v4.4.3...v4.4.4) (2026-10-26)
 
 
