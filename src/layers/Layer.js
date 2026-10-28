@@ -3,6 +3,7 @@ import { Evented } from 'maplibre-gl'
 import { v4 as uuidv4 } from 'uuid'
 import { bufferSource } from '../utils/buffers.js'
 import { dropHiddenIds, normalizeIds } from '../utils/core.js'
+import { idFilter } from '../utils/filters.js'
 import { featureCollection } from '../utils/geometry.js'
 import {
     createHighlightOverlay,
@@ -18,7 +19,7 @@ const buildVisibleIdsFilter = (ids, baseFilter) => {
         return baseFilter ?? null
     }
 
-    const idsFilter = ['in', ['get', 'id'], ['literal', ids]]
+    const idsFilter = idFilter(ids)
 
     return baseFilter ? ['all', baseFilter, idsFilter] : idsFilter
 }

@@ -1,4 +1,5 @@
 /* global mockMap, mockMapGL */
+import { idFilter, isPolygon } from '../../utils/filters.js'
 import { updateHighlightOverlay } from '../../utils/highlightOverlay.js'
 import Layer from '../Layer.js'
 
@@ -266,7 +267,7 @@ describe('Layer', () => {
     })
     it('Should restrict rendered features to the given ids, ANDed with any existing static filter', () => {
         const layer = new Layer({ data })
-        layer.addLayer({ id: 'layer-1', filter: ['==', '$type', 'Polygon'] })
+        layer.addLayer({ id: 'layer-1', filter: isPolygon })
         layer.addLayer({ id: 'layer-1-points' })
 
         layer.addTo(mockMap)
@@ -274,14 +275,13 @@ describe('Layer', () => {
 
         expect(mockMapGL.setFilter).toHaveBeenCalledWith('layer-1', [
             'all',
-            ['==', '$type', 'Polygon'],
-            ['in', ['get', 'id'], ['literal', ['O6uvpzGd5pu', 'fdc6uOvgoji']]],
+            isPolygon,
+            idFilter(['O6uvpzGd5pu', 'fdc6uOvgoji']),
         ])
-        expect(mockMapGL.setFilter).toHaveBeenCalledWith('layer-1-points', [
-            'in',
-            ['get', 'id'],
-            ['literal', ['O6uvpzGd5pu', 'fdc6uOvgoji']],
-        ])
+        expect(mockMapGL.setFilter).toHaveBeenCalledWith(
+            'layer-1-points',
+            idFilter(['O6uvpzGd5pu', 'fdc6uOvgoji'])
+        )
     })
     it('Should restore the original static filter when shown ids is cleared', () => {
         const layer = new Layer({ data })

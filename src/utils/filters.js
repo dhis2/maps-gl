@@ -18,5 +18,38 @@ export const isClusterPoint = [
 ]
 export const isClusterPolygon = ['all', noCluster, ['==', getIsPolygon, true]]
 
+// `match` finds an id in constant time, where `in` scans the whole list per feature
+const matchId = ids => ['match', ['get', 'id'], ids, true, false]
+
+// Keeps features whose id is in `ids`. A `match` list takes only strings or
+// only integers, and no Object.prototype keys such as "constructor"
+export const idFilter = ids => {
+    const strings = []
+    const integers = []
+    const others = []
+
+    new Set(ids).forEach(id => {
+        if (typeof id === 'string' && !(id in Object.prototype)) {
+            strings.push(id)
+        } else if (Number.isSafeInteger(id)) {
+            integers.push(id)
+        } else {
+            others.push(id)
+        }
+    })
+
+    const filters = [
+        strings.length && matchId(strings),
+        integers.length && matchId(integers),
+        others.length && ['in', ['get', 'id'], ['literal', others]],
+    ].filter(Boolean)
+
+    if (filters.length < 2) {
+        return filters[0] ?? false
+    }
+
+    return ['any', ...filters]
+}
+
 export const isHover = ['boolean', ['feature-state', 'hover'], false]
 export const isSelected = ['boolean', ['feature-state', 'selected'], false]
