@@ -66,6 +66,10 @@ class DonutCluster extends Cluster {
             mapgl.off('moveend', this.updateClusters)
         }
 
+        this.removeClusters()
+    }
+
+    removeClusters() {
         for (const id in this.clustersOnScreen) {
             this.clusters[id]?._listenerAc?.abort()
             this.clustersOnScreen[id].remove()
@@ -73,6 +77,13 @@ class DonutCluster extends Cluster {
 
         this.clustersOnScreen = {}
         this.clusters = {}
+    }
+
+    // Cluster ids pass to other clusters when the data changes, so the markers
+    // are rebuilt once the source reloads
+    setVisibleIds(ids) {
+        this.removeClusters()
+        super.setVisibleIds(ids)
     }
 
     onSourceData = evt => {
