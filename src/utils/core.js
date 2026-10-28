@@ -17,7 +17,7 @@ export const normalizeIds = ids => {
         return ids
     }
 
-    return ids ? [ids] : []
+    return ids === undefined || ids === null ? [] : [ids]
 }
 
 export const dropHiddenIds = (hoverIds, selectedIds, visibleIds) => {
