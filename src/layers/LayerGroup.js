@@ -48,6 +48,7 @@ class LayerGroup extends Evented {
     removeFrom(map) {
         this._layers.forEach(layer => layer.removeFrom(map))
         this.off('contextmenu', this.onContextMenu)
+        this._map = null
     }
 
     getId() {

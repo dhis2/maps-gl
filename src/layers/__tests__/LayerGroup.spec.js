@@ -176,6 +176,18 @@ describe('LayerGroup', () => {
         })
     })
 
+    it('should stop drawing on its map once removed, which may be destroyed by then', () => {
+        const group = new LayerGroup()
+        group._layers = [createMockSubLayer('layer-a', 1)]
+        group._map = mockMap
+
+        group.removeFrom(mockMap)
+        group.highlight([1])
+
+        expect(group.getMap()).toBeNull()
+        expect(updateHighlightOverlay).not.toHaveBeenCalled()
+    })
+
     it('should keep a highlight and selection made while off the map, e.g. during a basemap switch, and draw them once added', async () => {
         const group = new LayerGroup()
         const layerA = createMockSubLayer('layer-a', 1)
