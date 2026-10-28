@@ -158,6 +158,11 @@ class LayerGroup extends Evented {
         this._layers.forEach(layer => layer.move())
     }
 
+    // The app handles hover for the whole group as soon as it does for one sub-layer
+    handlesMouseEnter() {
+        return this._layers.some(layer => layer.handlesMouseEnter())
+    }
+
     hasLayerId(id) {
         return this._layers.some(layer =>
             layer.getLayers().some(layer => layer.id === id)

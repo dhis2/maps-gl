@@ -289,6 +289,10 @@ class Layer extends Evented {
         return this.getLayers().some(layer => layer.id === id)
     }
 
+    handlesMouseEnter() {
+        return Boolean(this.listens('mouseenter'))
+    }
+
     move() {
         const map = this.getMap()
 

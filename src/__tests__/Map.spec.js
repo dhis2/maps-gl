@@ -43,7 +43,7 @@ describe('DHIS2 Maps-gl Map', () => {
             getIndex: () => 0,
             onMouseMove: jest.fn(),
             fire: jest.fn(),
-            listens: jest.fn(() => false),
+            handlesMouseEnter: jest.fn(() => false),
             highlight: jest.fn(),
         }
         map._layers = [mockLayer]
@@ -162,7 +162,7 @@ describe('DHIS2 Maps-gl Map', () => {
             getIndex: () => 0,
             onMouseMove: jest.fn(),
             fire: jest.fn(),
-            listens: jest.fn(() => false),
+            handlesMouseEnter: jest.fn(() => false),
             highlight: jest.fn(),
         })
 
@@ -268,7 +268,7 @@ describe('DHIS2 Maps-gl Map', () => {
             it('leaves highlighting to the layer when it handles mouseenter', () => {
                 const map = new Map('el')
                 const mockLayer = createMockLayer('layer-1', 1)
-                mockLayer.listens.mockReturnValue(true)
+                mockLayer.handlesMouseEnter.mockReturnValue(true)
                 map._layers = [mockLayer]
                 jest.spyOn(map, 'getLayers').mockReturnValue([mockLayer])
                 map.setMouseMoveEnabled(true)
@@ -335,11 +335,7 @@ describe('DHIS2 Maps-gl Map', () => {
 
             it('highlights through a layer group so the id is highlighted in all its sub-layers', () => {
                 const map = new Map('el')
-                const subLayer = {
-                    fire: jest.fn(),
-                    listens: jest.fn(() => false),
-                    highlight: jest.fn(),
-                }
+                const subLayer = { fire: jest.fn(), highlight: jest.fn() }
                 const group = {
                     ...createMockLayer('sub-1', 1),
                     getSubLayerFromId: () => subLayer,
@@ -356,6 +352,31 @@ describe('DHIS2 Maps-gl Map', () => {
                 )
                 expect(group.highlight).toHaveBeenCalledWith(1)
                 expect(subLayer.highlight).not.toHaveBeenCalled()
+            })
+
+            it('leaves every sub-layer of a group to the app when it handles mouseenter on one of them, so its hover and selection colors are not overwritten', () => {
+                const map = new Map('el')
+                const boundarySubLayer = {
+                    fire: jest.fn(),
+                    highlight: jest.fn(),
+                }
+                const group = {
+                    ...createMockLayer('boundary-1', 1),
+                    getSubLayerFromId: () => boundarySubLayer,
+                }
+                group.handlesMouseEnter.mockReturnValue(true)
+                map._layers = [group]
+                jest.spyOn(map, 'getLayers').mockReturnValue([group])
+                map.setMouseMoveEnabled(true)
+
+                moveTo(map, 'boundary-1', 1)
+                moveOffFeatures(map)
+
+                expect(boundarySubLayer.fire).toHaveBeenCalledWith(
+                    'mouseenter',
+                    expect.objectContaining({ feature: expect.anything() })
+                )
+                expect(group.highlight).not.toHaveBeenCalled()
             })
         })
     })

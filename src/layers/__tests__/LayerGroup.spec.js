@@ -23,11 +23,25 @@ const createMockSubLayer = (id, featureId) => ({
     onMouseMove: jest.fn(),
     fire: jest.fn(),
     setVisibleIds: jest.fn(),
+    handlesMouseEnter: jest.fn(() => false),
 })
 
 describe('LayerGroup', () => {
     beforeEach(() => {
         jest.resetAllMocks()
+    })
+
+    it('should handle mouseenter as soon as one sub-layer does, e.g. the bubbles of a bubble map but not its boundaries', () => {
+        const group = new LayerGroup()
+        const boundaries = createMockSubLayer('boundaries', 1)
+        const bubbles = createMockSubLayer('bubbles', 1)
+        group._layers = [boundaries, bubbles]
+
+        expect(group.handlesMouseEnter()).toBe(false)
+
+        bubbles.handlesMouseEnter.mockReturnValue(true)
+
+        expect(group.handlesMouseEnter()).toBe(true)
     })
 
     it('should resolve a sub-layer by its GL layer id', () => {

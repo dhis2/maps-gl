@@ -98,6 +98,16 @@ describe('Layer', () => {
         expect(layer.hasLayerId(42)).toBe(true)
         expect(layer.isVisible()).toBe(true)
     })
+    it('Should handle mouseenter once the app passes onMouseEnter, so the map leaves hover highlighting to it', () => {
+        const layer = new Layer({ onMouseEnter: jest.fn() })
+
+        expect(layer.handlesMouseEnter()).toBe(false)
+
+        layer.addTo(mockMap)
+
+        expect(layer.handlesMouseEnter()).toBe(true)
+        expect(new Layer().handlesMouseEnter()).toBe(false)
+    })
     it('Should add data features and create numeric ids', () => {
         const layer = new Layer({ data })
         const features = layer.getFeatures()

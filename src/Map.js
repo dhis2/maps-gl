@@ -344,9 +344,11 @@ export class MapGL extends Evented {
     // Highlights the hovered feature unless its layer handles mouseenter itself
     _updateHoverHighlight(hoverTarget, feature) {
         // The top-level layer, so a group highlights the id in all its sub-layers
+        const hoveredLayer =
+            hoverTarget && this.getLayerFromId(feature.layer.id)
         const layer =
-            hoverTarget && !hoverTarget.listens('mouseenter')
-                ? this.getLayerFromId(feature.layer.id)
+            hoveredLayer && !hoveredLayer.handlesMouseEnter()
+                ? hoveredLayer
                 : null
 
         if (this._hoverHighlightLayer && this._hoverHighlightLayer !== layer) {
