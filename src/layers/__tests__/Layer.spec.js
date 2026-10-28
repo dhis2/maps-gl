@@ -237,6 +237,25 @@ describe('Layer', () => {
             color: '#FFC800',
         })
     })
+    it('Should keep a highlight and selection made while off the map, e.g. during a basemap switch, and draw them once added', () => {
+        const layer = new Layer({ data })
+        const source = layer.getId()
+
+        layer.highlight('fdc6uOvgoji', '#FFC800')
+        layer.select(['O6uvpzGd5pu'], '#FFC800')
+        expect(updateHighlightOverlay).not.toHaveBeenCalled()
+
+        layer.addTo(mockMap)
+
+        expect(updateHighlightOverlay).toHaveBeenCalledTimes(1)
+        expect(updateHighlightOverlay.mock.calls[0][1]).toMatchObject({
+            features: [
+                { id: 2, source },
+                { id: 1, source },
+            ],
+            color: '#FFC800',
+        })
+    })
     it('Should drop a hovered/selected id from the overlay once setVisibleIds() filters it out', () => {
         const layer = new Layer({ data })
         const source = layer.getId()

@@ -162,6 +162,24 @@ describe('LayerGroup', () => {
         })
     })
 
+    it('should keep a highlight and selection made while off the map, e.g. during a basemap switch, and draw them once added', async () => {
+        const group = new LayerGroup()
+        const layerA = createMockSubLayer('layer-a', 1)
+        group._layers = [layerA]
+
+        group.highlight([1], '#FFC800')
+        group.select([1], '#FFC800')
+        expect(updateHighlightOverlay).not.toHaveBeenCalled()
+
+        await group.addTo(mockMap)
+
+        expect(updateHighlightOverlay).toHaveBeenCalledWith(mockMap, {
+            id: 'layer-a',
+            features: [{ id: 1, source: 'layer-a' }],
+            color: '#FFC800',
+        })
+    })
+
     it("should drop a hovered/selected id from each sub-layer's overlay once setVisibleIds() filters it out", () => {
         const group = new LayerGroup()
         const layerA = createMockSubLayer('layer-a', 1)

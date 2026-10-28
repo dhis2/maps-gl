@@ -425,24 +425,12 @@ class Layer extends Evented {
     // Hover and selection share one highlight color (last caller wins)
 
     highlight(ids, color) {
-        const map = this.getMap()
-
-        if (!map) {
-            return
-        }
-
         this._hoverIds = normalizeIds(ids)
         this._highlightColor = color
         this._syncOverlay()
     }
 
     select(ids, color) {
-        const map = this.getMap()
-
-        if (!map) {
-            return
-        }
-
         this._selectedIds = normalizeIds(ids)
         this._highlightColor = color
         this._syncOverlay()
