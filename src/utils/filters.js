@@ -52,4 +52,3 @@ export const idFilter = ids => {
 }
 
 export const isHover = ['boolean', ['feature-state', 'hover'], false]
-export const isSelected = ['boolean', ['feature-state', 'selected'], false]

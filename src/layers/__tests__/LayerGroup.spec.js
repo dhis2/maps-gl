@@ -63,7 +63,6 @@ describe('LayerGroup', () => {
             color: undefined,
         })
         expect(mockMap.setHoverState).not.toHaveBeenCalled()
-        expect(mockMap.setSelectedState).not.toHaveBeenCalled()
     })
 
     it("should clear each sub-layer's overlay for an empty array or null", () => {
@@ -116,7 +115,6 @@ describe('LayerGroup', () => {
             color: undefined,
         })
         expect(mockMap.setHoverState).not.toHaveBeenCalled()
-        expect(mockMap.setSelectedState).not.toHaveBeenCalled()
     })
 
     it('should not conflate two sub-layers whose features happen to share the same numeric id', () => {

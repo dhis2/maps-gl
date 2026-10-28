@@ -133,7 +133,6 @@ describe('Layer', () => {
 
         // The overlay is the sole renderer of the highlighted look
         expect(mockMap.setHoverState).not.toHaveBeenCalled()
-        expect(mockMap.setSelectedState).not.toHaveBeenCalled()
     })
     it('Should update the highlight overlay for multiple ids at once', () => {
         const layer = new Layer({ data })
@@ -173,7 +172,6 @@ describe('Layer', () => {
             { id: 2, source },
         ])
         expect(mockMap.setHoverState).not.toHaveBeenCalled()
-        expect(mockMap.setSelectedState).not.toHaveBeenCalled()
     })
     it('Should clear selected ids from the overlay for an empty array or null', () => {
         const layer = new Layer({ data })

@@ -24,7 +24,6 @@ globalThis.mockMapGL = {
 globalThis.mockMap = {
     getMapGL: () => globalThis.mockMapGL,
     setHoverState: jest.fn(),
-    setSelectedState: jest.fn(),
     getBeforeLayerId: jest.fn(),
     invalidateInteractiveLayerIds: jest.fn(),
     styleIsLoaded: jest.fn(() => true),
