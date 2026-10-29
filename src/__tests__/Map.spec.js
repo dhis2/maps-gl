@@ -393,10 +393,17 @@ describe('DHIS2 Maps-gl Map', () => {
     it('returns the before layer id once the style is loaded and the layer exists', () => {
         const map = new Map('el')
         map.setBeforeLayerId('label-layer')
-        map.getMapGL().getStyle.mockReturnValue({
-            layers: [{ id: 'label-layer' }],
-        })
+        map.getMapGL().getLayer.mockReturnValueOnce({ id: 'label-layer' })
+        map.getMapGL().getStyle.mockClear()
 
         expect(map.getBeforeLayerId()).toBe('label-layer')
+        expect(map.getMapGL().getStyle).not.toHaveBeenCalled()
+    })
+
+    it('returns no before layer id when the layer is not in the style', () => {
+        const map = new Map('el')
+        map.setBeforeLayerId('label-layer')
+
+        expect(map.getBeforeLayerId()).toBeUndefined()
     })
 })
