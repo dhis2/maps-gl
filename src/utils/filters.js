@@ -37,17 +37,15 @@ export const idFilter = ids => {
         }
     })
 
-    const filters = [
-        strings.length && matchId(strings),
-        integers.length && matchId(integers),
-        others.length && ['in', ['get', 'id'], ['literal', others]],
-    ].filter(Boolean)
-
-    if (filters.length < 2) {
-        return filters[0] ?? false
-    }
-
-    return ['any', ...filters]
+    // An empty ['any'] keeps no feature
+    return [
+        'any',
+        ...[
+            strings.length && matchId(strings),
+            integers.length && matchId(integers),
+            others.length && ['in', ['get', 'id'], ['literal', others]],
+        ].filter(Boolean),
+    ]
 }
 
 export const isHover = ['boolean', ['feature-state', 'hover'], false]
