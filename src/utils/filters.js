@@ -21,8 +21,7 @@ export const isClusterPolygon = ['all', noCluster, ['==', getIsPolygon, true]]
 // `match` finds an id in constant time, where `in` scans the whole list per feature
 const matchId = ids => ['match', ['get', 'id'], ids, true, false]
 
-// Keeps features whose id is in `ids`. A `match` list takes only strings or
-// only integers, and no Object.prototype keys such as "constructor"
+// A match list takes only strings or only integers, and no Object.prototype keys
 export const idFilter = ids => {
     const strings = []
     const integers = []

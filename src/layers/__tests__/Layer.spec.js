@@ -3,6 +3,7 @@ import { idFilter, isPolygon } from '../../utils/filters.js'
 import { updateHighlightOverlay } from '../../utils/highlightOverlay.js'
 import Layer from '../Layer.js'
 
+// createHighlightOverlay returns undefined, so tests set _overlayLayerIds themselves
 jest.mock('../../utils/highlightOverlay.js')
 
 const data = [
@@ -66,7 +67,6 @@ describe('Layer', () => {
             'layer-1-highlight',
             'before-id'
         )
-        // Overlay must be moved after the base layer
         const movedIds = mockMapGL.moveLayer.mock.calls.map(call => call[0])
         expect(movedIds.indexOf('layer-1-highlight')).toBeGreaterThan(
             movedIds.indexOf('layer-1')
@@ -124,7 +124,6 @@ describe('Layer', () => {
         const source = layer.getId()
 
         layer.addTo(mockMap)
-        updateHighlightOverlay.mockClear() // addTo() flushes the (empty) overlay
         layer.highlight('fdc6uOvgoji')
         expect(updateHighlightOverlay).toHaveBeenCalledTimes(1)
         expect(updateHighlightOverlay.mock.calls[0][1].features).toMatchObject([
@@ -141,7 +140,6 @@ describe('Layer', () => {
         expect(updateHighlightOverlay).toHaveBeenCalledTimes(3)
         expect(updateHighlightOverlay.mock.lastCall[1].features).toEqual([])
 
-        // The overlay is the sole renderer of the highlighted look
         expect(mockMap.setHoverState).not.toHaveBeenCalled()
     })
     it('Should update the highlight overlay for multiple ids at once', () => {
@@ -149,7 +147,6 @@ describe('Layer', () => {
         const source = layer.getId()
 
         layer.addTo(mockMap)
-        updateHighlightOverlay.mockClear() // addTo() flushes the (empty) overlay
         layer.highlight(['O6uvpzGd5pu', 'fdc6uOvgoji'])
 
         expect(updateHighlightOverlay).toHaveBeenCalledTimes(1)
@@ -173,7 +170,6 @@ describe('Layer', () => {
         const source = layer.getId()
 
         layer.addTo(mockMap)
-        updateHighlightOverlay.mockClear() // addTo() flushes the (empty) overlay
         layer.select(['O6uvpzGd5pu', 'fdc6uOvgoji'])
 
         expect(updateHighlightOverlay).toHaveBeenCalledTimes(1)
@@ -211,8 +207,6 @@ describe('Layer', () => {
         layer.select(['O6uvpzGd5pu'])
         layer.highlight('fdc6uOvgoji')
 
-        // The later highlight() call's overlay update includes both the
-        // new hover id and the earlier selection, not just the hover id
         expect(updateHighlightOverlay.mock.lastCall[1].features).toMatchObject([
             { id: 2, source },
             { id: 1, source },
@@ -225,8 +219,6 @@ describe('Layer', () => {
         layer.select(['O6uvpzGd5pu'], 'red')
         layer.highlight('fdc6uOvgoji', 'blue')
 
-        // Hover and selection share one highlight color by design
-        // The later call's color applies to the whole overlay, including the earlier selection
         expect(updateHighlightOverlay.mock.lastCall[1].color).toBe('blue')
     })
     it('Should replay a pending highlight into the overlay once it is (re-)created, e.g. after a style reload', () => {
@@ -237,8 +229,7 @@ describe('Layer', () => {
         layer.highlight('fdc6uOvgoji', '#FFC800')
         updateHighlightOverlay.mockClear()
 
-        // Simulate the overlay being torn down and recreated
-        // The previously recorded hover id/color must be flushed into the freshly created overlay
+        // Re-adding recreates the overlay
         layer.addTo(mockMap)
 
         expect(updateHighlightOverlay).toHaveBeenCalledTimes(1)
@@ -329,7 +320,6 @@ describe('Layer', () => {
         const layer = new Layer()
         layer.addLayer({ id: 'layer-1' })
         layer.addTo(mockMap)
-        // createHighlightOverlay is mocked here and returns undefined by default
         layer._overlayLayerIds = []
         mockMapGL.getLayer.mockReturnValue(true)
 
@@ -449,7 +439,6 @@ describe('Layer', () => {
         mockMapGL.getLayer.mockImplementation(id => id === 'x-polygon')
 
         layer.addTo(mockMap)
-        // createHighlightOverlay is mocked here and returns undefined by default
         layer._overlayLayerIds = []
         layer.setVisibility(false)
 
@@ -479,7 +468,6 @@ describe('Layer', () => {
         layer.addLayer({ id: 'x-polygon' })
         layer.addLayer({ id: 'x-point' })
         layer.addTo(mockMap)
-        // createHighlightOverlay is mocked here and returns undefined by default
         layer._overlayLayerIds = []
         mockMap.getBeforeLayerId.mockReturnValue('before-id')
         mockMapGL.getLayer.mockImplementation(id => id === 'x-polygon')

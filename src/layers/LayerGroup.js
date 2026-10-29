@@ -122,7 +122,7 @@ class LayerGroup extends Evented {
         }
     }
 
-    // Drives each sub-layer's own overlay directly
+    // A group overlay would reuse its sub-layers' overlay layer ids, so it fills theirs
     _syncOverlay() {
         const map = this.getMap()
 

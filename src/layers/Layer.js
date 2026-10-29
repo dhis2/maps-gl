@@ -206,7 +206,6 @@ class Layer extends Evented {
                     }
                 })
 
-                // Hide the overlay's cloned layers too
                 this._overlayLayerIds.forEach(layerId => {
                     if (mapgl.getLayer(layerId)) {
                         mapgl.setLayoutProperty(layerId, 'visibility', value)
@@ -214,8 +213,7 @@ class Layer extends Evented {
                 })
             }
 
-            // isInteractive() depends on isVisible(), so a visibility change
-            // outside addLayer/removeLayer must invalidate the cache too
+            // isInteractive() depends on visibility, so the map's cached interactive ids go stale
             this.getMap()?.invalidateInteractiveLayerIds?.()
         }
 
@@ -309,8 +307,7 @@ class Layer extends Evented {
             }
         })
 
-        // The highlight overlay must stay drawn above these base layers
-        // Having just moved the base layers, move the overlay too
+        // Keeps the highlight overlay above the base layers
         this._overlayLayerIds.forEach(layerId => {
             mapgl.moveLayer(layerId, beforeId)
         })
@@ -440,7 +437,7 @@ class Layer extends Evented {
         this._syncOverlay()
     }
 
-    // `ids` of null/undefined restores each layer's own filter unchanged
+    // null/undefined ids restore each layer's own filter
     setVisibleIds(ids) {
         const mapgl = this.getMapGL()
 

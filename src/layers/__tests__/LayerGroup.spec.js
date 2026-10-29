@@ -55,8 +55,6 @@ describe('LayerGroup', () => {
     })
 
     it("should update each sub-layer's own highlight overlay directly, not a second group-level one", () => {
-        // A group-level overlay would derive the same layer ids as each
-        // sub-layer's own overlay (added in their addTo()), colliding.
         const group = new LayerGroup()
         const layerA = createMockSubLayer('layer-a', 1)
         const layerB = createMockSubLayer('layer-b', 2)
@@ -132,10 +130,7 @@ describe('LayerGroup', () => {
     })
 
     it('should not conflate two sub-layers whose features happen to share the same numeric id', () => {
-        // Each sub-layer independently auto-assigns ids starting at 1, so
-        // id collisions across sub-layers are expected — scoping the lookup
-        // to each sub-layer (rather than the group's aggregated
-        // getFeaturesById) keeps them from bleeding into each other.
+        // Sub-layers number their features from 1, so ids repeat across sub-layers
         const group = new LayerGroup()
         const layerA = createMockSubLayer('layer-a', 1)
         const layerB = createMockSubLayer('layer-b', 1)
@@ -165,8 +160,7 @@ describe('LayerGroup', () => {
         group.highlight([1], '#FFC800')
         updateHighlightOverlay.mockClear()
 
-        // Simulate the group being re-added
-        // The previously recorded hover id/color must be flushed into each sub-layer's freshly (re)created overlay
+        // Re-adding recreates each sub-layer's overlay
         await group.addTo(mockMap)
 
         expect(updateHighlightOverlay).toHaveBeenCalledWith(mockMap, {

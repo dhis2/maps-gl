@@ -446,7 +446,6 @@ export class MapGL extends Evented {
         return this.getMapGL().getZoom()
     }
 
-    // Clears the cached interactive layer ids so they're recomputed on next use
     invalidateInteractiveLayerIds() {
         this._interactiveLayerIds = null
     }
@@ -499,8 +498,7 @@ export class MapGL extends Evented {
         this._beforeId = beforeId
     }
 
-    // Returns before layer id if exists among layers. getLayer(), since
-    // getStyle() copies every layer, large id filters included
+    // Returns before layer id if exists among layers
     getBeforeLayerId() {
         return this._beforeId &&
             this.styleIsLoaded() &&

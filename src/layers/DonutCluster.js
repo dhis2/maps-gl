@@ -79,8 +79,7 @@ class DonutCluster extends Cluster {
         this.clusters = {}
     }
 
-    // Cluster ids pass to other clusters when the data changes, so the markers
-    // are rebuilt once the source reloads
+    // Cluster ids pass to other clusters with new data, so markers are rebuilt
     setVisibleIds(ids) {
         this.removeClusters()
         super.setVisibleIds(ids)

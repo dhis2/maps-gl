@@ -104,7 +104,6 @@ describe('highlightOverlay', () => {
             'layer-1-symbol-highlight-halo',
             'layer-1-symbol-highlight-icon',
         ])
-        // Halo added first, so the icon clone renders on top of it.
         expect(mapgl.addLayer).toHaveBeenNthCalledWith(
             1,
             expect.objectContaining({

@@ -32,8 +32,7 @@ const resolveHover = value => {
     return value.map(resolveHover)
 }
 
-// Every overlay feature is hovered, so the clones draw the hovered look
-// without feature-state
+// Overlay features are all hovered, so clones draw that look without feature-state
 const hoveredPaint = paint =>
     paint &&
     Object.fromEntries(
