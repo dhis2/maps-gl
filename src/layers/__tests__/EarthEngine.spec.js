@@ -289,6 +289,17 @@ describe('EarthEngine', () => {
             expect(featureIds(maskSource.setData.mock.lastCall[0])).toEqual([])
         })
 
+        it('does not re-send the mask when the hidden org units are unchanged, as their boundaries are heavy', async () => {
+            const { layer, maskSource } = await addLayerWithMaskSource()
+
+            layer.filter(['O6uvpzGd5pu'])
+            maskSource.setData.mockClear()
+            layer.filter(['O6uvpzGd5pu'])
+            layer.setVisibleIds(null)
+
+            expect(maskSource.setData).not.toHaveBeenCalled()
+        })
+
         it('rebuilds the mask when the layer is added again, e.g. after a basemap switch', async () => {
             const { layer, maskSource } = await addLayerWithMaskSource()
 
