@@ -357,6 +357,18 @@ describe('Layer', () => {
             idFilter(['O6uvpzGd5pu'])
         )
     })
+    it('Should not re-apply unchanged visible ids, which would redo every filter and the overlay', () => {
+        const layer = new Layer({ data })
+        layer.addLayer({ id: 'layer-1' })
+        layer.addTo(mockMap)
+        mockMapGL.getLayer.mockReturnValue(true)
+
+        layer.setVisibleIds(null)
+        layer.setVisibleIds(['O6uvpzGd5pu'])
+        layer.setVisibleIds(['O6uvpzGd5pu'])
+
+        expect(mockMapGL.setFilter).toHaveBeenCalledTimes(1)
+    })
     it('Should not filter layers that are not on the map yet, which MapLibre reports as an error', () => {
         const layer = new Layer({ data })
         layer.addLayer({ id: 'layer-1' })
@@ -373,6 +385,7 @@ describe('Layer', () => {
 
         layer.addTo(mockMap)
         mockMapGL.getLayer.mockReturnValue(true)
+        layer.setVisibleIds(['O6uvpzGd5pu'])
         layer.setVisibleIds(null)
 
         expect(mockMapGL.setFilter).toHaveBeenCalledWith('layer-1', [

@@ -170,6 +170,17 @@ describe('LayerGroup', () => {
         })
     })
 
+    it('should not pass unchanged visible ids on to its sub-layers', () => {
+        const group = new LayerGroup()
+        const layerA = createMockSubLayer('layer-a', 1)
+        group._layers = [layerA]
+
+        group.setVisibleIds(['a'])
+        group.setVisibleIds(['a'])
+
+        expect(layerA.setVisibleIds).toHaveBeenCalledTimes(1)
+    })
+
     it('should pass visible ids set before its first add to the sub-layers it then creates', async () => {
         const subLayer = createMockSubLayer('layer-a', 1)
         const map = { ...mockMap, createLayer: () => subLayer }

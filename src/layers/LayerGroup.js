@@ -1,6 +1,6 @@
 import { Evented } from 'maplibre-gl'
 import { v4 as uuidv4 } from 'uuid'
-import { filterVisibleIds, normalizeIds } from '../utils/core.js'
+import { filterVisibleIds, isSameIds, normalizeIds } from '../utils/core.js'
 import { getBoundsFromLayers } from '../utils/geometry.js'
 import { updateHighlightOverlay } from '../utils/highlightOverlay.js'
 
@@ -118,6 +118,10 @@ class LayerGroup extends Evented {
     }
 
     setVisibleIds(ids) {
+        if (isSameIds(ids, this._visibleIds)) {
+            return
+        }
+
         this._layers.forEach(layer => layer.setVisibleIds(ids))
 
         this._visibleIds = ids

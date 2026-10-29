@@ -109,7 +109,7 @@ describe('Cluster', () => {
             })
         })
 
-        it('Should restore the full feature set when ids is cleared', () => {
+        it('Should not re-send and re-cluster every feature for unchanged ids, e.g. null right after the layer is created', () => {
             const cluster = new Cluster({ data })
             const source = { setData: jest.fn() }
             mockMapGL.getSource.mockReturnValue(source)
@@ -117,7 +117,19 @@ describe('Cluster', () => {
             cluster.addTo(mockMap)
             cluster.setVisibleIds(null)
 
-            expect(source.setData).toHaveBeenCalledWith({
+            expect(source.setData).not.toHaveBeenCalled()
+        })
+
+        it('Should restore the full feature set when ids is cleared', () => {
+            const cluster = new Cluster({ data })
+            const source = { setData: jest.fn() }
+            mockMapGL.getSource.mockReturnValue(source)
+
+            cluster.addTo(mockMap)
+            cluster.setVisibleIds(['b'])
+            cluster.setVisibleIds(null)
+
+            expect(source.setData).toHaveBeenLastCalledWith({
                 type: 'FeatureCollection',
                 features: cluster.getFeatures(),
             })
@@ -197,7 +209,7 @@ describe('Cluster', () => {
 
             cluster.addTo(mockMap)
             cluster.setVisibleIds(['p'])
-            cluster.setVisibleIds(['p'])
+            cluster.setVisibleIds(null)
 
             expect(mockMapGL.off).toHaveBeenCalledWith(
                 'idle',

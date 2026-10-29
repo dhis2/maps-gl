@@ -1,4 +1,9 @@
-import { filterVisibleIds, normalizeIds, setTemplate } from '../core.js'
+import {
+    filterVisibleIds,
+    isSameIds,
+    normalizeIds,
+    setTemplate,
+} from '../core.js'
 
 describe('core utils', () => {
     it('Should add values to template string', () => {
@@ -28,6 +33,19 @@ describe('core utils', () => {
             expect(normalizeIds(['a', 'b'])).toEqual(['a', 'b'])
             expect(normalizeIds(null)).toEqual([])
             expect(normalizeIds(undefined)).toEqual([])
+        })
+    })
+
+    describe('isSameIds', () => {
+        it('Should match the same ids in the same order', () => {
+            expect(isSameIds(['a', 'b'], ['a', 'b'])).toBe(true)
+            expect(isSameIds(['a', 'b'], ['b', 'a'])).toBe(false)
+            expect(isSameIds(['a'], ['a', 'b'])).toBe(false)
+        })
+
+        it('Should treat null and undefined alike, and apart from an empty list', () => {
+            expect(isSameIds(null, undefined)).toBe(true)
+            expect(isSameIds(null, [])).toBe(false)
         })
     })
 

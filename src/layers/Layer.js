@@ -2,7 +2,7 @@ import bbox from '@turf/bbox'
 import { Evented } from 'maplibre-gl'
 import { v4 as uuidv4 } from 'uuid'
 import { bufferSource } from '../utils/buffers.js'
-import { filterVisibleIds, normalizeIds } from '../utils/core.js'
+import { filterVisibleIds, isSameIds, normalizeIds } from '../utils/core.js'
 import { idFilter } from '../utils/filters.js'
 import { featureCollection } from '../utils/geometry.js'
 import {
@@ -472,6 +472,10 @@ class Layer extends Evented {
 
     // null/undefined ids restore each layer's own filter
     setVisibleIds(ids) {
+        if (isSameIds(ids, this._visibleIds)) {
+            return
+        }
+
         this._visibleIds = ids
         this._visibleIdSet = ids ? new Set(ids) : null
         this._applyVisibleIds()
