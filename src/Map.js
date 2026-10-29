@@ -65,9 +65,6 @@ export class MapGL extends Evented {
         this._hoveredLayer = null
         this._hoveredFeatureId = null
         this._hoverHighlightLayer = null
-        this._selectedFeatures = null
-        this._hoverStateKey = null
-        this._selectedStateKey = null
 
         // Translate strings
         if (locale) {
@@ -347,9 +344,11 @@ export class MapGL extends Evented {
     // Highlights the hovered feature unless its layer handles mouseenter itself
     _updateHoverHighlight(hoverTarget, feature) {
         // The top-level layer, so a group highlights the id in all its sub-layers
+        const hoveredLayer =
+            hoverTarget && this.getLayerFromId(feature.layer.id)
         const layer =
-            hoverTarget && !hoverTarget.listens('mouseenter')
-                ? this.getLayerFromId(feature.layer.id)
+            hoveredLayer && !hoveredLayer.handlesMouseEnter()
+                ? hoveredLayer
                 : null
 
         if (this._hoverHighlightLayer && this._hoverHighlightLayer !== layer) {
@@ -377,12 +376,12 @@ export class MapGL extends Evented {
     }
 
     // Set hover state for features
-    setHoverState(features, color) {
-        const key = `${getFeaturesString(features)}|${color ?? ''}`
-
-        if (key !== this._hoverStateKey) {
-            this._hoverStateKey = key
-
+    setHoverState(features) {
+        // Only set hover state when features are changed
+        if (
+            getFeaturesString(features) !==
+            getFeaturesString(this._hoverFeatures)
+        ) {
             if (this._hoverFeatures) {
                 // Clear state for existing hover features
                 this._hoverFeatures.forEach(feature =>
@@ -394,40 +393,7 @@ export class MapGL extends Evented {
             if (Array.isArray(features)) {
                 this._hoverFeatures = features
                 features.forEach(feature =>
-                    this.setFeatureState(
-                        feature,
-                        color !== undefined
-                            ? { hover: true, highlightColor: color }
-                            : { hover: true }
-                    )
-                )
-            }
-        }
-    }
-
-    // Set selected state for features
-    setSelectedState(features, color) {
-        const key = `${getFeaturesString(features)}|${color ?? ''}`
-
-        if (key !== this._selectedStateKey) {
-            this._selectedStateKey = key
-
-            if (this._selectedFeatures) {
-                this._selectedFeatures.forEach(feature =>
-                    this.setFeatureState(feature, { selected: false })
-                )
-                this._selectedFeatures = null
-            }
-
-            if (Array.isArray(features)) {
-                this._selectedFeatures = features
-                features.forEach(feature =>
-                    this.setFeatureState(
-                        feature,
-                        color !== undefined
-                            ? { selected: true, highlightColor: color }
-                            : { selected: true }
-                    )
+                    this.setFeatureState(feature, { hover: true })
                 )
             }
         }
@@ -480,7 +446,6 @@ export class MapGL extends Evented {
         return this.getMapGL().getZoom()
     }
 
-    // Clears the cached interactive layer ids so they're recomputed on next use
     invalidateInteractiveLayerIds() {
         this._interactiveLayerIds = null
     }
@@ -537,9 +502,7 @@ export class MapGL extends Evented {
     getBeforeLayerId() {
         return this._beforeId &&
             this.styleIsLoaded() &&
-            this.getMapGL()
-                .getStyle()
-                .layers.find(layer => layer.id === this._beforeId)
+            this.getMapGL().getLayer(this._beforeId)
             ? this._beforeId
             : undefined
     }

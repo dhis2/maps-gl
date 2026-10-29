@@ -3,6 +3,7 @@ import { Evented } from 'maplibre-gl'
 import { v4 as uuidv4 } from 'uuid'
 import { bufferSource } from '../utils/buffers.js'
 import { dropHiddenIds, normalizeIds } from '../utils/core.js'
+import { idFilter } from '../utils/filters.js'
 import { featureCollection } from '../utils/geometry.js'
 import {
     createHighlightOverlay,
@@ -18,7 +19,7 @@ const buildVisibleIdsFilter = (ids, baseFilter) => {
         return baseFilter ?? null
     }
 
-    const idsFilter = ['in', ['get', 'id'], ['literal', ids]]
+    const idsFilter = idFilter(ids)
 
     return baseFilter ? ['all', baseFilter, idsFilter] : idsFilter
 }
@@ -39,6 +40,7 @@ class Layer extends Evented {
         this._selectedIds = []
         this._highlightColor = undefined
         this._featuresIndexSource = null
+        this._featuresByUid = null
         this._featuresById = null
 
         this.options = options
@@ -208,7 +210,6 @@ class Layer extends Evented {
                     }
                 })
 
-                // Hide the overlay's cloned layers too
                 this._overlayLayerIds.forEach(layerId => {
                     if (mapgl.getLayer(layerId)) {
                         mapgl.setLayoutProperty(layerId, 'visibility', value)
@@ -216,8 +217,7 @@ class Layer extends Evented {
                 })
             }
 
-            // isInteractive() depends on isVisible(), so a visibility change
-            // outside addLayer/removeLayer must invalidate the cache too
+            // isInteractive() depends on visibility, so the map's cached interactive ids go stale
             this.getMap()?.invalidateInteractiveLayerIds?.()
         }
 
@@ -300,6 +300,10 @@ class Layer extends Evented {
         return this.getLayers().some(layer => layer.id === id)
     }
 
+    handlesMouseEnter() {
+        return Boolean(this.listens('mouseenter'))
+    }
+
     move() {
         const map = this.getMap()
 
@@ -316,8 +320,7 @@ class Layer extends Evented {
             }
         })
 
-        // The highlight overlay must stay drawn above these base layers
-        // Having just moved the base layers, move the overlay too
+        // Keeps the highlight overlay above the base layers
         this._overlayLayerIds.forEach(layerId => {
             mapgl.moveLayer(layerId, beforeId)
         })
@@ -327,20 +330,30 @@ class Layer extends Evented {
         return this._features
     }
 
-    // Returns all features having a string or numeric id
+    // Returns the features with this uid, or else the feature with this numeric id
     getFeaturesById(id) {
         if (this._featuresIndexSource !== this._features) {
             this._featuresIndexSource = this._features
+            this._featuresByUid = new Map()
             this._featuresById = new Map()
             this._features.forEach(f => {
-                this._featuresById.set(f.properties.id, f) // string uid
-                this._featuresById.set(f.id, f) // numeric id (unique, required by Feature State)
+                const uid = f.properties.id
+
+                if (!this._featuresByUid.has(uid)) {
+                    this._featuresByUid.set(uid, [])
+                }
+                this._featuresByUid.get(uid).push(f)
+                this._featuresById.set(f.id, f)
             })
         }
 
-        const feature = this._featuresById.get(id)
+        const features = this._featuresByUid.get(id) ?? [
+            this._featuresById.get(id),
+        ]
 
-        return feature ? [{ ...feature, source: this.getId() }] : []
+        return features
+            .filter(Boolean)
+            .map(feature => ({ ...feature, source: this.getId() }))
     }
 
     // Adds integer id for each feature (required by Feature State)
@@ -442,30 +455,18 @@ class Layer extends Evented {
     // Hover and selection share one highlight color (last caller wins)
 
     highlight(ids, color) {
-        const map = this.getMap()
-
-        if (!map) {
-            return
-        }
-
         this._hoverIds = normalizeIds(ids)
         this._highlightColor = color
         this._syncOverlay()
     }
 
     select(ids, color) {
-        const map = this.getMap()
-
-        if (!map) {
-            return
-        }
-
         this._selectedIds = normalizeIds(ids)
         this._highlightColor = color
         this._syncOverlay()
     }
 
-    // `ids` of null/undefined restores each layer's own filter unchanged
+    // null/undefined ids restore each layer's own filter
     setVisibleIds(ids) {
         const mapgl = this.getMapGL()
 
