@@ -160,8 +160,9 @@ class ServerCluster extends Cluster {
         }
     }
 
-    // Server clusters arrive as tiles, with no features here to filter
-    _applyVisibleIds() {}
+    _applyVisibleIds() {
+        // Server clusters arrive as tiles, with no features here to filter
+    }
 
     // Load clusters when new tiles are requested
     onSourceData = evt => {
