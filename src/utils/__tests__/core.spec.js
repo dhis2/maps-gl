@@ -32,23 +32,25 @@ describe('core utils', () => {
     })
 
     describe('filterVisibleIds', () => {
-        it('Should restrict ids to those also present in visibleIds', () => {
-            expect(filterVisibleIds(['a', 'b', 'c'], ['b'])).toEqual(['b'])
+        it('Should restrict ids to those also present in visibleIdSet', () => {
+            expect(filterVisibleIds(['a', 'b', 'c'], new Set(['b']))).toEqual([
+                'b',
+            ])
         })
 
-        it('Should return ids unchanged when visibleIds is null/undefined, meaning no restriction', () => {
+        it('Should return ids unchanged when visibleIdSet is null/undefined, meaning no restriction', () => {
             expect(filterVisibleIds(['a', 'b'], null)).toEqual(['a', 'b'])
             expect(filterVisibleIds(['a', 'b'], undefined)).toEqual(['a', 'b'])
         })
 
-        it('Should not mutate either input array', () => {
+        it('Should not mutate either input', () => {
             const ids = ['a', 'b']
-            const visibleIds = ['b']
+            const visibleIdSet = new Set(['b'])
 
-            filterVisibleIds(ids, visibleIds)
+            filterVisibleIds(ids, visibleIdSet)
 
             expect(ids).toEqual(['a', 'b'])
-            expect(visibleIds).toEqual(['b'])
+            expect([...visibleIdSet]).toEqual(['b'])
         })
     })
 })

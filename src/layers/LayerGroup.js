@@ -16,6 +16,7 @@ class LayerGroup extends Evented {
         this._hoverIds = []
         this._selectedIds = []
         this._visibleIds = null
+        this._visibleIdSet = null
         this._highlightColor = undefined
     }
 
@@ -120,6 +121,7 @@ class LayerGroup extends Evented {
         this._layers.forEach(layer => layer.setVisibleIds(ids))
 
         this._visibleIds = ids
+        this._visibleIdSet = ids ? new Set(ids) : null
         this._syncOverlay()
     }
 
@@ -133,7 +135,7 @@ class LayerGroup extends Evented {
 
         const ids = filterVisibleIds(
             [...new Set([...this._hoverIds, ...this._selectedIds])],
-            this._visibleIds
+            this._visibleIdSet
         )
 
         this._layers.forEach(layer => {

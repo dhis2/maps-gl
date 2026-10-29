@@ -264,14 +264,11 @@ class EarthEngine extends Layer {
             return
         }
 
-        const { _filteredFeatureIds: filteredIds, _visibleIds: visibleIds } =
-            this
+        const filteredIds = this._filteredFeatureIds
         const filteredIdSet = Array.isArray(filteredIds)
             ? new Set(filteredIds)
             : null
-        const visibleIdSet = Array.isArray(visibleIds)
-            ? new Set(visibleIds)
-            : null
+        const visibleIdSet = this._visibleIdSet
 
         const hidden = this.getFeatures().filter(feature => {
             const id = feature.properties.id

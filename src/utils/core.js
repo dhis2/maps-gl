@@ -19,13 +19,6 @@ export const normalizeIds = ids => {
     return ids === undefined || ids === null ? [] : [ids]
 }
 
-// null/undefined visibleIds means no restriction
-export const filterVisibleIds = (ids, visibleIds) => {
-    if (!visibleIds) {
-        return ids
-    }
-
-    const visible = new Set(visibleIds)
-
-    return ids.filter(id => visible.has(id))
-}
+// null/undefined visibleIdSet means no restriction
+export const filterVisibleIds = (ids, visibleIdSet) =>
+    visibleIdSet ? ids.filter(id => visibleIdSet.has(id)) : ids

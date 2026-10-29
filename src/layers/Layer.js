@@ -39,6 +39,7 @@ class Layer extends Evented {
         this._hoverIds = []
         this._selectedIds = []
         this._visibleIds = null
+        this._visibleIdSet = null
         this._highlightColor = undefined
         this._featuresIndexSource = null
         this._featuresByUid = null
@@ -472,6 +473,7 @@ class Layer extends Evented {
     // null/undefined ids restore each layer's own filter
     setVisibleIds(ids) {
         this._visibleIds = ids
+        this._visibleIdSet = ids ? new Set(ids) : null
         this._applyVisibleIds()
         this._syncOverlay()
     }
@@ -508,7 +510,7 @@ class Layer extends Evented {
 
         const ids = filterVisibleIds(
             [...new Set([...this._hoverIds, ...this._selectedIds])],
-            this._visibleIds
+            this._visibleIdSet
         )
         const features = ids.flatMap(id => this.getFeaturesById(id))
 
