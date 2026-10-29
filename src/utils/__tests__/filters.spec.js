@@ -3,21 +3,15 @@ import { idFilter } from '../filters.js'
 describe('idFilter', () => {
     it('matches string ids with a match expression', () => {
         expect(idFilter(['a', 'b'])).toEqual([
-            'match',
-            ['get', 'id'],
-            ['a', 'b'],
-            true,
-            false,
+            'any',
+            ['match', ['get', 'id'], ['a', 'b'], true, false],
         ])
     })
 
     it('drops duplicate ids, since match labels must be unique', () => {
         expect(idFilter(['a', 'a', 'b'])).toEqual([
-            'match',
-            ['get', 'id'],
-            ['a', 'b'],
-            true,
-            false,
+            'any',
+            ['match', ['get', 'id'], ['a', 'b'], true, false],
         ])
     })
 
@@ -38,6 +32,6 @@ describe('idFilter', () => {
     })
 
     it('keeps no feature for an empty list', () => {
-        expect(idFilter([])).toBe(false)
+        expect(idFilter([])).toEqual(['any'])
     })
 })
