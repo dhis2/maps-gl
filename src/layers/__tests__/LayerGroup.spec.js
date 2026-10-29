@@ -23,11 +23,25 @@ const createMockSubLayer = (id, featureId) => ({
     onMouseMove: jest.fn(),
     fire: jest.fn(),
     setVisibleIds: jest.fn(),
+    handlesMouseEnter: jest.fn(() => false),
 })
 
 describe('LayerGroup', () => {
     beforeEach(() => {
         jest.resetAllMocks()
+    })
+
+    it('should handle mouseenter as soon as one sub-layer does, e.g. the bubbles of a bubble map but not its boundaries', () => {
+        const group = new LayerGroup()
+        const boundaries = createMockSubLayer('boundaries', 1)
+        const bubbles = createMockSubLayer('bubbles', 1)
+        group._layers = [boundaries, bubbles]
+
+        expect(group.handlesMouseEnter()).toBe(false)
+
+        bubbles.handlesMouseEnter.mockReturnValue(true)
+
+        expect(group.handlesMouseEnter()).toBe(true)
     })
 
     it('should resolve a sub-layer by its GL layer id', () => {
@@ -41,8 +55,6 @@ describe('LayerGroup', () => {
     })
 
     it("should update each sub-layer's own highlight overlay directly, not a second group-level one", () => {
-        // A group-level overlay would derive the same layer ids as each
-        // sub-layer's own overlay (added in their addTo()), colliding.
         const group = new LayerGroup()
         const layerA = createMockSubLayer('layer-a', 1)
         const layerB = createMockSubLayer('layer-b', 2)
@@ -63,7 +75,6 @@ describe('LayerGroup', () => {
             color: undefined,
         })
         expect(mockMap.setHoverState).not.toHaveBeenCalled()
-        expect(mockMap.setSelectedState).not.toHaveBeenCalled()
     })
 
     it("should clear each sub-layer's overlay for an empty array or null", () => {
@@ -116,14 +127,10 @@ describe('LayerGroup', () => {
             color: undefined,
         })
         expect(mockMap.setHoverState).not.toHaveBeenCalled()
-        expect(mockMap.setSelectedState).not.toHaveBeenCalled()
     })
 
     it('should not conflate two sub-layers whose features happen to share the same numeric id', () => {
-        // Each sub-layer independently auto-assigns ids starting at 1, so
-        // id collisions across sub-layers are expected — scoping the lookup
-        // to each sub-layer (rather than the group's aggregated
-        // getFeaturesById) keeps them from bleeding into each other.
+        // Sub-layers number their features from 1, so ids repeat across sub-layers
         const group = new LayerGroup()
         const layerA = createMockSubLayer('layer-a', 1)
         const layerB = createMockSubLayer('layer-b', 1)
@@ -153,8 +160,37 @@ describe('LayerGroup', () => {
         group.highlight([1], '#FFC800')
         updateHighlightOverlay.mockClear()
 
-        // Simulate the group being re-added
-        // The previously recorded hover id/color must be flushed into each sub-layer's freshly (re)created overlay
+        // Re-adding recreates each sub-layer's overlay
+        await group.addTo(mockMap)
+
+        expect(updateHighlightOverlay).toHaveBeenCalledWith(mockMap, {
+            id: 'layer-a',
+            features: [{ id: 1, source: 'layer-a' }],
+            color: '#FFC800',
+        })
+    })
+
+    it('should stop drawing on its map once removed, which may be destroyed by then', () => {
+        const group = new LayerGroup()
+        group._layers = [createMockSubLayer('layer-a', 1)]
+        group._map = mockMap
+
+        group.removeFrom(mockMap)
+        group.highlight([1])
+
+        expect(group.getMap()).toBeNull()
+        expect(updateHighlightOverlay).not.toHaveBeenCalled()
+    })
+
+    it('should keep a highlight and selection made while off the map, e.g. during a basemap switch, and draw them once added', async () => {
+        const group = new LayerGroup()
+        const layerA = createMockSubLayer('layer-a', 1)
+        group._layers = [layerA]
+
+        group.highlight([1], '#FFC800')
+        group.select([1], '#FFC800')
+        expect(updateHighlightOverlay).not.toHaveBeenCalled()
+
         await group.addTo(mockMap)
 
         expect(updateHighlightOverlay).toHaveBeenCalledWith(mockMap, {

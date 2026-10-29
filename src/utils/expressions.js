@@ -1,4 +1,4 @@
-import { isHover, isSelected } from './filters.js'
+import { isHover } from './filters.js'
 import { strokeWidth, hoverStrokeMultiplier } from './style.js'
 
 // Returns color from feature with fallback
@@ -9,20 +9,11 @@ export const colorExpr = color => [
     color,
 ]
 
-// Returns width (weight) from feature with fallback; boosted on hover/selection
+// Returns width (weight) from feature with fallback and hover support
 export const widthExpr = (width = strokeWidth) => [
     '*',
     ['case', ['has', 'weight'], ['get', 'weight'], width],
-    ['case', ['any', isHover, isSelected], hoverStrokeMultiplier, 1],
-]
-
-// On hover/selection, swaps in the color from feature-state (set by
-// Layer#highlight/#select), else returns `fallback`.
-export const highlightColorExpr = fallback => [
-    'case',
-    ['any', isHover, isSelected],
-    ['coalesce', ['feature-state', 'highlightColor'], fallback],
-    fallback,
+    ['case', isHover, hoverStrokeMultiplier, 1],
 ]
 
 // Returns radius from feature with fallback

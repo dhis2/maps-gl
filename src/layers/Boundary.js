@@ -1,5 +1,4 @@
-import { highlightColorExpr } from '../utils/expressions.js'
-import { isHover, isSelected } from '../utils/filters.js'
+import { isPoint, isPolygon } from '../utils/filters.js'
 import { labelLayer } from '../utils/labels.js'
 import { strokeWidth } from '../utils/style.js'
 import Layer from './Layer.js'
@@ -40,15 +39,15 @@ class Boundary extends Layer {
                 type: 'line',
                 source: id,
                 paint: {
-                    'line-color': highlightColorExpr(['get', 'color']),
+                    'line-color': ['get', 'color'],
                     'line-width': [
                         'case',
-                        ['any', isHover, isSelected],
+                        ['boolean', ['feature-state', 'hover'], false],
                         ['+', ['get', 'width'], 2],
                         ['get', 'width'],
                     ],
                 },
-                filter: ['==', '$type', 'Polygon'],
+                filter: isPolygon,
             },
             { isInteractive }
         )
@@ -62,15 +61,15 @@ class Boundary extends Layer {
                 paint: {
                     'circle-color': 'transparent',
                     'circle-radius': ['get', 'radius'],
-                    'circle-stroke-color': highlightColorExpr(['get', 'color']),
+                    'circle-stroke-color': ['get', 'color'],
                     'circle-stroke-width': [
                         'case',
-                        ['any', isHover, isSelected],
+                        ['boolean', ['feature-state', 'hover'], false],
                         ['+', ['get', 'width'], 2],
                         ['get', 'width'],
                     ],
                 },
-                filter: ['==', '$type', 'Point'],
+                filter: isPoint,
             },
             { isInteractive }
         )

@@ -81,6 +81,7 @@ export const labelSource = (
                 coordinates: getLabelPosition(geometry),
             },
             properties: {
+                id: properties.id,
                 name: properties.name,
                 anchor: geometry.type === 'Point' ? 'top' : 'center',
                 offset: [
