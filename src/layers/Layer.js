@@ -283,10 +283,7 @@ class Layer extends Evented {
             this._opacityFactor = opacityFactor
         }
 
-        // e.g. EarthEngine's own mask layer, whose data is deliberately the
-        // complement of setVisibleIds' own notion of "visible" - applying
-        // that filter on top would zero it out, since none of its features
-        // would ever match an allow-list of the *visible* ids.
+        // e.g. a mask holding the hidden features, which a visible-ids filter would empty
         if (excludeFromVisibleIdsFilter) {
             this._visibleIdsFilterExemptIds.add(layer.id)
         }
