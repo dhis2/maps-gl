@@ -307,16 +307,21 @@ describe('Layer', () => {
             { id: 2, source },
         ])
     })
-    it('Should leave the overlay untouched when setVisibleIds() clears the filter (nothing to drop)', () => {
+    it('Should restore a hovered/selected id to the overlay once setVisibleIds() clears the restriction that had hidden it', () => {
         const layer = new Layer({ data })
+        const source = layer.getId()
 
         layer.addTo(mockMap)
         layer.highlight(['O6uvpzGd5pu'])
+        layer.setVisibleIds(['fdc6uOvgoji'])
         updateHighlightOverlay.mockClear()
 
         layer.setVisibleIds(null)
 
-        expect(updateHighlightOverlay).not.toHaveBeenCalled()
+        expect(updateHighlightOverlay).toHaveBeenCalledTimes(1)
+        expect(updateHighlightOverlay.mock.lastCall[1].features).toMatchObject([
+            { id: 1, source },
+        ])
     })
     it('Should restrict rendered features to the given ids, ANDed with any existing static filter', () => {
         const layer = new Layer({ data })
@@ -324,6 +329,7 @@ describe('Layer', () => {
         layer.addLayer({ id: 'layer-1-points' })
 
         layer.addTo(mockMap)
+        mockMapGL.getLayer.mockReturnValue(true)
         layer.setVisibleIds(['O6uvpzGd5pu', 'fdc6uOvgoji'])
 
         expect(mockMapGL.setFilter).toHaveBeenCalledWith('layer-1', [
@@ -336,12 +342,50 @@ describe('Layer', () => {
             idFilter(['O6uvpzGd5pu', 'fdc6uOvgoji'])
         )
     })
+    it('Should keep visible ids set while off the map, e.g. during a basemap switch, and apply them once added', () => {
+        const layer = new Layer({ data })
+        layer.addLayer({ id: 'layer-1' })
+
+        layer.setVisibleIds(['O6uvpzGd5pu'])
+        expect(mockMapGL.setFilter).not.toHaveBeenCalled()
+
+        mockMapGL.getLayer.mockReturnValue(true)
+        layer.addTo(mockMap)
+
+        expect(mockMapGL.setFilter).toHaveBeenCalledWith(
+            'layer-1',
+            idFilter(['O6uvpzGd5pu'])
+        )
+    })
+    it('Should not re-apply unchanged visible ids, which would redo every filter and the overlay', () => {
+        const layer = new Layer({ data })
+        layer.addLayer({ id: 'layer-1' })
+        layer.addTo(mockMap)
+        mockMapGL.getLayer.mockReturnValue(true)
+
+        layer.setVisibleIds(null)
+        layer.setVisibleIds(['O6uvpzGd5pu'])
+        layer.setVisibleIds(['O6uvpzGd5pu'])
+
+        expect(mockMapGL.setFilter).toHaveBeenCalledTimes(1)
+    })
+    it('Should not filter layers that are not on the map yet, which MapLibre reports as an error', () => {
+        const layer = new Layer({ data })
+        layer.addLayer({ id: 'layer-1' })
+        layer.addTo(mockMap)
+
+        layer.setVisibleIds(['O6uvpzGd5pu'])
+
+        expect(mockMapGL.setFilter).not.toHaveBeenCalled()
+    })
     it('Should restore the original static filter when shown ids is cleared', () => {
         const layer = new Layer({ data })
         layer.addLayer({ id: 'layer-1', filter: ['==', '$type', 'Polygon'] })
         layer.addLayer({ id: 'layer-1-points' })
 
         layer.addTo(mockMap)
+        mockMapGL.getLayer.mockReturnValue(true)
+        layer.setVisibleIds(['O6uvpzGd5pu'])
         layer.setVisibleIds(null)
 
         expect(mockMapGL.setFilter).toHaveBeenCalledWith('layer-1', [
@@ -360,6 +404,7 @@ describe('Layer', () => {
         )
 
         layer.addTo(mockMap)
+        mockMapGL.getLayer.mockReturnValue(true)
         mockMapGL.setFilter.mockClear()
         layer.setVisibleIds(['O6uvpzGd5pu'])
 

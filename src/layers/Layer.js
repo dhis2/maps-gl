@@ -2,7 +2,7 @@ import bbox from '@turf/bbox'
 import { Evented } from 'maplibre-gl'
 import { v4 as uuidv4 } from 'uuid'
 import { bufferSource } from '../utils/buffers.js'
-import { dropHiddenIds, normalizeIds } from '../utils/core.js'
+import { filterVisibleIds, isSameIds, normalizeIds } from '../utils/core.js'
 import { idFilter } from '../utils/filters.js'
 import { featureCollection } from '../utils/geometry.js'
 import {
@@ -38,6 +38,8 @@ class Layer extends Evented {
         this._overlayLayerIds = []
         this._hoverIds = []
         this._selectedIds = []
+        this._visibleIds = null
+        this._visibleIdSet = null
         this._highlightColor = undefined
         this._featuresIndexSource = null
         this._featuresByUid = null
@@ -84,6 +86,11 @@ class Layer extends Evented {
                     mapgl.addLayer(layer, beforeId)
                 }
             })
+
+            // Layers come back with their own filter, e.g. after a basemap switch
+            if (this._visibleIds) {
+                this._applyVisibleIds()
+            }
         }
 
         if (map.styleIsLoaded()) {
@@ -465,6 +472,18 @@ class Layer extends Evented {
 
     // null/undefined ids restore each layer's own filter
     setVisibleIds(ids) {
+        if (isSameIds(ids, this._visibleIds)) {
+            return
+        }
+
+        this._visibleIds = ids
+        this._visibleIdSet = ids ? new Set(ids) : null
+        this._applyVisibleIds()
+        this._syncOverlay()
+    }
+
+    // Override if the layer can't be filtered by id
+    _applyVisibleIds() {
         const mapgl = this.getMapGL()
 
         if (!mapgl) {
@@ -472,22 +491,20 @@ class Layer extends Evented {
         }
 
         this.getLayers().forEach(({ id, filter: baseFilter }) => {
-            if (this._visibleIdsFilterExemptIds.has(id)) {
+            if (
+                this._visibleIdsFilterExemptIds.has(id) ||
+                !mapgl.getLayer(id)
+            ) {
                 return
             }
-            mapgl.setFilter(id, buildVisibleIdsFilter(ids, baseFilter))
+            mapgl.setFilter(
+                id,
+                buildVisibleIdsFilter(this._visibleIds, baseFilter)
+            )
         })
-
-        const dropped = dropHiddenIds(this._hoverIds, this._selectedIds, ids)
-
-        if (dropped) {
-            this._hoverIds = dropped.hoverIds
-            this._selectedIds = dropped.selectedIds
-            this._syncOverlay()
-        }
     }
 
-    // Syncs the highlight overlay with the union of hovered/selected ids
+    // Syncs the highlight overlay with the currently visible hovered/selected ids
     _syncOverlay() {
         const map = this.getMap()
 
@@ -495,7 +512,10 @@ class Layer extends Evented {
             return
         }
 
-        const ids = [...new Set([...this._hoverIds, ...this._selectedIds])]
+        const ids = filterVisibleIds(
+            [...new Set([...this._hoverIds, ...this._selectedIds])],
+            this._visibleIdSet
+        )
         const features = ids.flatMap(id => this.getFeaturesById(id))
 
         updateHighlightOverlay(map, {

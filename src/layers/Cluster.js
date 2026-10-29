@@ -1,5 +1,4 @@
 import centerOfMass from '@turf/center-of-mass'
-import { dropHiddenIds } from '../utils/core.js'
 import { isClusterPoint } from '../utils/filters.js'
 import { featureCollection } from '../utils/geometry.js'
 import { labelClusterLayer } from '../utils/labels.js'
@@ -248,7 +247,7 @@ class Cluster extends Layer {
     }
 
     // Clusters can't be filtered by id, so the visible features are re-sent and re-clustered
-    setVisibleIds(ids) {
+    _applyVisibleIds() {
         const mapgl = this.getMapGL()
         const source = mapgl?.getSource(this.getId())
 
@@ -256,7 +255,7 @@ class Cluster extends Layer {
             return
         }
 
-        const visibleIds = ids ? new Set(ids) : null
+        const visibleIds = this._visibleIdSet
         const features = visibleIds
             ? this.getFeatures().filter(f => visibleIds.has(f.properties.id))
             : this.getFeatures()
@@ -266,14 +265,6 @@ class Cluster extends Layer {
         if (this._hasPolygons) {
             mapgl.off('idle', this.updatePolygons)
             mapgl.once('idle', this.updatePolygons)
-        }
-
-        const dropped = dropHiddenIds(this._hoverIds, this._selectedIds, ids)
-
-        if (dropped) {
-            this._hoverIds = dropped.hoverIds
-            this._selectedIds = dropped.selectedIds
-            this._syncOverlay()
         }
     }
 

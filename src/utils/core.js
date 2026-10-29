@@ -19,15 +19,18 @@ export const normalizeIds = ids => {
     return ids === undefined || ids === null ? [] : [ids]
 }
 
-export const dropHiddenIds = (hoverIds, selectedIds, visibleIds) => {
-    if (!visibleIds) {
-        return null
+// null and undefined both mean no ids
+export const isSameIds = (ids, otherIds) => {
+    if (!ids || !otherIds) {
+        return !ids && !otherIds
     }
 
-    const visible = new Set(visibleIds)
-
-    return {
-        hoverIds: hoverIds.filter(id => visible.has(id)),
-        selectedIds: selectedIds.filter(id => visible.has(id)),
-    }
+    return (
+        ids.length === otherIds.length &&
+        ids.every((id, index) => id === otherIds[index])
+    )
 }
+
+// null/undefined visibleIdSet means no restriction
+export const filterVisibleIds = (ids, visibleIdSet) =>
+    visibleIdSet ? ids.filter(id => visibleIdSet.has(id)) : ids

@@ -160,7 +160,7 @@ class ServerCluster extends Cluster {
         }
     }
 
-    setVisibleIds() {
+    _applyVisibleIds() {
         // Server clusters arrive as tiles, with no features here to filter
     }
 

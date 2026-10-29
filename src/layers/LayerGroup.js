@@ -1,6 +1,6 @@
 import { Evented } from 'maplibre-gl'
 import { v4 as uuidv4 } from 'uuid'
-import { dropHiddenIds, normalizeIds } from '../utils/core.js'
+import { filterVisibleIds, isSameIds, normalizeIds } from '../utils/core.js'
 import { getBoundsFromLayers } from '../utils/geometry.js'
 import { updateHighlightOverlay } from '../utils/highlightOverlay.js'
 
@@ -15,6 +15,8 @@ class LayerGroup extends Evented {
         this._isVisible = true
         this._hoverIds = []
         this._selectedIds = []
+        this._visibleIds = null
+        this._visibleIdSet = null
         this._highlightColor = undefined
     }
 
@@ -22,6 +24,11 @@ class LayerGroup extends Evented {
         this._layerConfigs.forEach(config =>
             this._layers.push(this._map.createLayer(config))
         )
+
+        // Sub-layers created after setVisibleIds() start with its ids
+        if (this._visibleIds) {
+            this._layers.forEach(layer => layer.setVisibleIds(this._visibleIds))
+        }
 
         if (this.options.opacity) {
             this.setOpacity(this.options.opacity)
@@ -111,15 +118,15 @@ class LayerGroup extends Evented {
     }
 
     setVisibleIds(ids) {
+        if (isSameIds(ids, this._visibleIds)) {
+            return
+        }
+
         this._layers.forEach(layer => layer.setVisibleIds(ids))
 
-        const dropped = dropHiddenIds(this._hoverIds, this._selectedIds, ids)
-
-        if (dropped) {
-            this._hoverIds = dropped.hoverIds
-            this._selectedIds = dropped.selectedIds
-            this._syncOverlay()
-        }
+        this._visibleIds = ids
+        this._visibleIdSet = ids ? new Set(ids) : null
+        this._syncOverlay()
     }
 
     // A group overlay would reuse its sub-layers' overlay layer ids, so it fills theirs
@@ -130,7 +137,10 @@ class LayerGroup extends Evented {
             return
         }
 
-        const ids = [...new Set([...this._hoverIds, ...this._selectedIds])]
+        const ids = filterVisibleIds(
+            [...new Set([...this._hoverIds, ...this._selectedIds])],
+            this._visibleIdSet
+        )
 
         this._layers.forEach(layer => {
             const features = ids.flatMap(id => layer.getFeaturesById(id))
