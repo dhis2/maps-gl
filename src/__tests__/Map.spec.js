@@ -43,7 +43,7 @@ describe('DHIS2 Maps-gl Map', () => {
             getIndex: () => 0,
             onMouseMove: jest.fn(),
             fire: jest.fn(),
-            listens: jest.fn(() => false),
+            handlesMouseEnter: jest.fn(() => false),
             highlight: jest.fn(),
         }
         map._layers = [mockLayer]
@@ -105,106 +105,6 @@ describe('DHIS2 Maps-gl Map', () => {
         expect(mockLayer.onMouseMove).not.toHaveBeenCalled()
     })
 
-    describe('setSelectedState', () => {
-        it('sets and clears selected feature-state independently of setHoverState', () => {
-            const map = new Map('el')
-            const feature = { id: 1, source: 'abc' }
-            map.getMapGL().getSource = jest.fn(() => true)
-
-            map.setSelectedState([feature])
-            expect(map.getMapGL().setFeatureState).toHaveBeenCalledWith(
-                feature,
-                { selected: true }
-            )
-
-            map.setSelectedState(null)
-            expect(map.getMapGL().setFeatureState).toHaveBeenCalledWith(
-                feature,
-                { selected: false }
-            )
-        })
-
-        it('is never touched by the mousemove-driven hover-outline effect', () => {
-            const map = new Map('el')
-            const setSelectedStateSpy = jest.spyOn(map, 'setSelectedState')
-            const mockLayer = {
-                isInteractive: () => true,
-                getInteractiveIds: () => ['layer-1'],
-                getFeaturesById: () => [{ id: 1, source: 'abc' }],
-                hasLayerId: id => id === 'layer-1',
-                getIndex: () => 0,
-                onMouseMove: jest.fn(),
-                fire: jest.fn(),
-                listens: jest.fn(() => false),
-                highlight: jest.fn(),
-            }
-            map._layers = [mockLayer]
-            jest.spyOn(map, 'getLayers').mockReturnValue([mockLayer])
-            map.getMapGL().queryRenderedFeatures = jest.fn(() => [
-                {
-                    id: 1,
-                    source: 'abc',
-                    layer: { id: 'layer-1' },
-                    properties: { id: 1 },
-                },
-            ])
-            map.setMouseMoveEnabled(true)
-
-            map.onMouseMove({ point: {} })
-
-            expect(setSelectedStateSpy).not.toHaveBeenCalled()
-        })
-
-        it('writes the given color into feature-state alongside selected/hover', () => {
-            const map = new Map('el')
-            const feature = { id: 1, source: 'abc' }
-            map.getMapGL().getSource = jest.fn(() => true)
-
-            map.setSelectedState([feature], '#FFC800')
-            expect(map.getMapGL().setFeatureState).toHaveBeenLastCalledWith(
-                feature,
-                { selected: true, highlightColor: '#FFC800' }
-            )
-
-            map.setHoverState([feature], '#FF0000')
-            expect(map.getMapGL().setFeatureState).toHaveBeenLastCalledWith(
-                feature,
-                { hover: true, highlightColor: '#FF0000' }
-            )
-        })
-
-        it('re-applies the same features with a different color (color is part of the dedup key)', () => {
-            const map = new Map('el')
-            const feature = { id: 1, source: 'abc' }
-            map.getMapGL().getSource = jest.fn(() => true)
-
-            map.setSelectedState([feature], '#FFC800')
-            map.getMapGL().setFeatureState.mockClear()
-
-            map.setSelectedState([feature], '#FF0000')
-            expect(map.getMapGL().setFeatureState).toHaveBeenCalledWith(
-                feature,
-                { selected: true, highlightColor: '#FF0000' }
-            )
-        })
-
-        it("a color-less call (native cursor tracking) doesn't erase a previously-set color, since setFeatureState merges", () => {
-            const map = new Map('el')
-            const feature = { id: 1, source: 'abc' }
-            map.getMapGL().getSource = jest.fn(() => true)
-
-            map.setSelectedState([feature], '#FFC800')
-            map.getMapGL().setFeatureState.mockClear()
-
-            // Same features, no color — e.g. the built-in per-pixel hover path
-            map.setHoverState([feature])
-            expect(map.getMapGL().setFeatureState).toHaveBeenCalledWith(
-                feature,
-                { hover: true }
-            )
-        })
-    })
-
     describe('click events', () => {
         const setUpClickableLayer = (map, layerId, featureId) => {
             const mockLayer = {
@@ -262,7 +162,7 @@ describe('DHIS2 Maps-gl Map', () => {
             getIndex: () => 0,
             onMouseMove: jest.fn(),
             fire: jest.fn(),
-            listens: jest.fn(() => false),
+            handlesMouseEnter: jest.fn(() => false),
             highlight: jest.fn(),
         })
 
@@ -368,7 +268,7 @@ describe('DHIS2 Maps-gl Map', () => {
             it('leaves highlighting to the layer when it handles mouseenter', () => {
                 const map = new Map('el')
                 const mockLayer = createMockLayer('layer-1', 1)
-                mockLayer.listens.mockReturnValue(true)
+                mockLayer.handlesMouseEnter.mockReturnValue(true)
                 map._layers = [mockLayer]
                 jest.spyOn(map, 'getLayers').mockReturnValue([mockLayer])
                 map.setMouseMoveEnabled(true)
@@ -435,11 +335,7 @@ describe('DHIS2 Maps-gl Map', () => {
 
             it('highlights through a layer group so the id is highlighted in all its sub-layers', () => {
                 const map = new Map('el')
-                const subLayer = {
-                    fire: jest.fn(),
-                    listens: jest.fn(() => false),
-                    highlight: jest.fn(),
-                }
+                const subLayer = { fire: jest.fn(), highlight: jest.fn() }
                 const group = {
                     ...createMockLayer('sub-1', 1),
                     getSubLayerFromId: () => subLayer,
@@ -457,6 +353,31 @@ describe('DHIS2 Maps-gl Map', () => {
                 expect(group.highlight).toHaveBeenCalledWith(1)
                 expect(subLayer.highlight).not.toHaveBeenCalled()
             })
+
+            it('leaves every sub-layer of a group to the app when it handles mouseenter on one of them, so its hover and selection colors are not overwritten', () => {
+                const map = new Map('el')
+                const boundarySubLayer = {
+                    fire: jest.fn(),
+                    highlight: jest.fn(),
+                }
+                const group = {
+                    ...createMockLayer('boundary-1', 1),
+                    getSubLayerFromId: () => boundarySubLayer,
+                }
+                group.handlesMouseEnter.mockReturnValue(true)
+                map._layers = [group]
+                jest.spyOn(map, 'getLayers').mockReturnValue([group])
+                map.setMouseMoveEnabled(true)
+
+                moveTo(map, 'boundary-1', 1)
+                moveOffFeatures(map)
+
+                expect(boundarySubLayer.fire).toHaveBeenCalledWith(
+                    'mouseenter',
+                    expect.objectContaining({ feature: expect.anything() })
+                )
+                expect(group.highlight).not.toHaveBeenCalled()
+            })
         })
     })
 
@@ -472,10 +393,17 @@ describe('DHIS2 Maps-gl Map', () => {
     it('returns the before layer id once the style is loaded and the layer exists', () => {
         const map = new Map('el')
         map.setBeforeLayerId('label-layer')
-        map.getMapGL().getStyle.mockReturnValue({
-            layers: [{ id: 'label-layer' }],
-        })
+        map.getMapGL().getLayer.mockReturnValueOnce({ id: 'label-layer' })
+        map.getMapGL().getStyle.mockClear()
 
         expect(map.getBeforeLayerId()).toBe('label-layer')
+        expect(map.getMapGL().getStyle).not.toHaveBeenCalled()
+    })
+
+    it('returns no before layer id when the layer is not in the style', () => {
+        const map = new Map('el')
+        map.setBeforeLayerId('label-layer')
+
+        expect(map.getBeforeLayerId()).toBeUndefined()
     })
 })

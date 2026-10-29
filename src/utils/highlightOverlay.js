@@ -1,23 +1,50 @@
-import { highlightColorExpr } from './expressions.js'
 import { featureCollection } from './geometry.js'
 import { iconHaloOpacity } from './style.js'
 
-// Only circle/line paint reacts to hover/selected feature-state
-// Cloning a fill layer would double-render the same fill
+// Fill paint ignores hover, and a cloned fill would render twice
 const CLONEABLE_TYPES = new Set(['circle', 'line'])
 
-// Icon layers have no paint property that reacts to feature-state
-// Instead we add a colored halo behind a plain clone of the icon
+// Paint property that takes the highlight color, per cloned layer type
+const COLOR_PROPERTY = { circle: 'circle-stroke-color', line: 'line-color' }
+
+// Icon paint ignores hover, so a colored halo goes behind an icon clone
 const ICON_HALO_RADIUS = 14
 const ICON_HALO_BLUR = 0.6
+const ICON_HALO_COLOR = '#333333'
+
+// WeakMap so mapgl instances are not prevented from being GC'd
+const _overlays = new WeakMap()
+
+const getOverlays = mapgl => {
+    if (!_overlays.has(mapgl)) {
+        _overlays.set(mapgl, new Map())
+    }
+    return _overlays.get(mapgl)
+}
+
+const resolveHover = value => {
+    if (!Array.isArray(value)) {
+        return value
+    }
+    if (value[0] === 'feature-state' && value[1] === 'hover') {
+        return true
+    }
+    return value.map(resolveHover)
+}
+
+// Overlay features are all hovered, so clones draw that look without feature-state
+const hoveredPaint = paint =>
+    paint &&
+    Object.fromEntries(
+        Object.entries(paint).map(([key, value]) => [key, resolveHover(value)])
+    )
 
 const iconHighlightHalo = layer => ({
     id: `${layer.id}-highlight-halo`,
     type: 'circle',
-    // Reuse the base layer's filter
     filter: layer.filter,
     paint: {
-        'circle-color': highlightColorExpr('#333333'),
+        'circle-color': ICON_HALO_COLOR,
         'circle-radius': ICON_HALO_RADIUS,
         'circle-blur': ICON_HALO_BLUR,
         'circle-opacity': iconHaloOpacity,
@@ -30,68 +57,98 @@ const isIconLayer = layer =>
 
 export const getOverlaySourceId = id => `${id}-highlight`
 
-// Creates a small overlay source + cloned layers, drawn above the base
-// layers they came from, only ever holds the currently hover/selected features
+// Holds only the hovered/selected features, drawn by clones above the base layers
 export const createHighlightOverlay = (map, { id, glLayers, beforeId }) => {
     const mapgl = map.getMapGL()
     const sourceId = getOverlaySourceId(id)
+    const source = mapgl.getSource(sourceId)
+    const colorPaint = []
 
-    if (!mapgl.getSource(sourceId)) {
+    if (source) {
+        source.setData(featureCollection())
+    } else {
         mapgl.addSource(sourceId, {
             type: 'geojson',
             data: featureCollection(),
         })
     }
 
-    const addOverlayLayer = overlayLayer => {
+    const addOverlayLayer = (overlayLayer, colorProperty) => {
         if (!mapgl.getLayer(overlayLayer.id)) {
             mapgl.addLayer({ ...overlayLayer, source: sourceId }, beforeId)
+        }
+        if (colorProperty) {
+            colorPaint.push({
+                layerId: overlayLayer.id,
+                property: colorProperty,
+                value: overlayLayer.paint?.[colorProperty],
+            })
         }
         return overlayLayer.id
     }
 
-    return glLayers.flatMap(layer => {
+    const overlayLayerIds = glLayers.flatMap(layer => {
         if (isIconLayer(layer)) {
             // Halo first, so the icon clone renders on top of it
             return [
-                addOverlayLayer(iconHighlightHalo(layer)),
+                addOverlayLayer(iconHighlightHalo(layer), 'circle-color'),
                 addOverlayLayer({ ...layer, id: `${layer.id}-highlight-icon` }),
             ]
         }
 
         if (CLONEABLE_TYPES.has(layer.type)) {
-            return [addOverlayLayer({ ...layer, id: `${layer.id}-highlight` })]
+            return [
+                addOverlayLayer(
+                    {
+                        ...layer,
+                        id: `${layer.id}-highlight`,
+                        paint: hoveredPaint(layer.paint),
+                    },
+                    COLOR_PROPERTY[layer.type]
+                ),
+            ]
         }
 
         return []
     })
+
+    getOverlays(mapgl).set(sourceId, {
+        featureIds: new Set(),
+        color: undefined,
+        colorPaint,
+    })
+
+    return overlayLayerIds
 }
 
-// Replaces the overlay's contents with `features` and marks them
-// hover+selected so the cloned paint renders the highlighted look
+// Sends only the features added or removed since the last update
 export const updateHighlightOverlay = (map, { id, features, color }) => {
     const mapgl = map.getMapGL()
     const sourceId = getOverlaySourceId(id)
     const source = mapgl.getSource(sourceId)
+    const overlay = getOverlays(mapgl).get(sourceId)
 
-    if (!source) {
+    if (!source || !overlay) {
         return
     }
 
-    // Re-key to ids local to this source
-    const overlayFeatures = features.map((feature, index) => ({
-        ...feature,
-        id: index + 1,
-    }))
-
-    source.setData(featureCollection(overlayFeatures))
-
-    overlayFeatures.forEach(feature =>
-        mapgl.setFeatureState(
-            { source: sourceId, id: feature.id },
-            { hover: true, selected: true, highlightColor: color }
-        )
+    const featureIds = new Set(features.map(feature => feature.id))
+    const add = features.filter(feature => !overlay.featureIds.has(feature.id))
+    const remove = [...overlay.featureIds].filter(
+        featureId => !featureIds.has(featureId)
     )
+
+    if (add.length || remove.length) {
+        source.updateData({ add, remove })
+        overlay.featureIds = featureIds
+    }
+
+    if (color !== overlay.color) {
+        overlay.colorPaint.forEach(({ layerId, property, value }) =>
+            mapgl.setPaintProperty(layerId, property, color ?? value)
+        )
+        overlay.color = color
+    }
 }
 
 export const removeHighlightOverlay = (map, id, overlayLayerIds = []) => {
@@ -111,4 +168,6 @@ export const removeHighlightOverlay = (map, id, overlayLayerIds = []) => {
     if (mapgl.getSource(sourceId)) {
         mapgl.removeSource(sourceId)
     }
+
+    getOverlays(mapgl).delete(sourceId)
 }

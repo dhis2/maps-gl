@@ -70,9 +70,7 @@ describe('Cluster', () => {
     describe('setVisibleIds', () => {
         beforeEach(() => {
             jest.resetAllMocks()
-            // addTo() below triggers onAdd(), which always calls setOpacity();
-            // that reads the map style, so it must be stubbed even though this
-            // test isn't about opacity.
+            // addTo() sets the opacity, which reads the map style
             mockMapGL.getStyle.mockReturnValue({ layers: [] })
         })
 
