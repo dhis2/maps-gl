@@ -1,5 +1,6 @@
 import { isPoint, isPolygon } from '../utils/filters.js'
 import { labelLayer } from '../utils/labels.js'
+import { strokeWidth } from '../utils/style.js'
 import Layer from './Layer.js'
 
 class Boundary extends Layer {
@@ -20,7 +21,7 @@ class Boundary extends Layer {
             properties: {
                 ...f.properties,
                 color: f.properties.style.color,
-                width: f.properties.style.weight,
+                width: f.properties.style.weight ?? strokeWidth,
                 radius,
             },
         }))
