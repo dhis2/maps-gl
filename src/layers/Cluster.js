@@ -247,7 +247,7 @@ class Cluster extends Layer {
     }
 
     // Clusters can't be filtered by id, so the visible features are re-sent and re-clustered
-    setVisibleIds(ids) {
+    _applyVisibleIds() {
         const mapgl = this.getMapGL()
         const source = mapgl?.getSource(this.getId())
 
@@ -255,6 +255,7 @@ class Cluster extends Layer {
             return
         }
 
+        const ids = this._visibleIds
         const visibleIds = ids ? new Set(ids) : null
         const features = visibleIds
             ? this.getFeatures().filter(f => visibleIds.has(f.properties.id))
@@ -266,9 +267,6 @@ class Cluster extends Layer {
             mapgl.off('idle', this.updatePolygons)
             mapgl.once('idle', this.updatePolygons)
         }
-
-        this._visibleIds = ids
-        this._syncOverlay()
     }
 
     onSpiderClose = clusterId => {

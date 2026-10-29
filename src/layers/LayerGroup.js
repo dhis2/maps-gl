@@ -24,6 +24,11 @@ class LayerGroup extends Evented {
             this._layers.push(this._map.createLayer(config))
         )
 
+        // Sub-layers created after setVisibleIds() start with its ids
+        if (this._visibleIds) {
+            this._layers.forEach(layer => layer.setVisibleIds(this._visibleIds))
+        }
+
         if (this.options.opacity) {
             this.setOpacity(this.options.opacity)
         }

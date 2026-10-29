@@ -329,6 +329,7 @@ describe('Layer', () => {
         layer.addLayer({ id: 'layer-1-points' })
 
         layer.addTo(mockMap)
+        mockMapGL.getLayer.mockReturnValue(true)
         layer.setVisibleIds(['O6uvpzGd5pu', 'fdc6uOvgoji'])
 
         expect(mockMapGL.setFilter).toHaveBeenCalledWith('layer-1', [
@@ -341,12 +342,37 @@ describe('Layer', () => {
             idFilter(['O6uvpzGd5pu', 'fdc6uOvgoji'])
         )
     })
+    it('Should keep visible ids set while off the map, e.g. during a basemap switch, and apply them once added', () => {
+        const layer = new Layer({ data })
+        layer.addLayer({ id: 'layer-1' })
+
+        layer.setVisibleIds(['O6uvpzGd5pu'])
+        expect(mockMapGL.setFilter).not.toHaveBeenCalled()
+
+        mockMapGL.getLayer.mockReturnValue(true)
+        layer.addTo(mockMap)
+
+        expect(mockMapGL.setFilter).toHaveBeenCalledWith(
+            'layer-1',
+            idFilter(['O6uvpzGd5pu'])
+        )
+    })
+    it('Should not filter layers that are not on the map yet, which MapLibre reports as an error', () => {
+        const layer = new Layer({ data })
+        layer.addLayer({ id: 'layer-1' })
+        layer.addTo(mockMap)
+
+        layer.setVisibleIds(['O6uvpzGd5pu'])
+
+        expect(mockMapGL.setFilter).not.toHaveBeenCalled()
+    })
     it('Should restore the original static filter when shown ids is cleared', () => {
         const layer = new Layer({ data })
         layer.addLayer({ id: 'layer-1', filter: ['==', '$type', 'Polygon'] })
         layer.addLayer({ id: 'layer-1-points' })
 
         layer.addTo(mockMap)
+        mockMapGL.getLayer.mockReturnValue(true)
         layer.setVisibleIds(null)
 
         expect(mockMapGL.setFilter).toHaveBeenCalledWith('layer-1', [
@@ -365,6 +391,7 @@ describe('Layer', () => {
         )
 
         layer.addTo(mockMap)
+        mockMapGL.getLayer.mockReturnValue(true)
         mockMapGL.setFilter.mockClear()
         layer.setVisibleIds(['O6uvpzGd5pu'])
 

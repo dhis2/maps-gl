@@ -170,6 +170,18 @@ describe('LayerGroup', () => {
         })
     })
 
+    it('should pass visible ids set before its first add to the sub-layers it then creates', async () => {
+        const subLayer = createMockSubLayer('layer-a', 1)
+        const map = { ...mockMap, createLayer: () => subLayer }
+        const group = new LayerGroup()
+        group.addLayer({ type: 'boundary' })
+
+        group.setVisibleIds(['a'])
+        await group.addTo(map)
+
+        expect(subLayer.setVisibleIds).toHaveBeenCalledWith(['a'])
+    })
+
     it('should stop drawing on its map once removed, which may be destroyed by then', () => {
         const group = new LayerGroup()
         group._layers = [createMockSubLayer('layer-a', 1)]

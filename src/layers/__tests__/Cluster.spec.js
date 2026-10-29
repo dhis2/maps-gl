@@ -90,6 +90,25 @@ describe('Cluster', () => {
             })
         })
 
+        it('Should re-send only the visible features once added again, e.g. after a basemap switch', () => {
+            const cluster = new Cluster({ data })
+            const source = { setData: jest.fn() }
+            mockMapGL.getSource.mockReturnValue(source)
+
+            cluster.setVisibleIds(['b'])
+            expect(source.setData).not.toHaveBeenCalled()
+
+            mockMap.styleIsLoaded.mockReturnValue(true)
+            cluster.addTo(mockMap)
+
+            expect(source.setData).toHaveBeenCalledWith({
+                type: 'FeatureCollection',
+                features: [
+                    expect.objectContaining({ properties: { id: 'b' } }),
+                ],
+            })
+        })
+
         it('Should restore the full feature set when ids is cleared', () => {
             const cluster = new Cluster({ data })
             const source = { setData: jest.fn() }

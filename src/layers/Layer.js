@@ -85,6 +85,11 @@ class Layer extends Evented {
                     mapgl.addLayer(layer, beforeId)
                 }
             })
+
+            // Layers come back with their own filter, e.g. after a basemap switch
+            if (this._visibleIds) {
+                this._applyVisibleIds()
+            }
         }
 
         if (map.styleIsLoaded()) {
@@ -466,6 +471,13 @@ class Layer extends Evented {
 
     // null/undefined ids restore each layer's own filter
     setVisibleIds(ids) {
+        this._visibleIds = ids
+        this._applyVisibleIds()
+        this._syncOverlay()
+    }
+
+    // Override if the layer can't be filtered by id
+    _applyVisibleIds() {
         const mapgl = this.getMapGL()
 
         if (!mapgl) {
@@ -473,14 +485,17 @@ class Layer extends Evented {
         }
 
         this.getLayers().forEach(({ id, filter: baseFilter }) => {
-            if (this._visibleIdsFilterExemptIds.has(id)) {
+            if (
+                this._visibleIdsFilterExemptIds.has(id) ||
+                !mapgl.getLayer(id)
+            ) {
                 return
             }
-            mapgl.setFilter(id, buildVisibleIdsFilter(ids, baseFilter))
+            mapgl.setFilter(
+                id,
+                buildVisibleIdsFilter(this._visibleIds, baseFilter)
+            )
         })
-
-        this._visibleIds = ids
-        this._syncOverlay()
     }
 
     // Syncs the highlight overlay with the currently visible hovered/selected ids
