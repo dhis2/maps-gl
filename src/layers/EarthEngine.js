@@ -39,6 +39,7 @@ class EarthEngine extends Layer {
                             this.createLayers()
                             super.addTo(map)
                             this.onLoad()
+                            this._updateMask()
 
                             this._isLoading = false
 
