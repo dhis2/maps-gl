@@ -10,3 +10,24 @@ export const getFeaturesString = features =>
               .map(({ id, source }) => `${id}-${source}`)
               .join('-')
         : ''
+
+export const normalizeIds = ids => {
+    if (Array.isArray(ids)) {
+        return ids
+    }
+
+    return ids === undefined || ids === null ? [] : [ids]
+}
+
+export const dropHiddenIds = (hoverIds, selectedIds, visibleIds) => {
+    if (!visibleIds) {
+        return null
+    }
+
+    const visible = new Set(visibleIds)
+
+    return {
+        hoverIds: hoverIds.filter(id => visible.has(id)),
+        selectedIds: selectedIds.filter(id => visible.has(id)),
+    }
+}
