@@ -34,6 +34,7 @@ class Layer extends Evented {
         this._features = []
         this._isVisible = true
         this._interactiveIds = []
+        this._visibleIdsFilterExemptIds = new Set()
         this._overlayLayerIds = []
         this._hoverIds = []
         this._selectedIds = []
@@ -269,7 +270,8 @@ class Layer extends Evented {
     }
 
     addLayer(layer, layerOptions = {}) {
-        const { isInteractive, opacityFactor } = layerOptions
+        const { isInteractive, opacityFactor, excludeFromVisibleIdsFilter } =
+            layerOptions
 
         this._layers.push(layer)
 
@@ -279,6 +281,11 @@ class Layer extends Evented {
 
         if (opacityFactor) {
             this._opacityFactor = opacityFactor
+        }
+
+        // e.g. a mask holding the hidden features, which a visible-ids filter would empty
+        if (excludeFromVisibleIdsFilter) {
+            this._visibleIdsFilterExemptIds.add(layer.id)
         }
     }
 
@@ -465,6 +472,9 @@ class Layer extends Evented {
         }
 
         this.getLayers().forEach(({ id, filter: baseFilter }) => {
+            if (this._visibleIdsFilterExemptIds.has(id)) {
+                return
+            }
             mapgl.setFilter(id, buildVisibleIdsFilter(ids, baseFilter))
         })
 

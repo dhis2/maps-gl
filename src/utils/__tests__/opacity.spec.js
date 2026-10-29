@@ -202,6 +202,18 @@ describe('opacity', () => {
         )
     })
 
+    it('dampens a mask sub-layer to 60% of the requested opacity', () => {
+        const mapgl = createMapGL(['layer1-mask'])
+
+        setLayersOpacity(mapgl, 'layer1', 1)
+
+        expect(mapgl.setPaintProperty).toHaveBeenCalledWith(
+            'layer1-mask',
+            'fill-opacity',
+            0.6
+        )
+    })
+
     it('only touches layers whose id has the given prefix', () => {
         const mapgl = createMapGL(['layer1-line', 'layer2-line'])
 
