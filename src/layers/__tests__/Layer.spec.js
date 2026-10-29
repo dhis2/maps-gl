@@ -119,6 +119,41 @@ describe('Layer', () => {
         )
         expect(layer.getFeaturesById(3)).toStrictEqual([])
     })
+    it('Should rebuild the id index after setFeatures() replaces the features', () => {
+        const layer = new Layer({ data })
+
+        expect(layer.getFeaturesById('fdc6uOvgoji')).not.toStrictEqual([])
+
+        layer.setFeatures([data[0]])
+
+        expect(layer.getFeaturesById('fdc6uOvgoji')).toStrictEqual([])
+        expect(layer.getFeaturesById('O6uvpzGd5pu')).not.toStrictEqual([])
+    })
+    it('Should find a numeric uid before an internal numeric id, as uploaded GeoJSON can have numeric ids', () => {
+        const layer = new Layer({
+            data: [
+                { ...data[0], properties: { id: 2, name: 'Bo' } },
+                { ...data[1], properties: { id: 7, name: 'Bombali' } },
+            ],
+        })
+
+        expect(layer.getFeaturesById(2)).toMatchObject([
+            { id: 1, properties: { name: 'Bo' } },
+        ])
+        expect(layer.getFeaturesById(1)).toMatchObject([
+            { id: 1, properties: { name: 'Bo' } },
+        ])
+    })
+    it('Should return every feature sharing a uid, as uploaded GeoJSON ids need not be unique', () => {
+        const layer = new Layer({
+            data: [
+                { ...data[0], properties: { id: 'a', name: 'Bo' } },
+                { ...data[1], properties: { id: 'a', name: 'Bombali' } },
+            ],
+        })
+
+        expect(layer.getFeaturesById('a')).toHaveLength(2)
+    })
     it('Should update the highlight overlay on highlight(), not the base source', () => {
         const layer = new Layer({ data })
         const source = layer.getId()
