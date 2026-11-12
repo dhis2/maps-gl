@@ -1,4 +1,4 @@
-import ee from './ee_api_js_worker.js'
+import ee from '../vendor/ee_api_js_worker.js'
 
 const squareMetersToHectares = value => value / 10000
 

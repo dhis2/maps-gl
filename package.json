@@ -1,6 +1,6 @@
 {
     "name": "@dhis2/maps-gl",
-    "version": "4.4.3",
+    "version": "4.4.5",
     "description": "A WebGL rendering engine for DHIS2 maps based on Mapbox GL JS.",
     "publishConfig": {
         "access": "public"
@@ -42,6 +42,8 @@
         "@babel/preset-env": "^7.29.7",
         "@babel/runtime": "^8.0.0",
         "@dhis2/cli-style": "^10.7.10",
+        "@google/earthengine": "1.7.49",
+        "@mapbox/mapbox-gl-rtl-text": "0.4.0",
         "@types/jest": "^30.0.0",
         "babel-jest": "^30.4.1",
         "babel-plugin-transform-import-meta": "^2.3.3",
@@ -52,6 +54,7 @@
         "rimraf": "^6.1.3"
     },
     "scripts": {
+        "prepare": "node scripts/prepare-vendor-files.js",
         "lint": "yarn d2-style check",
         "lint:staged": "yarn lint --staged",
         "format": "yarn d2-style apply",
@@ -59,7 +62,7 @@
         "clean": "rimraf ./build/*",
         "build:commonjs": "BABEL_ENV=commonjs babel src --out-dir ./build/cjs --copy-files --verbose",
         "build:modules": "BABEL_ENV=modules babel src --out-dir ./build/es --copy-files --verbose",
-        "build": "NODE_ENV=production yarn clean && yarn build:commonjs && yarn build:modules",
+        "build": "NODE_ENV=production yarn clean && yarn prepare && yarn build:commonjs && yarn build:modules",
         "watch": "NODE_ENV=development yarn clean && concurrently -n watch-cjs,watch-es \"yarn build:commonjs --watch\" \"yarn build:modules --watch\"",
         "test": "jest src/*"
     },

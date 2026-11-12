@@ -2,5 +2,8 @@ node_modules
 package-lock.json
 build
 
+# Written by scripts/prepare-vendor-files.js
+src/vendor
+
 # IDE
 .vscode
