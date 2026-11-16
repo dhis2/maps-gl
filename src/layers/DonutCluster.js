@@ -80,9 +80,9 @@ class DonutCluster extends Cluster {
     }
 
     // Cluster ids pass to other clusters with new data, so markers are rebuilt
-    setVisibleIds(ids) {
+    _applyVisibleIds() {
         this.removeClusters()
-        super.setVisibleIds(ids)
+        super._applyVisibleIds()
     }
 
     onSourceData = evt => {

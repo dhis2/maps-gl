@@ -1,4 +1,9 @@
-import { dropHiddenIds, normalizeIds, setTemplate } from '../core.js'
+import {
+    filterVisibleIds,
+    isSameIds,
+    normalizeIds,
+    setTemplate,
+} from '../core.js'
 
 describe('core utils', () => {
     it('Should add values to template string', () => {
@@ -31,17 +36,39 @@ describe('core utils', () => {
         })
     })
 
-    describe('dropHiddenIds', () => {
-        it('Should drop hover/selected ids that are no longer visible', () => {
-            expect(dropHiddenIds(['a', 'b'], ['b', 'c'], ['b'])).toEqual({
-                hoverIds: ['b'],
-                selectedIds: ['b'],
-            })
+    describe('isSameIds', () => {
+        it('Should match the same ids in the same order', () => {
+            expect(isSameIds(['a', 'b'], ['a', 'b'])).toBe(true)
+            expect(isSameIds(['a', 'b'], ['b', 'a'])).toBe(false)
+            expect(isSameIds(['a'], ['a', 'b'])).toBe(false)
         })
 
-        it('Should return null when visibleIds is null/undefined, so nothing is dropped', () => {
-            expect(dropHiddenIds(['a'], ['b'], null)).toBeNull()
-            expect(dropHiddenIds(['a'], ['b'], undefined)).toBeNull()
+        it('Should treat null and undefined alike, and apart from an empty list', () => {
+            expect(isSameIds(null, undefined)).toBe(true)
+            expect(isSameIds(null, [])).toBe(false)
+        })
+    })
+
+    describe('filterVisibleIds', () => {
+        it('Should restrict ids to those also present in visibleIdSet', () => {
+            expect(filterVisibleIds(['a', 'b', 'c'], new Set(['b']))).toEqual([
+                'b',
+            ])
+        })
+
+        it('Should return ids unchanged when visibleIdSet is null/undefined, meaning no restriction', () => {
+            expect(filterVisibleIds(['a', 'b'], null)).toEqual(['a', 'b'])
+            expect(filterVisibleIds(['a', 'b'], undefined)).toEqual(['a', 'b'])
+        })
+
+        it('Should not mutate either input', () => {
+            const ids = ['a', 'b']
+            const visibleIdSet = new Set(['b'])
+
+            filterVisibleIds(ids, visibleIdSet)
+
+            expect(ids).toEqual(['a', 'b'])
+            expect([...visibleIdSet]).toEqual(['b'])
         })
     })
 })

@@ -90,7 +90,26 @@ describe('Cluster', () => {
             })
         })
 
-        it('Should restore the full feature set when ids is cleared', () => {
+        it('Should re-send only the visible features once added again, e.g. after a basemap switch', () => {
+            const cluster = new Cluster({ data })
+            const source = { setData: jest.fn() }
+            mockMapGL.getSource.mockReturnValue(source)
+
+            cluster.setVisibleIds(['b'])
+            expect(source.setData).not.toHaveBeenCalled()
+
+            mockMap.styleIsLoaded.mockReturnValue(true)
+            cluster.addTo(mockMap)
+
+            expect(source.setData).toHaveBeenCalledWith({
+                type: 'FeatureCollection',
+                features: [
+                    expect.objectContaining({ properties: { id: 'b' } }),
+                ],
+            })
+        })
+
+        it('Should not re-send and re-cluster every feature for unchanged ids, e.g. null right after the layer is created', () => {
             const cluster = new Cluster({ data })
             const source = { setData: jest.fn() }
             mockMapGL.getSource.mockReturnValue(source)
@@ -98,7 +117,19 @@ describe('Cluster', () => {
             cluster.addTo(mockMap)
             cluster.setVisibleIds(null)
 
-            expect(source.setData).toHaveBeenCalledWith({
+            expect(source.setData).not.toHaveBeenCalled()
+        })
+
+        it('Should restore the full feature set when ids is cleared', () => {
+            const cluster = new Cluster({ data })
+            const source = { setData: jest.fn() }
+            mockMapGL.getSource.mockReturnValue(source)
+
+            cluster.addTo(mockMap)
+            cluster.setVisibleIds(['b'])
+            cluster.setVisibleIds(null)
+
+            expect(source.setData).toHaveBeenLastCalledWith({
                 type: 'FeatureCollection',
                 features: cluster.getFeatures(),
             })
@@ -178,7 +209,7 @@ describe('Cluster', () => {
 
             cluster.addTo(mockMap)
             cluster.setVisibleIds(['p'])
-            cluster.setVisibleIds(['p'])
+            cluster.setVisibleIds(null)
 
             expect(mockMapGL.off).toHaveBeenCalledWith(
                 'idle',
@@ -201,6 +232,26 @@ describe('Cluster', () => {
             expect(
                 updateHighlightOverlay.mock.lastCall[1].features
             ).toMatchObject([{ properties: { id: 'b' } }])
+        })
+
+        it('Should restore a hovered/selected id to the overlay once setVisibleIds() clears the restriction that had hidden it', () => {
+            const cluster = new Cluster({ data })
+            mockMapGL.getSource.mockReturnValue({ setData: jest.fn() })
+
+            cluster.addTo(mockMap)
+            cluster.highlight(['a', 'b'])
+            cluster.setVisibleIds(['b'])
+            updateHighlightOverlay.mockClear()
+
+            cluster.setVisibleIds(null)
+
+            expect(updateHighlightOverlay).toHaveBeenCalledTimes(1)
+            expect(
+                updateHighlightOverlay.mock.lastCall[1].features
+            ).toMatchObject([
+                { properties: { id: 'a' } },
+                { properties: { id: 'b' } },
+            ])
         })
     })
 

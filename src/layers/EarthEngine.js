@@ -251,9 +251,8 @@ class EarthEngine extends Layer {
         this._updateMask()
     }
 
-    setVisibleIds(ids) {
-        super.setVisibleIds(ids)
-        this._visibleIds = ids
+    _applyVisibleIds() {
+        super._applyVisibleIds()
         this._updateMask()
     }
 
@@ -265,14 +264,11 @@ class EarthEngine extends Layer {
             return
         }
 
-        const { _filteredFeatureIds: filteredIds, _visibleIds: visibleIds } =
-            this
+        const filteredIds = this._filteredFeatureIds
         const filteredIdSet = Array.isArray(filteredIds)
             ? new Set(filteredIds)
             : null
-        const visibleIdSet = Array.isArray(visibleIds)
-            ? new Set(visibleIds)
-            : null
+        const visibleIdSet = this._visibleIdSet
 
         const hidden = this.getFeatures().filter(feature => {
             const id = feature.properties.id

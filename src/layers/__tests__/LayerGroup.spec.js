@@ -170,6 +170,29 @@ describe('LayerGroup', () => {
         })
     })
 
+    it('should not pass unchanged visible ids on to its sub-layers', () => {
+        const group = new LayerGroup()
+        const layerA = createMockSubLayer('layer-a', 1)
+        group._layers = [layerA]
+
+        group.setVisibleIds(['a'])
+        group.setVisibleIds(['a'])
+
+        expect(layerA.setVisibleIds).toHaveBeenCalledTimes(1)
+    })
+
+    it('should pass visible ids set before its first add to the sub-layers it then creates', async () => {
+        const subLayer = createMockSubLayer('layer-a', 1)
+        const map = { ...mockMap, createLayer: () => subLayer }
+        const group = new LayerGroup()
+        group.addLayer({ type: 'boundary' })
+
+        group.setVisibleIds(['a'])
+        await group.addTo(map)
+
+        expect(subLayer.setVisibleIds).toHaveBeenCalledWith(['a'])
+    })
+
     it('should stop drawing on its map once removed, which may be destroyed by then', () => {
         const group = new LayerGroup()
         group._layers = [createMockSubLayer('layer-a', 1)]
@@ -214,6 +237,25 @@ describe('LayerGroup', () => {
         expect(updateHighlightOverlay).toHaveBeenLastCalledWith(mockMap, {
             id: 'layer-a',
             features: [],
+            color: undefined,
+        })
+    })
+
+    it("should restore a hovered/selected id to each sub-layer's overlay once setVisibleIds() clears the restriction that had hidden it", () => {
+        const group = new LayerGroup()
+        const layerA = createMockSubLayer('layer-a', 1)
+        group._layers = [layerA]
+        group._map = mockMap
+
+        group.highlight([1])
+        group.setVisibleIds(['some-other-id'])
+        updateHighlightOverlay.mockClear()
+
+        group.setVisibleIds(null)
+
+        expect(updateHighlightOverlay).toHaveBeenLastCalledWith(mockMap, {
+            id: 'layer-a',
+            features: [{ id: 1, source: 'layer-a' }],
             color: undefined,
         })
     })
