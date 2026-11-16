@@ -1,3 +1,4 @@
+import { isPoint, isPolygon } from '../utils/filters.js'
 import { labelLayer } from '../utils/labels.js'
 import Layer from './Layer.js'
 
@@ -45,7 +46,7 @@ class Boundary extends Layer {
                         ['get', 'width'],
                     ],
                 },
-                filter: ['==', '$type', 'Polygon'],
+                filter: isPolygon,
             },
             { isInteractive }
         )
@@ -67,7 +68,7 @@ class Boundary extends Layer {
                         ['get', 'width'],
                     ],
                 },
-                filter: ['==', '$type', 'Point'],
+                filter: isPoint,
             },
             { isInteractive }
         )
